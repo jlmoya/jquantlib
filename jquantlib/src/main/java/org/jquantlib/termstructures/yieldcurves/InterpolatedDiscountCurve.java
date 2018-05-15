@@ -116,7 +116,7 @@ public class InterpolatedDiscountCurve<I extends Interpolator> extends AbstractY
 			final Interpolator interpolator) {
 		super(dates[0], calendar==null ? new Calendar() : calendar, dc);
 		
-		QL.validateExperimentalMode();
+		QL.validateAllowUseMode();
 		QL.require(classI!=null, "Generic type for Interpolation is null");
         this.classI = classI;
 		
