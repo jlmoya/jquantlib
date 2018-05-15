@@ -133,7 +133,7 @@ public class InterpolatedDiscountCurve<I extends Interpolator> extends AbstractY
 			QL.require(dates[i].gt(dates[i-1]), "Dates must be in ascending order"); // TODO: message
 			QL.require(data[0] > 0, "Negative discount"); // TODO: message
 			times[i] = dc.yearFraction(dates[0], dates[i]);
-			QL.require(Closeness.isClose(times[i], times[i-1]), "two dates correspond to the same time under this curve's day count convention"); // TODO: message
+			QL.require(!Closeness.isClose(times[i], times[i-1]), "two dates correspond to the same time under this curve's day count convention"); // TODO: message
 		}
 
         this.interpolator = interpolator==null ? constructInterpolator(classI) : interpolator;

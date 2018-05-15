@@ -278,7 +278,7 @@ public class PiecewiseYieldCurve<
         for (final Handle<Quote> jump : jumps) {
             jump.addObserver(this);
         }
-        bootstrap.setup(this);
+        this.bootstrap.setup(this);
     }
 
 
@@ -440,7 +440,7 @@ public class PiecewiseYieldCurve<
         for (final Handle<Quote> jump : jumps) {
             jump.addObserver(this);
         }
-        bootstrap.setup(this);
+        this.bootstrap.setup(this);
     }
 
 

@@ -107,7 +107,7 @@ public abstract class Index implements Observable {
 
         validFixing = isValidFixingDate(date);
         final Double currentValue = h.get(date);
-        missingFixing = forceOverwrite || Closeness.isClose(currentValue, Constants.NULL_REAL);
+        missingFixing = forceOverwrite || currentValue == null || Closeness.isClose(currentValue, Constants.NULL_REAL);
         if (validFixing) {
             if (missingFixing) {
                 h.put(date, value);
