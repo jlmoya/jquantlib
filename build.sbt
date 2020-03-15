@@ -3,13 +3,13 @@ import Keys._
 import com.typesafe.sbt.SbtPgp.PgpKeys.publishSigned
 import xerial.sbt.Sonatype.sonatypeSettings
 
-val `app.organization` = "org.jquantlib.java"
+organization := "co.dv01.jquantlib"
+
+val `app.organization` = "co.dv01.jquantlib"
 val `app.name`         = None
 val `app.description`  = "JQuantLib is a library for Quantitative Finance written in 100% Java."
 val `app.license`      = ("BSD Simplified", url("http://opensource.org/licenses/BSD-2-Clause"))
 
-val `bintray.organization`  = Some("jquantlib.org")
-val `bintray.packagelabels` = Seq("java", "scala", "quantitative", "finance", "models")
 
 val `java.version`            = "1.7"
 val `junit.version`           = "4.12"
@@ -40,7 +40,8 @@ lazy val disableJavadocs : Seq[Setting[_]] =
 lazy val javadocSettings : Seq[Setting[_]] =
   Seq(
     javacOptions  in (Compile,compile) ++= Seq("-source", `java.version`, "-target", `java.version`, "-Xlint"),
-    javacOptions  in (Compile,doc)     ++= Seq("-Xdoclint", "-notimestamp", "-linksource")
+    sources in (Compile,doc) := Seq.empty,
+    javacOptions  in (Compile,doc)     ++= Seq("-notimestamp", "-linksource")
   )
 
 // test frameworks ----------------------------------------------------------------------------------------------
@@ -88,13 +89,12 @@ def makeModule(p: sbt.Project): sbt.Project =
     librarySettings ++
     publishSettings ++
     //paranoidOptions ++
-    //javadocSettings ++
-    disableJavadocs ++
+    javadocSettings ++
+    // disableJavadocs ++
     junitSettings ++
     // otestFramework ++
     deps_common ++
       Seq(
-        organization := `app.organization`,
         version      := (version in ThisBuild).value,
         description  := `app.description`,
         licenses     += `app.license`
@@ -132,32 +132,39 @@ lazy val disablePublishing: Seq[Setting[_]] =
       publishLocal := ()
     )
 
-lazy val publishSettings: Seq[Setting[_]] =
-  Seq(
-    name                 in bintray := name.value,
-    bintrayOrganization  in bintray := `bintray.organization`,
-    bintrayRepository    in bintray := (if((version in ThisBuild).value.contains("SNAPSHOT")) "snapshots" else "releases"),
-    bintrayPackageLabels in bintray := `bintray.packagelabels`,
-    pomExtra := `pom.extra`
-  )
+lazy val publishSettings =
+  sonatypeSettings ++
+    Seq(
+      // sonatypeProfileName := "co.dv01",
+      // publishTo := {
+      //   val nexus = "https://oss.sonatype.org/"
+      //   if (isSnapshot.value)
+      //     Some("snapshots" at nexus + "content/repositories/snapshots")
+      //   else
+      //     Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+      // },
 
-// --------------------------------------------------------------------------------------------------------------
 
-val `pom.extra` =
-  <scm>
-    <developerConnection>scm:git:git@github.com:frgomes/jquantlib.git</developerConnection>
-                 <connection>scm:git:github.com/frgomes/jquantlib.git</connection>
-                         <url>http://github.com/frgomes/jquantlib</url>
-  </scm>
-  <developers>
-    <developer>
-      <id>frgomes</id>
-      <name>Richard Gomes</name>
-      <url>http://rgomes-info.blogspot.com</url>
-    </developer>
-  </developers>
+      organization := "co.dv01.jquantlib",
+      pomIncludeRepository := { _ => false },
+      pomExtra := {
+        <url>http://github.com/dv01-inc/jquantlib</url>
+          <scm>
+            <developerConnection>scm:git:git@github.com:frgomes/jquantlib.git</developerConnection>
+                         <connection>scm:git:github.com/dv01-inc/jquantlib.git</connection>
+                                 <url>http://github.com/dv01-inc/jquantlib</url>
+          </scm>
+          <developers>
+            <developer>
+              <id>frgomes</id>
+              <name>Richard Gomes</name>
+              <url>http://rgomes-info.blogspot.com</url>
+            </developer>
+          </developers>
+      }
+    )
 
-// --------------------------------------------------------------------------------------------------------------
+
 
 
 
