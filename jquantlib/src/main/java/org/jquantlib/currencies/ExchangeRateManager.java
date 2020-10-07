@@ -45,9 +45,11 @@ import java.util.List;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
+import org.jquantlib.currencies.America.CRCCurrency;
 import org.jquantlib.currencies.America.PEHCurrency;
 import org.jquantlib.currencies.America.PEICurrency;
 import org.jquantlib.currencies.America.PENCurrency;
+import org.jquantlib.currencies.America.USDCurrency;
 import org.jquantlib.currencies.Europe.ATSCurrency;
 import org.jquantlib.currencies.Europe.BEFCurrency;
 import org.jquantlib.currencies.Europe.DEMCurrency;
@@ -78,7 +80,7 @@ public class ExchangeRateManager {
     /** Singleton instance of the ExchangeRateManager. */
     private static volatile ExchangeRateManager instance = null;
     /** The HashMape containing all ExchangeRates. */
-    private final HashMap<Object, List<Entry>> data_ = new HashMap<Object, List<Entry>>();
+    protected final HashMap<Object, List<Entry>> data_ = new HashMap<Object, List<Entry>>();
 
     /**
      * Returns a singleton of the ExchangeRateManager.
@@ -146,10 +148,10 @@ public class ExchangeRateManager {
      * Constructs a new ExchangeRateManager and initialises the most used rates. Note: private; should only be accessed by
      * getInstance().
      */
-    private ExchangeRateManager() {
+    protected ExchangeRateManager() {
         if (System.getProperty("EXPERIMENTAL") == null)
             throw new UnsupportedOperationException("Work in progress");
-        addKnownRates();
+        //addKnownRates();
     }
 
     /**
@@ -238,7 +240,7 @@ public class ExchangeRateManager {
      */
     public void clear() {
         data_.clear();
-        addKnownRates();
+        //addKnownRates();
     }
 
     /**
@@ -266,7 +268,7 @@ public class ExchangeRateManager {
     /**
      * Adds obsoleted currencies to the repository.
      */
-    private void addKnownRates() {
+    protected void addKnownRates() {
         final Date maxDate = Date.maxDate();
         // currencies obsoleted by Euro
         add(new ExchangeRate(
@@ -350,7 +352,13 @@ public class ExchangeRateManager {
                 new PEHCurrency(), 1000.0),
                 new Date(1, Month.February, 1985),
                 maxDate);
-    }
+		// add Costa Rican colon currency
+		add(new ExchangeRate(
+				new USDCurrency(), 
+				new CRCCurrency(), 550.0),
+				new Date(4, Month.January, 2017), 
+				maxDate);
+	    }
 
     /**
      * Fetches a exchange rate from the repository.
@@ -360,7 +368,7 @@ public class ExchangeRateManager {
      * @param date The date the exchange rate should be valid at. Date
      * @return The found exchange rate. ExchangeRate
      */
-    private ExchangeRate directLookup(final Currency source, final Currency target, final Date date) {
+    protected ExchangeRate directLookup(final Currency source, final Currency target, final Date date) {
         if (System.getProperty("EXPERIMENTAL") == null)
             throw new UnsupportedOperationException("Work in progress");
 
@@ -373,7 +381,7 @@ public class ExchangeRateManager {
     /**
      * @see #smartLookup(Currency, Currency, Date, int[])
      */
-    private ExchangeRate smartLookup(final Currency source, final Currency target, final Date date) {
+    protected ExchangeRate smartLookup(final Currency source, final Currency target, final Date date) {
         return smartLookup(source, target, date, new int[0]);
     }
 
@@ -386,7 +394,7 @@ public class ExchangeRateManager {
      * @param forbidden The index array of forbidden source currencies.
      * @return The found ExchangeRate
      */
-    private ExchangeRate smartLookup(final Currency source, final Currency target, final Date date, int[] forbidden) {
+    protected ExchangeRate smartLookup(final Currency source, final Currency target, final Date date, int[] forbidden) {
         // direct exchange rates are preferred.
         final ExchangeRate direct = fetch(source, target, date);
         if (direct != null)
@@ -445,7 +453,7 @@ public class ExchangeRateManager {
     public ExchangeRate fetch(final Currency source, final Currency target, final Date date) {
         final List<Entry> rates = data_.get(hash(source, target));
         final int i = matchValidateAt(rates, date);
-        return i == rates.size() - 1 ? rates.get(i).rate : null;
+        return (i == rates.size() - 1) || (i == -1) ? null : rates.get(i).rate;
     }
 
     /**
@@ -455,7 +463,7 @@ public class ExchangeRateManager {
      * @param value The value to be looked for. int
      * @return The first index value is found. int
      */
-    private int match(final int[] list, final int value) {
+    protected int match(final int[] list, final int value) {
         for (int i = 0; i < list.length; i++) {
             if (value == list[i])
                 return i;
@@ -470,12 +478,16 @@ public class ExchangeRateManager {
      * @param date The date the rate has to be valid at. Date
      * @return The index of the first valid entry. int
      */
-    private int matchValidateAt(final List<Entry> rates, final Date date) {
+    protected int matchValidateAt(final List<Entry> rates, final Date date) {
         final Valid_at va = new Valid_at(date);
         for (int i = 0; i < rates.size(); i++) {
             if (va.operator(rates.get(i)))
                 return i;
         }
         return -1;
+    }
+    
+    protected static void setInstance(ExchangeRateManager _instance) {
+    	instance = _instance;
     }
 }

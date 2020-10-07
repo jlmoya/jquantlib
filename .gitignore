@@ -9,3 +9,7 @@ target
 .classpath_nb
 .ensime
 .ensime_lucene
+jquantlib-contrib/.svn
+jquantlib-helpers/.svn
+jquantlib/.svn
+.DS_Store

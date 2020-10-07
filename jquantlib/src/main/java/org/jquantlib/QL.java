@@ -391,12 +391,4 @@ public class QL {
             throw new UnsupportedOperationException("Work in progress");
     }
 
-    /**
-     * This method to validate whether code is being run in
-     * experimental mode or not
-     */
-    public static void validateAllowUseMode() {
-        if (System.getProperty("ALLOW_USE") == null)
-            throw new UnsupportedOperationException("Use not allowed");
-    }
 }

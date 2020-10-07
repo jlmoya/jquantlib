@@ -1,0 +1,51 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>jquantlib-helpers</artifactId>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>1.8</java.version>
+		<mavencompiler.version>3.6.0</mavencompiler.version>
+		<slf4j.version>1.7.21</slf4j.version>
+		<junit.version>4.12</junit.version>
+	</properties>
+
+	<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+	<dependencies>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${junit.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jquantlib</groupId>
+			<artifactId>jquantlib</artifactId>
+			<version>0.3.0</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<sourceDirectory>src/main/java</sourceDirectory>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${mavencompiler.version}</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<parent>
+	    <groupId>org.jquantlib</groupId>
+	    <artifactId>jquantlib-parent</artifactId>
+	    <version>0.3.0</version>
+	    <relativePath>../jquantlib-parent</relativePath>
+	</parent>
+</project>

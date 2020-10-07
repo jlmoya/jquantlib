@@ -77,6 +77,19 @@ public class America {
     };
 
     /**
+     * Costa Rican Colon The ISO three-letter code is CRC; the numeric code is
+     * 188. It is divided in 100 cents.
+     * 
+     * @category currencies
+     */
+    public static class CRCCurrency extends Currency {
+        public CRCCurrency() {
+            Data crcData = new Data("Costa Rican colon", "CRC", 188, "₡", "", 100, new Rounding(), "%3% %1$.2f");
+            data = crcData;
+        }
+    };
+
+    /**
      * Chilean peso The ISO three-letter code is CLP; the numeric code is 152. It is divided in 100 centavos.
      * 
      * @category currencies
@@ -190,4 +203,16 @@ public class America {
         }
     };
 
+    /**
+     * Development Units The ISO three-letter code is XUD; the numeric code is
+     * 989. It is divided in 10000 cents.
+     * 
+     * @category currencies
+     */
+    public static class XUDCurrency extends Currency {
+        public XUDCurrency() {
+            Data xudData = new Data("Development Unit", "XUD", 989, "UDES", "", 10000, new Rounding(), "%3% %1$.4f");
+            data = xudData;
+        }
+    };
 }

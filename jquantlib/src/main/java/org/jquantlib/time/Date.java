@@ -1110,7 +1110,7 @@ public class Date implements Observable, Comparable<Date>, Serializable, Cloneab
 		private static final long serialVersionUID = 4824909887446169897L;
 
 		private ISODate() {
-            super((serialNumber-25569)*86400000L);
+            super((serialNumber-25568)*86400000L);
         }
 
         @Override
