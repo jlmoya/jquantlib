@@ -19,6 +19,7 @@ target
 **/tmp
 **/.idea
 **/.web_bundle_build
+**/.dbeaver
 .classpath_nb
 .ensime
 .ensime_lucene
