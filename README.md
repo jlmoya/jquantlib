@@ -1,3 +1,5 @@
+# JQuantLib
+
 JQuantLib is a free, open-source, comprehensive framework for
 quantitative finance, written in 100% Java. It provides "quants" and
 Java application developers several mathematical and statistical tools
@@ -28,7 +30,7 @@ On a Unix-like console
 
     # run demo number 9 (EquityOptions)
     cd jquantlib-parent
-    mvn clean verify install     # or simply `sbt clean samples/run` if you have SBT installed
+    mvn clean verify install
 
 For impatient developers
 ========================
