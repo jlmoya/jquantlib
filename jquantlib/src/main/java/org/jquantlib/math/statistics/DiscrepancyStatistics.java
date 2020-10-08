@@ -98,14 +98,17 @@ public class DiscrepancyStatistics extends SequenceStatistics {
 		return Math.sqrt(adiscr_/(N*N)-bdiscr_/N*cdiscr_+ddiscr_);
 	}
 
+	@Override
 	public void add(final double[] datum) {
 		add(datum, 1.0);
 	}
 
+    @Override
 	public void add(final Array datum) {
 		add(datum, 1.0);
 	}
 
+    @Override
 	public void add(final double[] datum, final /*@Real*/ double weight) {
 		super.add(datum, weight);
 
@@ -149,6 +152,7 @@ public class DiscrepancyStatistics extends SequenceStatistics {
 		adiscr_ += temp;
 	}
 
+	@Override
 	public void add(final Array datum, final /*@Real*/ double weight) {
 		super.add(datum, weight);
 
@@ -156,7 +160,7 @@ public class DiscrepancyStatistics extends SequenceStatistics {
 		/*@Real*/ double r_ik, r_jk, temp = 1.0;
 
 		for (k=0; k<dimension_; k++) {
-			r_ik = datum.$[datum._(k)]; // i=N
+			r_ik = datum.$[datum.cell(k)]; // i=N
 			temp *= (1.0 - r_ik*r_ik);
 		}
 		cdiscr_ += temp;
@@ -168,7 +172,7 @@ public class DiscrepancyStatistics extends SequenceStatistics {
 				// running i=1..(N-1)
 				r_ik = stats[k].data().get(m).first();
 				// fixed j=N
-				r_jk = datum.$[datum._(k)];
+				r_jk = datum.$[datum.cell(k)];
 				temp *= (1.0 - Math.max(r_ik, r_jk));
 			}
 			adiscr_ += temp;
@@ -176,7 +180,7 @@ public class DiscrepancyStatistics extends SequenceStatistics {
 			temp = 1.0;
 			for (k=0; k<dimension_; k++) {
 				// fixed i=N
-				r_ik = datum.$[datum._(k)];
+				r_ik = datum.$[datum.cell(k)];
 				// running j=1..(N-1)
 				r_jk = stats[k].data().get(m).first();
 				temp *= (1.0 - Math.max(r_ik, r_jk));
@@ -186,16 +190,18 @@ public class DiscrepancyStatistics extends SequenceStatistics {
 		temp = 1.0;
 		for (k=0; k<dimension_; k++) {
 			// fixed i=N, j=N
-			r_ik = r_jk = datum.$[datum._(k)];
+			r_ik = r_jk = datum.$[datum.cell(k)];
 			temp *= (1.0 - Math.max(r_ik, r_jk));
 		}
 		adiscr_ += temp;
 	}
 
+    @Override
 	public void reset() {
 		reset(0);
 	}
 	
+    @Override
 	public void reset(/*@Size*/ int dimension) {
 		if (dimension == 0)		   // if no size given,
 			dimension = dimension_;   // keep the current one

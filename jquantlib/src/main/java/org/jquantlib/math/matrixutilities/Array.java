@@ -237,6 +237,8 @@ public class Array extends Cells<Address.ArrayAddress> implements Cloneable, Ite
     //
 
     /**
+     * @deprecated
+     * 
      * This is a convenience method intended to return the physical address of an element.
      * <p>
      * <b>The use of this method is highly discouraged</b>
@@ -248,7 +250,7 @@ public class Array extends Cells<Address.ArrayAddress> implements Cloneable, Ite
      * @return the physical address to an element
      */
     @Deprecated
-    public int _(final int index) {
+    public int cell(final int index) {
         return addr.op(index);
     }
 
@@ -261,11 +263,11 @@ public class Array extends Cells<Address.ArrayAddress> implements Cloneable, Ite
     }
 
     public double first() {
-        return $[_(addr.isFortran() ? 1 : 0)];
+        return $[cell(addr.isFortran() ? 1 : 0)];
     }
 
     public double last() {
-        return $[_(end() - 1)];
+        return $[cell(end() - 1)];
     }
 
     /**
@@ -634,7 +636,7 @@ public class Array extends Cells<Address.ArrayAddress> implements Cloneable, Ite
         final Address.ArrayAddress.ArrayOffset src = this.addr.offset();
         final int offset = addr.isFortran() ? 1 : 0;
         for (int i=offset; i<this.size()+offset; i++) {
-            result.$[result._(i)] = Math.abs($[src.op()]);
+            result.$[result.cell(i)] = Math.abs($[src.op()]);
             src.nextIndex();
         }
         return result;
@@ -800,11 +802,11 @@ public class Array extends Cells<Address.ArrayAddress> implements Cloneable, Ite
         // obtain first element and advance pointer
         double prev = this.$[toff.op()]; toff.nextIndex();
         // fill in first difference
-        diff.$[diff._(offset)] = prev;
+        diff.$[diff.cell(offset)] = prev;
         // fill in remaining differences
         for (int i=1+offset; i<to-from+offset; i++) {
             final double curr = this.$[toff.op()]; toff.nextIndex();
-            diff.$[diff._(i)] = curr - prev;
+            diff.$[diff.cell(i)] = curr - prev;
             prev = curr;
         }
         return diff;
@@ -825,11 +827,11 @@ public class Array extends Cells<Address.ArrayAddress> implements Cloneable, Ite
         // obtain first element and advance pointer
         double prev = this.$[toff.op()]; toff.nextIndex();
         // fill in first difference
-        diff.$[diff._(offset)] = prev;
+        diff.$[diff.cell(offset)] = prev;
         // fill in remaining differences
         for (int i=1+offset; i<to-from+offset; i++) {
             final double curr = this.$[toff.op()]; toff.nextIndex();
-            diff.$[diff._(i)] = f.op(curr, prev);
+            diff.$[diff.cell(i)] = f.op(curr, prev);
             prev = curr;
         }
         return diff;
@@ -846,7 +848,7 @@ public class Array extends Cells<Address.ArrayAddress> implements Cloneable, Ite
         final int offset = addr.isFortran() ? 1 : 0;
         QL.require(from >= offset && to >= from && to <= this.size()+offset && f!=null, INVALID_ARGUMENTS); // QA:[RG]::verified
         for (int i=from; i<to; i++) {
-            final int idx = this._(i);
+            final int idx = this.cell(i);
             this.$[idx] = f.op(this.$[idx]);
         }
         return this;

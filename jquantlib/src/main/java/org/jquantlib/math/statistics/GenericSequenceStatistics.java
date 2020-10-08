@@ -121,18 +121,18 @@ public class GenericSequenceStatistics {
 		for (/*@Size*/ int i=0; i<dimension_; i++){
 			for (/*@Size*/ int j=0; j<dimension_; j++){
 				if (i==j) {
-					if (v.$[v._(i)]==0.0) {
-						corr.$[corr._(i,j)] = 1.0;
+					if (v.$[v.cell(i)]==0.0) {
+						corr.$[corr.cell(i,j)] = 1.0;
 					} else {
-						corr.$[corr._(i,j)] *= 1.0/Math.sqrt(v.$[v._(i)] * v.$[v._(j)]);
+						corr.$[corr.cell(i,j)] *= 1.0/Math.sqrt(v.$[v.cell(i)] * v.$[v.cell(j)]);
 					}
 				} else {
-					if (v.$[v._(i)]==0.0 && v.$[v._(j)]==0) {
-						corr.$[corr._(i,j)] = 1.0;
-					} else if (v.$[v._(i)]==0.0 || v.$[v._(j)]==0.0) {
-						corr.$[corr._(i,j)] = 0.0;
+					if (v.$[v.cell(i)]==0.0 && v.$[v.cell(j)]==0) {
+						corr.$[corr.cell(i,j)] = 1.0;
+					} else if (v.$[v.cell(i)]==0.0 || v.$[v.cell(j)]==0.0) {
+						corr.$[corr.cell(i,j)] = 0.0;
 					} else {
-						corr.$[corr._(i,j)] *= 1.0/Math.sqrt(v.$[v._(i)]*v.$[v._(j)]);
+						corr.$[corr.cell(i,j)] *= 1.0/Math.sqrt(v.$[v.cell(i)]*v.$[v.cell(j)]);
 					}
 				}
 			} // j for
@@ -390,7 +390,7 @@ public class GenericSequenceStatistics {
 		QL.require(datum.size() == dimension_, SAMPLE_SIZE_MISMATCH);
 		quadraticSum.addAssign(datum.outerProduct(datum).mulAssign(weight));
 		for (/* @Size */int i = 0; i < dimension_; i++) {
-			stats[i].add(datum.$[datum._(i)], weight);
+			stats[i].add(datum.$[datum.cell(i)], weight);
 		}
 	}
 

@@ -289,6 +289,8 @@ public class Matrix extends Cells<Address.MatrixAddress> implements Cloneable {
     //
 
     /**
+     * @deprecated
+     * 
      * This is a convenience method intended to return the physical address of an element.
      * <p>
      * <b>The use of this method is highly discouraged</b>
@@ -300,7 +302,7 @@ public class Matrix extends Cells<Address.MatrixAddress> implements Cloneable {
      * @return the physical address to an element
      */
     @Deprecated
-    public int _(final int row, final int col) {
+    public int cell(final int row, final int col) {
         return addr.op(row, col);
     }
 
@@ -625,7 +627,7 @@ public class Matrix extends Cells<Address.MatrixAddress> implements Cloneable {
                 toff.nextCol();
                 aoff.nextIndex();
             }
-            result.$[result._(row)] = sum;
+            result.$[result.cell(row)] = sum;
         }
         return result;
     }

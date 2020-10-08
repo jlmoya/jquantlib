@@ -90,7 +90,7 @@ public abstract class Cells<T extends Address> implements Cloneable {
      * If you cannot avoid access to the underlying data, please remember that it can be non-contiguous, chained or mapped, which
      * means that:
      * <li>you'd better obtain a reference to this internal data structure via method {@link Cells#data()} instead;</li>
-     * <li>you must be sure to use methods {@link Array#_(int)} and {@link Matrix#_(int, int)} in order to guarantee you calculate
+     * <li>you must be sure to use methods {@link Array#cell(int)} and {@link Matrix#cell(int, int)} in order to guarantee you calculate
      * properly addresses of elements in the underlying data structure.</li>
      * <p>
      * This internal data structure is exposed for <b>convenience purposes only</b>, given the fact that algorithms in general
@@ -110,8 +110,8 @@ public abstract class Cells<T extends Address> implements Cloneable {
      * elements of arrays and matrices, converting things like <code>a[i]</code> to <code>a.$[a._(i)]</code> in case of arrays
      * and things like <code>m[i][j]</code> to <code>m.$[m._(i,j)]</code> in case of matrices.
      *
-     * @see Array#_(int)
-     * @see Matrix#_(int, int)
+     * @see Array#cell(int)
+     * @see Matrix#cell(int, int)
      */
     @Deprecated
     public double[] $;
