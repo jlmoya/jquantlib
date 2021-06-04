@@ -406,7 +406,7 @@ public class Bond extends Instrument {
                 dirtyPrice(),
                 dc, comp, freq,
                 settlementDate());
-        return solver.solve(objective, accuracy, 0.02, 0.0, 1.0);
+        return solver.solve(objective, accuracy, 0.02, -0.1, 1.0);
     }
 
     public/* @Rate */double yield(final DayCounter dc, 

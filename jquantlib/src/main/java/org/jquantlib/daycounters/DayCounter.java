@@ -118,7 +118,7 @@ public class DayCounter {
      * @return the period between two dates as a fraction of year
      */
     public /*@Time*/ double yearFraction(final Date dateStart, final Date dateEnd) /* @ReadOnly */ {
-        return yearFraction(dateStart, dateEnd, null, null);
+        return yearFraction(dateStart, dateEnd, new Date(), new Date());
     }
 
 
