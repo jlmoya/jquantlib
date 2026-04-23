@@ -25,6 +25,12 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20231013</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
