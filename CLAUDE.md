@@ -14,7 +14,7 @@ Nothing in this file overrides the design doc. When this file and the design doc
 
 **C++ QuantLib v1.42.1 is source of truth.** The existing Java code is starting material, not a design to preserve. Where Java diverges from v1.42.1 (signatures, implementations, constants, behavior), Java updates to match C++.
 
-Pin: `v1.42.1` @ `41b0e1460f3e4991087917707ca29a9125e200db` (2026-04-13).
+Pin: `v1.42.1` @ `099987f0ca2c11c505dc4348cdb9ce01a598e1e5` (2026-04-16).
 
 ## Current state
 

@@ -19,7 +19,7 @@ Phase 2 (filling gaps beyond the current Java tree — `experimental/`, `marketm
 ### 1.1 The two codebases
 
 - **JQuantLib (Java)** — `/Users/josemoya/eclipse-workspace/jquantlib/jquantlib` — 717 `.java` source files across 61 packages under `org.jquantlib.*`, built with Maven, Java 11 target, JUnit 4 tests, last substantive commit 2021-06-03.
-- **QuantLib (C++)** — `/Users/josemoya/Projects/GitProjects/QuantLib` — 2,379 source files (1,422 headers + 957 .cpp), ~433K lines of code across 87 directories, `master` currently at 1.43-dev. This project pins to tag **`v1.42.1`** (commit `41b0e1460f3e4991087917707ca29a9125e200db`, dated 2026-04-13).
+- **QuantLib (C++)** — `/Users/josemoya/Projects/GitProjects/QuantLib` — 2,379 source files (1,422 headers + 957 .cpp), ~433K lines of code across 87 directories, `master` currently at 1.43-dev. This project pins to tag **`v1.42.1`** (commit `099987f0ca2c11c505dc4348cdb9ce01a598e1e5`, dated 2026-04-16).
 
 ### 1.2 The problem
 
@@ -281,7 +281,7 @@ Probes are hand-authored, not generated. Each probe is reviewed in the same comm
 {
   "test_group": "math/bisection",
   "cpp_version": "v1.42.1",
-  "cpp_commit": "41b0e1460f3e4991087917707ca29a9125e200db",
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "generated_at": "2026-04-22T14:30:00Z",
   "generated_by": "bisection_probe",
   "cases": [
@@ -604,7 +604,7 @@ Where an existing Java convention is itself wrong relative to v1.42.1, reconcili
 ## Appendix B — Reference links
 
 - Upstream QuantLib: https://github.com/lballabio/QuantLib
-- Pinned tag: `v1.42.1` @ `41b0e1460f3e4991087917707ca29a9125e200db`
+- Pinned tag: `v1.42.1` @ `099987f0ca2c11c505dc4348cdb9ce01a598e1e5`
 - Local C++ clone: `/Users/josemoya/Projects/GitProjects/QuantLib`
 - Original JQuantLib site: http://www.jquantlib.org/
 - Superpowers skills used: `brainstorming`, `writing-plans` (next), `test-driven-development` (implementation), `verification-before-completion`, `executing-plans`.

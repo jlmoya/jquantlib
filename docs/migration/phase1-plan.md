@@ -178,7 +178,7 @@ cd ../../..
 git submodule status
 ```
 
-Expected: submodule entry shows `v1.42.1` with SHA `41b0e1460f3e4991087917707ca29a9125e200db`.
+Expected: submodule entry shows `v1.42.1` with SHA `099987f0ca2c11c505dc4348cdb9ce01a598e1e5`.
 
 - [ ] **Step 3: Write `migration-harness/README.md`.**
 
@@ -350,7 +350,7 @@ Expected: new files/dirs under `migration-harness/`, `.gitmodules`, `.gitignore`
 ```bash
 git add migration-harness/ .gitmodules .gitignore
 git -c commit.gpgsign=false commit -s -m "infra(harness): add migration-harness scaffold with QuantLib submodule at v1.42.1" -m "Scaffolds migration-harness/ with setup/generate/verify scripts and pins
-QuantLib C++ to v1.42.1 (SHA 41b0e1460f3e4991087917707ca29a9125e200db) as a
+QuantLib C++ to v1.42.1 (SHA 099987f0ca2c11c505dc4348cdb9ce01a598e1e5) as a
 submodule. No probes yet — those land in a subsequent commit. Implements
 design §5.1-5.2."
 git log -1 --stat | head -20
@@ -511,7 +511,7 @@ public:
         json doc = {
             {"test_group", test_group_},
             {"cpp_version", cpp_version_},
-            {"cpp_commit", "41b0e1460f3e4991087917707ca29a9125e200db"},
+            {"cpp_commit", "099987f0ca2c11c505dc4348cdb9ce01a598e1e5"},
             {"generated_at", utcNow()},
             {"generated_by", generated_by_},
             {"cases", cases_}
@@ -2059,4 +2059,4 @@ Report Phase 1 is complete, summarize the completion report, and ask whether to 
 
 ---
 
-*Plan produced 2026-04-22, based on `docs/migration/phase1-design.md` (commit `147614f`). Pinned against QuantLib C++ v1.42.1 @ `41b0e1460f3e4991087917707ca29a9125e200db`.*
+*Plan produced 2026-04-22, based on `docs/migration/phase1-design.md` (commit `147614f`). Pinned against QuantLib C++ v1.42.1 @ `099987f0ca2c11c505dc4348cdb9ce01a598e1e5`.*
