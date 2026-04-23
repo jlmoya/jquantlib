@@ -19,10 +19,26 @@ public class ToleranceTest {
 
     @Test
     public void tightUsesAbsoluteNearZero() {
-        // Reference is below 1e-2 threshold, so 1e-14 absolute applies.
+        // Additive hybrid: at cppValue=0, budget = TIGHT_ABS + 0 = 1e-14.
         assertTrue(Tolerance.tight(1e-15, 0.0));
         assertTrue(Tolerance.tight(1e-20 + 1e-15, 1e-20));
         assertFalse(Tolerance.tight(1e-12, 0.0));
+    }
+
+    @Test
+    public void tightIsContinuousAcrossRegimeTransition() {
+        // The old step-function implementation had a threshold at 1e-2;
+        // the hybrid form is continuous. At cppValue = 1e-2, budget is
+        // TIGHT_ABS + TIGHT_REL * 1e-2 = 1e-14 + 1e-14 = 2e-14.
+        // Just below and just above should behave the same way.
+        final double belowHinge = 9.9e-3;
+        final double aboveHinge = 1.1e-2;
+        // Both pass at 1e-15 diff.
+        assertTrue(Tolerance.tight(belowHinge + 1e-15, belowHinge));
+        assertTrue(Tolerance.tight(aboveHinge + 1e-15, aboveHinge));
+        // Both fail at 1e-13 diff.
+        assertFalse(Tolerance.tight(belowHinge + 1e-13, belowHinge));
+        assertFalse(Tolerance.tight(aboveHinge + 1e-13, aboveHinge));
     }
 
     @Test

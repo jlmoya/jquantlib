@@ -1115,9 +1115,9 @@ package org.jquantlib.testsuite.util;
 public final class Tolerance {
 
     public static final double TIGHT_REL = 1.0e-12;
-    public static final double TIGHT_ABS_NEAR_ZERO = 1.0e-14;
-    public static final double TIGHT_NEAR_ZERO_THRESHOLD = 1.0e-2;
+    public static final double TIGHT_ABS = 1.0e-14;
     public static final double LOOSE_REL = 1.0e-8;
+    public static final double LOOSE_ABS = 1.0e-8;
 
     private Tolerance() {}
 
@@ -1131,37 +1131,30 @@ public final class Tolerance {
         return Double.compare(javaValue, cppValue) == 0;
     }
 
-    /** Tight tier: 1e-12 relative, 1e-14 absolute when reference near zero. */
+    /** Tight tier: absolute 1e-14 + relative 1e-12 (hybrid). */
     public static boolean tight(double javaValue, double cppValue) {
-        final double absRef = Math.abs(cppValue);
-        if (absRef < TIGHT_NEAR_ZERO_THRESHOLD) {
-            return Math.abs(javaValue - cppValue) < TIGHT_ABS_NEAR_ZERO;
-        }
-        return Math.abs(javaValue - cppValue) / absRef < TIGHT_REL;
+        return Math.abs(javaValue - cppValue)
+                < TIGHT_ABS + TIGHT_REL * Math.abs(cppValue);
     }
 
-    /** Loose tier: 1e-8 relative (with absolute fallback at the same level). */
+    /** Loose tier: absolute 1e-8 + relative 1e-8 (hybrid). */
     public static boolean loose(double javaValue, double cppValue) {
-        final double absRef = Math.abs(cppValue);
-        if (absRef < LOOSE_REL) {
-            return Math.abs(javaValue - cppValue) < LOOSE_REL;
-        }
-        return Math.abs(javaValue - cppValue) / absRef < LOOSE_REL;
+        return Math.abs(javaValue - cppValue)
+                < LOOSE_ABS + LOOSE_REL * Math.abs(cppValue);
     }
 
     /**
      * Per-test tier loosening — use when an algorithm's inherent error
-     * forces a tolerance weaker than {@link #loose}. The justification string
-     * is not enforced at runtime; it exists to remind test authors that
-     * looser tolerances require an inline explanation.
+     * forces a tolerance weaker than {@link #loose}. Uses the same additive
+     * hybrid form {@code |a - b| < tol + tol * |cpp|}.
+     *
+     * <p>The {@code justification} string is not enforced at runtime; it
+     * exists to remind test authors that looser tolerances require an
+     * inline explanation.
      */
     public static boolean within(double javaValue, double cppValue,
-                                 double relTol, String justification) {
-        final double absRef = Math.abs(cppValue);
-        if (absRef < relTol) {
-            return Math.abs(javaValue - cppValue) < relTol;
-        }
-        return Math.abs(javaValue - cppValue) / absRef < relTol;
+                                 double tol, String justification) {
+        return Math.abs(javaValue - cppValue) < tol + tol * Math.abs(cppValue);
     }
 }
 ```
@@ -1282,9 +1275,14 @@ public final class ReferenceReader {
         try {
             text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new AssertionError("cannot read reference file: " + file, e);
+            throw new IllegalStateException("cannot read reference file: " + file, e);
         }
-        final JSONObject doc = new JSONObject(text);
+        final JSONObject doc;
+        try {
+            doc = new JSONObject(text);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("malformed JSON in reference file: " + file, e);
+        }
         final String actualGroup = doc.getString("test_group");
         if (!Objects.equals(actualGroup, testGroup)) {
             throw new AssertionError("test_group mismatch in " + file
@@ -1314,7 +1312,7 @@ public final class ReferenceReader {
     public String generatedBy() { return generatedBy; }
 
     public List<String> caseNames() {
-        return Collections.unmodifiableList(new java.util.ArrayList<>(casesByName.keySet()));
+        return List.copyOf(casesByName.keySet());
     }
 
     public Case getCase(String name) {
@@ -1341,7 +1339,14 @@ public final class ReferenceReader {
         public String name() { return name; }
         public JSONObject inputs() { return inputs; }
 
-        public double expectedDouble() { return ((Number) expected).doubleValue(); }
+        public double expectedDouble() {
+            if (expected instanceof String) {
+                // nlohmann/json emits NaN, Infinity, -Infinity as JSON strings
+                // because JSON has no native representation for them.
+                return Double.parseDouble((String) expected);
+            }
+            return ((Number) expected).doubleValue();
+        }
         public long expectedLong() { return ((Number) expected).longValue(); }
         public String expectedString() { return (String) expected; }
         public JSONArray expectedArray() { return (JSONArray) expected; }
@@ -1357,7 +1362,7 @@ public final class ReferenceReader {
             }
             p = p.getParent();
         }
-        throw new AssertionError("could not locate migration-harness/ above cwd="
+        throw new IllegalStateException("could not locate migration-harness/ above cwd="
                 + Paths.get("").toAbsolutePath());
     }
 }

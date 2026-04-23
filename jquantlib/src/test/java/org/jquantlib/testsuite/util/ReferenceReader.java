@@ -1,3 +1,4 @@
+// jquantlib/src/test/java/org/jquantlib/testsuite/util/ReferenceReader.java
 package org.jquantlib.testsuite.util;
 
 import java.io.IOException;
@@ -5,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +23,12 @@ import org.json.JSONObject;
  * directory by walking up from the current working directory until it finds
  * a directory that contains a {@code migration-harness} child. Maven runs
  * tests from {@code jquantlib/} so the walk is needed.
+ *
+ * <p>Failure modes distinguish infrastructure errors (missing file, malformed
+ * JSON, wrong working directory — {@link IllegalStateException}) from
+ * schema violations (reference points to a different test_group than
+ * requested — {@link AssertionError}). This lets CI distinguish test logic
+ * failures from harness-setup failures.
  */
 public final class ReferenceReader {
 
@@ -49,9 +55,14 @@ public final class ReferenceReader {
         try {
             text = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new AssertionError("cannot read reference file: " + file, e);
+            throw new IllegalStateException("cannot read reference file: " + file, e);
         }
-        final JSONObject doc = new JSONObject(text);
+        final JSONObject doc;
+        try {
+            doc = new JSONObject(text);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("malformed JSON in reference file: " + file, e);
+        }
         final String actualGroup = doc.getString("test_group");
         if (!Objects.equals(actualGroup, testGroup)) {
             throw new AssertionError("test_group mismatch in " + file
@@ -81,7 +92,7 @@ public final class ReferenceReader {
     public String generatedBy() { return generatedBy; }
 
     public List<String> caseNames() {
-        return Collections.unmodifiableList(new java.util.ArrayList<>(casesByName.keySet()));
+        return List.copyOf(casesByName.keySet());
     }
 
     public Case getCase(String name) {
@@ -106,9 +117,25 @@ public final class ReferenceReader {
         }
 
         public String name() { return name; }
+
+        /** Returns inputs as a JSONObject. DO NOT mutate — shared reference. */
         public JSONObject inputs() { return inputs; }
 
-        public double expectedDouble() { return ((Number) expected).doubleValue(); }
+        /**
+         * Returns the expected value as a double. Handles the edge case of
+         * {@code expected} being a JSON string (e.g. "NaN", "Infinity", "-Infinity",
+         * which nlohmann/json emits as strings because JSON lacks native
+         * representations of those values).
+         */
+        public double expectedDouble() {
+            if (expected instanceof String) {
+                // nlohmann/json emits NaN, Infinity, -Infinity as JSON strings
+                // because JSON has no native representation for them.
+                return Double.parseDouble((String) expected);
+            }
+            return ((Number) expected).doubleValue();
+        }
+
         public long expectedLong() { return ((Number) expected).longValue(); }
         public String expectedString() { return (String) expected; }
         public JSONArray expectedArray() { return (JSONArray) expected; }
@@ -124,7 +151,7 @@ public final class ReferenceReader {
             }
             p = p.getParent();
         }
-        throw new AssertionError("could not locate migration-harness/ above cwd="
+        throw new IllegalStateException("could not locate migration-harness/ above cwd="
                 + Paths.get("").toAbsolutePath());
     }
 }
