@@ -11,6 +11,9 @@ set(QL_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(QL_BUILD_TEST_SUITE OFF CACHE BOOL "" FORCE)
 set(QL_BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
 add_subdirectory(quantlib EXCLUDE_FROM_ALL)
+# Alias the internal ql_library target to the namespaced form used by probes.
+# add_subdirectory does not export QuantLib::QuantLib into parent scope; this does.
+add_library(QuantLib::QuantLib ALIAS ql_library)
 
 # --- Probes ---
 # Each probe is a self-contained .cpp under probes/ (may be nested in subdirs).

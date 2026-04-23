@@ -24,14 +24,11 @@ cp -R references "$tmp/committed"
 # Regenerate in place
 ./generate-references.sh
 
-# Diff — ignore generated_at timestamp field
-diff_output=$(diff -r "$tmp/committed" references || true)
-# Strip lines that differ only because of timestamps
-filtered=$(echo "$diff_output" | grep -vE '"generated_at"' || true)
-
-if [[ -n "$filtered" ]]; then
+# Diff — ignore lines containing the generated_at timestamp field.
+# diff -I pattern ignores hunks where all changed lines match the pattern,
+# which is exactly what we want: a run that only changes generated_at is clean.
+if ! diff -r -I '"generated_at"' "$tmp/committed" references; then
   echo "=== FAIL: references drifted beyond timestamp ==="
-  echo "$filtered" | head -40
   exit 1
 fi
 
