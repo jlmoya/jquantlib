@@ -67,7 +67,7 @@ We need a known-green baseline so any regression during Phase 1 is unambiguously
 
 ```bash
 cd /Users/josemoya/eclipse-workspace/jquantlib
-mvn -pl jquantlib test 2>&1 | tail -40
+(cd jquantlib && mvn test) 2>&1 | tail -40
 ```
 
 Expected: `BUILD SUCCESS`, tests pass. Note the count of tests run.
@@ -1343,7 +1343,7 @@ public class ReferenceReaderTest {
 
 ```bash
 cd /Users/josemoya/eclipse-workspace/jquantlib
-mvn -pl jquantlib -Dtest='ToleranceTest,ReferenceReaderTest' test 2>&1 | tail -20
+(cd jquantlib && mvn -Dtest='ToleranceTest,ReferenceReaderTest' test) 2>&1 | tail -20
 ```
 
 Expected: both tests green.
@@ -1351,7 +1351,7 @@ Expected: both tests green.
 - [ ] **Step 9: Run the full test suite to confirm no regressions.**
 
 ```bash
-mvn -pl jquantlib test 2>&1 | tail -10
+(cd jquantlib && mvn test) 2>&1 | tail -10
 ```
 
 Expected: same or greater test count than baseline from Task 0.3, no failures.
@@ -1377,7 +1377,7 @@ After Task 6 commits, the following is in place on `migration/phase1-finish-stub
 - `migration-harness/` with pinned QuantLib, CMake build, writer helper, smoke-test probe, and a verified deterministic reference.
 - `tools/stub-scanner/scan_stubs.py` with a generated `stub-inventory.json` and `worklist.md`.
 - `org.jquantlib.testsuite.util.Tolerance` and `ReferenceReader` (tested).
-- All passing `mvn -pl jquantlib test`.
+- All passing `(cd jquantlib && mvn test)`.
 
 Next: merge Layer 0 *prep* to `main`. Since bootstrap produces no stub resolutions, this merge is really "layer negative-one" — infrastructure. I propose we merge these 6 bootstrap commits to `main` before starting Task 7 (Observable/Handle audit), so the subsequent audit work has a clean base to rebase onto when Layer 0 completes. Per design §6.5:
 
@@ -1673,7 +1673,7 @@ public class HandleBehaviorTest {
 
 ```bash
 cd /Users/josemoya/eclipse-workspace/jquantlib
-mvn -pl jquantlib -Dtest='ObservableBehaviorTest,HandleBehaviorTest' test 2>&1 | tail -30
+(cd jquantlib && mvn -Dtest='ObservableBehaviorTest,HandleBehaviorTest' test) 2>&1 | tail -30
 ```
 
 - [ ] **Step 9: Triage the result.**
@@ -1694,7 +1694,7 @@ Record every alignment made to `docs/migration/followups.md` — not because the
 - [ ] **Step 10: If alignments were needed, run the full test suite to confirm no regressions anywhere else.**
 
 ```bash
-mvn -pl jquantlib test 2>&1 | tail -10
+(cd jquantlib && mvn test) 2>&1 | tail -10
 ```
 
 Any pre-existing test that started failing indicates we broke something. Investigate and fix before proceeding.
@@ -1775,7 +1775,7 @@ Mirrors the C++ probe's cases. Uses `ReferenceReader` + `Tolerance`. Follow exis
 cd /Users/josemoya/eclipse-workspace/jquantlib
 cmake --build migration-harness/cpp/build -j
 ./migration-harness/cpp/build/probes/<probe-name>
-mvn -pl jquantlib -Dtest='<TestClassName>' test 2>&1 | tail -20
+(cd jquantlib && mvn -Dtest='<TestClassName>' test) 2>&1 | tail -20
 ```
 
 Expected: test fails — either compile error (stub throws), `UnsupportedOperationException`, or wrong value.
@@ -1791,7 +1791,7 @@ Do not add features beyond C++. Do not simplify unless provably equivalent.
 - [ ] **Step 6: Run the single test. Confirm GREEN.**
 
 ```bash
-mvn -pl jquantlib -Dtest='<TestClassName>' test 2>&1 | tail -10
+(cd jquantlib && mvn -Dtest='<TestClassName>' test) 2>&1 | tail -10
 ```
 
 If still failing: **do not loosen tolerance**. Investigate: is the port algorithm-faithful? Are all branches handled? Does the harness probe compute what the test asserts?
@@ -1799,7 +1799,7 @@ If still failing: **do not loosen tolerance**. Investigate: is the port algorith
 - [ ] **Step 7: Run full test suite.**
 
 ```bash
-mvn -pl jquantlib test 2>&1 | tail -10
+(cd jquantlib && mvn test) 2>&1 | tail -10
 ```
 
 Expected: all green, no regressions in pre-existing tests.
@@ -1887,7 +1887,7 @@ Expected: no stubs remaining in the layer's packages.
 - [ ] **Step 2: Clean test from fresh state.**
 
 ```bash
-mvn -pl jquantlib clean test 2>&1 | tail -10
+(cd jquantlib && mvn clean test) 2>&1 | tail -10
 ```
 
 Expected: all green from a clean start (no cached state masking an issue).
@@ -1950,7 +1950,7 @@ Expected: `[]` and "0 stubs" counts across all kinds.
 - [ ] **Step 2: Full clean test from fresh checkout.**
 
 ```bash
-mvn -pl jquantlib clean test 2>&1 | tail -10
+(cd jquantlib && mvn clean test) 2>&1 | tail -10
 ```
 
 All green. Note the total test count — it should far exceed the pre-Phase-1 baseline.
