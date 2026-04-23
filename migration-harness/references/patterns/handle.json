@@ -1,0 +1,27 @@
+{
+  "cases": [
+    {
+      "expected": 1.23,
+      "inputs": {
+        "initialValue": 1.23
+      },
+      "name": "basicValue"
+    },
+    {
+      "expected": [
+        1.0,
+        2.0
+      ],
+      "inputs": {
+        "v1": 1.0,
+        "v2": 2.0
+      },
+      "name": "relinkChangesValue"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-23T15:17:48Z",
+  "generated_by": "handle_probe",
+  "test_group": "patterns/handle"
+}
