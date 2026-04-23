@@ -24,3 +24,7 @@ target
 .ensime
 .ensime_lucene
 .DS_Store
+
+# Migration harness C++ build artifacts
+migration-harness/cpp/build/
+migration-harness/cpp/build-*/
