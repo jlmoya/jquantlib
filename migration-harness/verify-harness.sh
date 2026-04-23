@@ -7,7 +7,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
+# Restore references/ from the snapshot on ANY exit path — clean, error,
+# or mid-run abort under `set -e`. The snapshot may not exist yet (if we
+# haven't reached the snapshot step), so guard the restore.
+trap '
+  if [[ -d "$tmp/committed" ]]; then
+    rm -rf references
+    cp -R "$tmp/committed" references
+  fi
+  rm -rf "$tmp"
+' EXIT
 
 # Save current references
 cp -R references "$tmp/committed"
@@ -19,12 +28,6 @@ cp -R references "$tmp/committed"
 diff_output=$(diff -r "$tmp/committed" references || true)
 # Strip lines that differ only because of timestamps
 filtered=$(echo "$diff_output" | grep -vE '"generated_at"' || true)
-
-# Hard restore: delete the (possibly dirty) references dir and copy the
-# snapshot back. `cp -Rf` alone would not remove files that a buggy or
-# non-deterministic probe created during the regeneration run.
-rm -rf references
-cp -R "$tmp/committed" references
 
 if [[ -n "$filtered" ]]; then
   echo "=== FAIL: references drifted beyond timestamp ==="
