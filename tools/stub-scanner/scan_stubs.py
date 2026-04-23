@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""Scan JQuantLib for open stubs. Emits docs/migration/stub-inventory.json
+and docs/migration/worklist.md in the schema defined by
+docs/migration/phase1-design.md §3.2 and §3.4.
+
+Not a full Java AST parser — uses line-based heuristics tailored to the five
+specific stub patterns in design §2.3. Fragile if the codebase departs from
+its current style; re-check the match logic if the Java tree is refactored.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import sys
+from collections import defaultdict
+from dataclasses import dataclass, field, asdict
+from pathlib import Path
+from typing import Iterable
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+JAVA_ROOT = REPO_ROOT / "jquantlib" / "src" / "main" / "java" / "org" / "jquantlib"
+INVENTORY_PATH = REPO_ROOT / "docs" / "migration" / "stub-inventory.json"
+WORKLIST_PATH = REPO_ROOT / "docs" / "migration" / "worklist.md"
+
+# --- patterns --------------------------------------------------------------
+
+WORK_IN_PROGRESS = re.compile(
+    r'throw\s+new\s+UnsupportedOperationException\s*\(\s*"Work in progress"'
+)
+NOT_IMPLEMENTED = re.compile(
+    r'throw\s+new\s+(LibraryException|UnsupportedOperationException)\s*\(\s*"(not implemented|not yet implemented)"'
+)
+NUMERICAL_SUSPECT = re.compile(
+    r'TODO:\s*code review\s*::\s*please verify against QL/C\+\+ code'
+)
+
+# method-signature detector (rough; extracts name + signature for the
+# nearest enclosing method declaration)
+METHOD_SIG = re.compile(
+    r'^\s*(public|protected|private|static|final|abstract|synchronized|\s)+'
+    r'(?P<ret>[\w<>,?\[\]\s]+?)\s+(?P<name>\w+)\s*\('
+)
+
+PACKAGE_DECL = re.compile(r'^\s*package\s+([\w.]+)\s*;')
+
+
+@dataclass
+class Stub:
+    id: str
+    file: str
+    line: int
+    kind: str
+    method_signature: str
+    cpp_counterpart: str = ""
+    depends_on: list = field(default_factory=list)
+    existing_test: str | None = None
+    cpp_tests: list = field(default_factory=list)
+    notes: str = ""
+
+
+def find_enclosing_method(lines: list[str], idx: int) -> tuple[str, str]:
+    """Walk backward from line idx to find the enclosing method declaration.
+    Returns (class_name_guess, method_signature). Class name is empty if
+    we can't determine it heuristically."""
+    for i in range(idx, -1, -1):
+        m = METHOD_SIG.match(lines[i])
+        if m:
+            # Reassemble signature up through the first ')' on or after this line
+            sig = lines[i].strip()
+            j = i
+            while ')' not in sig and j + 1 < len(lines):
+                j += 1
+                sig += ' ' + lines[j].strip()
+            # Trim at ')' for cleanliness
+            paren = sig.find(')')
+            if paren >= 0:
+                sig = sig[:paren + 1]
+            return (m.group('name'), sig)
+    return ("", "")
+
+
+def package_of(lines: list[str]) -> str:
+    for ln in lines[:30]:
+        m = PACKAGE_DECL.match(ln)
+        if m:
+            return m.group(1)
+    return ""
+
+
+def class_name_from_path(path: Path) -> str:
+    return path.stem
+
+
+def scan_file(path: Path) -> Iterable[Stub]:
+    try:
+        text = path.read_text(encoding='utf-8')
+    except UnicodeDecodeError:
+        return
+    lines = text.splitlines()
+    pkg = package_of(lines)
+    cls = class_name_from_path(path)
+    pkg_short = pkg[len("org.jquantlib."):] if pkg.startswith("org.jquantlib.") else pkg
+
+    for idx, line in enumerate(lines):
+        kind = None
+        if WORK_IN_PROGRESS.search(line):
+            kind = 'work_in_progress'
+        elif NOT_IMPLEMENTED.search(line):
+            kind = 'not_implemented'
+        elif NUMERICAL_SUSPECT.search(line):
+            kind = 'numerical_suspect'
+        if not kind:
+            continue
+
+        method_name, method_sig = find_enclosing_method(lines, idx)
+        stub_id = f"{pkg_short}.{cls}#{method_name or f'line{idx+1}'}"
+        rel = path.relative_to(REPO_ROOT).as_posix()
+        yield Stub(
+            id=stub_id,
+            file=rel,
+            line=idx + 1,
+            kind=kind,
+            method_signature=method_sig,
+        )
+
+
+def scan_tree() -> list[Stub]:
+    stubs: list[Stub] = []
+    for java in JAVA_ROOT.rglob("*.java"):
+        if "/test/" in java.as_posix() or java.stem.endswith("Test"):
+            continue  # test files are never stubs
+        stubs.extend(scan_file(java))
+    stubs.sort(key=lambda s: (s.file, s.line))
+    return stubs
+
+
+def write_inventory(stubs: list[Stub]) -> None:
+    INVENTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    INVENTORY_PATH.write_text(
+        json.dumps([asdict(s) for s in stubs], indent=2) + "\n",
+        encoding='utf-8'
+    )
+
+
+def write_worklist(stubs: list[Stub]) -> None:
+    """First-pass worklist — groups by package, not yet by dependency layer.
+    Pass 2 of the ordering (design §3.3) is manual/scripted later; this file
+    is regenerated by the scanner every time and the layer grouping lives in
+    a separate committed file once computed."""
+    by_pkg: dict[str, list[Stub]] = defaultdict(list)
+    for s in stubs:
+        pkg = s.id.rsplit('.', 1)[0].rsplit('#', 1)[0].split('#')[0]
+        pkg = pkg.rsplit('.', 1)[0]
+        by_pkg[pkg].append(s)
+
+    lines = [
+        "# Stub Worklist (first-pass, by package)",
+        "",
+        "Generated by `tools/stub-scanner/scan_stubs.py`. Do not edit by hand —",
+        "re-run the scanner to regenerate.",
+        "",
+        f"**Total open stubs:** {len(stubs)}",
+        "",
+        "Layer-based ordering (design §3.3 pass 2) is applied on top of this",
+        "during Phase 1 execution and lives in `docs/migration/worklist-layers.md`.",
+        "",
+    ]
+    for pkg in sorted(by_pkg):
+        lines.append(f"## {pkg} ({len(by_pkg[pkg])} stubs)")
+        lines.append("")
+        for s in by_pkg[pkg]:
+            lines.append(f"- [ ] `{s.id}` ({s.kind}) — `{s.file}:{s.line}`")
+        lines.append("")
+
+    WORKLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    WORKLIST_PATH.write_text("\n".join(lines), encoding='utf-8')
+
+
+def main() -> int:
+    stubs = scan_tree()
+    write_inventory(stubs)
+    write_worklist(stubs)
+    print(f"wrote {INVENTORY_PATH.relative_to(REPO_ROOT)} ({len(stubs)} stubs)")
+    print(f"wrote {WORKLIST_PATH.relative_to(REPO_ROOT)}")
+    by_kind: dict[str, int] = defaultdict(int)
+    for s in stubs:
+        by_kind[s.kind] += 1
+    for k, n in sorted(by_kind.items()):
+        print(f"  {k}: {n}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
