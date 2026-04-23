@@ -229,7 +229,14 @@ cd "$SCRIPT_DIR"
 
 echo "=== 1/3 ensuring QuantLib submodule is at v1.42.1 ==="
 git submodule update --init --recursive
-(cd cpp/quantlib && git fetch --tags --depth=1 origin v1.42.1 && git checkout v1.42.1)
+# Skip the re-fetch if the tag is already present (common on re-runs).
+# Intentionally no --depth=1: shallowing an existing full clone has edge
+# cases with older git versions and breaks the initial clone on some
+# hosts, for negligible size savings on an already-cloned repo.
+(cd cpp/quantlib && \
+  git rev-parse --verify v1.42.1 >/dev/null 2>&1 || \
+    git fetch --tags origin v1.42.1) && \
+(cd cpp/quantlib && git checkout v1.42.1)
 
 echo "=== 2/3 configuring and building QuantLib + probes ==="
 cmake -S cpp -B cpp/build \
@@ -268,8 +275,16 @@ fi
 cmake --build cpp/build -j
 
 if [[ $# -eq 0 ]]; then
-  # Run every probe binary under cpp/build/probes/
-  for probe in cpp/build/probes/*_probe; do
+  # Collect probe binaries with nullglob so an empty match yields an empty
+  # array rather than the literal glob string.
+  shopt -s nullglob
+  probes=(cpp/build/probes/*_probe)
+  shopt -u nullglob
+  if (( ${#probes[@]} == 0 )); then
+    echo "no probe binaries found in cpp/build/probes/; run ./setup.sh first" >&2
+    exit 1
+  fi
+  for probe in "${probes[@]}"; do
     [[ -x "$probe" ]] || continue
     echo "=== running $(basename "$probe") ==="
     "$probe"
@@ -311,16 +326,18 @@ diff_output=$(diff -r "$tmp/committed" references || true)
 # Strip lines that differ only because of timestamps
 filtered=$(echo "$diff_output" | grep -vE '"generated_at"' || true)
 
+# Hard restore: delete the (possibly dirty) references dir and copy the
+# snapshot back. `cp -Rf` alone would not remove files that a buggy or
+# non-deterministic probe created during the regeneration run.
+rm -rf references
+cp -R "$tmp/committed" references
+
 if [[ -n "$filtered" ]]; then
   echo "=== FAIL: references drifted beyond timestamp ==="
   echo "$filtered" | head -40
-  # Restore committed references so the working tree isn't dirty
-  cp -Rf "$tmp/committed"/* references/
   exit 1
 fi
 
-# Restore the timestamp-only-changed files too (no real drift)
-cp -Rf "$tmp/committed"/* references/
 echo "=== OK: harness deterministic, references match ==="
 ```
 

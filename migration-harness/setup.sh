@@ -8,7 +8,14 @@ cd "$SCRIPT_DIR"
 
 echo "=== 1/3 ensuring QuantLib submodule is at v1.42.1 ==="
 git submodule update --init --recursive
-(cd cpp/quantlib && git fetch --tags --depth=1 origin v1.42.1 && git checkout v1.42.1)
+# Skip the re-fetch if the tag is already present (common on re-runs).
+# Intentionally no --depth=1: shallowing an existing full clone has edge
+# cases with older git versions and breaks the initial clone on some
+# hosts, for negligible size savings on an already-cloned repo.
+(cd cpp/quantlib && \
+  git rev-parse --verify v1.42.1 >/dev/null 2>&1 || \
+    git fetch --tags origin v1.42.1) && \
+(cd cpp/quantlib && git checkout v1.42.1)
 
 echo "=== 2/3 configuring and building QuantLib + probes ==="
 cmake -S cpp -B cpp/build \

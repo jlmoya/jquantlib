@@ -14,8 +14,16 @@ fi
 cmake --build cpp/build -j
 
 if [[ $# -eq 0 ]]; then
-  # Run every probe binary under cpp/build/probes/
-  for probe in cpp/build/probes/*_probe; do
+  # Collect probe binaries with nullglob so an empty match yields an empty
+  # array rather than the literal glob string.
+  shopt -s nullglob
+  probes=(cpp/build/probes/*_probe)
+  shopt -u nullglob
+  if (( ${#probes[@]} == 0 )); then
+    echo "no probe binaries found in cpp/build/probes/; run ./setup.sh first" >&2
+    exit 1
+  fi
+  for probe in "${probes[@]}"; do
     [[ -x "$probe" ]] || continue
     echo "=== running $(basename "$probe") ==="
     "$probe"

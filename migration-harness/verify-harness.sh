@@ -20,14 +20,16 @@ diff_output=$(diff -r "$tmp/committed" references || true)
 # Strip lines that differ only because of timestamps
 filtered=$(echo "$diff_output" | grep -vE '"generated_at"' || true)
 
+# Hard restore: delete the (possibly dirty) references dir and copy the
+# snapshot back. `cp -Rf` alone would not remove files that a buggy or
+# non-deterministic probe created during the regeneration run.
+rm -rf references
+cp -R "$tmp/committed" references
+
 if [[ -n "$filtered" ]]; then
   echo "=== FAIL: references drifted beyond timestamp ==="
   echo "$filtered" | head -40
-  # Restore committed references so the working tree isn't dirty
-  cp -Rf "$tmp/committed"/* references/
   exit 1
 fi
 
-# Restore the timestamp-only-changed files too (no real drift)
-cp -Rf "$tmp/committed"/* references/
 echo "=== OK: harness deterministic, references match ==="
