@@ -15,6 +15,21 @@ add_subdirectory(quantlib EXCLUDE_FROM_ALL)
 # add_subdirectory does not export QuantLib::QuantLib into parent scope; this does.
 add_library(QuantLib::QuantLib ALIAS ql_library)
 
+# --- Submodule SHA for reference-file provenance ---
+# Capture the pinned QuantLib submodule's commit SHA at configure time so
+# probes embed the actual pinned SHA in every reference JSON. Avoids a
+# hardcoded constant in common.hpp that can silently drift from the pin.
+execute_process(
+    COMMAND git -C "${CMAKE_CURRENT_SOURCE_DIR}/quantlib" rev-parse HEAD
+    OUTPUT_VARIABLE JQML_QL_COMMIT_SHA
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE _ql_sha_result
+)
+if(NOT _ql_sha_result EQUAL 0)
+    message(FATAL_ERROR "Failed to read QuantLib submodule SHA. Run `git submodule update --init --recursive` first.")
+endif()
+message(STATUS "QuantLib pinned SHA: ${JQML_QL_COMMIT_SHA}")
+
 # --- Probes ---
 # Each probe is a self-contained .cpp under probes/ (may be nested in subdirs).
 # Output binaries go to build/probes/<name>_probe for easy scripting.
@@ -28,6 +43,8 @@ foreach(src IN LISTS PROBE_SOURCES)
     target_include_directories(${probe_name} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/third_party"
         "${CMAKE_CURRENT_SOURCE_DIR}/probes")
+    target_compile_definitions(${probe_name} PRIVATE
+        JQML_QL_COMMIT_SHA="${JQML_QL_COMMIT_SHA}")
     set_target_properties(${probe_name} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/probes")
 endforeach()

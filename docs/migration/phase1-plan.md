@@ -412,6 +412,24 @@ set(QL_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(QL_BUILD_TEST_SUITE OFF CACHE BOOL "" FORCE)
 set(QL_BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
 add_subdirectory(quantlib EXCLUDE_FROM_ALL)
+# Alias the internal ql_library target to the namespaced form used by probes.
+# add_subdirectory does not export QuantLib::QuantLib into parent scope; this does.
+add_library(QuantLib::QuantLib ALIAS ql_library)
+
+# --- Submodule SHA for reference-file provenance ---
+# Capture the pinned QuantLib submodule's commit SHA at configure time so
+# probes embed the actual pinned SHA in every reference JSON. Avoids a
+# hardcoded constant in common.hpp that can silently drift from the pin.
+execute_process(
+    COMMAND git -C "${CMAKE_CURRENT_SOURCE_DIR}/quantlib" rev-parse HEAD
+    OUTPUT_VARIABLE JQML_QL_COMMIT_SHA
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE _ql_sha_result
+)
+if(NOT _ql_sha_result EQUAL 0)
+    message(FATAL_ERROR "Failed to read QuantLib submodule SHA. Run `git submodule update --init --recursive` first.")
+endif()
+message(STATUS "QuantLib pinned SHA: ${JQML_QL_COMMIT_SHA}")
 
 # --- Probes ---
 # Each probe is a self-contained .cpp under probes/ (may be nested in subdirs).
@@ -426,6 +444,8 @@ foreach(src IN LISTS PROBE_SOURCES)
     target_include_directories(${probe_name} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/third_party"
         "${CMAKE_CURRENT_SOURCE_DIR}/probes")
+    target_compile_definitions(${probe_name} PRIVATE
+        JQML_QL_COMMIT_SHA="${JQML_QL_COMMIT_SHA}")
     set_target_properties(${probe_name} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/probes")
 endforeach()
@@ -489,12 +509,17 @@ single-header for JSON output from probes. Implements design §5.3."
 #ifndef JQUANTLIB_HARNESS_COMMON_HPP
 #define JQUANTLIB_HARNESS_COMMON_HPP
 
+#ifndef JQML_QL_COMMIT_SHA
+#error "JQML_QL_COMMIT_SHA must be defined by the build system (see CMakeLists.txt)."
+#endif
+
 #include <nlohmann/json.hpp>
 #include <chrono>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <filesystem>
+#include <vector>
 
 namespace jqml_harness {
 
@@ -513,11 +538,7 @@ public:
     // Add a case. inputs is arbitrary JSON object. expected is either a number,
     // a JSON array, or a JSON object — whatever the consuming Java test expects.
     void addCase(const std::string& name, json inputs, json expected) {
-        cases_.push_back({
-            {"name", name},
-            {"inputs", std::move(inputs)},
-            {"expected", std::move(expected)}
-        });
+        cases_.push_back(Case{name, std::move(inputs), std::move(expected)});
     }
 
     // Write to <harness_root>/references/<test_group>.json
@@ -528,13 +549,22 @@ public:
         const fs::path out = fs::path("references") / (test_group_ + ".json");
         fs::create_directories(out.parent_path());
 
+        json cases_array = json::array();
+        for (const auto& c : cases_) {
+            cases_array.push_back({
+                {"name", c.name},
+                {"inputs", c.inputs},
+                {"expected", c.expected}
+            });
+        }
+
         json doc = {
             {"test_group", test_group_},
             {"cpp_version", cpp_version_},
-            {"cpp_commit", "099987f0ca2c11c505dc4348cdb9ce01a598e1e5"},
+            {"cpp_commit", JQML_QL_COMMIT_SHA},
             {"generated_at", utcNow()},
             {"generated_by", generated_by_},
-            {"cases", cases_}
+            {"cases", cases_array}
         };
 
         std::ofstream f(out);
@@ -547,6 +577,12 @@ public:
     }
 
 private:
+    struct Case {
+        std::string name;
+        json inputs;
+        json expected;
+    };
+
     static std::string utcNow() {
         using namespace std::chrono;
         auto now = system_clock::now();
@@ -562,7 +598,7 @@ private:
     std::string test_group_;
     std::string cpp_version_;
     std::string generated_by_;
-    std::vector<json> cases_;
+    std::vector<Case> cases_;
 };
 
 } // namespace jqml_harness

@@ -5,12 +5,17 @@
 #ifndef JQUANTLIB_HARNESS_COMMON_HPP
 #define JQUANTLIB_HARNESS_COMMON_HPP
 
+#ifndef JQML_QL_COMMIT_SHA
+#error "JQML_QL_COMMIT_SHA must be defined by the build system (see CMakeLists.txt)."
+#endif
+
 #include <nlohmann/json.hpp>
 #include <chrono>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <filesystem>
+#include <vector>
 
 namespace jqml_harness {
 
@@ -18,7 +23,7 @@ using json = nlohmann::json;
 
 class ReferenceWriter {
 public:
-    // test_group: e.g., "math/bisection"  written to references/math/bisection.json
+    // test_group: e.g., "math/bisection"  → written to references/math/bisection.json
     ReferenceWriter(std::string test_group,
                     std::string cpp_version,
                     std::string generated_by)
@@ -27,13 +32,9 @@ public:
           generated_by_(std::move(generated_by)) {}
 
     // Add a case. inputs is arbitrary JSON object. expected is either a number,
-    // a JSON array, or a JSON object -- whatever the consuming Java test expects.
+    // a JSON array, or a JSON object — whatever the consuming Java test expects.
     void addCase(const std::string& name, json inputs, json expected) {
-        cases_.push_back({
-            {"name", name},
-            {"inputs", std::move(inputs)},
-            {"expected", std::move(expected)}
-        });
+        cases_.push_back(Case{name, std::move(inputs), std::move(expected)});
     }
 
     // Write to <harness_root>/references/<test_group>.json
@@ -44,13 +45,22 @@ public:
         const fs::path out = fs::path("references") / (test_group_ + ".json");
         fs::create_directories(out.parent_path());
 
+        json cases_array = json::array();
+        for (const auto& c : cases_) {
+            cases_array.push_back({
+                {"name", c.name},
+                {"inputs", c.inputs},
+                {"expected", c.expected}
+            });
+        }
+
         json doc = {
             {"test_group", test_group_},
             {"cpp_version", cpp_version_},
-            {"cpp_commit", "099987f0ca2c11c505dc4348cdb9ce01a598e1e5"},
+            {"cpp_commit", JQML_QL_COMMIT_SHA},
             {"generated_at", utcNow()},
             {"generated_by", generated_by_},
-            {"cases", cases_}
+            {"cases", cases_array}
         };
 
         std::ofstream f(out);
@@ -59,10 +69,16 @@ public:
             err << "ReferenceWriter: cannot open " << out << " for write";
             throw std::runtime_error(err.str());
         }
-        f << doc.dump(2) << "\n";
+        f << doc.dump(2) << '\n';
     }
 
 private:
+    struct Case {
+        std::string name;
+        json inputs;
+        json expected;
+    };
+
     static std::string utcNow() {
         using namespace std::chrono;
         auto now = system_clock::now();
@@ -78,7 +94,7 @@ private:
     std::string test_group_;
     std::string cpp_version_;
     std::string generated_by_;
-    std::vector<json> cases_;
+    std::vector<Case> cases_;
 };
 
 } // namespace jqml_harness

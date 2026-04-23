@@ -27,6 +27,7 @@ cp -R references "$tmp/committed"
 # Diff — ignore lines containing the generated_at timestamp field.
 # diff -I pattern ignores hunks where all changed lines match the pattern,
 # which is exactly what we want: a run that only changes generated_at is clean.
+# BSD diff (macOS 14+) and GNU diff match on this usage; tested on both.
 if ! diff -r -I '"generated_at"' "$tmp/committed" references; then
   echo "=== FAIL: references drifted beyond timestamp ==="
   exit 1
