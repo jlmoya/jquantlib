@@ -782,7 +782,10 @@ def find_enclosing_method(lines: list[str], idx: int) -> tuple[str, str]:
 
 
 def package_of(lines: list[str]) -> str:
-    for ln in lines[:30]:
+    # Java files can have long copyright headers (JQuantLib's are ~40 lines);
+    # scan the whole file for the package declaration. Java requires exactly
+    # one, always before any class/interface/enum definition.
+    for ln in lines:
         m = PACKAGE_DECL.match(ln)
         if m:
             return m.group(1)

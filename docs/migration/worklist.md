@@ -8,56 +8,9 @@ re-run the scanner to regenerate.
 Layer-based ordering (design §3.3 pass 2) is applied on top of this
 during Phase 1 execution and lives in `docs/migration/worklist-layers.md`.
 
-##  (45 stubs)
+## cashflow (9 stubs)
 
-- [ ] `.QL#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/QL.java:391`
-- [ ] `.AverageBMACoupon#line72` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/cashflow/AverageBMACoupon.java:72`
-- [ ] `.IborCoupon#line59` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/cashflow/IborCoupon.java:59`
-- [ ] `.ExchangeRateManager#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/currencies/ExchangeRateManager.java:153`
-- [ ] `.ExchangeRateManager#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/currencies/ExchangeRateManager.java:373`
-- [ ] `.CapFloor#for` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java:118`
-- [ ] `.CapFloor#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java:133`
-- [ ] `.CapFloor#for` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java:162`
-- [ ] `.DiscreteAveragingAsianOption#validate` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/instruments/DiscreteAveragingAsianOption.java:142`
-- [ ] `.Swap#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/instruments/Swap.java:82`
-- [ ] `.Swap#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/instruments/Swap.java:104`
-- [ ] `.Swap#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/instruments/Swap.java:132`
-- [ ] `.BasisIncompleteOrdered#line59` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/BasisIncompleteOrdered.java:59`
-- [ ] `.BasisIncompleteOrdered#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/BasisIncompleteOrdered.java:65`
-- [ ] `.BasisIncompleteOrdered#UnsupportedOperationException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/BasisIncompleteOrdered.java:73`
-- [ ] `.PseudoSqrt#line48` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java:48`
-- [ ] `.PseudoSqrt#UnsupportedOperationException` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java:500`
-- [ ] `.ConjugateGradient#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/ConjugateGradient.java:62`
-- [ ] `.ConjugateGradient#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/ConjugateGradient.java:68`
-- [ ] `.InverseCumulativeRng#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRng.java:63`
-- [ ] `.InverseCumulativeRng#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRng.java:73`
-- [ ] `.InverseCumulativeRsg#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRsg.java:70`
-- [ ] `.InverseCumulativeRsg#if` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRsg.java:105`
-- [ ] `.RandomSequenceGenerator#if` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/RandomSequenceGenerator.java:79`
-- [ ] `.RandomSequenceGenerator#if` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/RandomSequenceGenerator.java:100`
-- [ ] `.CurveDependentStepCondition#LibraryException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/methods/finitedifferences/CurveDependentStepCondition.java:75`
-- [ ] `.BrownianBridge#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/BrownianBridge.java:79`
-- [ ] `.MonteCarloModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/MonteCarloModel.java:65`
-- [ ] `.MultiVariate#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/MultiVariate.java:50`
-- [ ] `.Path#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/Path.java:120`
-- [ ] `.PathGenerator#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/PathGenerator.java:79`
-- [ ] `.PathGenerator#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/PathGenerator.java:101`
-- [ ] `.PathPricer#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/PathPricer.java:60`
-- [ ] `.SingleVariate#if` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/SingleVariate.java:53`
-- [ ] `.Parameter#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/Parameter.java:73`
-- [ ] `.Parameter#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/Parameter.java:87`
-- [ ] `.TermStructureConsistentModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/TermStructureConsistentModel.java:53`
-- [ ] `.AmericanPayoffAtHit#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/pricingengines/AmericanPayoffAtHit.java:184`
-- [ ] `.BlackCalculator#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/pricingengines/BlackCalculator.java:289`
-- [ ] `.Merton76Process#logJumpVolatility` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java:134`
-- [ ] `.Merton76Process#LibraryException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java:138`
-- [ ] `.Merton76Process#LibraryException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java:143`
-- [ ] `.Merton76Process#LibraryException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java:148`
-- [ ] `.BlackVarianceSurface#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/BlackVarianceSurface.java:205`
-- [ ] `.LocalVolSurface#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/LocalVolSurface.java:204`
-
-## cashflow (7 stubs)
-
+- [ ] `cashflow.AverageBMACoupon#line72` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/cashflow/AverageBMACoupon.java:72`
 - [ ] `cashflow.CappedFlooredCoupon#line84` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/cashflow/CappedFlooredCoupon.java:84`
 - [ ] `cashflow.CashFlows#line55` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java:55`
 - [ ] `cashflow.CashFlows#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java:117`
@@ -65,6 +18,12 @@ during Phase 1 execution and lives in `docs/migration/worklist-layers.md`.
 - [ ] `cashflow.FixedRateLeg#line12` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java:12`
 - [ ] `cashflow.FixedRateLeg#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java:43`
 - [ ] `cashflow.FixedRateLeg#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java:94`
+- [ ] `cashflow.IborCoupon#line59` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/cashflow/IborCoupon.java:59`
+
+## currencies (2 stubs)
+
+- [ ] `currencies.ExchangeRateManager#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/currencies/ExchangeRateManager.java:153`
+- [ ] `currencies.ExchangeRateManager#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/currencies/ExchangeRateManager.java:373`
 
 ## daycounters (1 stubs)
 
@@ -77,8 +36,15 @@ during Phase 1 execution and lives in `docs/migration/worklist-layers.md`.
 - [ ] `indexes.YoYInflationIndex#line49` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/indexes/YoYInflationIndex.java:49`
 - [ ] `indexes.ZeroInflationIndex#line45` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/indexes/ZeroInflationIndex.java:45`
 
-## instruments (1 stubs)
+## instruments (8 stubs)
 
+- [ ] `instruments.CapFloor#for` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java:118`
+- [ ] `instruments.CapFloor#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java:133`
+- [ ] `instruments.CapFloor#for` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java:162`
+- [ ] `instruments.DiscreteAveragingAsianOption#validate` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/instruments/DiscreteAveragingAsianOption.java:142`
+- [ ] `instruments.Swap#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/instruments/Swap.java:82`
+- [ ] `instruments.Swap#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/instruments/Swap.java:104`
+- [ ] `instruments.Swap#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/instruments/Swap.java:132`
 - [ ] `instruments.Swaption#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/instruments/Swaption.java:52`
 
 ## legacy (6 stubs)
@@ -90,11 +56,18 @@ during Phase 1 execution and lives in `docs/migration/worklist-layers.md`.
 - [ ] `legacy.libormarkets.LmLinearExponentialVolatilityModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/legacy/libormarkets/LmLinearExponentialVolatilityModel.java:56`
 - [ ] `legacy.libormarkets.LmVolatilityModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/legacy/libormarkets/LmVolatilityModel.java:43`
 
-## math (20 stubs)
+## math (33 stubs)
 
 - [ ] `math.AbstractSolver1D#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/AbstractSolver1D.java:158`
 - [ ] `math.AbstractSolver1D#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/AbstractSolver1D.java:200`
+- [ ] `math.matrixutilities.BasisIncompleteOrdered#line59` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/BasisIncompleteOrdered.java:59`
+- [ ] `math.matrixutilities.BasisIncompleteOrdered#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/BasisIncompleteOrdered.java:65`
+- [ ] `math.matrixutilities.BasisIncompleteOrdered#UnsupportedOperationException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/BasisIncompleteOrdered.java:73`
 - [ ] `math.matrixutilities.HypersphereCostFunction#line27` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/HypersphereCostFunction.java:27`
+- [ ] `math.matrixutilities.PseudoSqrt#line48` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java:48`
+- [ ] `math.matrixutilities.PseudoSqrt#UnsupportedOperationException` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java:500`
+- [ ] `math.optimization.ConjugateGradient#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/ConjugateGradient.java:62`
+- [ ] `math.optimization.ConjugateGradient#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/ConjugateGradient.java:68`
 - [ ] `math.optimization.EndCriteria#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/EndCriteria.java:100`
 - [ ] `math.optimization.LeastSquareFunction#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/LeastSquareFunction.java:14`
 - [ ] `math.optimization.LeastSquareFunction#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/LeastSquareFunction.java:67`
@@ -108,23 +81,41 @@ during Phase 1 execution and lives in `docs/migration/worklist-layers.md`.
 - [ ] `math.optimization.ProjectedCostFunction#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/ProjectedCostFunction.java:37`
 - [ ] `math.optimization.SphereCylinderOptimizer#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/SphereCylinderOptimizer.java:31`
 - [ ] `math.optimization.SteepestDescent#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/optimization/SteepestDescent.java:32`
+- [ ] `math.randomnumbers.InverseCumulativeRng#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRng.java:63`
+- [ ] `math.randomnumbers.InverseCumulativeRng#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRng.java:73`
+- [ ] `math.randomnumbers.InverseCumulativeRsg#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRsg.java:70`
+- [ ] `math.randomnumbers.InverseCumulativeRsg#if` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRsg.java:105`
 - [ ] `math.randomnumbers.PrimitivePolynomials#line64` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/PrimitivePolynomials.java:64`
 - [ ] `math.randomnumbers.PrimitivePolynomials#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/PrimitivePolynomials.java:125`
+- [ ] `math.randomnumbers.RandomSequenceGenerator#if` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/RandomSequenceGenerator.java:79`
+- [ ] `math.randomnumbers.RandomSequenceGenerator#if` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/RandomSequenceGenerator.java:100`
 - [ ] `math.randomnumbers.SeedGenerator#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/SeedGenerator.java:64`
 - [ ] `math.randomnumbers.SobolRsg#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/math/randomnumbers/SobolRsg.java:1406`
 
-## methods (3 stubs)
+## methods (12 stubs)
 
+- [ ] `methods.finitedifferences.CurveDependentStepCondition#LibraryException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/methods/finitedifferences/CurveDependentStepCondition.java:75`
 - [ ] `methods.lattices.LeisenReimer#probability` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/methods/lattices/LeisenReimer.java:81`
 - [ ] `methods.lattices.TreeLattice2D#LibraryException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/methods/lattices/TreeLattice2D.java:73`
+- [ ] `methods.montecarlo.BrownianBridge#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/BrownianBridge.java:79`
+- [ ] `methods.montecarlo.MonteCarloModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/MonteCarloModel.java:65`
+- [ ] `methods.montecarlo.MultiVariate#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/MultiVariate.java:50`
+- [ ] `methods.montecarlo.Path#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/Path.java:120`
+- [ ] `methods.montecarlo.PathGenerator#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/PathGenerator.java:79`
+- [ ] `methods.montecarlo.PathGenerator#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/PathGenerator.java:101`
+- [ ] `methods.montecarlo.PathPricer#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/PathPricer.java:60`
 - [ ] `methods.montecarlo.Sample#if` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/Sample.java:66`
+- [ ] `methods.montecarlo.SingleVariate#if` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/methods/montecarlo/SingleVariate.java:53`
 
-## model (18 stubs)
+## model (21 stubs)
 
 - [ ] `model.CalibratedModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/CalibratedModel.java:72`
 - [ ] `model.CalibrationHelper#line44` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/model/CalibrationHelper.java:44`
 - [ ] `model.CalibrationHelper#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/CalibrationHelper.java:59`
 - [ ] `model.CalibrationHelper#setPricingEngine` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/model/CalibrationHelper.java:121`
+- [ ] `model.Parameter#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/Parameter.java:73`
+- [ ] `model.Parameter#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/Parameter.java:87`
+- [ ] `model.TermStructureConsistentModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/TermStructureConsistentModel.java:53`
 - [ ] `model.equity.BatesDoubleExpModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/equity/BatesDoubleExpModel.java:50`
 - [ ] `model.equity.BatesModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/equity/BatesModel.java:45`
 - [ ] `model.equity.HestonModel#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/equity/HestonModel.java:71`
@@ -158,12 +149,18 @@ during Phase 1 execution and lives in `docs/migration/worklist-layers.md`.
 - [ ] `model.shortrate.twofactormodels.G2#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/model/shortrate/twofactormodels/G2.java:126`
 - [ ] `model.shortrate.twofactormodels.G2#generateArguments` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/model/shortrate/twofactormodels/G2.java:138`
 
-## pricingengines (2 stubs)
+## org (1 stubs)
 
+- [ ] `org.jquantlib.QL#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/QL.java:391`
+
+## pricingengines (4 stubs)
+
+- [ ] `pricingengines.AmericanPayoffAtHit#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/pricingengines/AmericanPayoffAtHit.java:184`
+- [ ] `pricingengines.BlackCalculator#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/pricingengines/BlackCalculator.java:289`
 - [ ] `pricingengines.swap.DiscountingSwapEngine#line11` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/pricingengines/swap/DiscountingSwapEngine.java:11`
 - [ ] `pricingengines.swap.DiscountingSwapEngine#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/pricingengines/swap/DiscountingSwapEngine.java:19`
 
-## processes (8 stubs)
+## processes (12 stubs)
 
 - [ ] `processes.HestonProcess#line38` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/processes/HestonProcess.java:38`
 - [ ] `processes.HestonProcess#HestonProcess` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/processes/HestonProcess.java:77`
@@ -173,11 +170,17 @@ during Phase 1 execution and lives in `docs/migration/worklist-layers.md`.
 - [ ] `processes.HestonProcess#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/processes/HestonProcess.java:286`
 - [ ] `processes.LfmCovarianceParameterization#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/processes/LfmCovarianceParameterization.java:37`
 - [ ] `processes.LiborForwardModelProcess#UnsupportedOperationException` (work_in_progress) — `jquantlib/src/main/java/org/jquantlib/processes/LiborForwardModelProcess.java:78`
+- [ ] `processes.Merton76Process#logJumpVolatility` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java:134`
+- [ ] `processes.Merton76Process#LibraryException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java:138`
+- [ ] `processes.Merton76Process#LibraryException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java:143`
+- [ ] `processes.Merton76Process#LibraryException` (not_implemented) — `jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java:148`
 
-## termstructures (5 stubs)
+## termstructures (7 stubs)
 
 - [ ] `termstructures.InterestRate#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/termstructures/InterestRate.java:128`
 - [ ] `termstructures.SwaptionVolatilityStructure#convertDates` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/termstructures/SwaptionVolatilityStructure.java:162`
+- [ ] `termstructures.volatilities.BlackVarianceSurface#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/BlackVarianceSurface.java:205`
+- [ ] `termstructures.volatilities.LocalVolSurface#if` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/LocalVolSurface.java:204`
 - [ ] `termstructures.volatilities.Sabr#validateSabrParameters` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/Sabr.java:122`
 - [ ] `termstructures.yieldcurves.RelativeDateRateHelper#line41` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/termstructures/yieldcurves/RelativeDateRateHelper.java:41`
 - [ ] `termstructures.yieldcurves.RelativeDateRateHelper#line59` (numerical_suspect) — `jquantlib/src/main/java/org/jquantlib/termstructures/yieldcurves/RelativeDateRateHelper.java:59`

@@ -1,6 +1,6 @@
 [
   {
-    "id": ".QL#UnsupportedOperationException",
+    "id": "org.jquantlib.QL#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/QL.java",
     "line": 391,
     "kind": "work_in_progress",
@@ -12,7 +12,7 @@
     "notes": ""
   },
   {
-    "id": ".AverageBMACoupon#line72",
+    "id": "cashflow.AverageBMACoupon#line72",
     "file": "jquantlib/src/main/java/org/jquantlib/cashflow/AverageBMACoupon.java",
     "line": 72,
     "kind": "numerical_suspect",
@@ -108,7 +108,7 @@
     "notes": ""
   },
   {
-    "id": ".IborCoupon#line59",
+    "id": "cashflow.IborCoupon#line59",
     "file": "jquantlib/src/main/java/org/jquantlib/cashflow/IborCoupon.java",
     "line": 59,
     "kind": "numerical_suspect",
@@ -120,7 +120,7 @@
     "notes": ""
   },
   {
-    "id": ".ExchangeRateManager#UnsupportedOperationException",
+    "id": "currencies.ExchangeRateManager#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/currencies/ExchangeRateManager.java",
     "line": 153,
     "kind": "work_in_progress",
@@ -132,7 +132,7 @@
     "notes": ""
   },
   {
-    "id": ".ExchangeRateManager#UnsupportedOperationException",
+    "id": "currencies.ExchangeRateManager#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/currencies/ExchangeRateManager.java",
     "line": 373,
     "kind": "work_in_progress",
@@ -204,7 +204,7 @@
     "notes": ""
   },
   {
-    "id": ".CapFloor#for",
+    "id": "instruments.CapFloor#for",
     "file": "jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java",
     "line": 118,
     "kind": "numerical_suspect",
@@ -216,7 +216,7 @@
     "notes": ""
   },
   {
-    "id": ".CapFloor#UnsupportedOperationException",
+    "id": "instruments.CapFloor#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java",
     "line": 133,
     "kind": "work_in_progress",
@@ -228,7 +228,7 @@
     "notes": ""
   },
   {
-    "id": ".CapFloor#for",
+    "id": "instruments.CapFloor#for",
     "file": "jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java",
     "line": 162,
     "kind": "numerical_suspect",
@@ -240,7 +240,7 @@
     "notes": ""
   },
   {
-    "id": ".DiscreteAveragingAsianOption#validate",
+    "id": "instruments.DiscreteAveragingAsianOption#validate",
     "file": "jquantlib/src/main/java/org/jquantlib/instruments/DiscreteAveragingAsianOption.java",
     "line": 142,
     "kind": "numerical_suspect",
@@ -252,7 +252,7 @@
     "notes": ""
   },
   {
-    "id": ".Swap#UnsupportedOperationException",
+    "id": "instruments.Swap#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/instruments/Swap.java",
     "line": 82,
     "kind": "work_in_progress",
@@ -264,7 +264,7 @@
     "notes": ""
   },
   {
-    "id": ".Swap#UnsupportedOperationException",
+    "id": "instruments.Swap#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/instruments/Swap.java",
     "line": 104,
     "kind": "work_in_progress",
@@ -276,7 +276,7 @@
     "notes": ""
   },
   {
-    "id": ".Swap#UnsupportedOperationException",
+    "id": "instruments.Swap#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/instruments/Swap.java",
     "line": 132,
     "kind": "work_in_progress",
@@ -396,7 +396,7 @@
     "notes": ""
   },
   {
-    "id": ".BasisIncompleteOrdered#line59",
+    "id": "math.matrixutilities.BasisIncompleteOrdered#line59",
     "file": "jquantlib/src/main/java/org/jquantlib/math/matrixutilities/BasisIncompleteOrdered.java",
     "line": 59,
     "kind": "numerical_suspect",
@@ -408,7 +408,7 @@
     "notes": ""
   },
   {
-    "id": ".BasisIncompleteOrdered#UnsupportedOperationException",
+    "id": "math.matrixutilities.BasisIncompleteOrdered#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/matrixutilities/BasisIncompleteOrdered.java",
     "line": 65,
     "kind": "work_in_progress",
@@ -420,7 +420,7 @@
     "notes": ""
   },
   {
-    "id": ".BasisIncompleteOrdered#UnsupportedOperationException",
+    "id": "math.matrixutilities.BasisIncompleteOrdered#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/matrixutilities/BasisIncompleteOrdered.java",
     "line": 73,
     "kind": "not_implemented",
@@ -444,7 +444,7 @@
     "notes": ""
   },
   {
-    "id": ".PseudoSqrt#line48",
+    "id": "math.matrixutilities.PseudoSqrt#line48",
     "file": "jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java",
     "line": 48,
     "kind": "numerical_suspect",
@@ -456,7 +456,7 @@
     "notes": ""
   },
   {
-    "id": ".PseudoSqrt#UnsupportedOperationException",
+    "id": "math.matrixutilities.PseudoSqrt#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/matrixutilities/PseudoSqrt.java",
     "line": 500,
     "kind": "numerical_suspect",
@@ -468,7 +468,7 @@
     "notes": ""
   },
   {
-    "id": ".ConjugateGradient#UnsupportedOperationException",
+    "id": "math.optimization.ConjugateGradient#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/ConjugateGradient.java",
     "line": 62,
     "kind": "work_in_progress",
@@ -480,7 +480,7 @@
     "notes": ""
   },
   {
-    "id": ".ConjugateGradient#UnsupportedOperationException",
+    "id": "math.optimization.ConjugateGradient#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/ConjugateGradient.java",
     "line": 68,
     "kind": "work_in_progress",
@@ -648,7 +648,7 @@
     "notes": ""
   },
   {
-    "id": ".InverseCumulativeRng#UnsupportedOperationException",
+    "id": "math.randomnumbers.InverseCumulativeRng#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRng.java",
     "line": 63,
     "kind": "work_in_progress",
@@ -660,7 +660,7 @@
     "notes": ""
   },
   {
-    "id": ".InverseCumulativeRng#UnsupportedOperationException",
+    "id": "math.randomnumbers.InverseCumulativeRng#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRng.java",
     "line": 73,
     "kind": "work_in_progress",
@@ -672,7 +672,7 @@
     "notes": ""
   },
   {
-    "id": ".InverseCumulativeRsg#UnsupportedOperationException",
+    "id": "math.randomnumbers.InverseCumulativeRsg#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRsg.java",
     "line": 70,
     "kind": "work_in_progress",
@@ -684,7 +684,7 @@
     "notes": ""
   },
   {
-    "id": ".InverseCumulativeRsg#if",
+    "id": "math.randomnumbers.InverseCumulativeRsg#if",
     "file": "jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRsg.java",
     "line": 105,
     "kind": "work_in_progress",
@@ -720,7 +720,7 @@
     "notes": ""
   },
   {
-    "id": ".RandomSequenceGenerator#if",
+    "id": "math.randomnumbers.RandomSequenceGenerator#if",
     "file": "jquantlib/src/main/java/org/jquantlib/math/randomnumbers/RandomSequenceGenerator.java",
     "line": 79,
     "kind": "work_in_progress",
@@ -732,7 +732,7 @@
     "notes": ""
   },
   {
-    "id": ".RandomSequenceGenerator#if",
+    "id": "math.randomnumbers.RandomSequenceGenerator#if",
     "file": "jquantlib/src/main/java/org/jquantlib/math/randomnumbers/RandomSequenceGenerator.java",
     "line": 100,
     "kind": "work_in_progress",
@@ -768,7 +768,7 @@
     "notes": ""
   },
   {
-    "id": ".CurveDependentStepCondition#LibraryException",
+    "id": "methods.finitedifferences.CurveDependentStepCondition#LibraryException",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/finitedifferences/CurveDependentStepCondition.java",
     "line": 75,
     "kind": "not_implemented",
@@ -804,7 +804,7 @@
     "notes": ""
   },
   {
-    "id": ".BrownianBridge#UnsupportedOperationException",
+    "id": "methods.montecarlo.BrownianBridge#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/BrownianBridge.java",
     "line": 79,
     "kind": "work_in_progress",
@@ -816,7 +816,7 @@
     "notes": ""
   },
   {
-    "id": ".MonteCarloModel#UnsupportedOperationException",
+    "id": "methods.montecarlo.MonteCarloModel#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/MonteCarloModel.java",
     "line": 65,
     "kind": "work_in_progress",
@@ -828,7 +828,7 @@
     "notes": ""
   },
   {
-    "id": ".MultiVariate#UnsupportedOperationException",
+    "id": "methods.montecarlo.MultiVariate#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/MultiVariate.java",
     "line": 50,
     "kind": "work_in_progress",
@@ -840,7 +840,7 @@
     "notes": ""
   },
   {
-    "id": ".Path#UnsupportedOperationException",
+    "id": "methods.montecarlo.Path#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/Path.java",
     "line": 120,
     "kind": "work_in_progress",
@@ -852,7 +852,7 @@
     "notes": ""
   },
   {
-    "id": ".PathGenerator#UnsupportedOperationException",
+    "id": "methods.montecarlo.PathGenerator#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/PathGenerator.java",
     "line": 79,
     "kind": "work_in_progress",
@@ -864,7 +864,7 @@
     "notes": ""
   },
   {
-    "id": ".PathGenerator#UnsupportedOperationException",
+    "id": "methods.montecarlo.PathGenerator#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/PathGenerator.java",
     "line": 101,
     "kind": "work_in_progress",
@@ -876,7 +876,7 @@
     "notes": ""
   },
   {
-    "id": ".PathPricer#UnsupportedOperationException",
+    "id": "methods.montecarlo.PathPricer#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/PathPricer.java",
     "line": 60,
     "kind": "work_in_progress",
@@ -900,7 +900,7 @@
     "notes": ""
   },
   {
-    "id": ".SingleVariate#if",
+    "id": "methods.montecarlo.SingleVariate#if",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/SingleVariate.java",
     "line": 53,
     "kind": "work_in_progress",
@@ -960,7 +960,7 @@
     "notes": ""
   },
   {
-    "id": ".Parameter#UnsupportedOperationException",
+    "id": "model.Parameter#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/model/Parameter.java",
     "line": 73,
     "kind": "work_in_progress",
@@ -972,7 +972,7 @@
     "notes": ""
   },
   {
-    "id": ".Parameter#UnsupportedOperationException",
+    "id": "model.Parameter#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/model/Parameter.java",
     "line": 87,
     "kind": "work_in_progress",
@@ -984,7 +984,7 @@
     "notes": ""
   },
   {
-    "id": ".TermStructureConsistentModel#UnsupportedOperationException",
+    "id": "model.TermStructureConsistentModel#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/model/TermStructureConsistentModel.java",
     "line": 53,
     "kind": "work_in_progress",
@@ -1344,7 +1344,7 @@
     "notes": ""
   },
   {
-    "id": ".AmericanPayoffAtHit#if",
+    "id": "pricingengines.AmericanPayoffAtHit#if",
     "file": "jquantlib/src/main/java/org/jquantlib/pricingengines/AmericanPayoffAtHit.java",
     "line": 184,
     "kind": "numerical_suspect",
@@ -1356,7 +1356,7 @@
     "notes": ""
   },
   {
-    "id": ".BlackCalculator#if",
+    "id": "pricingengines.BlackCalculator#if",
     "file": "jquantlib/src/main/java/org/jquantlib/pricingengines/BlackCalculator.java",
     "line": 289,
     "kind": "numerical_suspect",
@@ -1488,7 +1488,7 @@
     "notes": ""
   },
   {
-    "id": ".Merton76Process#logJumpVolatility",
+    "id": "processes.Merton76Process#logJumpVolatility",
     "file": "jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java",
     "line": 134,
     "kind": "numerical_suspect",
@@ -1500,7 +1500,7 @@
     "notes": ""
   },
   {
-    "id": ".Merton76Process#LibraryException",
+    "id": "processes.Merton76Process#LibraryException",
     "file": "jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java",
     "line": 138,
     "kind": "not_implemented",
@@ -1512,7 +1512,7 @@
     "notes": ""
   },
   {
-    "id": ".Merton76Process#LibraryException",
+    "id": "processes.Merton76Process#LibraryException",
     "file": "jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java",
     "line": 143,
     "kind": "not_implemented",
@@ -1524,7 +1524,7 @@
     "notes": ""
   },
   {
-    "id": ".Merton76Process#LibraryException",
+    "id": "processes.Merton76Process#LibraryException",
     "file": "jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java",
     "line": 148,
     "kind": "not_implemented",
@@ -1560,7 +1560,7 @@
     "notes": ""
   },
   {
-    "id": ".BlackVarianceSurface#if",
+    "id": "termstructures.volatilities.BlackVarianceSurface#if",
     "file": "jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/BlackVarianceSurface.java",
     "line": 205,
     "kind": "numerical_suspect",
@@ -1572,7 +1572,7 @@
     "notes": ""
   },
   {
-    "id": ".LocalVolSurface#if",
+    "id": "termstructures.volatilities.LocalVolSurface#if",
     "file": "jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/LocalVolSurface.java",
     "line": 204,
     "kind": "numerical_suspect",
