@@ -62,10 +62,10 @@ public final class Sample<T> {
     // public constructors
     //
     
-    public Sample(final T value, double weight) {
-        if (System.getProperty("EXPERIMENTAL")==null) throw new UnsupportedOperationException("Work in progress");
-        this.value=value;
-        this.weight=weight;
+    //-- template<class T> Sample(T value, Real weight); in ql/methods/montecarlo/sample.hpp:38
+    public Sample(final T value, final double weight) {
+        this.value = value;
+        this.weight = weight;
     }
 
     

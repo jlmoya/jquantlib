@@ -720,18 +720,6 @@
     "notes": ""
   },
   {
-    "id": "methods.montecarlo.Sample#if",
-    "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/Sample.java",
-    "line": 66,
-    "kind": "work_in_progress",
-    "method_signature": "if (System.getProperty(\"EXPERIMENTAL\")",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
     "id": "methods.montecarlo.SingleVariate#if",
     "file": "jquantlib/src/main/java/org/jquantlib/methods/montecarlo/SingleVariate.java",
     "line": 53,
