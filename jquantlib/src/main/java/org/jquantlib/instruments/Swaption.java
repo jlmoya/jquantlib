@@ -48,9 +48,6 @@ public class Swaption {// extends Option {
 
     // ! %settlement information
     public Swaption(final VanillaSwap swap, final Exercise exercise, final Settlement.Type delivery /* = Settlement::Physical */) {
-        if (System.getProperty("EXPERIMENTAL") == null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
     }
 
     // @Override

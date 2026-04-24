@@ -39,9 +39,6 @@ public abstract class LmVolatilityModel {
 
     public LmVolatilityModel(final int size, final int nArguments){
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         this.size_ = size;
         this.arguments_ = new ArrayList<Parameter>(nArguments);
     }

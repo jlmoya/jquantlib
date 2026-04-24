@@ -61,8 +61,6 @@ package org.jquantlib.math.matrixutilities;
 public class BasisIncompleteOrdered {
 
     public BasisIncompleteOrdered() {
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
     }
 
 //	private final int euclideanDimension;

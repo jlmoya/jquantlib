@@ -15,8 +15,6 @@ public class DiscountingSwapEngine extends Swap.EngineImpl implements /* Swap.En
     private final Handle<YieldTermStructure> discountCurve;
 
     public DiscountingSwapEngine(final Handle<YieldTermStructure> discountCurve) /* @ReadOnly */ {
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
         this.discountCurve = discountCurve;
         this.discountCurve.addObserver(this);
     }

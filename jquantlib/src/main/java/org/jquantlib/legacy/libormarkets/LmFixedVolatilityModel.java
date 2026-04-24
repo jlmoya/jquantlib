@@ -34,9 +34,6 @@ public class LmFixedVolatilityModel extends LmVolatilityModel {
     public LmFixedVolatilityModel(final Array volatilities, final Array startTimes) {
         super(startTimes.size(), 0);
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         // TODO: code review :: use of clone()
         this.volatilities_ = volatilities;
         this.startTimes_ = startTimes;

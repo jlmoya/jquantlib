@@ -79,10 +79,6 @@ public class HestonProcess extends StochasticProcess {
         // Seems like constructor which takes a Discretization must belong to
         // StochasticProcess and not StochasticProcess1D
 
-        if (System.getProperty("EXPERIMENTAL") == null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
-
         this.riskFreeRate_ = (riskFreeRate);
         this.dividendYield_ = (dividendYield);
         this.s0_ = (s0); // TODO: code review

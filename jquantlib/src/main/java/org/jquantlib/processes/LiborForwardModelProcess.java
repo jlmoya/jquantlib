@@ -74,9 +74,6 @@ public class LiborForwardModelProcess extends StochasticProcess {
     public LiborForwardModelProcess(final int size, final IborIndex  index) {
         super(new EulerDiscretization());
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         this.size_ = size;
         this.index_ = index;
         this.initialValues_ = new Array(size_);

@@ -52,10 +52,6 @@ public abstract class LmLinearExponentialVolatilityModel extends LmVolatilityMod
     public LmLinearExponentialVolatilityModel(final List<Double> fixingTimes, final double a, final double b, final double c, final double d) {
         super(fixingTimes.size(), 4);
 
-        if (System.getProperty("EXPERIMENTAL") == null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
-
         this.fixingTimes_ = fixingTimes;
         arguments_.set(0, new ConstantParameter(a, new PositiveConstraint()));
         arguments_.set(1, new ConstantParameter(b, new PositiveConstraint()));

@@ -33,9 +33,6 @@ public abstract class LfmCovarianceParameterization {
     private final int factors_;
 
     public LfmCovarianceParameterization(final int size, final int factors) {
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         this.size_ = size;
         this.factors_ = factors;
     }

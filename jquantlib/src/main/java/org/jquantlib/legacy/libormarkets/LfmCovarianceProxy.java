@@ -16,9 +16,6 @@ public class LfmCovarianceProxy extends LfmCovarianceParameterization {
     public LfmCovarianceProxy(final LmVolatilityModel volaModel, final LmCorrelationModel corrModel){
         super(corrModel.size(), corrModel.factors());
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         this.volaModel_ = volaModel;
         this.corrModel_ = corrModel;
     }
