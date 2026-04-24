@@ -3,7 +3,7 @@
 **Status:** Draft for approval
 **Date:** 2026-04-24
 **Author:** Jose Moya (with Claude collaboration)
-**Branch:** `migration/phase2a-finish-tail` (off `main`)
+**Work target:** direct commits to `main` (no migration branch — change from Phase 1 workflow)
 **C++ reference:** QuantLib **v1.42.1** (pinned, unchanged from Phase 1)
 **Predecessor:** `docs/migration/phase1-design.md` — approved 2026-04-22, completed 2026-04-24 (tag `jquantlib-phase1-complete`).
 
@@ -72,7 +72,7 @@ Pinned at commit `099987f0ca2c11c505dc4348cdb9ce01a598e1e5` (tag `v1.42.1`, date
 
 **Definition of "Phase 2a done"** (full detail in §6):
 
-1. Scanner at tip of `migration/phase2a-finish-tail` reports: 2 `work_in_progress` (CapHelper, G2), 0 `not_implemented`, 0 `numerical_suspect`.
+1. Scanner on `main` reports: 2 `work_in_progress` (CapHelper, G2), 0 `not_implemented`, 0 `numerical_suspect`.
 2. `docs/migration/stub-allowlist.json` exists and contains the `TreeLattice2D.grid` entry.
 3. `docs/migration/phase2a-audit.md` has one line per 56 markers with tier, outcome, and commit reference.
 4. `QL.validateExperimentalMode` and all call sites deleted; `grep -r validateExperimentalMode jquantlib/src/main/java` returns empty.
@@ -241,11 +241,11 @@ A Tier-2 divergence gets carved to Phase 2b **only if** filling it requires a ne
 
 ### 5.1 Layers
 
-Branch: `migration/phase2a-finish-tail` off `main`. Each layer ends with pause-trigger A6 (layer-end summary; wait for user acknowledgment before next layer).
+All work lands directly on `main` — no migration branch. Each layer ends with pause-trigger A6 (layer-end summary; wait for user acknowledgment before next layer). "Layer" remains a logical grouping of commits, not a branch entity.
 
 | Layer | Work item | Expected commits |
 |---|---|---|
-| L0 | Pre-flight: branch off `main`, confirm baseline green, snapshot current scanner state | 0 |
+| L0 | Pre-flight: confirm `main` baseline green, snapshot current scanner state | 0 |
 | L1 | WI-1 scanner tidy | 1 |
 | L2 | WI-2 MINPACK + LM port + un-skip sweep | 4–8 (cycle-batched) |
 | L3 | WI-3 HestonProcess QE | 2–3 |
@@ -257,7 +257,7 @@ Branch: `migration/phase2a-finish-tail` off `main`. Each layer ends with pause-t
 
 Execution order L1 → L2 → L3 → L4 → L5 was chosen for three reasons:
 
-1. **WI-1 first (cheap warmup).** Single-file infrastructure change, confirms branch and tooling are working before any porting starts.
+1. **WI-1 first (cheap warmup).** Single-file infrastructure change, confirms tooling is working before any porting starts.
 2. **WI-2 before WI-4 (regression coverage).** Unblocking LM un-skips tests across three files — `SABRInterpolationTest`, `InterpolationTest`, `OptimizerTest` — that currently pass trivially by being skipped. Doing this before the audit sweep means any regression WI-4 might introduce is caught immediately by the un-skipped suite.
 3. **WI-2 before WI-3 (cognitive load).** MINPACK is the largest port of 2a (~2000 LOC) and benefits most from fresh focus. WI-3 is a small algorithmic branch that can run on lower energy.
 4. **WI-5 last (final housekeeping).** Deleting `validateExperimentalMode` must not break anything else; doing it after all functional work is green makes root-cause analysis trivial if something does break.
@@ -268,7 +268,7 @@ Execution order L1 → L2 → L3 → L4 → L5 was chosen for three reasons:
 
 Exit state required before tagging `jquantlib-phase2a-complete`:
 
-1. Scanner at tip of `migration/phase2a-finish-tail` reports:
+1. Scanner on `main` reports:
    - `work_in_progress`: 2 (CapHelper, G2 — deferred to 2b).
    - `not_implemented`: 0.
    - `numerical_suspect`: 0.
@@ -299,7 +299,7 @@ The following remain binding unchanged through Phase 2a:
 - TDD + cross-validation via `migration-harness/` probes.
 - Tolerance tiers: exact / tight `1e-12` rel `1e-14` abs / loose `1e-8` rel (phase1-design §4.2). Per-test exceptions require inline justification.
 - One stub (or cycle-batch) = one commit. Every commit compiles and passes `(cd jquantlib && mvn test)`.
-- Direct push to `main`, fast-forward per layer, no PRs. No `Co-authored-by: Claude` trailer. `-s` Signed-off-by. Unsigned commits (no GPG/SSH).
+- Direct commits to `main`, no migration branch, no PRs. No `Co-authored-by: Claude` trailer. `-s` Signed-off-by. Unsigned commits (no GPG/SSH). Every commit must compile and pass `(cd jquantlib && mvn test)` *before* it lands on `main` — without a branch staging area, a bad commit is immediately public; the discipline tightens accordingly.
 - Divergence found mid-stub → separate preceding `align(<pkg>): ...` commit, not folded into the stub commit.
 - Pause triggers A1–A6 from phase1-design §7.3 remain active.
 
@@ -332,6 +332,7 @@ Phase 2a-specific decisions made during brainstorming. Phase 1 decisions in `pha
 | P2A-5 | MINPACK Java package layout = new `MINPACK` class in same package as `LevenbergMarquardt` (not subpackage, not nested) | Java idiom for mirroring a C++ namespace of free functions; keeps `MINPACK` lexically adjacent to its sole caller the way C++ does; avoids class-per-function Java-ism. |
 | P2A-6 | Single-session execution, no parallelism | User preference: keep things simple for now; parallelism/orchestration deferred. |
 | P2A-7 | New pause trigger A7 (Phase 2a-only) | WI-4 is the first time we're auditing pre-existing Java for drift at scale; need a circuit-breaker if the suspected drift rate is wildly wrong. |
+| P2A-8 | Work directly on `main`; no migration branch for Phase 2a | Phase 1's branch was effectively a staging area fast-forwarded to `main` per layer. For a solo single-owner repo with disciplined commit hygiene, the branch adds ceremony without safety. Commit-level discipline tightens (see §6.3) to compensate. Tag `jquantlib-phase1-complete` preserves the Phase 1 terminal state independently of any branch. |
 
 ---
 
