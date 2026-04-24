@@ -44,6 +44,12 @@ public class OptimizerTest {
     };
 
 
+    // Phase-2a status (2026-04-24): LM gate lifted but the test's active
+    // optimizationMethodTypes list contains only Simplex (line 104 has
+    // LevenbergMarquardt commented out). Un-skipping exposes a Simplex
+    // bug — "Independent variable must be 1 dimensional" from the Array
+    // layout Simplex builds — that is unrelated to Phase 2a scope.
+    // Carved to docs/migration/phase2a-carveouts.md (WI-2-carveout-simplex).
     @Ignore
     @Test
     public void testOptimizers() {

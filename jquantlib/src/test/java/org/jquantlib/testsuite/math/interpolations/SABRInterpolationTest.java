@@ -44,7 +44,13 @@ import org.junit.Test;
 
 public class SABRInterpolationTest {
 
-    //TODO: uncomment when Minpack.lmdif becomes available
+    // Phase-2a status (2026-04-24): the Minpack.lmdif gate is gone, LM
+    // runs, but the test still fails with "beta must be in (0.0, 1.0)" —
+    // SABRInterpolation converges to a β outside [0,1] (or the guess
+    // path feeds one to Sabr.validateSabrParameters). Root cause lives
+    // in SABRInterpolation's initial-guess / transformation logic, not
+    // in the optimizer. Carved to docs/migration/phase2a-carveouts.md
+    // (WI-2-carveout-SABR).
     @Ignore
     @Test
     public void testSABRInterpolationTest() {

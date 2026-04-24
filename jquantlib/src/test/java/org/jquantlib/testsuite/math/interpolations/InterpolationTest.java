@@ -1037,6 +1037,9 @@ public class InterpolationTest {
 
 
 
+    // Phase-2a status (2026-04-24): LM gate lifted; same SABR β-range
+    // validation failure as SABRInterpolationTest. Carved to
+    // docs/migration/phase2a-carveouts.md (WI-2-carveout-SABR).
     @Ignore
     @Test
     public void testSabrInterpolation(){
