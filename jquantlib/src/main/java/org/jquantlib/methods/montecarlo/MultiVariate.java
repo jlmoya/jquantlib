@@ -46,9 +46,6 @@ import org.jquantlib.math.randomnumbers.RandomNumberGenerator;
 public class MultiVariate<RNG extends RandomNumberGenerator> implements Variate {
 	
 	public MultiVariate() {
-        if (System.getProperty("EXPERIMENTAL")==null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
 	}
 
     // FIXME: decide how to implement

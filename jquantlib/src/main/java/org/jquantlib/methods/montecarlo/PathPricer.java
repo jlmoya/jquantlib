@@ -56,9 +56,6 @@ import org.jquantlib.math.Ops;
 public abstract class PathPricer<PathType> implements Ops.Op<PathType, Double> {
 
 	public PathPricer() {
-        if (System.getProperty("EXPERIMENTAL")==null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
 	}
 	
 	public abstract Double op(final PathType path);

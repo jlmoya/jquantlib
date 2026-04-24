@@ -75,8 +75,6 @@ public class BrownianBridge {
      * @param steps
      */
     public BrownianBridge(final/* @NonNegative */int steps) {
-        if (System.getProperty("EXPERIMENTAL")==null)
-            throw new UnsupportedOperationException("Work in progress");
         this.size_ = steps;
         this.t_ = new double[this.size_];
         this.sqrtdt_ = new double[this.size_];
