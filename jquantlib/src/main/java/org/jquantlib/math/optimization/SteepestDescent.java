@@ -37,11 +37,12 @@ public class SteepestDescent extends LineSearchBasedMethod {
 
     @Override
     public Type minimize(final Problem P, final EndCriteria endCriteria) {
-        final EndCriteria.Type ecType = EndCriteria.Type.None;
+        // Pass-by-reference holders for EndCriteria's mutating check methods.
+        final EndCriteria.Type[] ecType = { EndCriteria.Type.None };
         P.reset();
         Array x_ = P.currentValue();
         int iterationNumber = 0;
-        final int stationaryStateIterationNumber_ = 0;
+        final int[] stationaryStateIterationNumber_ = { 0 };
         lineSearch_.setSearchDirection(new Array(x_.size()));
         boolean end = false;
 
@@ -93,6 +94,6 @@ public class SteepestDescent extends LineSearchBasedMethod {
         } while (end == false);
 
         P.setCurrentValue(x_);
-        return ecType;
+        return ecType[0];
     }
 }

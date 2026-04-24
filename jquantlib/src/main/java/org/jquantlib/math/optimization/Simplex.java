@@ -133,8 +133,9 @@ public class Simplex extends OptimizationMethod {
 		final double xtol = endCriteria.getRootEpsilon(); // end criteria on x (see
 													// GSL v. 1.9,
 													// http://www.gnu.org/software/gsl/)
-		final int maxStationaryStateIterations_ = endCriteria.getMaxStationaryStateIterations();
-		final EndCriteria.Type ecType = EndCriteria.Type.None;
+		// Pass-by-reference holders for EndCriteria's mutating check methods.
+		final int[] maxStationaryStateIterations_ = { endCriteria.getMaxStationaryStateIterations() };
+		final EndCriteria.Type[] ecType = { EndCriteria.Type.None };
 		P.reset();
 		Array x_ = P.currentValue();
 		Integer iterationNumber_ = 0;
@@ -206,7 +207,7 @@ public class Simplex extends OptimizationMethod {
 				final double low = values_.get(iLowest);
 				P.setFunctionValue(low);
 				P.setCurrentValue(x_);
-				return ecType;
+				return ecType[0];
 			}
 			// If end criteria is not met, continue
 			double factor = -1.0;

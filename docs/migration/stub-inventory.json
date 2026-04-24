@@ -468,18 +468,6 @@
     "notes": ""
   },
   {
-    "id": "math.optimization.EndCriteria#UnsupportedOperationException",
-    "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/EndCriteria.java",
-    "line": 100,
-    "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
     "id": "math.optimization.LeastSquareFunction#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LeastSquareFunction.java",
     "line": 14,
@@ -554,7 +542,7 @@
   {
     "id": "math.optimization.LineSearch#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LineSearch.java",
-    "line": 82,
+    "line": 83,
     "kind": "work_in_progress",
     "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
     "cpp_counterpart": "",

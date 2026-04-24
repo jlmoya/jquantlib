@@ -77,8 +77,9 @@ public class LineSearch {
     }
 
     //FIXME: to be reviewed.
-    // Perform line search
-    public double evaluate(final Problem P, final EndCriteria.Type ecType, final EndCriteria endCriteria, final double t_ini){
+    // Perform line search. ecType is a one-element array (pass-by-reference holder)
+    // to match C++ semantics where EndCriteria check methods mutate Type&.
+    public double evaluate(final Problem P, final EndCriteria.Type[] ecType, final EndCriteria endCriteria, final double t_ini){
         throw new UnsupportedOperationException("Work in progress");
     }
 

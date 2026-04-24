@@ -23,19 +23,23 @@ package org.jquantlib.math.optimization;
 import org.jquantlib.QL;
 
 /**
- * Criteria to end optimization process
+ * Criteria to end optimization process.
  * <p>
- * <ul>
- * <li>maximum number of iterations AND minimum number of iterations around
- * stationary point</li>
- * <li>x (independent variable) stationary point</li>
- * <li>y=f(x) (dependent variable) stationary point</li>
- * <li>stationary gradient</li>
- * </ul>
+ * Faithful port of QuantLib C++ v1.42.1 {@code ql/math/optimization/endcriteria.hpp|cpp}.
+ * C++ uses pass-by-reference ({@code Type&}, {@code Size&}) to let the caller see which
+ * criterion fired and to update the stationary-state iteration counter. Java has no
+ * pass-by-reference for primitives/enums, so the Java API uses one-element arrays
+ * ({@code Type[]}, {@code int[]}) as mutable holders. Callers supply a
+ * {@code Type[] ecType = { Type.None };} and read {@code ecType[0]} after the call.
  *
- * @author Joon Tiang Heng
+ * <ul>
+ *   <li>maximum number of iterations AND minimum number of iterations around
+ *       stationary point</li>
+ *   <li>x (independent variable) stationary point</li>
+ *   <li>y=f(x) (dependent variable) stationary point</li>
+ *   <li>stationary gradient</li>
+ * </ul>
  */
-// FIXME: needs code review and better documentation
 public class EndCriteria {
 
     public enum Type {
@@ -45,199 +49,184 @@ public class EndCriteria {
         StationaryFunctionValue,
         StationaryFunctionAccuracy,
         ZeroGradientNorm,
-        Unknown;
+        FunctionEpsilonTooSmall,
+        Unknown
+    }
 
-//XXX not needed?
-//
-//        public final String toString(final Type ec) /*@ReadOnly*/ {
-//            switch (ec) {
-//            case None:
-//                return "None";
-//            case MaxIterations:
-//                return "MaxIterations";
-//            case StationaryPoint:
-//                return "StationaryPoint";
-//            case StationaryFunctionValue:
-//                return "StationaryFunctionValue";
-//            case StationaryFunctionAccuracy:
-//                return "StationaryFunctionAccuracy";
-//            case ZeroGradientNorm:
-//                return "ZeroGradientNorm";
-//            case Unknown:
-//                return "Unknown";
-//            default:
-//                throw new LibraryException("unknown EndCriteria"); // TODO: message
-//            }
-//        }
+    //! Maximum number of iterations
+    protected final int maxIterations_;
 
-    };
+    //! Maximum number of iterations in stationary state (mutable in C++; final here because
+    //! we resolve the sentinel in the constructor.)
+    protected final int maxStationaryStateIterations_;
 
-        //! Maximum number of iterations
-        protected final int maxIterations_;
+    //! root, function and gradient epsilons
+    protected final double rootEpsilon_;
+    protected final double functionEpsilon_;
+    protected final double gradientNormEpsilon_;
 
-        //! Maximum number of iterations in stationary state
-        protected final int maxStationaryStateIterations_;//mutable
+    //-- EndCriteria(Size maxIterations, Size maxStationaryStateIterations,
+    //--             Real rootEpsilon, Real functionEpsilon, Real gradientNormEpsilon);
+    //-- in ql/math/optimization/endcriteria.cpp:29
+    /**
+     * @param maxIterations              hard iteration cap.
+     * @param maxStationaryStateIterations  cap on consecutive stationary iterations; pass
+     *                                      {@code 0} as a sentinel meaning "not provided"
+     *                                      (C++ uses {@code Null<Size>()}); the constructor
+     *                                      then derives {@code min(maxIterations/2, 100)}.
+     * @param rootEpsilon                stationary-x tolerance.
+     * @param functionEpsilon            stationary-f tolerance.
+     * @param gradientNormEpsilon        zero-gradient tolerance; pass {@code Double.NaN}
+     *                                   as a sentinel meaning "not provided" (C++ uses
+     *                                   {@code Null<Real>()}); falls back to
+     *                                   {@code functionEpsilon}.
+     */
+    public EndCriteria(final int maxIterations,
+                       final int maxStationaryStateIterations,
+                       final double rootEpsilon,
+                       final double functionEpsilon,
+                       final double gradientNormEpsilon) {
+        this.maxIterations_ = maxIterations;
+        this.rootEpsilon_ = rootEpsilon;
+        this.functionEpsilon_ = functionEpsilon;
+        this.maxStationaryStateIterations_ = (maxStationaryStateIterations != 0)
+                ? maxStationaryStateIterations
+                : Math.min(maxIterations / 2, 100);
+        this.gradientNormEpsilon_ = Double.isNaN(gradientNormEpsilon)
+                ? functionEpsilon_
+                : gradientNormEpsilon;
 
-        //! root, function and gradient epsilons
-        protected final double rootEpsilon_, functionEpsilon_, gradientNormEpsilon_;
+        QL.require(this.maxStationaryStateIterations_ > 1,
+                "maxStationaryStateIterations_ (" + this.maxStationaryStateIterations_
+                        + ") must be greater than one");
+        QL.require(this.maxStationaryStateIterations_ < this.maxIterations_,
+                "maxStationaryStateIterations_ (" + this.maxStationaryStateIterations_
+                        + ") must be less than maxIterations_ (" + this.maxIterations_ + ")");
+    }
 
-
-        private Type ecType;
-        private int statStateIterations;
-
-
-        //
-        // public constructors
-        //
-
-        public EndCriteria(final int maxIterations,
-                final int maxStationaryStateIterations,
-                final double rootEpsilon,
-                final double functionEpsilon,
-                final double gradientNormEpsilon) {
-
-            if (System.getProperty("EXPERIMENTAL") == null)
-                throw new UnsupportedOperationException("Work in progress");
-
-            this.maxIterations_ = maxIterations;
-            this.rootEpsilon_ = rootEpsilon;
-            this.functionEpsilon_ = functionEpsilon;
-            this.maxStationaryStateIterations_ = (maxStationaryStateIterations != 0) ? maxStationaryStateIterations : Math.min(maxIterations/2, 100);
-            this.gradientNormEpsilon_ = (Double.isNaN(gradientNormEpsilon)) ? functionEpsilon_ : gradientNormEpsilon;
-
-            QL.require(this.maxStationaryStateIterations_ >= 1 , "maxStationaryStateIterations must be greater than one"); // TODO: message
-            QL.require(this.maxStationaryStateIterations_ <= this.maxIterations_ , "maxStationaryStateIterations_ must be less than maxIterations_"); // TODO: message
+    //-- bool checkMaxIterations(Size iteration, EndCriteria::Type& ecType) const;
+    //-- in ql/math/optimization/endcriteria.cpp:56
+    public boolean checkMaxIterations(final int iteration, final Type[] ecType) {
+        if (iteration < maxIterations_) {
+            return false;
         }
+        ecType[0] = Type.MaxIterations;
+        return true;
+    }
 
-
-        //
-        // public methods
-        //
-
-        /**
-         * Test if the number of iteration is below MaxIterations
-         */
-        /* FIXME: The intention was to modify the passed reference ecType and not this.ecType.
-         * However, the question is how this should be done without changing the method signature?
-         */
-        public boolean checkMaxIterations(
-                final int iteration,
-                final Type ecType) {
-            if (iteration < maxIterations_)
-                return false;
-            //this is wrong!!!!!!!!!!!!!!!
-            this.ecType = Type.MaxIterations;
-            throw new UnsupportedOperationException("work in progress");
-            //-- return true;
+    //-- bool checkStationaryPoint(Real xOld, Real xNew, Size& statStateIterations,
+    //--                           EndCriteria::Type& ecType) const;
+    //-- in ql/math/optimization/endcriteria.cpp:64
+    public boolean checkStationaryPoint(final double xOld, final double xNew,
+                                        final int[] statStateIterations, final Type[] ecType) {
+        if (Math.abs(xNew - xOld) >= rootEpsilon_) {
+            statStateIterations[0] = 0;
+            return false;
         }
-
-
-        /**
-         * Test if the root variation is below rootEpsilon
-         */
-        public boolean checkStationaryPoint(
-                final double xOld,
-                final double xNew,
-                final int statStateIterations,
-                final Type ecType) {
-            if (Math.abs(xNew-xOld) >= rootEpsilon_) {
-                this.statStateIterations = 0;
-                return false;
-            }
-            this.statStateIterations++;
-            if (statStateIterations <= maxStationaryStateIterations_)
-                return false;
-            this.ecType = Type.StationaryPoint;
-            return true;
+        ++statStateIterations[0];
+        if (statStateIterations[0] <= maxStationaryStateIterations_) {
+            return false;
         }
+        ecType[0] = Type.StationaryPoint;
+        return true;
+    }
 
-        /**
-         * Test if the function variation is below functionEpsilon
-         */
-        public boolean checkStationaryFunctionValue(
-                final double fxOld,
-                final double fxNew,
-                final int statStateIterations,
-                final Type ecType) {
-            if (Math.abs(fxNew-fxOld) >= functionEpsilon_) {
-                this.statStateIterations = 0;
-
-                return false;
-            }
-            this.statStateIterations++;
-            if (statStateIterations <= maxStationaryStateIterations_)
-                return false;
-            this.ecType = Type.StationaryFunctionValue;
-            return true;
+    //-- bool checkStationaryFunctionValue(Real fxOld, Real fxNew, Size& statStateIterations,
+    //--                                   EndCriteria::Type& ecType) const;
+    //-- in ql/math/optimization/endcriteria.cpp:79
+    public boolean checkStationaryFunctionValue(final double fxOld, final double fxNew,
+                                                final int[] statStateIterations,
+                                                final Type[] ecType) {
+        if (Math.abs(fxNew - fxOld) >= functionEpsilon_) {
+            statStateIterations[0] = 0;
+            return false;
         }
-
-        /**
-         * Test if the function value is below functionEpsilon
-         */
-        public boolean checkStationaryFunctionAccuracy(
-                final double f,
-                final boolean positiveOptimization,
-                final Type ecType) {
-            if (!positiveOptimization)
-                return false;
-            if (f >= functionEpsilon_)
-                return false;
-            this.ecType = Type.StationaryFunctionAccuracy;
-            return true;
+        ++statStateIterations[0];
+        if (statStateIterations[0] <= maxStationaryStateIterations_) {
+            return false;
         }
+        ecType[0] = Type.StationaryFunctionValue;
+        return true;
+    }
 
-
-        /**
-         * Test if the gradient norm value is below gradientNormEpsilon
-         * */
-        public boolean checkZeroGradientNorm(
-                final double gradientNorm,
-                final Type ecType) {
-            if (gradientNorm >= gradientNormEpsilon_)
-                return false;
-            this.ecType = Type.ZeroGradientNorm;
-            return true;
+    //-- bool checkStationaryFunctionAccuracy(Real f, bool positiveOptimization,
+    //--                                      EndCriteria::Type& ecType) const;
+    //-- in ql/math/optimization/endcriteria.cpp:95
+    public boolean checkStationaryFunctionAccuracy(final double f,
+                                                   final boolean positiveOptimization,
+                                                   final Type[] ecType) {
+        if (!positiveOptimization) {
+            return false;
         }
-
-        /**
-         *  Test if the number of iterations is not too big and if a minimum point is not reached
-         */
-        public boolean get(
-                final int iteration,
-                final int statStateIterations,
-                final boolean positiveOptimization,
-                final double fold,
-                final double normgold,
-                final double fnew,
-                final double normgnew,
-                final Type ecType) {
-            return
-            checkMaxIterations(iteration, ecType) ||
-            checkStationaryFunctionValue(fold, fnew, statStateIterations, ecType) ||
-            checkStationaryFunctionAccuracy(fnew, positiveOptimization, ecType) ||
-            checkZeroGradientNorm(normgnew, ecType);
+        if (f >= functionEpsilon_) {
+            return false;
         }
+        ecType[0] = Type.StationaryFunctionAccuracy;
+        return true;
+    }
 
-        // Inspectors
-
-        public final int getMaxIterations() /*@ReadOnly*/ {
-            return maxIterations_;
+    //-- bool checkZeroGradientNorm(Real gradientNorm, EndCriteria::Type& ecType) const;
+    //-- in ql/math/optimization/endcriteria.cpp:117
+    public boolean checkZeroGradientNorm(final double gradientNorm, final Type[] ecType) {
+        if (gradientNorm >= gradientNormEpsilon_) {
+            return false;
         }
+        ecType[0] = Type.ZeroGradientNorm;
+        return true;
+    }
 
-        public final int getMaxStationaryStateIterations() /*@ReadOnly*/ {
-            return maxStationaryStateIterations_;
-        }
+    //-- bool operator()(Size iteration, Size& statStateIterations,
+    //--                 bool positiveOptimization, Real fold, Real /*normgold*/,
+    //--                 Real fnew, Real normgnew, EndCriteria::Type& ecType) const;
+    //-- in ql/math/optimization/endcriteria.cpp:125
+    //
+    // Java lacks operator() so the method is named {@code get}, matching the existing
+    // JQuantLib convention. The normgold parameter is accepted but ignored, matching C++.
+    public boolean get(final int iteration,
+                       final int[] statStateIterations,
+                       final boolean positiveOptimization,
+                       final double fold,
+                       @SuppressWarnings("unused") final double normgold,
+                       final double fnew,
+                       final double normgnew,
+                       final Type[] ecType) {
+        return checkMaxIterations(iteration, ecType)
+                || checkStationaryFunctionValue(fold, fnew, statStateIterations, ecType)
+                || checkStationaryFunctionAccuracy(fnew, positiveOptimization, ecType)
+                || checkZeroGradientNorm(normgnew, ecType);
+    }
 
-        public final double getRootEpsilon() /*@ReadOnly*/ {
-            return rootEpsilon_;
-        }
+    // Inspectors
 
-        public final double getFunctionEpsilon() /*@ReadOnly*/ {
-            return functionEpsilon_;
-        }
+    public final int getMaxIterations() {
+        return maxIterations_;
+    }
 
-        public final double getGradientNormEpsilon() /*@ReadOnly*/ {
-            return gradientNormEpsilon_;
-        }
+    public final int getMaxStationaryStateIterations() {
+        return maxStationaryStateIterations_;
+    }
 
+    public final double getRootEpsilon() {
+        return rootEpsilon_;
+    }
+
+    public final double getFunctionEpsilon() {
+        return functionEpsilon_;
+    }
+
+    public final double getGradientNormEpsilon() {
+        return gradientNormEpsilon_;
+    }
+
+    //-- static bool succeeded(EndCriteria::Type ecType);
+    //-- in ql/math/optimization/endcriteria.cpp:161
+    /**
+     * Whether an end-criterion represents convergence success (a found minimum) as
+     * opposed to exhaustion (MaxIterations) or an anomaly (Unknown).
+     */
+    public static boolean succeeded(final Type ecType) {
+        return ecType == Type.StationaryPoint
+                || ecType == Type.StationaryFunctionValue
+                || ecType == Type.StationaryFunctionAccuracy;
+    }
 }

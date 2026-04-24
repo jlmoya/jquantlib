@@ -1,0 +1,242 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "ecTypeOut": 0,
+        "result": false
+      },
+      "inputs": {
+        "ecTypeIn": "None",
+        "iteration": 5,
+        "maxIterations": 100
+      },
+      "name": "checkMaxIterations_below"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 1,
+        "result": true
+      },
+      "inputs": {
+        "ecTypeIn": "None",
+        "iteration": 100,
+        "maxIterations": 100
+      },
+      "name": "checkMaxIterations_atLimit"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 1,
+        "result": true
+      },
+      "inputs": {
+        "ecTypeIn": "None",
+        "iteration": 200,
+        "maxIterations": 100
+      },
+      "name": "checkMaxIterations_above"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 0,
+        "result": false,
+        "statOut": 0
+      },
+      "inputs": {
+        "rootEps": 1e-08,
+        "statIn": 5,
+        "xNew": 2.0,
+        "xOld": 1.0
+      },
+      "name": "checkStationaryPoint_largeDiff"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 0,
+        "result": false,
+        "statOut": 6
+      },
+      "inputs": {
+        "rootEps": 1e-08,
+        "statIn": 5,
+        "xNew": 1.0000000001,
+        "xOld": 1.0
+      },
+      "name": "checkStationaryPoint_accumulates"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 2,
+        "result": true,
+        "statOut": 11
+      },
+      "inputs": {
+        "maxStat": 10,
+        "statIn": 10,
+        "xNew": 1.0000000001,
+        "xOld": 1.0
+      },
+      "name": "checkStationaryPoint_triggers"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 0,
+        "result": false,
+        "statOut": 0
+      },
+      "inputs": {
+        "fxNew": 2.0,
+        "fxOld": 5.0,
+        "statIn": 3
+      },
+      "name": "checkStationaryFunctionValue_largeDiff"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 3,
+        "result": true,
+        "statOut": 11
+      },
+      "inputs": {
+        "fxNew": 2.0000000001,
+        "fxOld": 2.0,
+        "maxStat": 10,
+        "statIn": 10
+      },
+      "name": "checkStationaryFunctionValue_triggers"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 0,
+        "result": false
+      },
+      "inputs": {
+        "f": 1e-20,
+        "positiveOpt": false
+      },
+      "name": "checkStationaryFunctionAccuracy_notPositive"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 0,
+        "result": false
+      },
+      "inputs": {
+        "eps": 1e-08,
+        "f": 1.0,
+        "positiveOpt": true
+      },
+      "name": "checkStationaryFunctionAccuracy_largeF"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 4,
+        "result": true
+      },
+      "inputs": {
+        "eps": 1e-08,
+        "f": 1e-20,
+        "positiveOpt": true
+      },
+      "name": "checkStationaryFunctionAccuracy_triggers"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 0,
+        "result": false
+      },
+      "inputs": {
+        "eps": 1e-08,
+        "gradientNorm": 1.0
+      },
+      "name": "checkZeroGradientNorm_aboveEps"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 5,
+        "result": true
+      },
+      "inputs": {
+        "eps": 1e-08,
+        "gradientNorm": 1e-20
+      },
+      "name": "checkZeroGradientNorm_belowEps"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 0,
+        "result": false,
+        "statOut": 0
+      },
+      "inputs": {
+        "fnew": 2.0,
+        "fold": 5.0,
+        "iteration": 5,
+        "normgnew": 1.0,
+        "positiveOpt": false
+      },
+      "name": "operator_call_noTrigger"
+    },
+    {
+      "expected": {
+        "ecTypeOut": 1,
+        "result": true,
+        "statOut": 0
+      },
+      "inputs": {
+        "iteration": 100,
+        "maxIterations": 100
+      },
+      "name": "operator_call_maxIter"
+    },
+    {
+      "expected": true,
+      "inputs": {
+        "ecType": "StationaryPoint"
+      },
+      "name": "succeeded_StationaryPoint"
+    },
+    {
+      "expected": false,
+      "inputs": {
+        "ecType": "MaxIterations"
+      },
+      "name": "succeeded_MaxIterations"
+    },
+    {
+      "expected": true,
+      "inputs": {
+        "ecType": "StationaryFunctionAccuracy"
+      },
+      "name": "succeeded_StationaryFunctionAccuracy"
+    },
+    {
+      "expected": false,
+      "inputs": {
+        "ecType": "None"
+      },
+      "name": "succeeded_None"
+    },
+    {
+      "expected": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "inputs": {
+        "description": "enum values in declaration order"
+      },
+      "name": "enum_order"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-24T10:23:04Z",
+  "generated_by": "endcriteria_probe",
+  "test_group": "math/optimization/endcriteria"
+}
