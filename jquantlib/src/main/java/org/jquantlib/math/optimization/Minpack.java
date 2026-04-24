@@ -108,6 +108,19 @@ import org.jquantlib.math.matrixutilities.internal.Address;
 public class Minpack {
 
 
+    /**
+     * Java analog of QuantLib::MINPACK::LmdifCostFunction
+     * (ql/math/optimization/lmdif.hpp: {@code std::function<void(int,int,Real*,
+     * Real*,int*)>}): a callback that, given the current parameter vector
+     * {@code x} of length {@code n}, fills {@code fvec} (length {@code m})
+     * with the residuals. Setting {@code iflag[0] < 0} aborts lmdif.
+     */
+    @FunctionalInterface
+    public interface LmdifCostFunction {
+        void evaluate(int m, int n, double[] x, double[] fvec, int[] iflag);
+    }
+
+
     public static void qrfac(
             final int m,
             final int n,
@@ -694,6 +707,63 @@ public class Minpack {
             // compute an improved estimate for par.
             par[0] = Math.max(parl, par[0] + parc);
             // end of an iteration; loop back to L150.
+        }
+    }
+
+
+    /**
+     * Forward-difference approximation to the Jacobian. Fresh v1.42.1
+     * port of QuantLib::MINPACK::fdjac2 from ql/math/optimization/
+     * lmdif.cpp lines 255-368.
+     * <p>
+     * Evaluates the cost function {@code fcn} at {@code n} perturbations
+     * of {@code x} (one per parameter) to fill the m-by-n Jacobian
+     * {@code fjac} (column-major). Step size {@code h = eps * |x[j]|}
+     * where {@code eps = sqrt(max(epsfcn, MACHEP))}. If {@code x[j] == 0},
+     * uses {@code h = eps}. If the cost function sets {@code iflag[0] < 0},
+     * fdjac2 returns immediately with a partially-filled {@code fjac}.
+     * <p>
+     * Package-private — mirrors file-local C++ linkage.
+     *
+     * @param m      number of residuals
+     * @param n      number of parameters
+     * @param x      parameters (length n); temporarily perturbed during
+     *               the loop but fully restored on exit
+     * @param fvec   residuals at the unperturbed {@code x} (length m)
+     * @param fjac   output Jacobian, column-major, length m*n
+     * @param iflag  single-element abort-flag; set by {@code fcn}
+     * @param epsfcn caller-provided relative-error estimate in
+     *               {@code fcn}; clamped to MACHEP
+     * @param wa     workspace of length m (holds perturbed residuals)
+     * @param fcn    cost function callback
+     */
+    static void fdjac2(final int m, final int n, final double[] x,
+                       final double[] fvec, final double[] fjac,
+                       final int[] iflag, final double epsfcn,
+                       final double[] wa, final LmdifCostFunction fcn) {
+        final double zero = 0.0;
+        int i, j, ij;
+        double eps, h, temp;
+
+        temp = Math.max(epsfcn, MACHEP);
+        eps = Math.sqrt(temp);
+        ij = 0;
+        for (j = 0; j < n; j++) {
+            temp = x[j];
+            h = eps * Math.abs(temp);
+            if (h == zero) {
+                h = eps;
+            }
+            x[j] = temp + h;
+            fcn.evaluate(m, n, x, wa, iflag);
+            if (iflag[0] < 0) {
+                return;
+            }
+            x[j] = temp;
+            for (i = 0; i < m; i++) {
+                fjac[ij] = (wa[i] - fvec[i]) / h;
+                ij += 1; // fjac[i+m*j]
+            }
         }
     }
 
