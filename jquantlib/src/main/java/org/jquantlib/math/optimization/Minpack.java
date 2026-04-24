@@ -122,6 +122,82 @@ public class Minpack {
     }
 
 
+    /**
+     * Euclidean norm with overflow/underflow protection.
+     * Fresh v1.42.1 port of QuantLib::MINPACK::enorm from
+     * ql/math/optimization/lmdif.cpp lines 79-209. Computes sqrt(sum(x[i]^2))
+     * safely across extreme magnitudes by partitioning components into
+     * small / intermediate / large accumulators.
+     * <p>
+     * Distinct from the internal MinpackC.enorm (3-arg form with offset);
+     * retained alongside it until MinpackC is phased out in later Phase 2a
+     * commits when the full lmdif driver lands.
+     */
+    static double enorm(final int n, final double[] x) {
+        final double rdwarf = 3.834e-20;
+        final double rgiant = 1.304e19;
+        final double zero = 0.0;
+        final double one = 1.0;
+
+        double s1 = zero, s2 = zero, s3 = zero;
+        double x1max = zero, x3max = zero;
+        final double floatn = n;
+        final double agiant = rgiant / floatn;
+        double xabs, temp;
+
+        for (int i = 0; i < n; i++) {
+            xabs = Math.abs(x[i]);
+            if ((xabs > rdwarf) && (xabs < agiant)) {
+                // sum for intermediate components
+                s2 += xabs * xabs;
+                continue;
+            }
+            if (xabs > rdwarf) {
+                // sum for large components
+                if (xabs > x1max) {
+                    temp = x1max / xabs;
+                    s1 = one + s1 * temp * temp;
+                    x1max = xabs;
+                } else {
+                    temp = xabs / x1max;
+                    s1 += temp * temp;
+                }
+                continue;
+            }
+            // sum for small components
+            if (xabs > x3max) {
+                temp = x3max / xabs;
+                s3 = one + s3 * temp * temp;
+                x3max = xabs;
+            } else {
+                if (xabs != zero) {
+                    temp = xabs / x3max;
+                    s3 += temp * temp;
+                }
+            }
+        }
+
+        // calculation of norm
+        double ans;
+        if (s1 != zero) {
+            temp = s1 + (s2 / x1max) / x1max;
+            ans = x1max * Math.sqrt(temp);
+            return ans;
+        }
+        if (s2 != zero) {
+            if (s2 >= x3max) {
+                temp = s2 * (one + (x3max / s2) * (x3max * s3));
+            } else {
+                temp = x3max * ((s2 / x3max) + (x3max * s3));
+            }
+            ans = Math.sqrt(temp);
+        } else {
+            ans = x3max * Math.sqrt(s3);
+        }
+        return ans;
+    }
+
+
     private static class MinpackC {
 
         private static final double MACHEP = 1.2e-16; // resolution of arithmetic
