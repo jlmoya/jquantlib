@@ -242,6 +242,132 @@ public class MinpackTest {
         assertEquals("J[1,1] = df1/dx1 = 1", 1.0, fjac[3], 1.0e-8);
     }
 
+    // --- lmdif driver (cross-validated against v1.42.1 probe) ------------
+
+    @Test
+    public void lmdif_linearFit() {
+        // Loose on params: a 10-iteration LM run accumulates the ~1-ulp
+        // JVM-vs-C++ FMA drift documented in qrfac/qrsolv (phase2a-progress
+        // §3), compounding to ~3e-9 relative by termination. info/nfev
+        // still match exactly.
+        runLmdifCase("lm_linear_fit", /*tightParams*/ false);
+    }
+
+    @Test
+    public void lmdif_quadraticFit() {
+        runLmdifCase("lm_quadratic_fit", /*tightParams*/ true);
+    }
+
+    @Test
+    public void lmdif_rosenbrock() {
+        // Loose on params per plan §Task 2.6 table — ill-conditioned, many
+        // iterations compound tiny FP divergences.
+        runLmdifCase("lm_rosenbrock", /*tightParams*/ false);
+    }
+
+    @Test
+    public void lmdif_maxfevEarlyStop() {
+        // Tight on params: maxfev=3 cuts execution after ~1 LM step, so
+        // FMA drift has no room to accumulate.
+        runLmdifCase("lm_maxfev_earlystop", /*tightParams*/ true);
+    }
+
+    private static void runLmdifCase(final String caseName, final boolean tightParams) {
+        final ReferenceReader reader = ReferenceReader.load("math/optimization/levenbergmarquardt");
+        final Case c = reader.getCase(caseName);
+        final JSONObject in = c.inputs();
+        final int m = in.getInt("m");
+        final int n = in.getInt("n");
+        final double[] x = toDoubleArray(in.getJSONArray("x0"));
+        final double ftol = in.getDouble("ftol");
+        final double xtol = in.getDouble("xtol");
+        final double gtol = in.getDouble("gtol");
+        final int maxfev = in.getInt("maxfev");
+        final double epsfcn = in.getDouble("epsfcn");
+        final double[] diag = toDoubleArray(in.getJSONArray("diag_in"));
+        final int mode = in.getInt("mode");
+        final double factor = in.getDouble("factor");
+        final int nprint = in.getInt("nprint");
+
+        final int ldfjac = m;
+        final double[] fvec = new double[m];
+        final double[] fjac = new double[m * n];
+        final int[] ipvt = new int[n];
+        final double[] qtf = new double[n];
+        final double[] wa1 = new double[n];
+        final double[] wa2 = new double[n];
+        final double[] wa3 = new double[n];
+        final double[] wa4 = new double[m];
+        final int[] info = { 0 };
+        final int[] nfev = { 0 };
+
+        final Minpack.LmdifCostFunction fcn = costFunctionFor(caseName);
+
+        Minpack.lmdif(m, n, x, fvec, ftol, xtol, gtol, maxfev, epsfcn, diag,
+                mode, factor, nprint, info, nfev, fjac, ldfjac, ipvt, qtf,
+                wa1, wa2, wa3, wa4, fcn, /*jacFcn*/ null);
+
+        final JSONObject exp = (JSONObject) c.expectedRaw();
+        assertEquals("info", exp.getInt("info"), info[0]);
+        assertEquals("nfev", exp.getInt("nfev"), nfev[0]);
+        final double[] xExp = toDoubleArray(exp.getJSONArray("x"));
+        final double[] fvecExp = toDoubleArray(exp.getJSONArray("fvec"));
+        if (tightParams) {
+            assertDoublesTight("x", xExp, x);
+            assertDoublesTight("fvec", fvecExp, fvec);
+        } else {
+            assertDoublesLoose("x", xExp, x);
+            assertDoublesLoose("fvec", fvecExp, fvec);
+        }
+    }
+
+    private static Minpack.LmdifCostFunction costFunctionFor(final String caseName) {
+        switch (caseName) {
+            case "lm_linear_fit":
+            case "lm_maxfev_earlystop": {
+                // y ≈ 2*x - 1 with small noise so no linear fit is exact.
+                // Prevents fvec from collapsing to exactly zero (which
+                // would diverge Java vs C++ on the gnorm<=gtol branch).
+                final double[] xs = { 0.0, 1.0, 2.0, 3.0, 4.0 };
+                final double[] ys = { -1.1, 0.9, 3.2, 4.8, 7.1 };
+                return (mm, nn, xx, fv, iflag) -> {
+                    for (int i = 0; i < mm; i++) {
+                        fv[i] = ys[i] - (xx[0] * xs[i] + xx[1]);
+                    }
+                };
+            }
+            case "lm_quadratic_fit": {
+                final double[] xs = { -2.0, -1.0, 0.0, 1.0, 2.0 };
+                final double[] ys = { 11.0, 6.0, 3.0, 2.0, 3.0 };
+                return (mm, nn, xx, fv, iflag) -> {
+                    for (int i = 0; i < mm; i++) {
+                        final double xi = xs[i];
+                        fv[i] = ys[i] - (xx[0] * xi * xi + xx[1] * xi + xx[2]);
+                    }
+                };
+            }
+            case "lm_rosenbrock": {
+                return (mm, nn, xx, fv, iflag) -> {
+                    fv[0] = 10.0 * (xx[1] - xx[0] * xx[0]);
+                    fv[1] = 1.0 - xx[0];
+                };
+            }
+            default:
+                throw new IllegalArgumentException("unknown LM case: " + caseName);
+        }
+    }
+
+    private static void assertDoublesLoose(final String name, final double[] exp, final double[] got) {
+        assertEquals(name + ".length", exp.length, got.length);
+        for (int i = 0; i < exp.length; i++) {
+            final double tol = Math.max(Math.abs(exp[i]) * 1.0e-8, 1.0e-8);
+            if (Math.abs(exp[i] - got[i]) > tol) {
+                fail(name + "[" + i + "]: expected=" + exp[i] + " got=" + got[i]
+                        + " |Δ|=" + Math.abs(exp[i] - got[i]) + " tol=" + tol);
+            }
+        }
+    }
+
     @Test
     public void fdjac2_abortFlag_returnsEarlyWithPartialFill() throws Exception {
         // A cost fn that sets iflag[0] = -1 on the second call aborts fdjac2

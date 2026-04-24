@@ -737,6 +737,394 @@ public class Minpack {
      * @param wa     workspace of length m (holds perturbed residuals)
      * @param fcn    cost function callback
      */
+    /**
+     * MINPACK {@code lmdif} — minimize the sum of squares of {@code m}
+     * nonlinear functions in {@code n} variables by a modification of
+     * the Levenberg-Marquardt algorithm. Fresh v1.42.1 port of
+     * QuantLib::MINPACK::lmdif from ql/math/optimization/lmdif.cpp
+     * lines 1130-1668.
+     * <p>
+     * Control flow mirrors the C++ goto structure: the C++ outer
+     * {@code L30} loop maps to a labeled {@code outer} while(true);
+     * the inner {@code L200} loop maps to a labeled {@code inner}
+     * while(true); the C++ {@code L300} termination is a labeled
+     * block that {@code break}s execute to jump to. No refactor
+     * (design §3.2 translation invariants).
+     *
+     * @param m       number of residuals (≥ n)
+     * @param n       number of parameters
+     * @param x       parameters (length n); initial estimate on
+     *                entry, final estimate on exit
+     * @param fvec    residuals at the final x (output, length m)
+     * @param ftol    relative error target in sum-of-squares
+     * @param xtol    relative error target in x
+     * @param gtol    orthogonality target for fvec vs Jacobian
+     *                columns
+     * @param maxfev  max number of fcn evaluations
+     * @param epsfcn  relative-error estimate in fcn (used by fdjac2)
+     * @param diag    scale factors (in/out): mode==2 caller-set,
+     *                mode!=2 internally set
+     * @param mode    1 = internal scaling, 2 = use caller diag
+     * @param factor  initial-step-bound multiplier, typically 100
+     * @param nprint  if > 0, call fcn with iflag[0]=0 at the start
+     *                of every nprint-th iteration and prior to return
+     * @param info    termination flag (length-1 output)
+     * @param nfev    number of fcn evaluations (length-1 output)
+     * @param fjac    m-by-n Jacobian workspace (column-major)
+     * @param ldfjac  leading dimension of fjac (≥ m)
+     * @param ipvt    permutation from qrfac (length n output)
+     * @param qtf     first n elements of Q^T*fvec (length n output)
+     * @param wa1     workspace (length n)
+     * @param wa2     workspace (length n)
+     * @param wa3     workspace (length n)
+     * @param wa4     workspace (length m)
+     * @param fcn     residual cost function (required)
+     * @param jacFcn  analytic Jacobian callback; may be {@code null}
+     *                to force fdjac2 forward differences
+     */
+    public static void lmdif(final int m, final int n, final double[] x,
+                             final double[] fvec, final double ftol,
+                             final double xtol, final double gtol,
+                             final int maxfev, final double epsfcn,
+                             final double[] diag, final int mode,
+                             final double factor, final int nprint,
+                             final int[] info, final int[] nfev,
+                             final double[] fjac, final int ldfjac,
+                             final int[] ipvt, final double[] qtf,
+                             final double[] wa1, final double[] wa2,
+                             final double[] wa3, final double[] wa4,
+                             final LmdifCostFunction fcn,
+                             final LmdifCostFunction jacFcn) {
+        final double one = 1.0;
+        final double p1 = 0.1;
+        final double p5 = 0.5;
+        final double p25 = 0.25;
+        final double p75 = 0.75;
+        final double p0001 = 1.0e-4;
+        final double zero = 0.0;
+
+        final int[] iflag = { 0 };
+        int i, ij, jj, iter, j, l;
+        double actred, delta, dirder, fnorm, fnorm1, gnorm;
+        double par, pnorm, prered, ratio;
+        double sum, temp, temp1, temp2, temp3, xnorm;
+
+        info[0] = 0;
+        iflag[0] = 0;
+        nfev[0] = 0;
+        delta = 0.0;
+        xnorm = 0.0;
+        par = 0.0;
+        iter = 1;
+        fnorm = 0.0;
+
+        mainBlock:
+        {
+            // check the input parameters for errors.
+            if ((n <= 0) || (m < n) || (ldfjac < m) || (ftol < zero)
+                    || (xtol < zero) || (gtol < zero) || (maxfev <= 0)
+                    || (factor <= zero)) {
+                break mainBlock; // goto L300
+            }
+            if (mode == 2) {
+                for (j = 0; j < n; j++) {
+                    if (diag[j] <= 0.0) {
+                        break mainBlock; // goto L300
+                    }
+                }
+            }
+
+            // evaluate the function at the starting point and
+            // calculate its norm.
+            iflag[0] = 1;
+            fcn.evaluate(m, n, x, fvec, iflag);
+            nfev[0] = 1;
+            if (iflag[0] < 0) {
+                break mainBlock;
+            }
+            fnorm = enorm(m, fvec);
+
+            // initialize levenberg-marquardt parameter and iteration
+            // counter.
+            par = zero;
+            iter = 1;
+
+            // beginning of the outer loop (L30).
+            outer:
+            while (true) {
+                // calculate the jacobian matrix.
+                iflag[0] = 2;
+                if (jacFcn == null) {
+                    fdjac2(m, n, x, fvec, fjac, iflag, epsfcn, wa4, fcn);
+                } else {
+                    jacFcn.evaluate(m, n, x, fjac, iflag);
+                }
+                nfev[0] += n;
+                if (iflag[0] < 0) {
+                    break mainBlock;
+                }
+
+                // if requested, call fcn to enable printing of iterates.
+                if (nprint > 0) {
+                    iflag[0] = 0;
+                    if (((iter - 1) % nprint) == 0) {
+                        fcn.evaluate(m, n, x, fvec, iflag);
+                        if (iflag[0] < 0) {
+                            break mainBlock;
+                        }
+                    }
+                }
+
+                // compute the qr factorization of the jacobian.
+                qrfac(m, n, fjac, ldfjac, 1, ipvt, n, wa1, wa2, wa3);
+
+                // on the first iteration and if mode is 1, scale
+                // according to the norms of the columns of the
+                // initial jacobian.
+                if (iter == 1) {
+                    if (mode != 2) {
+                        for (j = 0; j < n; j++) {
+                            diag[j] = wa2[j];
+                            if (wa2[j] == zero) {
+                                diag[j] = one;
+                            }
+                        }
+                    }
+                    // on the first iteration, calculate the norm of
+                    // the scaled x and initialize the step bound
+                    // delta.
+                    for (j = 0; j < n; j++) {
+                        wa3[j] = diag[j] * x[j];
+                    }
+                    xnorm = enorm(n, wa3);
+                    delta = factor * xnorm;
+                    if (delta == zero) {
+                        delta = factor;
+                    }
+                }
+
+                // form (q transpose)*fvec and store the first n
+                // components in qtf.
+                for (i = 0; i < m; i++) {
+                    wa4[i] = fvec[i];
+                }
+                jj = 0;
+                for (j = 0; j < n; j++) {
+                    temp3 = fjac[jj];
+                    if (temp3 != zero) {
+                        sum = zero;
+                        ij = jj;
+                        for (i = j; i < m; i++) {
+                            sum += fjac[ij] * wa4[i];
+                            ij += 1; // fjac[i+m*j]
+                        }
+                        temp = -sum / temp3;
+                        ij = jj;
+                        for (i = j; i < m; i++) {
+                            wa4[i] += fjac[ij] * temp;
+                            ij += 1; // fjac[i+m*j]
+                        }
+                    }
+                    fjac[jj] = wa1[j];
+                    jj += m + 1; // fjac[j+m*j]
+                    qtf[j] = wa4[j];
+                }
+
+                // compute the norm of the scaled gradient.
+                gnorm = zero;
+                if (fnorm != zero) {
+                    jj = 0;
+                    for (j = 0; j < n; j++) {
+                        l = ipvt[j];
+                        if (wa2[l] != zero) {
+                            sum = zero;
+                            ij = jj;
+                            for (i = 0; i <= j; i++) {
+                                sum += fjac[ij] * (qtf[i] / fnorm);
+                                ij += 1; // fjac[i+m*j]
+                            }
+                            gnorm = Math.max(gnorm, Math.abs(sum / wa2[l]));
+                        }
+                        jj += m;
+                    }
+                }
+
+                // test for convergence of the gradient norm.
+                if (gnorm <= gtol) {
+                    info[0] = 4;
+                }
+                if (info[0] != 0) {
+                    break mainBlock;
+                }
+
+                // rescale if necessary.
+                if (mode != 2) {
+                    for (j = 0; j < n; j++) {
+                        diag[j] = Math.max(diag[j], wa2[j]);
+                    }
+                }
+
+                // beginning of the inner loop (L200).
+                inner:
+                while (true) {
+                    // determine the levenberg-marquardt parameter.
+                    final double[] parBox = { par };
+                    lmpar(n, fjac, ldfjac, ipvt, diag, qtf, delta,
+                            parBox, wa1, wa2, wa3, wa4);
+                    par = parBox[0];
+
+                    // store the direction p and x + p. calculate the
+                    // norm of p.
+                    for (j = 0; j < n; j++) {
+                        wa1[j] = -wa1[j];
+                        wa2[j] = x[j] + wa1[j];
+                        wa3[j] = diag[j] * wa1[j];
+                    }
+                    pnorm = enorm(n, wa3);
+
+                    // on the first iteration, adjust the initial
+                    // step bound.
+                    if (iter == 1) {
+                        delta = Math.min(delta, pnorm);
+                    }
+
+                    // evaluate the function at x + p and calculate
+                    // its norm.
+                    iflag[0] = 1;
+                    fcn.evaluate(m, n, wa2, wa4, iflag);
+                    nfev[0] += 1;
+                    if (iflag[0] < 0) {
+                        break mainBlock;
+                    }
+                    fnorm1 = enorm(m, wa4);
+
+                    // compute the scaled actual reduction.
+                    actred = -one;
+                    if ((p1 * fnorm1) < fnorm) {
+                        temp = fnorm1 / fnorm;
+                        actred = one - temp * temp;
+                    }
+
+                    // compute the scaled predicted reduction and
+                    // the scaled directional derivative.
+                    jj = 0;
+                    for (j = 0; j < n; j++) {
+                        wa3[j] = zero;
+                        l = ipvt[j];
+                        temp = wa1[l];
+                        ij = jj;
+                        for (i = 0; i <= j; i++) {
+                            wa3[i] += fjac[ij] * temp;
+                            ij += 1; // fjac[i+m*j]
+                        }
+                        jj += m;
+                    }
+                    temp1 = enorm(n, wa3) / fnorm;
+                    temp2 = (Math.sqrt(par) * pnorm) / fnorm;
+                    prered = temp1 * temp1 + (temp2 * temp2) / p5;
+                    dirder = -(temp1 * temp1 + temp2 * temp2);
+
+                    // compute the ratio of the actual to the
+                    // predicted reduction.
+                    ratio = zero;
+                    if (prered != zero) {
+                        ratio = actred / prered;
+                    }
+
+                    // update the step bound.
+                    if (ratio <= p25) {
+                        if (actred >= zero) {
+                            temp = p5;
+                        } else {
+                            temp = p5 * dirder / (dirder + p5 * actred);
+                        }
+                        if (((p1 * fnorm1) >= fnorm) || (temp < p1)) {
+                            temp = p1;
+                        }
+                        delta = temp * Math.min(delta, pnorm / p1);
+                        par = par / temp;
+                    } else {
+                        if ((par == zero) || (ratio >= p75)) {
+                            delta = pnorm / p5;
+                            par = p5 * par;
+                        }
+                    }
+
+                    // test for successful iteration.
+                    if (ratio >= p0001) {
+                        // successful iteration. update x, fvec, and
+                        // their norms.
+                        for (j = 0; j < n; j++) {
+                            x[j] = wa2[j];
+                            wa2[j] = diag[j] * x[j];
+                        }
+                        for (i = 0; i < m; i++) {
+                            fvec[i] = wa4[i];
+                        }
+                        xnorm = enorm(n, wa2);
+                        fnorm = fnorm1;
+                        iter += 1;
+                    }
+
+                    // tests for convergence.
+                    if ((Math.abs(actred) <= ftol)
+                            && (prered <= ftol)
+                            && (p5 * ratio <= one)) {
+                        info[0] = 1;
+                    }
+                    if (delta <= xtol * xnorm) {
+                        info[0] = 2;
+                    }
+                    if ((Math.abs(actred) <= ftol)
+                            && (prered <= ftol)
+                            && (p5 * ratio <= one)
+                            && (info[0] == 2)) {
+                        info[0] = 3;
+                    }
+                    if (info[0] != 0) {
+                        break mainBlock;
+                    }
+
+                    // tests for termination and stringent tolerances.
+                    if (nfev[0] >= maxfev) {
+                        info[0] = 5;
+                    }
+                    if ((Math.abs(actred) <= MACHEP)
+                            && (prered <= MACHEP)
+                            && (p5 * ratio <= one)) {
+                        info[0] = 6;
+                    }
+                    if (delta <= MACHEP * xnorm) {
+                        info[0] = 7;
+                    }
+                    if (gnorm <= MACHEP) {
+                        info[0] = 8;
+                    }
+                    if (info[0] != 0) {
+                        break mainBlock;
+                    }
+
+                    // end of the inner loop. repeat if iteration
+                    // unsuccessful (ratio < p0001 ⇒ goto L200).
+                    if (ratio < p0001) {
+                        continue inner;
+                    }
+                    break inner;
+                }
+                // end of the outer loop. goto L30.
+            }
+        }
+        // L300: termination, either normal or user imposed.
+        if (iflag[0] < 0) {
+            info[0] = iflag[0];
+        }
+        iflag[0] = 0;
+        if (nprint > 0) {
+            fcn.evaluate(m, n, x, fvec, iflag);
+        }
+    }
+
+
     static void fdjac2(final int m, final int n, final double[] x,
                        final double[] fvec, final double[] fjac,
                        final int[] iflag, final double epsfcn,
