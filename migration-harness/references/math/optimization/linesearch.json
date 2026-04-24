@@ -1,0 +1,54 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "diff": 2.0,
+        "paramsOut": [
+          1.2,
+          2.4,
+          3.6
+        ]
+      },
+      "inputs": {
+        "beta": 2.0,
+        "direction": [
+          0.1,
+          0.2,
+          0.3
+        ],
+        "paramsIn": [
+          1.0,
+          2.0,
+          3.0
+        ]
+      },
+      "name": "update_noConstraint"
+    },
+    {
+      "expected": {
+        "diff": 0.75,
+        "paramsOut": [
+          0.25,
+          0.25
+        ]
+      },
+      "inputs": {
+        "beta": 3.0,
+        "direction": [
+          -1.0,
+          -1.0
+        ],
+        "paramsIn": [
+          1.0,
+          1.0
+        ]
+      },
+      "name": "update_positiveConstraint"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-24T10:35:16Z",
+  "generated_by": "linesearch_probe",
+  "test_group": "math/optimization/linesearch"
+}

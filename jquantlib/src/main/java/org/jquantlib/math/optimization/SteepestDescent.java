@@ -27,12 +27,8 @@ import org.jquantlib.math.optimization.EndCriteria.Type;
 //TODO: code review: license, class comments, compare against C++ sources
 public class SteepestDescent extends LineSearchBasedMethod {
 
-    public SteepestDescent(LineSearch lineSearch){
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-        if(lineSearch == null)
-            lineSearch = new LineSearch();
-
+    public SteepestDescent(final LineSearch lineSearch) {
+        super(lineSearch);  // LineSearchBasedMethod handles the null fallback to ArmijoLineSearch.
     }
 
     @Override
@@ -70,7 +66,7 @@ public class SteepestDescent extends LineSearchBasedMethod {
                     P.functionValue(),
                     Math.sqrt(P.gradientNormValue()),
                     lineSearch_.lastFunctionValue(),
-                    Math.sqrt(lineSearch_.lastGradientNormNorm2()),
+                    Math.sqrt(lineSearch_.lastGradientNorm2()),
                     ecType
                     //FIXME: it's never been used! ???
                     // , normdiff
@@ -87,7 +83,7 @@ public class SteepestDescent extends LineSearchBasedMethod {
             gold = lineSearch_.lastGradient();
             lineSearch_.setSearchDirection(gold.mul(-1));
             // New gradient squared norm
-            P.setGradientNormValue(lineSearch_.lastGradientNormNorm2());
+            P.setGradientNormValue(lineSearch_.lastGradientNorm2());
 
             // Increase iteration number
             ++iterationNumber;

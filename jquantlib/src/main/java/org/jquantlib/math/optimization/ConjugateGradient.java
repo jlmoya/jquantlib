@@ -120,7 +120,7 @@ public class ConjugateGradient extends LineSearchBasedMethod {
                 g = lineSearch_.lastGradient();
                 // orthogonalization coef
                 gold2 = P.gradientNormValue();
-                P.setGradientNormValue(lineSearch_.lastGradientNormNorm2());
+                P.setGradientNormValue(lineSearch_.lastGradientNorm2());
                 //c = P.gradientNormValue() / gold2;
                 // conjugate gradient search direction
                 //sddiff = (-g + c * d) - lineSearch_->searchDirection();
