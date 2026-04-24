@@ -29,6 +29,27 @@ remaining callers.
 
 ---
 
+## 2026-04-24 — methods.lattices.TreeLattice2D.grid (line 73)
+
+**Stub kind:** `not_implemented`.
+**Method body:** `throw new LibraryException("not implemented")`.
+
+**Reason for carve-out:** Already matches C++ v1.42.1. The C++ source
+(`ql/methods/lattices/lattice2d.hpp:52`) literally has
+`Array grid(Time) const override { QL_FAIL("not implemented"); }` with a
+`// smelly` maintainer comment. Java already throws an equivalent unchecked
+exception (`LibraryException` is a `RuntimeException` subclass). This is a
+scanner pattern-match false-positive: the phrase "not implemented" matches
+the regex but the behavior IS the intended v1.42.1 behavior.
+
+**Fits design §7.5 condition:** Not a carve-out in the usual sense — the
+Java code already matches ground truth. Logged here so future scanner runs
+don't re-surface it for resolution.
+
+**User sign-off:** acknowledged during Phase 3 execution.
+
+---
+
 ## 2026-04-24 — math.optimization.LevenbergMarquardt#UnsupportedOperationException (lines 43, 51)
 
 **Stubs:** `math.optimization.LevenbergMarquardt#<init>` (2 constructor
