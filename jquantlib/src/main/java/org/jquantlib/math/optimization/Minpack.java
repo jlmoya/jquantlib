@@ -337,6 +337,147 @@ public class Minpack {
     }
 
 
+    /**
+     * Least-squares solve on a QR-factored upper-triangular system with
+     * damping. Fresh v1.42.1 port of QuantLib::MINPACK::qrsolv from
+     * ql/math/optimization/lmdif.cpp lines 576-808.
+     * <p>
+     * Given an m-by-n matrix a, an n-by-n diagonal matrix d, and an
+     * m-vector b, determines x solving {@code a*x = b, d*x = 0} in the
+     * least-squares sense, using the QR factorisation from {@link #qrfac}
+     * (expected as the upper triangle of r plus the permutation ipvt).
+     *
+     * @param n     order of r
+     * @param r     n-by-n array column-major; on entry the upper triangle
+     *              contains R; on exit the strict lower triangle contains
+     *              the strict upper triangle (transposed) of S
+     * @param ldr   leading dimension of r (≥ n)
+     * @param ipvt  permutation array of length n
+     * @param diag  diagonal elements of D (length n)
+     * @param qtb   first n elements of Q^T * b (length n)
+     * @param x     least-squares solution (output, length n)
+     * @param sdiag diagonal of S (output, length n)
+     * @param wa    workspace (length n)
+     */
+    public static void qrsolv(final int n, final double[] r, final int ldr,
+                              final int[] ipvt, final double[] diag,
+                              final double[] qtb, final double[] x,
+                              final double[] sdiag, final double[] wa) {
+        final double zero = 0.0;
+        final double p25 = 0.25;
+        final double p5 = 0.5;
+
+        int i, ij, ik, kk, j, jp1, k, kp1, l, nsing;
+        double cos, cotan, qtbpj, sin, sum, tan, temp;
+
+        // copy r and (q transpose)*b to preserve input and initialize s.
+        // in particular, save the diagonal elements of r in x.
+        kk = 0;
+        for (j = 0; j < n; j++) {
+            ij = kk;
+            ik = kk;
+            for (i = j; i < n; i++) {
+                r[ij] = r[ik];
+                ij += 1;    // [i+ldr*j]
+                ik += ldr;  // [j+ldr*i]
+            }
+            x[j] = r[kk];
+            wa[j] = qtb[j];
+            kk += ldr + 1; // j+ldr*j
+        }
+
+        // eliminate the diagonal matrix d using a givens rotation.
+        for (j = 0; j < n; j++) {
+            l = ipvt[j];
+            if (diag[l] != zero) {
+                // prepare the row of d to be eliminated, locating the
+                // diagonal element using p from the qr factorization.
+                for (k = j; k < n; k++) {
+                    sdiag[k] = zero;
+                }
+                sdiag[j] = diag[l];
+
+                // the transformations to eliminate the row of d modify
+                // only a single element of (q transpose)*b beyond the
+                // first n, which is initially zero.
+                qtbpj = zero;
+                for (k = j; k < n; k++) {
+                    // determine a givens rotation which eliminates the
+                    // appropriate element in the current row of d.
+                    if (sdiag[k] == zero) {
+                        continue;
+                    }
+                    kk = k + ldr * k;
+                    if (Math.abs(r[kk]) < Math.abs(sdiag[k])) {
+                        cotan = r[kk] / sdiag[k];
+                        sin = p5 / Math.sqrt(p25 + p25 * cotan * cotan);
+                        cos = sin * cotan;
+                    } else {
+                        tan = sdiag[k] / r[kk];
+                        cos = p5 / Math.sqrt(p25 + p25 * tan * tan);
+                        sin = cos * tan;
+                    }
+                    // compute the modified diagonal element of r and
+                    // the modified element of ((q transpose)*b,0).
+                    r[kk] = cos * r[kk] + sin * sdiag[k];
+                    temp = cos * wa[k] + sin * qtbpj;
+                    qtbpj = -sin * wa[k] + cos * qtbpj;
+                    wa[k] = temp;
+                    // accumulate the transformation in the row of s.
+                    kp1 = k + 1;
+                    if (n > kp1) {
+                        ik = kk + 1;
+                        for (i = kp1; i < n; i++) {
+                            temp = cos * r[ik] + sin * sdiag[i];
+                            sdiag[i] = -sin * r[ik] + cos * sdiag[i];
+                            r[ik] = temp;
+                            ik += 1; // [i+ldr*k]
+                        }
+                    }
+                }
+            }
+            // L90: store the diagonal element of s and restore the
+            // corresponding diagonal element of r.
+            kk = j + ldr * j;
+            sdiag[j] = r[kk];
+            r[kk] = x[j];
+        }
+
+        // solve the triangular system for z. if the system is singular,
+        // then obtain a least squares solution.
+        nsing = n;
+        for (j = 0; j < n; j++) {
+            if ((sdiag[j] == zero) && (nsing == n)) {
+                nsing = j;
+            }
+            if (nsing < n) {
+                wa[j] = zero;
+            }
+        }
+        if (nsing >= 1) {
+            for (k = 0; k < nsing; k++) {
+                j = nsing - k - 1;
+                sum = zero;
+                jp1 = j + 1;
+                if (nsing > jp1) {
+                    ij = jp1 + ldr * j;
+                    for (i = jp1; i < nsing; i++) {
+                        sum += r[ij] * wa[i];
+                        ij += 1; // [i+ldr*j]
+                    }
+                }
+                wa[j] = (wa[j] - sum) / sdiag[j];
+            }
+        }
+
+        // L150: permute the components of z back to components of x.
+        for (j = 0; j < n; j++) {
+            l = ipvt[j];
+            x[l] = wa[j];
+        }
+    }
+
+
     private static class MinpackC {
 
         private static final double MACHEP = 1.2e-16; // resolution of arithmetic

@@ -161,6 +161,41 @@ public class MinpackTest {
         }
     }
 
+    // --- qrsolv (tight against v1.42.1 probe) ------------------------------
+
+    @Test
+    public void qrsolv_3x3_zeroDiag() {
+        runQrsolvCase("qrsolv_3x3_zeroDiag");
+    }
+
+    @Test
+    public void qrsolv_4x4_damped() {
+        runQrsolvCase("qrsolv_4x4_damped");
+    }
+
+    private static void runQrsolvCase(final String caseName) {
+        final ReferenceReader reader = ReferenceReader.load("math/optimization/minpack_qrsolv");
+        final Case c = reader.getCase(caseName);
+        final JSONObject in = c.inputs();
+        final int n = in.getInt("n");
+        final int ldr = in.getInt("ldr");
+        final double[] r = toDoubleArray(in.getJSONArray("r_in"));
+        final int[] ipvt = toIntArray(in.getJSONArray("ipvt"));
+        final double[] diag = toDoubleArray(in.getJSONArray("diag"));
+        final double[] qtb = toDoubleArray(in.getJSONArray("qtb"));
+        final double[] x = new double[n];
+        final double[] sdiag = new double[n];
+        final double[] wa = new double[n];
+
+        Minpack.qrsolv(n, r, ldr, ipvt, diag, qtb, x, sdiag, wa);
+
+        final JSONObject exp = (JSONObject) c.expectedRaw();
+        // Same rationale as qrfac (above) — tight tier for floating arrays.
+        assertDoublesTight("r_out", toDoubleArray(exp.getJSONArray("r_out")), r);
+        assertDoublesTight("x", toDoubleArray(exp.getJSONArray("x")), x);
+        assertDoublesTight("sdiag", toDoubleArray(exp.getJSONArray("sdiag")), sdiag);
+    }
+
     // --- Reflection helpers ------------------------------------------------
 
     private static double invokeEnorm(int n, double[] x) throws Exception {
