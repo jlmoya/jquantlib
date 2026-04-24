@@ -1,0 +1,75 @@
+{
+  "cases": [
+    {
+      "expected": 0.0,
+      "inputs": {
+        "description": "target - f(x) = 0 everywhere",
+        "x": [
+          0.5,
+          1.5
+        ]
+      },
+      "name": "value_perfectFit"
+    },
+    {
+      "expected": 5.0,
+      "inputs": {
+        "description": "diff = [1,2]; sum of squares",
+        "x": [
+          0.0,
+          0.0
+        ]
+      },
+      "name": "value_atOrigin"
+    },
+    {
+      "expected": [
+        1.0,
+        4.0
+      ],
+      "inputs": {
+        "description": "element-wise (target - f(x))^2",
+        "x": [
+          0.0,
+          0.0
+        ]
+      },
+      "name": "values_atOrigin"
+    },
+    {
+      "expected": [
+        -8.0,
+        -4.0
+      ],
+      "inputs": {
+        "formula": "-2 * J^T * diff",
+        "x": [
+          0.0,
+          0.0
+        ]
+      },
+      "name": "gradient_atOrigin"
+    },
+    {
+      "expected": {
+        "gradient": [
+          -6.800000000000001,
+          -3.6
+        ],
+        "value": 3.8800000000000003
+      },
+      "inputs": {
+        "x": [
+          0.1,
+          0.1
+        ]
+      },
+      "name": "valueAndGradient_atOneTenth"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-24T10:42:02Z",
+  "generated_by": "leastsquare_probe",
+  "test_group": "math/optimization/leastsquare"
+}

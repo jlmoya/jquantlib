@@ -1,120 +1,109 @@
+/*
+ Copyright (C) 2001, 2002, 2003 Nicolas Di Césaré
+ Copyright (C) 2005 StatPro Italia srl
+ Copyright (C) 2009 Ueli Hofstetter
+ Copyright (C) 2026 Jose Moya (Java port update)
+
+ This file is part of JQuantLib, a free-software/open-source library
+ for financial quantitative analysts and developers - http://jquantlib.org/
+
+ JQuantLib is free software: you can redistribute it and/or modify it
+ under the terms of the JQuantLib license.
+
+ JQuantLib is based on QuantLib. http://quantlib.org/
+ */
 package org.jquantlib.math.optimization;
 
 import org.jquantlib.math.matrixutilities.Array;
 
+//-- class NonLinearLeastSquare; in ql/math/optimization/leastsquare.hpp:97
+/**
+ * Non-linear least-square method. Given an optimization algorithm (default
+ * is {@link ConjugateGradient}), solves {@code min { r(x) : x in R^n }} where
+ * {@code r(x) = |f(x)|^2} is the Euclidean norm of the residual.
+ *
+ * <p>Port of QuantLib C++ v1.42.1 {@code NonLinearLeastSquare}.
+ */
 public class NonLinearLeastSquare {
-    
-  //! Non-linear least-square method.
-    /*! Using a given optimization algorithm (default is conjugate
-        gradient),
 
-        \f[ min \{ r(x) : x in R^n \} \f]
+    //! solution vector
+    private Array results_;
+    private Array initialValue_;
+    //! least square residual norm
+    private double resnorm_;
+    //! Exit flag of the optimization process
+    private int exitFlag_;
+    //! required accuracy of the solver
+    private final double accuracy_;
+    private double bestAccuracy_;
+    //! maximum and real number of iterations
+    private final int maxIterations_;
+    private int nbIterations_;
+    //! Optimization method
+    private final OptimizationMethod om_;
+    //! constraint
+    private final Constraint c_;
 
-        where \f$ r(x) = |f(x)|^2 \f$ is the Euclidean norm of \f$
-        f(x) \f$ for some vector-valued function \f$ f \f$ from
-        \f$ R^n \f$ to \f$ R^m \f$,
-        \f[ f = (f_1, ..., f_m) \f]
-        with \f$ f_i(x) = b_i - \phi(x,t_i) \f$ where \f$ b \f$ is the
-        vector of target data and \f$ phi \f$ is a scalar function.
+    //-- NonLinearLeastSquare(Constraint& c, Real accuracy = 1e-4, Size maxiter = 100);
+    //-- in ql/math/optimization/leastsquare.hpp:100 / .cpp:79
+    public NonLinearLeastSquare(final Constraint c, final double accuracy, final int maxiter) {
+        this.exitFlag_ = -1;
+        this.accuracy_ = accuracy;
+        this.maxIterations_ = maxiter;
+        this.om_ = new ConjugateGradient(null);
+        this.c_ = c;
+    }
 
-        Assuming the differentiability of \f$ f \f$, the gradient of
-        \f$ r \f$ is defined by
-        \f[ grad r(x) = f'(x)^t.f(x) \f]
-    */
-        //! Default constructor
-    
-        //! solution vector
-        private Array results_, initialValue_;
-        //! least square residual norm
-        private double resnorm_;
-        //! Exit flag of the optimization process
-        private int exitFlag_;
-        //! required accuracy of the solver
-        private double accuracy_, bestAccuracy_;
-        //! maximum and real number of iterations
-        private int maxIterations_, nbIterations_;
-        //! Optimization method
-        private OptimizationMethod om_;
-        //constraint
-        private Constraint c_;
-        
-        
-        public NonLinearLeastSquare(Constraint c,
-                             double accuracy,
-                             int maxiter ){
-            this.exitFlag_ = -1;
-            this.accuracy_ = accuracy;
-            this.maxIterations_ = maxiter;
-            this.om_ = new ConjugateGradient(null);
-            this.c_ = c;
-            if (System.getProperty("EXPERIMENTAL") == null) {
-                throw new UnsupportedOperationException("Work in progress");
-            }
-        }
-        public NonLinearLeastSquare(Constraint c){
-            this(c, 1e-4, 100);
+    public NonLinearLeastSquare(final Constraint c) {
+        this(c, 1e-4, 100);
+    }
 
-        }   
-        
-        //! Default constructor
-        public NonLinearLeastSquare(Constraint c,
-                             double accuracy,
-                             int maxiter,
-                             OptimizationMethod om){
-            this.exitFlag_ = -1;
-            this.accuracy_ = accuracy;
-            this.maxIterations_ = maxiter;
-            this.om_ = om;
-            this.c_ = c;
-            if (System.getProperty("EXPERIMENTAL") == null) {
-                throw new UnsupportedOperationException("Work in progress");
-            }
-        }
+    //-- NonLinearLeastSquare(Constraint& c, Real accuracy, Size maxiter,
+    //--                      ext::shared_ptr<OptimizationMethod> om);
+    //-- in ql/math/optimization/leastsquare.hpp:104 / .cpp:87
+    public NonLinearLeastSquare(final Constraint c, final double accuracy,
+                                final int maxiter, final OptimizationMethod om) {
+        this.exitFlag_ = -1;
+        this.accuracy_ = accuracy;
+        this.maxIterations_ = maxiter;
+        this.om_ = om;
+        this.c_ = c;
+    }
 
-        //! Solve least square problem using numerix solver
-        public Array perform(LeastSquareProblem lsProblem){
-            double eps = accuracy_;
-
-            // wrap the least square problem in an optimization function
-            LeastSquareFunction lsf = new LeastSquareFunction(lsProblem);
-
-            // define optimization problem
-            Problem P = new Problem(lsf, c_, initialValue_);
-
-            // minimize
-            EndCriteria ec = new EndCriteria(maxIterations_, 
-                Math.min(maxIterations_/2, 100), 
+    //-- Array& NonLinearLeastSquare::perform(LeastSquareProblem& lsProblem);
+    //-- in ql/math/optimization/leastsquare.cpp:93
+    public Array perform(final LeastSquareProblem lsProblem) {
+        final double eps = accuracy_;
+        final LeastSquareFunction lsf = new LeastSquareFunction(lsProblem);
+        final Problem P = new Problem(lsf, c_, initialValue_);
+        final EndCriteria ec = new EndCriteria(
+                maxIterations_,
+                Math.min(maxIterations_ / 2, 100),
                 eps, eps, eps);
-            exitFlag_ = om_.minimize(P, ec).ordinal();
+        exitFlag_ = om_.minimize(P, ec).ordinal();
 
-            // summarize results of minimization
-            //        nbIterations_ = om_->iterationNumber();
+        results_ = P.currentValue();
+        resnorm_ = P.functionValue();
+        bestAccuracy_ = P.functionValue();
+        return results_;
+    }
 
-            results_ = P.currentValue();
-            resnorm_ = P.functionValue();
-            bestAccuracy_ = P.functionValue();
+    public void setInitialValue(final Array initialValue) {
+        this.initialValue_ = initialValue;
+    }
 
-            return results_;
-        }
+    /** @return the results vector. */
+    public Array results() { return results_; }
 
-        public void setInitialValue(final Array initialValue) {
-            initialValue_ = initialValue;
-        }
+    /** @return the least-square residual norm. */
+    public double residualNorm() { return resnorm_; }
 
-        //! return the results
-        Array results() { return results_; }
+    /** @return last function value (best accuracy seen). */
+    public double lastValue() { return bestAccuracy_; }
 
-        //! return the least square residual norm
-        double residualNorm() { return resnorm_; }
+    /** @return exit flag of the optimization process. */
+    public int exitFlag() { return exitFlag_; }
 
-        //! return last function value
-        double lastValue() { return bestAccuracy_; }
-
-        //! return exit flag
-        int exitFlag() { return exitFlag_; }
-
-        //! return the performed number of iterations
-        Integer iterationsNumber() { return nbIterations_; }
-
-
+    /** @return the performed number of iterations. */
+    public int iterationsNumber() { return nbIterations_; }
 }

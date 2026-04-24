@@ -468,42 +468,6 @@
     "notes": ""
   },
   {
-    "id": "math.optimization.LeastSquareFunction#UnsupportedOperationException",
-    "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LeastSquareFunction.java",
-    "line": 14,
-    "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
-    "id": "math.optimization.LeastSquareFunction#UnsupportedOperationException",
-    "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LeastSquareFunction.java",
-    "line": 67,
-    "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
-    "id": "math.optimization.LeastSquareProblem#UnsupportedOperationException",
-    "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LeastSquareProblem.java",
-    "line": 30,
-    "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
     "id": "math.optimization.LevenbergMarquardt#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LevenbergMarquardt.java",
     "line": 43,
@@ -519,30 +483,6 @@
     "id": "math.optimization.LevenbergMarquardt#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LevenbergMarquardt.java",
     "line": 51,
-    "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
-    "id": "math.optimization.NonLinearLeastSquare#UnsupportedOperationException",
-    "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/NonLinearLeastSquare.java",
-    "line": 51,
-    "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
-    "id": "math.optimization.NonLinearLeastSquare#UnsupportedOperationException",
-    "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/NonLinearLeastSquare.java",
-    "line": 70,
     "kind": "work_in_progress",
     "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
     "cpp_counterpart": "",
