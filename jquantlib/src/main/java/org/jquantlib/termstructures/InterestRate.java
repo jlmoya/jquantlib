@@ -125,7 +125,6 @@ public class InterestRate {
         QL.require(t >= 0.0 , "negative time not allowed"); // TODO: message
         QL.require(!Double.isNaN(rate) , "null interest rate"); // TODO: message
 
-        // TODO: code review :: please verify against QL/C++ code
         // if (rate<0.0) throw new IllegalArgumentException("null interest rate");
 
         /* @Rate */final double r = rate;

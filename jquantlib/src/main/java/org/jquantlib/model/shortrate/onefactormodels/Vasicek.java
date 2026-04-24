@@ -63,16 +63,16 @@ public class Vasicek extends OneFactorAffineModel {
         super(4);
         this.r0_ = r0;
 
-
-        // TODO: code review :: please verify against QL/C++ code :: Seems to be non-sense!
-
-        this.a_ = arguments_.get(0);
-        this.b_ = arguments_.get(1);
-        this.sigma_ = arguments_.get(2);
-        this.lambda_ = arguments_.get(3);
-
-        // TODO: code review :: please verify against QL/C++ code :: Seems to be non-sense!
-
+        // Deviation from C++: QuantLib's Vasicek binds a_, b_, sigma_,
+        // lambda_ by reference to arguments_[i] in the ctor init list
+        // so the subsequent `a_ = ConstantParameter(...)` writes also
+        // update the calibratable parameter vector. Java has no
+        // reference semantics for fields — the two copies of each
+        // parameter diverge. The bug is latent for callers that don't
+        // calibrate (all current JQuantLib tests); it becomes material
+        // when Vasicek is calibrated via arguments_, which is Phase 2b
+        // scope along with CapHelper and G2. Carved to
+        // docs/migration/phase2a-carveouts.md (WI-4-carveout-Vasicek).
         this.a_ = new ConstantParameter(a, new PositiveConstraint());
         this.b_ = new ConstantParameter(b, new NoConstraint());
         this.sigma_ = new ConstantParameter(sigma, new PositiveConstraint());

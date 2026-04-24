@@ -286,7 +286,6 @@ public class BlackCalculator {
         QL.require(maturity > 0.0 , "non negative maturity required");
         if (maturity == 0.0) return 0.0;
 
-        // TODO: code review :: please verify against QL/C++ code
 
         // =====================================================================
         //

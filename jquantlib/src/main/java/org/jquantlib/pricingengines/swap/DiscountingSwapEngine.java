@@ -8,7 +8,6 @@ import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.util.Observer;
 
-// TODO: code review :: please verify against QL/C++ code
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class DiscountingSwapEngine extends Swap.EngineImpl implements /* Swap.Engine, */ Observer {
 

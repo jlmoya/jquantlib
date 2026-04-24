@@ -37,6 +37,50 @@ independently via `LevenbergMarquardtTest` and
 
 ---
 
+## WI-4-carveout-Vasicek — Parameter-reference semantics drift
+
+**File:** `jquantlib/src/main/java/org/jquantlib/model/shortrate/onefactormodels/Vasicek.java`
+
+**Observed:**
+The WI-4 audit sweep turned up a real (not Phase-1-cosmetic)
+divergence in the Vasicek constructor. QuantLib C++ uses the
+initializer-list `a_(arguments_[0])`, `b_(arguments_[1])`, … which
+binds the member `Parameter&` references to slots in the
+`arguments_` vector; the subsequent `a_ = ConstantParameter(...)`
+assignments then update `arguments_[i]` through those references.
+
+The Java port (v0) assigned copies: `this.a_ = arguments_.get(0);`
+then `this.a_ = new ConstantParameter(...)`. No reference semantics
+— the two copies diverge, leaving `arguments_[i]` stuck at whatever
+default the super(4) init left behind. The pre-existing Phase-1
+"Seems to be non-sense!" marker flagged this correctly.
+
+**Impact:**
+Latent for callers that don't touch the calibratable parameter
+vector. Visible only when Vasicek is calibrated via
+`OneFactorAffineModel.calibrate`, which feeds values through
+`arguments_` — and CapHelper + G2 (already Phase-2b carveouts) are
+the typical calibration clients. No current JQuantLib test is
+believed to calibrate Vasicek directly.
+
+**Fix (Phase 2b):**
+Correct Java port requires an indirection wrapper (e.g., each
+`Parameter` member becomes a small getter that reads
+`arguments_[i]`) or, more invasively, a redesigned `Parameter`
+class with an indirection field. This ripples into HullWhite,
+BlackKarasinski, CoxIngersollRoss — all share the same pattern. A
+single-shot fix across one-factor models is Phase 2b scope.
+
+**Disposition (Phase 2a):**
+Dead `this.a_ = arguments_.get(0)` lines removed; an explanatory
+comment in the constructor points callers at this doc; dead
+Parameter values no longer confuse readers. Behavior for the
+non-calibration code path is unchanged (the `ConstantParameter`
+writes already came through). Phase-1 numerical_suspect marker
+cleared.
+
+---
+
 ## WI-2-carveout-simplex — OptimizerTest Simplex dimension bug
 
 **Test:**

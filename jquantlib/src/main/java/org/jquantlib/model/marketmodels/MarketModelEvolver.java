@@ -8,7 +8,6 @@ package org.jquantlib.model.marketmodels;
  * @author Ueli Hofstetter
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
-// TODO: code review :: please verify against QL/C++ code
 public abstract class MarketModelEvolver {
 
     abstract int [] numeraires();

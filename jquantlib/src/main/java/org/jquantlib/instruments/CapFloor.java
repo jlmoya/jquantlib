@@ -114,7 +114,6 @@ public class CapFloor extends Instrument {
             cashFlow.addObserver(this);
         }
 
-        // TODO: code review :: please verify against QL/C++ code
         // seems like we should have this.evaluationDate
 
         this.termStructure_.addObserver(this);
@@ -155,7 +154,6 @@ public class CapFloor extends Instrument {
             cashFlow.addObserver(this);
         }
 
-        // TODO: code review :: please verify against QL/C++ code
         // Seems like we should have this.evaluationDate
 
         this.termStructure_.addObserver(this);

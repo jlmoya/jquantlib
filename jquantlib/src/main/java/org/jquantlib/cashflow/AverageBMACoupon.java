@@ -69,7 +69,6 @@ import org.jquantlib.util.Visitor;
  * @author Tim Blackler
  *
  */
-// TODO: code review :: please verify against QL/C++ code
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class AverageBMACoupon extends FloatingRateCoupon {
 

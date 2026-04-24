@@ -201,7 +201,6 @@ public class LocalVolSurface extends LocalVolTermStructure {
             QL.ensure(result >= 0.0 , "negative local vol^2 at strike); the black vol surface is not smooth enough"); // TODO: message
             return Math.sqrt(result);
 
-            // TODO: code review :: please verify against QL/C++ code
 
             // commented out at original source QuantLib
             // return std::sqrt(dwdt / (1.0 - y/w*dwdy +

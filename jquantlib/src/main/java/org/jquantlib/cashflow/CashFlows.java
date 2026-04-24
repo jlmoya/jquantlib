@@ -52,7 +52,6 @@ import org.jquantlib.util.Visitor;
 //
 // This class requires a total rewrite. See: http://bugs.jquantlib.org/view.php?id=357
 
-// TODO: code review :: please verify against QL/C++ code
 
 public class CashFlows {
 
@@ -114,7 +113,6 @@ public class CashFlows {
                 d = Date.min(c.accrualStartDate(), d);
             }
         }
-        // TODO: code review :: please verify against QL/C++ code
         QL.ensure(d.lt(Date.maxDate()) , not_enough_information_available); // QA:[RG]::verified
         return d;
     }
@@ -124,7 +122,6 @@ public class CashFlows {
         for (int i = 0; i < cashflows.size(); i++) {
             d = Date.max(d, cashflows.get(i).date());
         }
-        // TODO: code review :: please verify against QL/C++ code
         QL.ensure (d.gt(Date.minDate()), no_cashflows);
         return d;
     }

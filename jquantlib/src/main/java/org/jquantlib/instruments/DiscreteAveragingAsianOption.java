@@ -139,7 +139,6 @@ public class DiscreteAveragingAsianOption extends OneAssetOption {
             QL.require(pastFixings!=Constants.NULL_INTEGER, "null past-fixing number"); // TODO: message
             QL.require(!Double.isNaN(runningAccumulator), "null running product"); // TODO: message
 
-            // TODO: code review :: please verify against QL/C++ code
             switch (averageType) {
             case Arithmetic:
                 QL.require(runningAccumulator >= 0.0 , "non negative running sum required: not allowed"); // TODO: message

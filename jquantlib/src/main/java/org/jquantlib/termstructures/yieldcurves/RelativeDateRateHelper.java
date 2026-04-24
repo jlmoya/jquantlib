@@ -38,7 +38,6 @@ import org.jquantlib.time.Date;
  *
  * @author Srinivas Hasti
  */
-// TODO: code review :: please verify against QL/C++ code
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public abstract class RelativeDateRateHelper extends RateHelper {
 
@@ -56,7 +55,6 @@ public abstract class RelativeDateRateHelper extends RateHelper {
 //    protected RelativeDateRateHelper() {
 //        super();
 //
-//        // TODO: code review :: please verify against QL/C++ code
 //        this.evaluationDate = new Settings().evaluationDate();
 //        this.evaluationDate.addObserver(this);
 //        // XXX:registerWith

@@ -161,7 +161,6 @@ public class ActualActual extends DayCounter {
                                 refPeriodStart);
                 }
             } else {
-                // TODO: code review :: please verify against QL/C++ code
 
                 // here refPeriodEnd is the last notional payment date
                 // d1 < refPeriodEnd < d2 AND refPeriodStart < refPeriodEnd

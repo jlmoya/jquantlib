@@ -202,7 +202,6 @@ public class BlackVarianceSurface extends BlackVarianceTermStructure {
         if (t <= times.last()) {
             return varianceSurface.op(t, strike);
         } else {
-            // TODO: code review :: please verify against QL/C++ code
             // t>times_.back() || extrapolate
             /* @Time */final double lastTime = times.last();
             return varianceSurface.op(lastTime, strike) * t / lastTime;

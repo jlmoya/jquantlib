@@ -29,7 +29,6 @@ import org.jquantlib.QL;
  * to period object.
  * @author Srinivas Hasti
  */
-// TODO: code review :: please verify against QL/C++ code
 public final class PeriodParser {
 
 	/**

@@ -135,7 +135,6 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
 
         generateArguments();
 
-        // TODO: code review :: please verify against QL/C++ code
         // seems like we should have this.termStructure
 
         termStructure.addObserver(this);

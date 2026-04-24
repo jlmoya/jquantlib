@@ -45,7 +45,6 @@ import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Closeness;
 
-// TODO: code review :: please verify against QL/C++ code
 /**
  * @author Ueli Hofstetter
  */
@@ -494,7 +493,6 @@ public class PseudoSqrt {
             final double tol = 1e-6;
             if(true)
                 throw new UnsupportedOperationException("work in progress");
-            // TODO: code review :: please verify against QL/C++ code
             //result = highamImplementation(matrix, maxIterations, tol);
             // result = new CholeskyDecomposition().CholeskyDecomposition(result, true);
             break;

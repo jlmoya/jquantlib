@@ -9,7 +9,6 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Schedule;
 
-// TODO: code review :: please verify against QL/C++ code
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class FixedRateLeg extends Leg {
 
@@ -88,7 +87,6 @@ public class FixedRateLeg extends Leg {
         InterestRate rate = couponRates_[0];
         /*@Real*/ double nominal = notionals_[0];
         if (schedule_.isRegular(1)) {
-            // TODO: code review :: please verify against QL/C++ code
             QL.require(firstPeriodDayCounter_==null || !firstPeriodDayCounter_.equals(paymentDayCounter_) , "regular first coupon does not allow a first-period day count"); // TODO: message
             leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end));
         } else {

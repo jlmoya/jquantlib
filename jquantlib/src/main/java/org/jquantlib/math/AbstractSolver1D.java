@@ -155,7 +155,6 @@ abstract public class AbstractSolver1D<F extends Ops.DoubleOp> {
         }
 
         //FIXME is it so exceptional, should we return s success/fail flag?
-        // TODO: code review :: please verify against QL/C++ code
         throw new ArithmeticException("unable to bracket root after function evaluation"); // TODO: message
     }
 
@@ -197,7 +196,6 @@ abstract public class AbstractSolver1D<F extends Ops.DoubleOp> {
 
         evaluationNumber = 2;
 
-        // TODO: code review :: please verify against QL/C++ code
         QL.require(fxMin * fxMax < 0.0 , "root not bracketed"); // TODO: message
         QL.require(guess > this.xMin , "guess must be greather than xMin"); // TODO: message
         QL.require(guess < this.xMax , "guess must be lesser than xMax"); // TODO: message

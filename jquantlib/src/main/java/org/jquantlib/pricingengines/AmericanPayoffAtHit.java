@@ -181,7 +181,6 @@ public class AmericanPayoffAtHit {
         } else {
             forward = Math.pow(strike / spot, muPlusLambda);
             X       = Math.pow(strike / spot, muMinusLambda);
-            //DXDstrike_ = ......; // TODO: code review :: please verify against QL/C++ code
         }
 
         // binary cash-or-nothing payoff ?

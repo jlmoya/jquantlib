@@ -49,7 +49,6 @@ import org.jquantlib.time.TimeGrid;
  *
  * @author Praneet Tiwari
  */
-// TODO: code review :: please verify against QL/C++ code
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class BlackKarasinski extends OneFactorModel implements TermStructureConsistentModel {
     // need permanent solution for this one
@@ -73,7 +72,6 @@ public class BlackKarasinski extends OneFactorModel implements TermStructureCons
         this.a_ = new ConstantParameter(a, new PositiveConstraint());
         this.sigma_ = new ConstantParameter(sigma, new PositiveConstraint());
 
-        // TODO: code review :: please verify against QL/C++ code
         // seems like we should have this.termStructure
 
         termStructure.addObserver(this);

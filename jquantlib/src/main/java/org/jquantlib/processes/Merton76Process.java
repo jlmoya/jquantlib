@@ -131,7 +131,6 @@ public class Merton76Process extends StochasticProcess1D {
         return blackProcess.x0();
     }
 
-    // TODO: code review :: please verify against QL/C++ code
 
     //-- Real drift(Time, Real) const override { QL_FAIL("Merton76Process does not implement drift"); }
     //-- in ql/processes/merton76process.hpp

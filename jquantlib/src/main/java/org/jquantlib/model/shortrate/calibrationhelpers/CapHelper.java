@@ -20,7 +20,6 @@ import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.Observer;
 
-// TODO: code review :: please verify against QL/C++ code
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class CapHelper extends CalibrationHelper {
 
@@ -72,7 +71,6 @@ public class CapHelper extends CalibrationHelper {
         final double [] nominals = {1,1.0};
 
 
-        // TODO: code review :: please verify against QL/C++ code
         final Schedule fixedSchedule = new Schedule(
                 startDate, maturity,
                 new Period(fixedLegFrequency), index.fixingCalendar(),

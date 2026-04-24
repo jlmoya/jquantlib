@@ -35,7 +35,6 @@ import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 
-// TODO: code review :: please verify against QL/C++ code
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class HestonProcess extends StochasticProcess {
 
@@ -74,7 +73,6 @@ public class HestonProcess extends StochasticProcess {
             final double rho,
             final Discretization d) {
 
-        // TODO: code review :: please verify against QL/C++ code
         // TODO: code review :: super(new EulerDiscretization());
         // Seems like constructor which takes a Discretization must belong to
         // StochasticProcess and not StochasticProcess1D
@@ -89,14 +87,12 @@ public class HestonProcess extends StochasticProcess {
         this.rho_ = new RelinkableHandle<Quote>(new SimpleQuote(rho));
         this.discretization_ = (d);
 
-        // TODO: code review :: please verify against QL/C++ code
 
         this.riskFreeRate_.addObserver(this);
         this.dividendYield_.addObserver(this);
         this.s0_.addObserver(this);
     }
 
-    // TODO: code review :: please verify against QL/C++ code
     public void update() {
         // helper variables to improve performance
         s0v_ = s0_.currentLink().value();

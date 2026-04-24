@@ -41,7 +41,6 @@ import org.jquantlib.util.Observer;
  * @author Praneet Tiwari
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
-// TODO: code review :: please verify against QL/C++ code
 public abstract class CalibrationHelper implements Observer, Observable {
 
     protected double/* @Real */marketValue;
@@ -115,7 +114,6 @@ public abstract class CalibrationHelper implements Observer, Observable {
     // public abstract methods
     //
 
-    // TODO: code review :: please verify against QL/C++ code
     public abstract void addTimesTo(ArrayList<Time> times);
 
     // CalibrationHelper! Black price given a volatility
