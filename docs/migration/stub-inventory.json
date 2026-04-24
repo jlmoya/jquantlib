@@ -600,18 +600,6 @@
     "notes": ""
   },
   {
-    "id": "processes.HestonProcess#evolve",
-    "file": "jquantlib/src/main/java/org/jquantlib/processes/HestonProcess.java",
-    "line": 282,
-    "kind": "work_in_progress",
-    "method_signature": "public Array evolve(/* @Time */final double t0, final Array x0, /* @Time */final double dt, final Array dw)",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
     "id": "processes.Merton76Process#logJumpVolatility",
     "file": "jquantlib/src/main/java/org/jquantlib/processes/Merton76Process.java",
     "line": 134,

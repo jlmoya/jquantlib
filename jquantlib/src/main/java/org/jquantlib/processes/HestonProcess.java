@@ -43,8 +43,8 @@ public class HestonProcess extends StochasticProcess {
     private final Handle<Quote> s0_;
     private final RelinkableHandle<Quote> v0_, kappa_, theta_, sigma_, rho_;
 
-    private enum Discretization {
-        PartialTruncation, FullTruncation, Reflection, ExactVariance
+    public enum Discretization {
+        PartialTruncation, FullTruncation, Reflection, QuadraticExponential
     };
 
     private final Discretization discretization_;
@@ -211,7 +211,6 @@ public class HestonProcess extends StochasticProcess {
     @Override
     public Array evolve(/* @Time */final double t0, final Array x0, /* @Time */final double dt, final Array dw) {
         final double[] retVal = new double[2];
-        double ncp, df, p, dy;
         double vol, vol2, mu, nu;
 
         final double sdt = Math.sqrt(dt);
@@ -257,35 +256,44 @@ public class HestonProcess extends StochasticProcess {
                 retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
                 retVal[1] = vol * vol + nu * dt + vol2 * sdt * (rhov_ * dw0 + sqrhov_ * dw1);
                 break;
-            case ExactVariance:
-                // use Alan Lewis trick to decorrelate the equity and the variance
-                // process by using y(t)=x(t)-\frac{rho}{sigma}\nu(t)
-                // and Ito's Lemma. Then use exact sampling for the variance
-                // process. For further details please read the wilmott thread
-                // "QuantLib code is very high quatlity"
-                vol = (x01 > 0.0) ? Math.sqrt(x01) : 0.0;
-                mu = riskFreeRate_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate()
-                - dividendYield_.currentLink().forwardRate(t0, t0, Compounding.Continuous).rate() - 0.5 * vol * vol;
+            case QuadraticExponential: {
+                // Port of QuantLib v1.42.1 QuadraticExponential branch,
+                // ql/processes/hestonprocess.cpp 461-516. See Leif
+                // Andersen, "Efficient Simulation of the Heston Stochastic
+                // Volatility Model" (2008) for the derivation.
+                final double ex = Math.exp(-kappav_ * dt);
+                final double m = thetav_ + (x01 - thetav_) * ex;
+                final double s2 = x01 * sigmav_ * sigmav_ * ex / kappav_ * (1 - ex)
+                        + thetav_ * sigmav_ * sigmav_ / (2 * kappav_) * (1 - ex) * (1 - ex);
+                final double psi = s2 / (m * m);
 
-                df = 4 * thetav_ * kappav_ / (sigmav_ * sigmav_);
-                ncp = 4 * kappav_ * Math.exp(-kappav_ * dt) / (sigmav_ * sigmav_ * (1 - Math.exp(-kappav_ * dt))) * x01;
+                final double g1 = 0.5;
+                final double g2 = 0.5;
+                final double k0 = -rhov_ * kappav_ * thetav_ * dt / sigmav_;
+                final double k1 = g1 * dt * (kappav_ * rhov_ / sigmav_ - 0.5) - rhov_ / sigmav_;
+                final double k2 = g2 * dt * (kappav_ * rhov_ / sigmav_ - 0.5) + rhov_ / sigmav_;
+                final double k3 = g1 * dt * (1 - rhov_ * rhov_);
+                final double k4 = g2 * dt * (1 - rhov_ * rhov_);
 
-                p = new CumulativeNormalDistribution().op(dw1);
-                if (p < 0.0) {
-                    p = 0.0;
-                } else if (p >= 1.0) {
-                    p = 1.0 - Constants.QL_EPSILON;
+                if (psi < 1.5) {
+                    final double b2 = 2 / psi - 1 + Math.sqrt(2 / psi * (2 / psi - 1));
+                    final double b = Math.sqrt(b2);
+                    final double a = m / (1 + b2);
+                    retVal[1] = a * (b + dw1) * (b + dw1);
+                } else {
+                    final double pp = (psi - 1) / (psi + 1);
+                    final double beta = (1 - pp) / m;
+                    final double u = new CumulativeNormalDistribution().op(dw1);
+                    retVal[1] = (u <= pp) ? 0.0 : Math.log((1 - pp) / (1 - u)) / beta;
                 }
 
-                retVal[1] = sigmav_ * sigmav_ * (1 - Math.exp(-kappav_ * dt)) / (4 * kappav_);
-                if (true) {
-                    throw new UnsupportedOperationException("Work in progress");
-                }
+                mu = riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
+                        - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate();
 
-                dy = (mu - rhov_ / sigmav_ * kappav_ * (thetav_ - vol * vol)) * dt + vol * sqrhov_ * dw0 * sdt;
-
-                retVal[0] = x00 * Math.exp(dy + rhov_ / sigmav_ * (retVal[1] - x01));
+                retVal[0] = x00 * Math.exp(mu * dt + k0 + k1 * x01 + k2 * retVal[1]
+                        + Math.sqrt(k3 * x01 + k4 * retVal[1]) * dw0);
                 break;
+            }
             default:
                 throw new LibraryException("unknown discretization schema"); // TODO: message
         }
