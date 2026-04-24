@@ -120,10 +120,6 @@ public class PrimitivePolynomials {
     }
 
     public PrimitivePolynomials(final long ppmtMaxDim) {
-
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         if (ppmtMaxDim <= N_PRIMITIVES_UP_TO_DEGREE_01) {
             this.ppmtMaxDim = N_PRIMITIVES_UP_TO_DEGREE_01;
             this.nMaxDegree = 1;

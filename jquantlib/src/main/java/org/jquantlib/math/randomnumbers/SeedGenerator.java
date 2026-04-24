@@ -60,9 +60,6 @@ public class SeedGenerator {
 	//
 
 	private SeedGenerator() {
-        if (System.getProperty("EXPERIMENTAL")==null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
 		this.rng = new MersenneTwisterUniformRng(42);
 		initialize();
 	}

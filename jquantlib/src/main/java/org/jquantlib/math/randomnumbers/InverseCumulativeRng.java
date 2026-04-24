@@ -59,9 +59,6 @@ public class InverseCumulativeRng<RNG extends RandomNumberGenerator, IC extends 
 
 
     public InverseCumulativeRng(final RNG ug) {
-        if (System.getProperty("EXPERIMENTAL")==null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
         this.uniformGenerator_ = ug;
     }
 
@@ -69,9 +66,6 @@ public class InverseCumulativeRng<RNG extends RandomNumberGenerator, IC extends 
      * @return a sample from a Gaussian distribution
      */
     public Sample<Double> getNext() /* @ReadOnly */ {
-        if (System.getProperty("EXPERIMENTAL")==null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
         Sample<Double> sample = uniformGenerator_.next(); // FIXME: usage of sample_type :: typedef Sample<Real> sample_type;
         
         return new Sample<Double>(ICND_.op(sample.value()), sample.weight());

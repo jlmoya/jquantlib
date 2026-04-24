@@ -1401,11 +1401,6 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
     }
 
     public SobolRsg(final int dimensionality, final long seed, final DirectionIntegers direction) {
-
-        if (System.getProperty("EXPERIMENTAL")==null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
-
         QL.require(dimensionality > 0 , "dimensionality must be greater than 0"); // TODO: message
 
         // In QuantLib/C++ PrimitivePolinomials is initialized in a template given its maximum dimensionality

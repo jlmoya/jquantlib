@@ -76,8 +76,6 @@ public class RandomSequenceGenerator<RNG extends RandomNumberGenerator> implemen
     		final /*@NonNegative*/ int dimensionality, 
     		final RNG rng) {
 
-        if (System.getProperty("EXPERIMENTAL")==null) throw new UnsupportedOperationException("Work in progress");
-
         QL.require(dimensionality >= 1 , "dimensionality must be greater than 0"); // TODO: message
         this.classRNG = classRNG;
         this.dimension = dimensionality;
@@ -96,8 +94,6 @@ public class RandomSequenceGenerator<RNG extends RandomNumberGenerator> implemen
     		final Class<? extends RandomNumberGenerator> classRNG,
     		final /*@NonNegative*/ int dimensionality, 
     		final long seed) {
-
-        if (System.getProperty("EXPERIMENTAL")==null) throw new UnsupportedOperationException("Work in progress");
 
         this.classRNG = classRNG;
         
