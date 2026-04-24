@@ -1,0 +1,108 @@
+{
+  "cases": [
+    {
+      "expected": [
+        1.0,
+        3.0
+      ],
+      "inputs": {
+        "fixParameters": [
+          false,
+          true,
+          false,
+          true
+        ],
+        "params": [
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ]
+      },
+      "name": "project_4params_2fixed"
+    },
+    {
+      "expected": [
+        10.0,
+        2.0,
+        30.0,
+        4.0
+      ],
+      "inputs": {
+        "fixParameters": [
+          false,
+          true,
+          false,
+          true
+        ],
+        "freeValues": [
+          10.0,
+          30.0
+        ]
+      },
+      "name": "include_4params_2fixed"
+    },
+    {
+      "expected": [
+        10.0,
+        20.0,
+        30.0
+      ],
+      "inputs": {
+        "fixParameters": [
+          false,
+          false,
+          false
+        ],
+        "params": [
+          10.0,
+          20.0,
+          30.0
+        ]
+      },
+      "name": "project_allFree"
+    },
+    {
+      "expected": [
+        5.0,
+        7.0
+      ],
+      "inputs": {
+        "fixParameters": "defaultAllFalse",
+        "params": [
+          5.0,
+          7.0
+        ]
+      },
+      "name": "project_defaultFix"
+    },
+    {
+      "expected": 406.0,
+      "inputs": {
+        "fixParameters": [
+          false,
+          true,
+          false,
+          true
+        ],
+        "freeValues": [
+          100.0,
+          300.0
+        ],
+        "innerCost": "sum",
+        "params": [
+          1.0,
+          2.0,
+          3.0,
+          4.0
+        ]
+      },
+      "name": "projectedCostFunction_value"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-24T10:31:11Z",
+  "generated_by": "projection_probe",
+  "test_group": "math/optimization/projection"
+}
