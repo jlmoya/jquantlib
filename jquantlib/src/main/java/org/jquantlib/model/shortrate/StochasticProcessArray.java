@@ -50,9 +50,6 @@ public class StochasticProcessArray extends StochasticProcess {
 
     public StochasticProcessArray(final List<StochasticProcess1D> processes, final Matrix correlation) {
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         QL.require(!processes.isEmpty() , no_process_given); // TODO: message
         QL.require(correlation.rows() == processes.size() , mismatch_processnumber_sizecorrelationmatrix); // TODO: message
 

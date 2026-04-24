@@ -69,8 +69,6 @@ public class Parameter {
     public Parameter() {
         this.constraint = new NoConstraint();
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
     }
 
 
@@ -83,8 +81,6 @@ public class Parameter {
         this.impl = impl;
         this.params = new Array(size);
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
     }
 
 

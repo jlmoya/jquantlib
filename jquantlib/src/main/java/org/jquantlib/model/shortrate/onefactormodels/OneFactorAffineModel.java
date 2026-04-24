@@ -43,9 +43,6 @@ public abstract class OneFactorAffineModel extends OneFactorModel implements Aff
 
     public OneFactorAffineModel(final int nArguments) {
         super(nArguments);
-        if (System.getProperty("EXPERIMENTAL") == null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
     }
 
 

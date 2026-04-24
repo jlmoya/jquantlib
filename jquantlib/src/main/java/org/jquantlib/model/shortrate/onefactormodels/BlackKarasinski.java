@@ -66,9 +66,6 @@ public class BlackKarasinski extends OneFactorModel implements TermStructureCons
     public BlackKarasinski(final Handle<YieldTermStructure> termStructure, final double a, final double sigma){
         super(2);
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         termstructureConsistentModel = new TermStructureConsistentModelClass(termStructure);
         this.a_ = arguments_.get(0);
         this.sigma_ = arguments_.get(1);

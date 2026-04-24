@@ -61,8 +61,6 @@ public class Vasicek extends OneFactorAffineModel {
 
     public Vasicek(/* @Rate */ final double r0, final double a, final double b, final double sigma, final double lambda) {
         super(4);
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
         this.r0_ = r0;
 
 

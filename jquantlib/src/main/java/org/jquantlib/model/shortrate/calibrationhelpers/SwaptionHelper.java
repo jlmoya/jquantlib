@@ -15,9 +15,6 @@ public class SwaptionHelper extends CalibrationHelper {
     public SwaptionHelper(final Handle<Quote> volatility, final Handle<YieldTermStructure> termStructure, final boolean calibrateVolatility) {
         super(volatility, termStructure, calibrateVolatility);
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         // TODO Auto-generated constructor stub
     }
 

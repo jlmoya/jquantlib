@@ -86,9 +86,6 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
         super(termStructure.currentLink().forwardRate(0.0, 0.0, Compounding.Continuous, Frequency.NoFrequency).rate(),
                 a, 0.0, sigma, 0.0);
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         termStructureConsistentModelClass = new TermStructureConsistentModelClass(termStructure);
         b_ = new NullParameter();
         lambda_ = new NullParameter();

@@ -30,9 +30,6 @@ public class CurveState {
 
     public CurveState(final  /*@Time*/ double []  rateTimes){
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         numberOfRates_ = rateTimes==null || rateTimes.length == 0 ? 0 : rateTimes.length-1;
         rateTimes_ = (rateTimes); // TODO: clone() ?
         rateTaus_ = new double[numberOfRates_];

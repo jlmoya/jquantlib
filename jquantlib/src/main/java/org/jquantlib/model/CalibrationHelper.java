@@ -55,9 +55,6 @@ public abstract class CalibrationHelper implements Observer, Observable {
             final Handle<YieldTermStructure> termStructure,
             final boolean calibrateVolatility) {
 
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
         this.volatility_ = volatility;
         this.termStructure_ = termStructure;
         this.calibrateVolatility_ = calibrateVolatility;

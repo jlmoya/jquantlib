@@ -10,8 +10,6 @@ package org.jquantlib.model.marketmodels;
 public abstract class  BrownianGeneratorFactory {
 
     public BrownianGeneratorFactory() {
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
     }
 
     public abstract BrownianGenerator create(int factors,int steps) ;

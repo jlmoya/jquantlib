@@ -15,8 +15,6 @@ public class AccountingEngine {
             final Object /* const Clone<MarketModelMultiProduct>& product*/ Mark,
             final /*@Real*/ double initialNumeraireValue) {
         
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
     }
     
     
