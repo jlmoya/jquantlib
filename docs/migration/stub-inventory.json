@@ -492,18 +492,6 @@
     "notes": ""
   },
   {
-    "id": "math.optimization.SphereCylinderOptimizer#UnsupportedOperationException",
-    "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/SphereCylinderOptimizer.java",
-    "line": 31,
-    "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
     "id": "math.randomnumbers.InverseCumulativeRng#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/math/randomnumbers/InverseCumulativeRng.java",
     "line": 63,

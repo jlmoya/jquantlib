@@ -1,0 +1,109 @@
+{
+  "cases": [
+    {
+      "expected": true,
+      "inputs": {
+        "alpha": 0.8,
+        "r": 1.0,
+        "s": 0.3
+      },
+      "name": "isIntersectionNonEmpty_easy"
+    },
+    {
+      "expected": {
+        "found": true,
+        "y": [
+          0.5,
+          0.0,
+          0.8660254037844386
+        ]
+      },
+      "inputs": {
+        "alpha": 0.8,
+        "r": 1.0,
+        "s": 0.3,
+        "z": [
+          0.2,
+          0.0,
+          0.5
+        ]
+      },
+      "name": "findByProjection_easy"
+    },
+    {
+      "expected": {
+        "y": [
+          0.5000000000005738,
+          5.867037737359083e-07,
+          0.8660254037839087
+        ]
+      },
+      "inputs": {
+        "alpha": 0.8,
+        "maxIter": 100,
+        "r": 1.0,
+        "s": 0.3,
+        "tol": 1e-12,
+        "z": [
+          0.2,
+          0.0,
+          0.5
+        ]
+      },
+      "name": "findClosest_easy"
+    },
+    {
+      "expected": false,
+      "inputs": {
+        "alpha": 2.0,
+        "r": 1.0,
+        "s": 0.1
+      },
+      "name": "isIntersectionNonEmpty_emptyFarCyl"
+    },
+    {
+      "expected": [
+        0.5,
+        0.0,
+        0.8660254037844386
+      ],
+      "inputs": {
+        "alpha": 0.8,
+        "maxIter": 0,
+        "r": 1.0,
+        "s": 0.3,
+        "z": [
+          0.2,
+          0.0,
+          0.5
+        ]
+      },
+      "name": "helperClosest_byProjection"
+    },
+    {
+      "expected": [
+        0.5000000000005738,
+        5.867037737359083e-07,
+        0.8660254037839087
+      ],
+      "inputs": {
+        "alpha": 0.8,
+        "maxIter": 100,
+        "r": 1.0,
+        "s": 0.3,
+        "tol": 1e-12,
+        "z": [
+          0.2,
+          0.0,
+          0.5
+        ]
+      },
+      "name": "helperClosest_fullIter"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-24T10:46:16Z",
+  "generated_by": "spherecylinder_probe",
+  "test_group": "math/optimization/spherecylinder"
+}
