@@ -276,30 +276,6 @@
     "notes": ""
   },
   {
-    "id": "math.optimization.LevenbergMarquardt#LevenbergMarquardt",
-    "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LevenbergMarquardt.java",
-    "line": 43,
-    "kind": "work_in_progress",
-    "method_signature": "public LevenbergMarquardt()",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
-    "id": "math.optimization.LevenbergMarquardt#LevenbergMarquardt",
-    "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LevenbergMarquardt.java",
-    "line": 51,
-    "kind": "work_in_progress",
-    "method_signature": "public LevenbergMarquardt(final double epsfcn, final double xtol, final double gtol)",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
     "id": "math.randomnumbers.PrimitivePolynomials#line64",
     "file": "jquantlib/src/main/java/org/jquantlib/math/randomnumbers/PrimitivePolynomials.java",
     "line": 64,
