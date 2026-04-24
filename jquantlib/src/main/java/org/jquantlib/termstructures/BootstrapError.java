@@ -52,7 +52,6 @@ public class BootstrapError<T extends Traits> implements Ops.DoubleOp {
             final PiecewiseCurve c,
             final RateHelper helper,
             final int segment) {
-        QL.validateExperimentalMode();
 
         if (!Traits.class.isAssignableFrom(traits.getClass())) {
             throw new LibraryException(ReflectConstants.WRONG_ARGUMENT_TYPE);

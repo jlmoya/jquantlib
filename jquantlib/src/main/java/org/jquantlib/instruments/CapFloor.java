@@ -81,7 +81,6 @@ public class CapFloor extends Instrument {
             final Handle<YieldTermStructure> termStructure,
             final PricingEngine engine){
 
-    	QL.validateExperimentalMode();
     	
         this.type_ = type;
         this.floatingLeg_ = floatingLeg;

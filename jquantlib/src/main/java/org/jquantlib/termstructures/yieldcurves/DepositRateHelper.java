@@ -109,7 +109,6 @@ public class DepositRateHelper extends RelativeDateRateHelper {
                 final boolean endOfMonth,
                 final DayCounter dayCounter) {
         super(rate);
-        QL.validateExperimentalMode();
 
         this.iborIndex = new IborIndex(
                       "no-fix", // never take fixing into account
@@ -127,7 +126,6 @@ public class DepositRateHelper extends RelativeDateRateHelper {
 	public DepositRateHelper(final Handle<Quote> rate,
                 final IborIndex iborIndex) {
         super(rate);
-        QL.validateExperimentalMode();
 
         this.iborIndex = new IborIndex(
                       "no-fix", // never take fixing into account
@@ -146,7 +144,6 @@ public class DepositRateHelper extends RelativeDateRateHelper {
                 final  /*@Rate*/ double  rate,
                 final IborIndex i) {
         super(rate);
-        QL.validateExperimentalMode();
 
         this.iborIndex = new IborIndex(
                       "no-fix", // never take fixing into account

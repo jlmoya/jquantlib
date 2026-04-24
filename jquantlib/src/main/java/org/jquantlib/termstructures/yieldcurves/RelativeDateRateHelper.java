@@ -70,7 +70,6 @@ public abstract class RelativeDateRateHelper extends RateHelper {
 
     public RelativeDateRateHelper(/*@Real*/ final double d) {
         super(d);
-        QL.validateExperimentalMode();
 
         this.evaluationDate = new Settings().evaluationDate();
         this.evaluationDate.addObserver(this);
@@ -89,7 +88,6 @@ public abstract class RelativeDateRateHelper extends RateHelper {
 //XXX
 //    public RelativeDateRateHelper(final Handle<Quote> quote, final T termStructure, final Date earliestDate, final Date latestDate) {
 //        super(quote, termStructure, earliestDate, latestDate);
-//        QL.validateExperimentalMode();
 //        this.evaluationDate = new Settings().evaluationDate();
 //        this.evaluationDate.addObserver(this);
 //        // XXX:registerWith

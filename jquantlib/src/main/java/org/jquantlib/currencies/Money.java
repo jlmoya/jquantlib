@@ -42,18 +42,15 @@ public class Money implements Cloneable {
 
     // constructors
     public Money() {
-        QL.validateExperimentalMode();
         this.value_ = (0.0);
     }
 
     public Money(final Currency currency, /* @Decimal */final double value) {
-        QL.validateExperimentalMode();
         this.value_ = (value);
         this.currency_ = (currency);
     }
 
     public Money(/* @Decimal */final double value, final Currency currency) {
-        QL.validateExperimentalMode();
         this.value_ = (value);
         this.currency_ = (currency.clone());
     }

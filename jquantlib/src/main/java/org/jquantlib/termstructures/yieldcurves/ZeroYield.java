@@ -60,7 +60,6 @@ public class ZeroYield implements Traits {
 
     //TODO: think how constructor must look like
     public ZeroYield() {
-        QL.validateExperimentalMode();
     }
 
     @Override

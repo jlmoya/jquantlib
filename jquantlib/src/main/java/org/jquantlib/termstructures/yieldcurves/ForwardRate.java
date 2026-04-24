@@ -60,7 +60,6 @@ public class ForwardRate implements Traits {
 
     //TODO: think how constructor must look like
     public ForwardRate() {
-        QL.validateExperimentalMode();
     }
 
     @Override

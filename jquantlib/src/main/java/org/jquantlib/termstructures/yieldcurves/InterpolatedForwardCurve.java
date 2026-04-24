@@ -114,7 +114,6 @@ public class InterpolatedForwardCurve<I extends Interpolator> extends ForwardRat
 			final Calendar calendar, 
 			final Interpolator interpolator) {
 		super(dates[0], calendar==null ? new Calendar() : calendar, dc);
-		QL.validateExperimentalMode();
 
 		QL.require(classI!=null, "Generic type for Interpolation is null");
         this.classI = classI;
@@ -155,7 +154,6 @@ public class InterpolatedForwardCurve<I extends Interpolator> extends ForwardRat
             final DayCounter dc,
             final Interpolator interpolator) {
         super(dc);
-        QL.validateExperimentalMode();
 
 		QL.require(classI!=null, "Generic type for Interpolation is null");
         this.classI = classI;
@@ -175,7 +173,6 @@ public class InterpolatedForwardCurve<I extends Interpolator> extends ForwardRat
             final DayCounter dc,
             final Interpolator interpolator) {
         super(referenceDate, new Calendar(), dc);
-        QL.validateExperimentalMode();
 
 		QL.require(classI!=null, "Generic type for Interpolation is null");
         this.classI = classI;
@@ -197,7 +194,6 @@ public class InterpolatedForwardCurve<I extends Interpolator> extends ForwardRat
             final DayCounter dc,
             final Interpolator interpolator) {
         super(settlementDays, new Calendar(), dc);
-        QL.validateExperimentalMode();
 
 		QL.require(classI!=null, "Generic type for Interpolation is null");
         this.classI = classI;

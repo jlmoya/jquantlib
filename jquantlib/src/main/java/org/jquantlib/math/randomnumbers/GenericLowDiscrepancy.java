@@ -91,7 +91,6 @@ public class GenericLowDiscrepancy<RSG extends UniformRandomSequenceGenerator, I
             final /*@NonNegative*/ int dimension, 
             final /*@NonNegative*/ long seed) {
 
-        QL.validateExperimentalMode();
 
         this.classRSG = classRSG;
         this.classIC = classIC;

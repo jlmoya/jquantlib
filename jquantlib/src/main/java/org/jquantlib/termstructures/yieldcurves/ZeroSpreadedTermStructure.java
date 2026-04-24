@@ -32,7 +32,6 @@ public class ZeroSpreadedTermStructure extends ZeroYieldStructure  {
             final Handle<YieldTermStructure> h,
             final Handle<Quote> spread, final Compounding comp , final Frequency freq,
             final DayCounter dc){
-        QL.validateExperimentalMode();
 
         this.originalCurve = h;
         this.spread = spread;

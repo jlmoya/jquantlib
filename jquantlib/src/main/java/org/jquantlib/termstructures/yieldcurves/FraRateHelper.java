@@ -78,7 +78,6 @@ public class FraRateHelper extends RelativeDateRateHelper {
 		
 		QL.require(monthsToEnd > monthsToStart,
 				"monthsToEnd must be greater than monthsToStart");
-		QL.validateExperimentalMode();
 	
 		this.iborIndex = new IborIndex(
 				"no-fix", // never take fixing into account
@@ -104,7 +103,6 @@ public class FraRateHelper extends RelativeDateRateHelper {
 		
 		QL.require(monthsToEnd > monthsToStart,
 				"monthsToEnd must be greater than monthsToStart");
-		QL.validateExperimentalMode();
 
 		iborIndex = new IborIndex(
 				"no-fix", // never take fixing into account
@@ -123,7 +121,6 @@ public class FraRateHelper extends RelativeDateRateHelper {
 		super(rate);
 		this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
 
-		QL.validateExperimentalMode();
 		
 		iborIndex = new IborIndex(
 				"no-fix", // never take fixing into account
@@ -142,7 +139,6 @@ public class FraRateHelper extends RelativeDateRateHelper {
 		super(rate);
 		this.periodToStart = new Period(monthsToStart, TimeUnit.Months);
 
-		QL.validateExperimentalMode();
 		
 		iborIndex = new IborIndex(
 				"no-fix", // never take fixing into account
@@ -166,7 +162,6 @@ public class FraRateHelper extends RelativeDateRateHelper {
 		super(rate);
 		this.periodToStart = periodToStart;
 	
-		QL.validateExperimentalMode();
 
 		iborIndex = new IborIndex(
 				"no-fix", // never take fixing into account
@@ -191,7 +186,6 @@ public class FraRateHelper extends RelativeDateRateHelper {
 		super(rate);
 		this.periodToStart = periodToStart;
 		
-		QL.validateExperimentalMode();
 
 		iborIndex = new IborIndex(
 				"no-fix", // never take fixing into account
@@ -210,7 +204,6 @@ public class FraRateHelper extends RelativeDateRateHelper {
 		super(rate);
 		this.periodToStart = periodToStart;
 		
-		QL.validateExperimentalMode();
 
 		iborIndex = new IborIndex(
 				"no-fix",// never take fixing into account
@@ -230,7 +223,6 @@ public class FraRateHelper extends RelativeDateRateHelper {
 		super(rate);
 		this.periodToStart = periodToStart;
 		
-		QL.validateExperimentalMode();
 
 		iborIndex = new IborIndex(
 				"no-fix",// never take fixing into account

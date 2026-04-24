@@ -75,7 +75,6 @@ public class ForwardSpreadedTermStructure extends ForwardRateStructure {
     //
 
     public ForwardSpreadedTermStructure(final Handle<YieldTermStructure> h, final Handle<Quote> spread) {
-        QL.validateExperimentalMode();
 
         this.originalCurve = h;
         this.spread = spread;

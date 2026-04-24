@@ -42,7 +42,6 @@ public class PseudoRandom /* <RNG extends MersenneTwisterUniformRng, IC extends 
             final /*@NonNegative*/ int dimension, 
             final /*@NonNegative*/ long seed) {
 
-    	QL.validateExperimentalMode();
     	return super.makeSequenceGenerator(dimension, seed);
     }
 

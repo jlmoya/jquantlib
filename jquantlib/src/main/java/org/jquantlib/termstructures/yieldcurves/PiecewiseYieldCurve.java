@@ -250,7 +250,6 @@ public class PiecewiseYieldCurve<
             final Interpolator interpolator,
             final Bootstrap bootstrap) {
     	
-        QL.validateExperimentalMode();
 
 		QL.require(classT!=null, "Generic type for Traits is null");
 		QL.require(classI!=null, "Generic type for Interpolation is null");
@@ -412,7 +411,6 @@ public class PiecewiseYieldCurve<
             final Interpolator interpolator,
             final Bootstrap bootstrap) {
     	
-    	QL.validateExperimentalMode();
     	
 		QL.require(classT!=null, "Generic type for Traits is null");
 		QL.require(classI!=null, "Generic type for Interpolation is null");

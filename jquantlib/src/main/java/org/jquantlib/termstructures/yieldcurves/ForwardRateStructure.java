@@ -73,7 +73,6 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
 	 */
 	protected ForwardRateStructure() {
 		this(new Actual365Fixed());
-        QL.validateExperimentalMode();
 	}
 
 	/**
@@ -83,7 +82,6 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
 	 */
 	protected ForwardRateStructure(final DayCounter dc) {
 		super(dc);
-        QL.validateExperimentalMode();
 	}
 
 	// ---
@@ -97,7 +95,6 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
 	 */
 	protected ForwardRateStructure(final Date refDate, final Calendar cal) {
 		this(refDate, cal, new Actual365Fixed());
-        QL.validateExperimentalMode();
 	}
 
 	/**
@@ -109,7 +106,6 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
 	 */
 	protected ForwardRateStructure(final Date refDate, final DayCounter dc) {
 		this(refDate, new Target(), dc); // FIXME: code review : default calendar
-        QL.validateExperimentalMode();
 	}
 
 	/**
@@ -121,7 +117,6 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
 	 */
 	protected ForwardRateStructure(final Date refDate) {
 		this(refDate, new Target(), new Actual365Fixed()); // FIXME: code review : default calendar
-        QL.validateExperimentalMode();
 	}
 
 	/**
@@ -133,7 +128,6 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
 	 */
 	protected ForwardRateStructure(final Date refDate, final Calendar cal, final DayCounter dc) {
 		super(refDate, cal, dc);
-        QL.validateExperimentalMode();
 	}
 
 	// ---
@@ -147,7 +141,6 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
 	 */
 	protected ForwardRateStructure(final int settlementDays, final Calendar cal) {
 		super(settlementDays, cal, new Actual365Fixed());
-        QL.validateExperimentalMode();
 	}
 
 	/**
@@ -159,7 +152,6 @@ public abstract class ForwardRateStructure extends AbstractYieldTermStructure {
 	 */
 	protected ForwardRateStructure(final int settlementDays, final Calendar cal, final DayCounter dc) {
 		super(settlementDays, cal, dc);
-        QL.validateExperimentalMode();
 	}
 
 

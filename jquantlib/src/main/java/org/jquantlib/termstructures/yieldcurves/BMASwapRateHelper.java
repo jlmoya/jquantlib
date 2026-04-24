@@ -82,7 +82,6 @@ public class BMASwapRateHelper extends RelativeDateRateHelper {
             final IborIndex iborIndex) {
         super(liborFraction);
 
-        QL.validateExperimentalMode();
 
         this.tenor = tenor;
         this.settlementDays = settlementDays;

@@ -110,7 +110,6 @@ public class PseudoSqrt {
             final SalvagingAlgorithm sa){
 
 
-        QL.validateExperimentalMode();
 
         QL.require(matrix.rows == matrix.columns(), Cells.MATRIX_MUST_BE_SQUARE); // QA:[RG]::verified
         QL.require(checkSymmetry(matrix), Cells.MATRIX_MUST_BE_SYMMETRIC); // QA:[RG]::verified
@@ -179,7 +178,6 @@ public class PseudoSqrt {
 
     public static void normalizePseudoRoot(final Matrix matrix, final Matrix pseudo) {
 
-        QL.validateExperimentalMode();
 
         final int size = matrix.rows;
 
@@ -423,7 +421,6 @@ public class PseudoSqrt {
      */
     public static Matrix pseudoSqrt(final Matrix matrix, final SalvagingAlgorithm sa) {
 
-        QL.validateExperimentalMode();
 
         QL.require(matrix.rows() == matrix.columns(), Cells.MATRIX_MUST_BE_SQUARE); // QA:[RG]::verified
         QL.require(checkSymmetry(matrix), Cells.MATRIX_MUST_BE_SYMMETRIC); // QA:[RG]::verified

@@ -144,7 +144,6 @@ public class MakeVanillaSwap {
 
 
     public VanillaSwap value() /* @ReadOnly */ {
-        QL.validateExperimentalMode();
 
         Date startDate;
         if (!effectiveDate.isNull()) {

@@ -85,7 +85,6 @@ public abstract class GenericPseudoRandom <RNG extends RandomNumberGenerator, IC
     
 
     protected GenericPseudoRandom(final Class<? extends UniformRandomSequenceGenerator> classRNG, final Class<? extends InverseCumulative> classIC) {
-    	QL.validateExperimentalMode();
     	this.classRNG = classRNG;
     	this.classIC = classIC;
     }

@@ -93,7 +93,6 @@ public class LocalBootstrap<Curve extends PiecewiseYieldCurve> {
 
     public LocalBootstrap(/*Size*/ final int localisation, final boolean forcePositive) {
         
-        QL.validateExperimentalMode();
         
         this.validCurve_ = false;
         this.ts_ = null;

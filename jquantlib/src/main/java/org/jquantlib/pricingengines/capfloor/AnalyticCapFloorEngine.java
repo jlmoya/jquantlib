@@ -7,7 +7,6 @@ public class AnalyticCapFloorEngine{
     
 
 	public AnalyticCapFloorEngine() {
-		QL.validateExperimentalMode();
 	}
 	
       //public AnalyticCapFloorEngine(final AffineModel model){

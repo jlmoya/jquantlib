@@ -60,7 +60,6 @@ public class Discount implements Traits {
 
     //TODO: think how constructor must look like
     public Discount() {
-        QL.validateExperimentalMode();
     }
 
     @Override

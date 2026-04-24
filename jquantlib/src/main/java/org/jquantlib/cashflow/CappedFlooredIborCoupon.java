@@ -146,7 +146,6 @@ public class CappedFlooredIborCoupon extends CappedFlooredCoupon {
         super (new IborCoupon(paymentDate, nominal, startDate, endDate, fixingDays,
             index, gearing, spread, refPeriodStart, refPeriodEnd,
                 dayCounter, isInArrears), cap, floor);
-        QL.validateExperimentalMode();
     }
 
 }

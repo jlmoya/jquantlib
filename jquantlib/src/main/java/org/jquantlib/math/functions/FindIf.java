@@ -39,7 +39,6 @@ public final class FindIf {
     public FindIf(final Array array, final Ops.DoublePredicate predicate) {
         this.array = array;
         this.predicate = predicate;
-        QL.validateExperimentalMode();
     }
 
 

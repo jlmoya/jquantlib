@@ -91,7 +91,6 @@ public class SwapRateHelper extends RelativeDateRateHelper {
             final Handle<Quote> spread,
             final Period fwdStart) {
         super(rate);
-        QL.validateExperimentalMode();
 
         this.tenor = swapIndex.tenor();
         this.calendar = swapIndex.fixingCalendar();
@@ -141,7 +140,6 @@ public class SwapRateHelper extends RelativeDateRateHelper {
             final Handle<Quote> spread,
             final Period fwdStart) {
         super(rate);
-        QL.validateExperimentalMode();
 
         this.tenor = tenor;
         this.calendar = calendar;
@@ -191,7 +189,6 @@ public class SwapRateHelper extends RelativeDateRateHelper {
             final Handle<Quote> spread,
             final Period fwdStart) {
         super(rate);
-        QL.validateExperimentalMode();
 
         this.tenor = tenor;
         this.calendar = calendar;
@@ -226,7 +223,6 @@ public class SwapRateHelper extends RelativeDateRateHelper {
             final Handle<Quote> spread,
             final Period fwdStart) {
         super(rate);
-        QL.validateExperimentalMode();
 
         this.tenor = swapIndex.tenor();
         this.calendar = swapIndex.fixingCalendar();

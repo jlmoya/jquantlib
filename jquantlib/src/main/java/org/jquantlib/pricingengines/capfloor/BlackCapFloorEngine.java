@@ -48,7 +48,6 @@ public class BlackCapFloorEngine //TODO:: extends CapFloor.Engine
                                 final DayCounter dc)
 
     {
-        QL.validateExperimentalMode();
 //
 //        this.termStructure = termStructureHandle;
 //
@@ -62,7 +61,6 @@ public class BlackCapFloorEngine //TODO:: extends CapFloor.Engine
                                 final Handle <Quote> v,
                                 final DayCounter dc)
     {
-        QL.validateExperimentalMode();
 //        this.termStructure = termStructureHandle;
 //        this.volatility = new OptionletVolatilityStructure
 //            (new ConstantOptionVolatility (0, new NullCalendar(),
@@ -77,7 +75,6 @@ public class BlackCapFloorEngine //TODO:: extends CapFloor.Engine
                                 final Handle <OptionletVolatilityStructure> vol)
 
     {
-        QL.validateExperimentalMode();
 //        this.termStructure = termStructureHandle;
 //        this.volatility = vol;
 //
@@ -87,7 +84,6 @@ public class BlackCapFloorEngine //TODO:: extends CapFloor.Engine
 
     public void calculate()
     {
-        QL.validateExperimentalMode();
 //        double value = 0.0;
 //        double vega = 0.0;
 //        int optionlets = arguments_.startDates.size();
