@@ -15,6 +15,7 @@ import org.jquantlib.testsuite.util.Tolerance;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -173,6 +174,38 @@ public class MinpackTest {
         runQrsolvCase("qrsolv_4x4_damped");
     }
 
+    // --- lmpar sanity (well-conditioned; exercised fully via LM probes) ----
+
+    @Test
+    public void lmpar_wellConditioned2x2_returnsZeroPar() throws Exception {
+        // R = diag(2, 3) column-major => r = {2, 0, 0, 3}; diag=I; qtb=[1,1];
+        // delta large enough that the Gauss-Newton direction lies inside the
+        // trust region, so lmpar takes the initial goto-L220 and par stays 0.
+        final int n = 2, ldr = 2;
+        final double[] r = { 2.0, 0.0, 0.0, 3.0 };
+        final int[] ipvt = { 0, 1 };
+        final double[] diag = { 1.0, 1.0 };
+        final double[] qtb = { 1.0, 1.0 };
+        final double delta = 10.0;
+        final double[] par = { 0.0 };
+        final double[] x = new double[n];
+        final double[] sdiag = new double[n];
+        final double[] wa1 = new double[n];
+        final double[] wa2 = new double[n];
+
+        invokeLmpar(n, r, ldr, ipvt, diag, qtb, delta, par, x, sdiag, wa1, wa2);
+
+        // par: finite, non-negative, and specifically zero in this regime.
+        assertTrue("par finite", Double.isFinite(par[0]));
+        assertTrue("par non-negative", par[0] >= 0.0);
+        assertEquals(0.0, par[0], 0.0);
+        // Gauss-Newton solution: R^-1 * qtb = [0.5, 1/3].
+        assertTrue("x[0] finite", Double.isFinite(x[0]));
+        assertTrue("x[1] finite", Double.isFinite(x[1]));
+        assertEquals(0.5, x[0], 1.0e-14);
+        assertEquals(1.0 / 3.0, x[1], 1.0e-14);
+    }
+
     private static void runQrsolvCase(final String caseName) {
         final ReferenceReader reader = ReferenceReader.load("math/optimization/minpack_qrsolv");
         final Case c = reader.getCase(caseName);
@@ -202,5 +235,18 @@ public class MinpackTest {
         final Method m = Minpack.class.getDeclaredMethod("enorm", int.class, double[].class);
         m.setAccessible(true);
         return (Double) m.invoke(null, n, x);
+    }
+
+    private static void invokeLmpar(int n, double[] r, int ldr, int[] ipvt,
+                                    double[] diag, double[] qtb, double delta,
+                                    double[] par, double[] x, double[] sdiag,
+                                    double[] wa1, double[] wa2) throws Exception {
+        final Method m = Minpack.class.getDeclaredMethod("lmpar",
+                int.class, double[].class, int.class, int[].class,
+                double[].class, double[].class, double.class,
+                double[].class, double[].class, double[].class,
+                double[].class, double[].class);
+        m.setAccessible(true);
+        m.invoke(null, n, r, ldr, ipvt, diag, qtb, delta, par, x, sdiag, wa1, wa2);
     }
 }

@@ -478,6 +478,226 @@ public class Minpack {
     }
 
 
+    /**
+     * Compute the Levenberg-Marquardt parameter. Fresh v1.42.1 port of
+     * QuantLib::MINPACK::lmpar from ql/math/optimization/lmdif.cpp
+     * lines 810-1123.
+     * <p>
+     * Given an m-by-n matrix a, an n-by-n nonsingular diagonal d, an
+     * m-vector b, and a positive delta, determines {@code par} such
+     * that if x solves {@code a*x = b, sqrt(par)*d*x = 0} in the
+     * least-squares sense, then either par == 0 and
+     * {@code dxnorm - delta <= 0.1*delta}, or par > 0 and
+     * {@code |dxnorm - delta| <= 0.1*delta}. Expects the QR
+     * factorisation (with column pivoting) of a, as produced by
+     * {@link #qrfac}. Uses {@link #qrsolv} internally.
+     * <p>
+     * Package-private — mirrors file-local C++ linkage. Exercised end-
+     * to-end via the four lmdif LM-level probes in Task 2.6; a 2x2
+     * sanity unit test covers the initial-acceptance path.
+     *
+     * @param n     order of r
+     * @param r     n-by-n column-major array; upper triangle = R on
+     *              entry. On exit the strict lower triangle holds the
+     *              strict upper triangle (transposed) of S such that
+     *              {@code p^T*(a^T*a + par*d*d)*p = s^T*s}
+     * @param ldr   leading dimension of r (≥ n)
+     * @param ipvt  permutation array of length n from qrfac
+     * @param diag  diagonal elements of D (length n)
+     * @param qtb   first n elements of Q^T * b (length n)
+     * @param delta upper bound on ||d*x||
+     * @param par   in/out single-element array: initial estimate on
+     *              entry, final estimate on exit
+     * @param x     least-squares solution (output, length n)
+     * @param sdiag diagonal of S (output, length n)
+     * @param wa1   workspace (length n)
+     * @param wa2   workspace (length n)
+     */
+    static void lmpar(final int n, final double[] r, final int ldr,
+                      final int[] ipvt, final double[] diag,
+                      final double[] qtb, final double delta,
+                      final double[] par, final double[] x,
+                      final double[] sdiag, final double[] wa1,
+                      final double[] wa2) {
+        final double zero = 0.0;
+        final double p1 = 0.1;
+        final double p001 = 0.001;
+        final double DWARF = 1.0e-38;
+
+        int i, iter, ij, jj, j, jm1, jp1, k, l, nsing;
+        double dxnorm, fp, gnorm, parc, parl, paru;
+        double sum, temp;
+
+        // compute and store in x the gauss-newton direction. if the
+        // jacobian is rank-deficient, obtain a least squares solution.
+        nsing = n;
+        jj = 0;
+        for (j = 0; j < n; j++) {
+            wa1[j] = qtb[j];
+            if ((r[jj] == zero) && (nsing == n)) {
+                nsing = j;
+            }
+            if (nsing < n) {
+                wa1[j] = zero;
+            }
+            jj += ldr + 1; // [j+ldr*j]
+        }
+        if (nsing >= 1) {
+            for (k = 0; k < nsing; k++) {
+                j = nsing - k - 1;
+                wa1[j] = wa1[j] / r[j + ldr * j];
+                temp = wa1[j];
+                jm1 = j - 1;
+                if (jm1 >= 0) {
+                    ij = ldr * j;
+                    for (i = 0; i <= jm1; i++) {
+                        wa1[i] -= r[ij] * temp;
+                        ij += 1;
+                    }
+                }
+            }
+        }
+        for (j = 0; j < n; j++) {
+            l = ipvt[j];
+            x[l] = wa1[j];
+        }
+
+        // initialize the iteration counter. evaluate the function at
+        // the origin, and test for acceptance of the gauss-newton
+        // direction.
+        iter = 0;
+        for (j = 0; j < n; j++) {
+            wa2[j] = diag[j] * x[j];
+        }
+        dxnorm = enorm(n, wa2);
+        fp = dxnorm - delta;
+        if (fp <= p1 * delta) {
+            // goto L220 with iter == 0 ⇒ par[0] = 0
+            par[0] = zero;
+            return;
+        }
+
+        // if the jacobian is not rank deficient, the newton step
+        // provides a lower bound, parl, for the zero of the function.
+        // otherwise set this bound to zero.
+        parl = zero;
+        if (nsing >= n) {
+            for (j = 0; j < n; j++) {
+                l = ipvt[j];
+                wa1[j] = diag[l] * (wa2[l] / dxnorm);
+            }
+            jj = 0;
+            for (j = 0; j < n; j++) {
+                sum = zero;
+                jm1 = j - 1;
+                if (jm1 >= 0) {
+                    ij = jj;
+                    for (i = 0; i <= jm1; i++) {
+                        sum += r[ij] * wa1[i];
+                        ij += 1;
+                    }
+                }
+                wa1[j] = (wa1[j] - sum) / r[j + ldr * j];
+                jj += ldr; // [i+ldr*j]
+            }
+            temp = enorm(n, wa1);
+            parl = ((fp / delta) / temp) / temp;
+        }
+
+        // calculate an upper bound, paru, for the zero of the function.
+        jj = 0;
+        for (j = 0; j < n; j++) {
+            sum = zero;
+            ij = jj;
+            for (i = 0; i <= j; i++) {
+                sum += r[ij] * qtb[i];
+                ij += 1;
+            }
+            l = ipvt[j];
+            wa1[j] = sum / diag[l];
+            jj += ldr; // [i+ldr*j]
+        }
+        gnorm = enorm(n, wa1);
+        paru = gnorm / delta;
+        if (paru == zero) {
+            paru = DWARF / Math.min(delta, p1);
+        }
+
+        // if the input par lies outside of the interval (parl,paru),
+        // set par to the closer endpoint.
+        par[0] = Math.max(par[0], parl);
+        par[0] = Math.min(par[0], paru);
+        if (par[0] == zero) {
+            par[0] = gnorm / dxnorm;
+        }
+
+        // beginning of an iteration (L150 — translated to labeled while).
+        while (true) {
+            iter += 1;
+            // evaluate the function at the current value of par.
+            if (par[0] == zero) {
+                par[0] = Math.max(DWARF, p001 * paru);
+            }
+            temp = Math.sqrt(par[0]);
+            for (j = 0; j < n; j++) {
+                wa1[j] = temp * diag[j];
+            }
+            qrsolv(n, r, ldr, ipvt, wa1, qtb, x, sdiag, wa2);
+            for (j = 0; j < n; j++) {
+                wa2[j] = diag[j] * x[j];
+            }
+            dxnorm = enorm(n, wa2);
+            temp = fp;
+            fp = dxnorm - delta;
+            // if the function is small enough, accept the current
+            // value of par. also test for the exceptional cases
+            // where parl is zero or the number of iterations has
+            // reached 10.
+            if ((Math.abs(fp) <= p1 * delta)
+                    || ((parl == zero) && (fp <= temp) && (temp < zero))
+                    || (iter == 10)) {
+                // goto L220: iter >= 1 here, so the trailing
+                // "if (iter == 0) par = 0" is a no-op. Done.
+                return;
+            }
+
+            // compute the newton correction.
+            for (j = 0; j < n; j++) {
+                l = ipvt[j];
+                wa1[j] = diag[l] * (wa2[l] / dxnorm);
+            }
+            jj = 0;
+            for (j = 0; j < n; j++) {
+                wa1[j] = wa1[j] / sdiag[j];
+                temp = wa1[j];
+                jp1 = j + 1;
+                if (jp1 < n) {
+                    ij = jp1 + jj;
+                    for (i = jp1; i < n; i++) {
+                        wa1[i] -= r[ij] * temp;
+                        ij += 1; // [i+ldr*j]
+                    }
+                }
+                jj += ldr; // ldr*j
+            }
+            temp = enorm(n, wa1);
+            parc = ((fp / delta) / temp) / temp;
+
+            // depending on the sign of the function, update parl or
+            // paru.
+            if (fp > zero) {
+                parl = Math.max(parl, par[0]);
+            }
+            if (fp < zero) {
+                paru = Math.min(paru, par[0]);
+            }
+            // compute an improved estimate for par.
+            par[0] = Math.max(parl, par[0] + parc);
+            // end of an iteration; loop back to L150.
+        }
+    }
+
+
     private static class MinpackC {
 
         private static final double MACHEP = 1.2e-16; // resolution of arithmetic
