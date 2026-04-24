@@ -46,11 +46,10 @@ import org.jquantlib.util.Observable;
 public abstract class TermStructureConsistentModel implements Observable {
     private final Handle<YieldTermStructure> termStructure_;
 
-    public TermStructureConsistentModel(final Handle<YieldTermStructure> termStructure){
+    //-- TermStructureConsistentModel(Handle<YieldTermStructure> termStructure);
+    //-- in ql/models/model.hpp (inline)
+    public TermStructureConsistentModel(final Handle<YieldTermStructure> termStructure) {
         this.termStructure_ = termStructure;
-
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
     }
 
     public Handle<YieldTermStructure> termStructure(){

@@ -816,18 +816,6 @@
     "notes": ""
   },
   {
-    "id": "model.TermStructureConsistentModel#UnsupportedOperationException",
-    "file": "jquantlib/src/main/java/org/jquantlib/model/TermStructureConsistentModel.java",
-    "line": 53,
-    "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
     "id": "model.equity.BatesDoubleExpModel#UnsupportedOperationException",
     "file": "jquantlib/src/main/java/org/jquantlib/model/equity/BatesDoubleExpModel.java",
     "line": 50,
