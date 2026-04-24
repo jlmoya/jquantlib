@@ -1,10 +1,10 @@
 [
   {
-    "id": "org.jquantlib.QL#UnsupportedOperationException",
+    "id": "org.jquantlib.QL#validateExperimentalMode",
     "file": "jquantlib/src/main/java/org/jquantlib/QL.java",
     "line": 391,
     "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
+    "method_signature": "public static void validateExperimentalMode()",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -48,11 +48,11 @@
     "notes": ""
   },
   {
-    "id": "cashflow.CashFlows#if",
+    "id": "cashflow.CashFlows#startDate",
     "file": "jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java",
     "line": 117,
     "kind": "numerical_suspect",
-    "method_signature": "if (c != null)",
+    "method_signature": "public Date startDate(final Leg cashflows)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -60,11 +60,11 @@
     "notes": ""
   },
   {
-    "id": "cashflow.CashFlows#for",
+    "id": "cashflow.CashFlows#maturityDate",
     "file": "jquantlib/src/main/java/org/jquantlib/cashflow/CashFlows.java",
     "line": 127,
     "kind": "numerical_suspect",
-    "method_signature": "for (int i = 0; i < cashflows.size()",
+    "method_signature": "public Date maturityDate(final Leg cashflows)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -84,11 +84,11 @@
     "notes": ""
   },
   {
-    "id": "cashflow.FixedRateLeg#if",
+    "id": "cashflow.FixedRateLeg#Leg",
     "file": "jquantlib/src/main/java/org/jquantlib/cashflow/FixedRateLeg.java",
     "line": 91,
     "kind": "numerical_suspect",
-    "method_signature": "if (schedule_.isRegular(1)",
+    "method_signature": "public Leg Leg()",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -168,11 +168,11 @@
     "notes": ""
   },
   {
-    "id": "instruments.CapFloor#for",
+    "id": "instruments.CapFloor#setPricingEngine",
     "file": "jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java",
     "line": 118,
     "kind": "numerical_suspect",
-    "method_signature": "for (final CashFlow cashFlow : floatingLeg_)",
+    "method_signature": "setPricingEngine(engine)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -180,11 +180,11 @@
     "notes": ""
   },
   {
-    "id": "instruments.CapFloor#for",
+    "id": "instruments.CapFloor#LibraryException",
     "file": "jquantlib/src/main/java/org/jquantlib/instruments/CapFloor.java",
     "line": 159,
     "kind": "numerical_suspect",
-    "method_signature": "for (final CashFlow cashFlow : floatingLeg_)",
+    "method_signature": "throw new LibraryException(\"only Cap/Floor types allowed in this constructor\")",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -204,11 +204,11 @@
     "notes": ""
   },
   {
-    "id": "math.AbstractSolver1D#if",
+    "id": "math.AbstractSolver1D#solveImpl",
     "file": "jquantlib/src/main/java/org/jquantlib/math/AbstractSolver1D.java",
     "line": 158,
     "kind": "numerical_suspect",
-    "method_signature": "if (Math.abs(fxMin)",
+    "method_signature": "return solveImpl(f, accuracy)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -216,11 +216,11 @@
     "notes": ""
   },
   {
-    "id": "math.AbstractSolver1D#if",
+    "id": "math.AbstractSolver1D#solve",
     "file": "jquantlib/src/main/java/org/jquantlib/math/AbstractSolver1D.java",
     "line": 200,
     "kind": "numerical_suspect",
-    "method_signature": "if (fxMax == 0.0)",
+    "method_signature": "public double solve(final F f, double accuracy, final double guess, final double xMin, final double xMax)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -276,11 +276,11 @@
     "notes": ""
   },
   {
-    "id": "math.optimization.LevenbergMarquardt#UnsupportedOperationException",
+    "id": "math.optimization.LevenbergMarquardt#LevenbergMarquardt",
     "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LevenbergMarquardt.java",
     "line": 43,
     "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
+    "method_signature": "public LevenbergMarquardt()",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -288,11 +288,11 @@
     "notes": ""
   },
   {
-    "id": "math.optimization.LevenbergMarquardt#UnsupportedOperationException",
+    "id": "math.optimization.LevenbergMarquardt#LevenbergMarquardt",
     "file": "jquantlib/src/main/java/org/jquantlib/math/optimization/LevenbergMarquardt.java",
     "line": 51,
     "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
+    "method_signature": "public LevenbergMarquardt(final double epsfcn, final double xtol, final double gtol)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -317,18 +317,6 @@
     "line": 81,
     "kind": "numerical_suspect",
     "method_signature": "public double probability(final int n, final int m, final int branch)",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  },
-  {
-    "id": "methods.lattices.TreeLattice2D#LibraryException",
-    "file": "jquantlib/src/main/java/org/jquantlib/methods/lattices/TreeLattice2D.java",
-    "line": 73,
-    "kind": "not_implemented",
-    "method_signature": "throw new LibraryException(\"not implemented\")",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -444,11 +432,11 @@
     "notes": ""
   },
   {
-    "id": "model.shortrate.calibrationhelpers.CapHelper#if",
+    "id": "model.shortrate.calibrationhelpers.CapHelper#CapHelper",
     "file": "jquantlib/src/main/java/org/jquantlib/model/shortrate/calibrationhelpers/CapHelper.java",
     "line": 75,
     "kind": "numerical_suspect",
-    "method_signature": "if(includeFirstSwaplet)",
+    "method_signature": "public CapHelper(final Period length, final Handle<Quote> volatility, final IborIndex index, // data for ATM swap-rate calculation final Frequency fixedLegFrequency, final DayCounter fixedLegDayCounter, final boolean includeFirstSwaplet, final Handle<YieldTermStructure> termStructure, final boolean calibrateVolatility)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -456,11 +444,11 @@
     "notes": ""
   },
   {
-    "id": "model.shortrate.calibrationhelpers.CapHelper#UnsupportedOperationException",
+    "id": "model.shortrate.calibrationhelpers.CapHelper#Period",
     "file": "jquantlib/src/main/java/org/jquantlib/model/shortrate/calibrationhelpers/CapHelper.java",
     "line": 84,
     "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
+    "method_signature": "new Period(fixedLegFrequency)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -492,11 +480,11 @@
     "notes": ""
   },
   {
-    "id": "model.shortrate.onefactormodels.BlackKarasinski#super",
+    "id": "model.shortrate.onefactormodels.BlackKarasinski#BlackKarasinski",
     "file": "jquantlib/src/main/java/org/jquantlib/model/shortrate/onefactormodels/BlackKarasinski.java",
     "line": 76,
     "kind": "numerical_suspect",
-    "method_signature": "super(2)",
+    "method_signature": "public BlackKarasinski(final Handle<YieldTermStructure> termStructure, final double a, final double sigma)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -504,11 +492,11 @@
     "notes": ""
   },
   {
-    "id": "model.shortrate.onefactormodels.Vasicek#super",
+    "id": "model.shortrate.onefactormodels.Vasicek#Vasicek",
     "file": "jquantlib/src/main/java/org/jquantlib/model/shortrate/onefactormodels/Vasicek.java",
     "line": 67,
     "kind": "numerical_suspect",
-    "method_signature": "super(4)",
+    "method_signature": "public Vasicek(/* @Rate */ final double r0, final double a, final double b, final double sigma, final double lambda)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -516,11 +504,11 @@
     "notes": ""
   },
   {
-    "id": "model.shortrate.onefactormodels.Vasicek#super",
+    "id": "model.shortrate.onefactormodels.Vasicek#Vasicek",
     "file": "jquantlib/src/main/java/org/jquantlib/model/shortrate/onefactormodels/Vasicek.java",
     "line": 74,
     "kind": "numerical_suspect",
-    "method_signature": "super(4)",
+    "method_signature": "public Vasicek(/* @Rate */ final double r0, final double a, final double b, final double sigma, final double lambda)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -528,11 +516,11 @@
     "notes": ""
   },
   {
-    "id": "model.shortrate.twofactormodels.G2#UnsupportedOperationException",
+    "id": "model.shortrate.twofactormodels.G2#G2",
     "file": "jquantlib/src/main/java/org/jquantlib/model/shortrate/twofactormodels/G2.java",
     "line": 126,
     "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
+    "method_signature": "public G2( final Handle<YieldTermStructure> termStructure, final double /* @Real */ a, final double /* @Real */ sigma, final double /* @Real */ b, final double /* @Real */ eta, final double /* @Real */ rho)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -552,11 +540,11 @@
     "notes": ""
   },
   {
-    "id": "pricingengines.AmericanPayoffAtHit#if",
+    "id": "pricingengines.AmericanPayoffAtHit#IllegalArgumentException",
     "file": "jquantlib/src/main/java/org/jquantlib/pricingengines/AmericanPayoffAtHit.java",
     "line": 184,
     "kind": "numerical_suspect",
-    "method_signature": "if (inTheMoney)",
+    "method_signature": "throw new IllegalArgumentException(\"invalid option type\")",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -564,11 +552,11 @@
     "notes": ""
   },
   {
-    "id": "pricingengines.BlackCalculator#if",
+    "id": "pricingengines.BlackCalculator#theta",
     "file": "jquantlib/src/main/java/org/jquantlib/pricingengines/BlackCalculator.java",
     "line": 289,
     "kind": "numerical_suspect",
-    "method_signature": "if (maturity == 0.0)",
+    "method_signature": "public double theta(final double spot, final/* @Time */double maturity)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -636,11 +624,11 @@
     "notes": ""
   },
   {
-    "id": "processes.HestonProcess#UnsupportedOperationException",
+    "id": "processes.HestonProcess#evolve",
     "file": "jquantlib/src/main/java/org/jquantlib/processes/HestonProcess.java",
     "line": 282,
     "kind": "work_in_progress",
-    "method_signature": "throw new UnsupportedOperationException(\"Work in progress\")",
+    "method_signature": "public Array evolve(/* @Time */final double t0, final Array x0, /* @Time */final double dt, final Array dw)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -660,11 +648,11 @@
     "notes": ""
   },
   {
-    "id": "termstructures.InterestRate#if",
+    "id": "termstructures.InterestRate#InterestRate",
     "file": "jquantlib/src/main/java/org/jquantlib/termstructures/InterestRate.java",
     "line": 128,
     "kind": "numerical_suspect",
-    "method_signature": "if (this.compound == Compounding.Compounded || this.compound == Compounding.SimpleThenCompounded)",
+    "method_signature": "public InterestRate(final/* @Rate */double r, final DayCounter dc, final Compounding comp, final Frequency freq)",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -684,11 +672,11 @@
     "notes": ""
   },
   {
-    "id": "termstructures.volatilities.BlackVarianceSurface#if",
+    "id": "termstructures.volatilities.BlackVarianceSurface#maxDate",
     "file": "jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/BlackVarianceSurface.java",
     "line": 205,
     "kind": "numerical_suspect",
-    "method_signature": "if (t <= times.last()",
+    "method_signature": "public final Date maxDate()",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,
@@ -696,11 +684,11 @@
     "notes": ""
   },
   {
-    "id": "termstructures.volatilities.LocalVolSurface#if",
+    "id": "termstructures.volatilities.LocalVolSurface#maxDate",
     "file": "jquantlib/src/main/java/org/jquantlib/termstructures/volatilities/LocalVolSurface.java",
     "line": 204,
     "kind": "numerical_suspect",
-    "method_signature": "if (dwdy == 0.0 && d2wdy2 == 0.0)",
+    "method_signature": "public final Date maxDate()",
     "cpp_counterpart": "",
     "depends_on": [],
     "existing_test": null,

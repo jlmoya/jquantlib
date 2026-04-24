@@ -45,6 +45,37 @@ METHOD_SIG = re.compile(
 
 PACKAGE_DECL = re.compile(r'^\s*package\s+([\w.]+)\s*;')
 
+# Java keyword-statements that open a paren but aren't method declarations.
+# METHOD_SIG has false-positive matches on these; we filter by name.
+NON_METHOD_NAMES = frozenset({
+    "if", "for", "while", "switch", "return", "throw", "do", "try",
+    "catch", "finally", "else", "new", "case", "default", "synchronized",
+    "super", "this",
+})
+
+ALLOWLIST_PATH = REPO_ROOT / "docs" / "migration" / "stub-allowlist.json"
+ALLOWLIST_REASON_PREFIX = "Java stub is a faithful port of a C++ QL_FAIL"
+
+
+def load_allowlist() -> set[str]:
+    """Read docs/migration/stub-allowlist.json and return stub_ids to skip.
+    Only entries whose reason matches ALLOWLIST_REASON_PREFIX are permitted;
+    any other justification belongs in phase2a-carveouts.md. See
+    docs/migration/phase2a-design.md §3.1 and §6.5 R7."""
+    if not ALLOWLIST_PATH.exists():
+        return set()
+    entries = json.loads(ALLOWLIST_PATH.read_text(encoding="utf-8"))
+    ids: set[str] = set()
+    for e in entries:
+        if not e.get("reason", "").startswith(ALLOWLIST_REASON_PREFIX):
+            raise ValueError(
+                f"Allowlist entry {e.get('stub_id')!r} has a rejected reason. "
+                "The allowlist is reserved for faithful QL_FAIL ports; put "
+                "other justifications in docs/migration/phase2a-carveouts.md."
+            )
+        ids.add(e["stub_id"])
+    return ids
+
 
 @dataclass
 class Stub:
@@ -63,10 +94,15 @@ class Stub:
 def find_enclosing_method(lines: list[str], idx: int) -> tuple[str, str]:
     """Walk backward from line idx to find the enclosing method declaration.
     Returns (class_name_guess, method_signature). Class name is empty if
-    we can't determine it heuristically."""
-    for i in range(idx, -1, -1):
+    we can't determine it heuristically.
+
+    Starts at idx-1 to skip the stub line itself: `throw new FooException(...)`
+    can match METHOD_SIG with ret="throw new", name="FooException", which
+    would incorrectly name the stub after the exception class rather than
+    the enclosing method."""
+    for i in range(idx - 1, -1, -1):
         m = METHOD_SIG.match(lines[i])
-        if m:
+        if m and m.group('name') not in NON_METHOD_NAMES:
             # Reassemble signature up through the first ')' on or after this line
             sig = lines[i].strip()
             j = i
@@ -130,11 +166,12 @@ def scan_file(path: Path) -> Iterable[Stub]:
 
 
 def scan_tree() -> list[Stub]:
+    allowlist = load_allowlist()
     stubs: list[Stub] = []
     for java in JAVA_ROOT.rglob("*.java"):
         if "/test/" in java.as_posix() or java.stem.endswith("Test"):
             continue  # test files are never stubs
-        stubs.extend(scan_file(java))
+        stubs.extend(s for s in scan_file(java) if s.id not in allowlist)
     stubs.sort(key=lambda s: (s.file, s.line))
     return stubs
 

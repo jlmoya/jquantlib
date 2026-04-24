@@ -1,0 +1,8 @@
+[
+  {
+    "stub_id": "methods.lattices.TreeLattice2D#grid",
+    "kind": "not_implemented",
+    "reason": "Java stub is a faithful port of a C++ QL_FAIL / throw that will never be implemented.",
+    "cpp_counterpart": "ql/methods/lattices/lattice2d.hpp TreeLattice2D::grid() throws QL_FAIL(\"not implemented\")"
+  }
+]
