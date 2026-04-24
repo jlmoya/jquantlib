@@ -1,0 +1,56 @@
+{
+  "cases": [
+    {
+      "expected": 13.7603,
+      "inputs": {
+        "date": "2002-01-01",
+        "source": "EUR",
+        "target": "ATS"
+      },
+      "name": "knownRateEurAts"
+    },
+    {
+      "expected": 0.92,
+      "inputs": {
+        "date": "2020-06-15",
+        "rate_added": 0.92,
+        "source": "USD",
+        "target": "EUR"
+      },
+      "name": "customAddedUsdEur"
+    },
+    {
+      "expected": 140.0,
+      "inputs": {
+        "date": "2019-07-01",
+        "source": "GBP",
+        "target": "JPY"
+      },
+      "name": "multipleEntries2019"
+    },
+    {
+      "expected": 150.0,
+      "inputs": {
+        "date": "2020-07-01",
+        "source": "GBP",
+        "target": "JPY"
+      },
+      "name": "multipleEntries2020"
+    },
+    {
+      "expected": 1.95583,
+      "inputs": {
+        "after": "clear()",
+        "date": "2001-01-01",
+        "source": "EUR",
+        "target": "DEM"
+      },
+      "name": "knownRateEurDemAfterClear"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-24T09:50:38Z",
+  "generated_by": "exchangerate_manager_probe",
+  "test_group": "currencies/exchangerate_manager"
+}

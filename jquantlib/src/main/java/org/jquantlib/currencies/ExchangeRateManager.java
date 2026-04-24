@@ -45,11 +45,9 @@ import java.util.List;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
-import org.jquantlib.currencies.America.CRCCurrency;
 import org.jquantlib.currencies.America.PEHCurrency;
 import org.jquantlib.currencies.America.PEICurrency;
 import org.jquantlib.currencies.America.PENCurrency;
-import org.jquantlib.currencies.America.USDCurrency;
 import org.jquantlib.currencies.Europe.ATSCurrency;
 import org.jquantlib.currencies.Europe.BEFCurrency;
 import org.jquantlib.currencies.Europe.DEMCurrency;
@@ -148,10 +146,9 @@ public class ExchangeRateManager {
      * Constructs a new ExchangeRateManager and initialises the most used rates. Note: private; should only be accessed by
      * getInstance().
      */
+    //-- ExchangeRateManager(); in ql/currencies/exchangeratemanager.cpp:41
     protected ExchangeRateManager() {
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-        //addKnownRates();
+        addKnownRates();
     }
 
     /**
@@ -238,9 +235,10 @@ public class ExchangeRateManager {
     /**
      * Removes all manually added exchange rates from this ExchangeRateManager.
      */
+    //-- void clear(); in ql/currencies/exchangeratemanager.cpp:84
     public void clear() {
         data_.clear();
-        //addKnownRates();
+        addKnownRates();
     }
 
     /**
@@ -352,13 +350,7 @@ public class ExchangeRateManager {
                 new PEHCurrency(), 1000.0),
                 new Date(1, Month.February, 1985),
                 maxDate);
-		// add Costa Rican colon currency
-		add(new ExchangeRate(
-				new USDCurrency(), 
-				new CRCCurrency(), 550.0),
-				new Date(4, Month.January, 2017), 
-				maxDate);
-	    }
+    }
 
     /**
      * Fetches a exchange rate from the repository.
@@ -368,13 +360,13 @@ public class ExchangeRateManager {
      * @param date The date the exchange rate should be valid at. Date
      * @return The found exchange rate. ExchangeRate
      */
+    //-- ExchangeRate directLookup(const Currency&, const Currency&, const Date&) const;
+    //-- in ql/currencies/exchangeratemanager.cpp:137
     protected ExchangeRate directLookup(final Currency source, final Currency target, final Date date) {
-        if (System.getProperty("EXPERIMENTAL") == null)
-            throw new UnsupportedOperationException("Work in progress");
-
-        ExchangeRate rate = null;
-        QL.require(((rate = fetch(source, target, date)) != null) , "no direct conversion available");  // TODO: message
-
+        final ExchangeRate rate = fetch(source, target, date);
+        QL.require(rate != null,
+                "no direct conversion available from " + source.code()
+                        + " to " + target.code() + " for " + date);
         return rate;
     }
 
@@ -450,10 +442,15 @@ public class ExchangeRateManager {
      * @param date The date when the exchange rate should be valid.
      * @return The found ExchangeRate.
      */
+    //-- const ExchangeRate* fetch(const Currency&, const Currency&, const Date&) const;
+    //-- in ql/currencies/exchangeratemanager.cpp:194
     public ExchangeRate fetch(final Currency source, final Currency target, final Date date) {
         final List<Entry> rates = data_.get(hash(source, target));
+        if (rates == null) {
+            return null;  // C++ std::map::operator[] auto-inserts; Java HashMap.get returns null.
+        }
         final int i = matchValidateAt(rates, date);
-        return (i == rates.size() - 1) || (i == -1) ? null : rates.get(i).rate;
+        return i == -1 ? null : rates.get(i).rate;
     }
 
     /**
