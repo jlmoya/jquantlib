@@ -133,19 +133,23 @@ public class Merton76Process extends StochasticProcess1D {
 
     // TODO: code review :: please verify against QL/C++ code
 
+    //-- Real drift(Time, Real) const override { QL_FAIL("Merton76Process does not implement drift"); }
+    //-- in ql/processes/merton76process.hpp
     @Override
-    public double /* @Real */drift(final double /* @Time */t, final double /* @Real */x) {
-        throw new LibraryException("not implemented"); // TODO: message
+    public double drift(final double t, final double x) {
+        throw new LibraryException("Merton76Process does not implement drift");
     }
 
+    //-- Real diffusion(Time, Real) const override { QL_FAIL("Merton76Process does not implement diffusion"); }
     @Override
-    public double /* @Real */diffusion(final double /* @Time */t, final double /* @Real */x) {
-        throw new LibraryException("not implemented"); // TODO: message
+    public double diffusion(final double t, final double x) {
+        throw new LibraryException("Merton76Process does not implement diffusion");
     }
 
+    //-- Real apply(Real, Real) const override { QL_FAIL("Merton76Process does not implement apply"); }
     @Override
-    public double /* @Real */apply(final double /* @Real */x, final double /* @Real */y) {
-        throw new LibraryException("not implemented"); // TODO: message
+    public double apply(final double x, final double y) {
+        throw new LibraryException("Merton76Process does not implement apply");
     }
 
 

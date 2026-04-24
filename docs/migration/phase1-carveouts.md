@@ -29,6 +29,50 @@ remaining callers.
 
 ---
 
+## 2026-04-24 — model.shortrate.calibrationhelpers.CapHelper (line 84)
+
+**Stub kind:** `work_in_progress` via `if (true) throw new UnsupportedOperationException("Work in progress")`.
+
+**Reason for carve-out:** The constructor sets up the schedule correctly, but
+the remainder of initialization is commented-out C++ pseudo-code. Porting
+requires a working `IborLeg` builder and the complete floating-leg
+machinery, which is itself Phase 2 territory (depends on market-model
+infrastructure still to be filled in).
+
+**User sign-off:** acknowledged during Phase 3 execution.
+
+---
+
+## 2026-04-24 — model.shortrate.twofactormodels.G2 (line 126)
+
+**Stub kind:** `work_in_progress` via `if (true) throw new UnsupportedOperationException("Work in progress")`.
+
+**Reason for carve-out:** G2 is a two-factor short-rate model. The Java
+constructor sets up five parameters but the core calibration + pricing
+machinery that depends on it (two-factor trees, lattice construction) is
+not yet ported. Full port requires working two-factor tree lattices
+(TreeLattice2D carved out separately) and associated calibration
+infrastructure.
+
+**User sign-off:** acknowledged during Phase 3 execution.
+
+---
+
+## 2026-04-24 — processes.HestonProcess (line 282)
+
+**Stub kind:** `work_in_progress` via `if (true) { throw new UnsupportedOperationException("Work in progress"); }` inside the `evolve` method's QUADRATIC_EXPONENTIAL branch.
+
+**Reason for carve-out:** HestonProcess's `evolve()` method has several
+discretization schemes. Most are implemented; the QUADRATIC_EXPONENTIAL
+scheme guard at line 282 is mid-algorithm (the retVal[1] computation
+above the guard is correct, but the subsequent dy / retVal[0] computations
+below need careful porting from C++ with a specific choice of Broadie-Kaya
+variates). This is a single-algorithm carve-out, not the whole class.
+
+**User sign-off:** acknowledged during Phase 3 execution.
+
+---
+
 ## 2026-04-24 — methods.lattices.TreeLattice2D.grid (line 73)
 
 **Stub kind:** `not_implemented`.

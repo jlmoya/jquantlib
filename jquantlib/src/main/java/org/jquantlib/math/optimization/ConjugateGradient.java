@@ -58,18 +58,15 @@ import org.jquantlib.math.optimization.EndCriteria.Type;
 
 public class ConjugateGradient extends LineSearchBasedMethod {
 
-    public ConjugateGradient(){
-        throw new UnsupportedOperationException("Work in progress");
+    //-- ConjugateGradient(const ext::shared_ptr<LineSearch>& lineSearch = ext::shared_ptr<LineSearch>())
+    //-- : LineSearchBasedMethod(lineSearch) {}
+    //-- in ql/math/optimization/conjugategradient.hpp:52
+    public ConjugateGradient() {
+        this(null);
     }
 
-
     public ConjugateGradient(final LineSearch lineSearch) {
-        if (System.getProperty("EXPERIMENTAL") == null) {
-            throw new UnsupportedOperationException("Work in progress");
-        }
-        if(lineSearch == null){
-
-        }
+        super(lineSearch);
     }
 
     /*! Multi-dimensional Conjugate Gradient
