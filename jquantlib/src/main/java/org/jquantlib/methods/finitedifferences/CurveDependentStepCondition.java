@@ -42,16 +42,21 @@ package org.jquantlib.methods.finitedifferences;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.Payoff;
 import org.jquantlib.instruments.PlainVanillaPayoff;
-import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.matrixutilities.Array;
 
 /**
- * Abstract base class which allows step conditions to use both payoff and array functions
+ * Abstract base class which allows step conditions to use both payoff and array functions.
+ * Subclasses (e.g. {@code AmericanCondition}, {@code ShoutCondition}) implement
+ * {@link #applyToValue(double, double)}.
+ *
+ * <p>Note: no direct C++ v1.42.1 counterpart — the newer C++ step-condition
+ * framework is Fdm*-prefixed with a different class layout. This class
+ * remains as a Java-only shim for the two existing subclasses; see
+ * docs/migration/phase1-carveouts.md for Phase 2 reorganization notes.
  *
  * @author Richard Gomes
  */
-//TODO: code review :: license, class comments, comments for access modifiers, put "final" everywhere
-public class CurveDependentStepCondition implements StepCondition<Array> {
+public abstract class CurveDependentStepCondition implements StepCondition<Array> {
 
     public static interface CurveWrapper {
         double getValue(Array a, int i);
@@ -71,9 +76,12 @@ public class CurveDependentStepCondition implements StepCondition<Array> {
         curveItem = new ArrayWrapper(a);
     }
 
-    protected double applyToValue(final double a, final double b) {
-        throw new LibraryException("not yet implemented"); // TODO: message
-    }
+    /**
+     * Subclasses must provide the scalar step-condition logic:
+     * transform the current value of the grid node given the corresponding
+     * payoff/curve value.
+     */
+    protected abstract double applyToValue(double current, double intrinsic);
 
     @Override
     public void applyTo(final Array a, final double t) {
