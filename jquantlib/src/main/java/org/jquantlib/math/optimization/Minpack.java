@@ -122,18 +122,25 @@ public class Minpack {
     }
 
 
+    /** Resolution of floating-point arithmetic (machine epsilon-like). */
+    private static final double MACHEP = 1.2e-16;
+
     /**
      * Euclidean norm with overflow/underflow protection.
      * Fresh v1.42.1 port of QuantLib::MINPACK::enorm from
      * ql/math/optimization/lmdif.cpp lines 79-209. Computes sqrt(sum(x[i]^2))
      * safely across extreme magnitudes by partitioning components into
      * small / intermediate / large accumulators.
-     * <p>
-     * Distinct from the internal MinpackC.enorm (3-arg form with offset);
-     * retained alongside it until MinpackC is phased out in later Phase 2a
-     * commits when the full lmdif driver lands.
      */
     static double enorm(final int n, final double[] x) {
+        return enorm(n, x, 0);
+    }
+
+    /**
+     * Offset-taking overload for internal callers that read a sub-array
+     * (mirrors C++ {@code enorm(n, &a[offset])}).
+     */
+    static double enorm(final int n, final double[] x, final int offset) {
         final double rdwarf = 3.834e-20;
         final double rgiant = 1.304e19;
         final double zero = 0.0;
@@ -146,7 +153,7 @@ public class Minpack {
         double xabs, temp;
 
         for (int i = 0; i < n; i++) {
-            xabs = Math.abs(x[i]);
+            xabs = Math.abs(x[offset + i]);
             if ((xabs > rdwarf) && (xabs < agiant)) {
                 // sum for intermediate components
                 s2 += xabs * xabs;
@@ -195,6 +202,138 @@ public class Minpack {
             ans = x3max * Math.sqrt(s3);
         }
         return ans;
+    }
+
+
+    /**
+     * QR factorization with optional column pivoting (Householder transforms).
+     * Fresh v1.42.1 port of QuantLib::MINPACK::qrfac from
+     * ql/math/optimization/lmdif.cpp lines 369-574.
+     * <p>
+     * Raw-{@code double[]} overload for the new lmdif port; the old
+     * Matrix/Array-wrapping {@link #qrfac(int, int, Matrix, boolean, int[], Array, Array, Array)}
+     * wrapper is retained until QRDecomposition migrates to this signature
+     * in a subsequent Phase 2a commit.
+     *
+     * @param m      number of rows of {@code a}
+     * @param n      number of columns of {@code a}
+     * @param a      column-major flat array of length {@code m*n} (in/out)
+     * @param lda    leading dimension (≥ m); unused in this port, as C++
+     * @param pivot  1 to enable column pivoting, 0 to disable
+     * @param ipvt   pivot vector of length {@code lipvt} (output; unreferenced if pivot == 0)
+     * @param lipvt  length of {@code ipvt} (≥ n if pivot != 0, else any positive)
+     * @param rdiag  diagonal elements of R (output, length n)
+     * @param acnorm column norms of input {@code a} (output, length n; may alias {@code rdiag})
+     * @param wa     workspace of length n (may alias {@code rdiag} if pivot == 0)
+     */
+    public static void qrfac(final int m, final int n, final double[] a,
+                             @SuppressWarnings("unused") final int lda,
+                             final int pivot,
+                             final int[] ipvt,
+                             @SuppressWarnings("unused") final int lipvt,
+                             final double[] rdiag, final double[] acnorm,
+                             final double[] wa) {
+        final double zero = 0.0;
+        final double one = 1.0;
+        final double p05 = 0.05;
+
+        int i, ij, jj, j, jp1, k, kmax, minmn;
+        double ajnorm, sum, temp;
+
+        // compute the initial column norms and initialize several arrays.
+        ij = 0;
+        for (j = 0; j < n; j++) {
+            acnorm[j] = enorm(m, a, ij);
+            rdiag[j] = acnorm[j];
+            wa[j] = rdiag[j];
+            if (pivot != 0) {
+                ipvt[j] = j;
+            }
+            ij += m; // m*j
+        }
+
+        // reduce a to r with householder transformations.
+        minmn = Math.min(m, n);
+        for (j = 0; j < minmn; j++) {
+            if (pivot != 0) {
+                // bring the column of largest norm into the pivot position.
+                kmax = j;
+                for (k = j; k < n; k++) {
+                    if (rdiag[k] > rdiag[kmax]) {
+                        kmax = k;
+                    }
+                }
+                if (kmax != j) {
+                    ij = m * j;
+                    jj = m * kmax;
+                    for (i = 0; i < m; i++) {
+                        temp = a[ij];        // [i+m*j]
+                        a[ij] = a[jj];       // [i+m*kmax]
+                        a[jj] = temp;
+                        ij += 1;
+                        jj += 1;
+                    }
+                    rdiag[kmax] = rdiag[j];
+                    wa[kmax] = wa[j];
+                    k = ipvt[j];
+                    ipvt[j] = ipvt[kmax];
+                    ipvt[kmax] = k;
+                }
+            }
+
+            // L40: compute the householder transformation to reduce the
+            // j-th column of a to a multiple of the j-th unit vector.
+            jj = j + m * j;
+            ajnorm = enorm(m - j, a, jj);
+            if (ajnorm != zero) {
+                if (a[jj] < zero) {
+                    ajnorm = -ajnorm;
+                }
+                ij = jj;
+                for (i = j; i < m; i++) {
+                    a[ij] /= ajnorm;
+                    ij += 1; // [i+m*j]
+                }
+                a[jj] += one;
+
+                // apply the transformation to the remaining columns and
+                // update the norms.
+                jp1 = j + 1;
+                if (jp1 < n) {
+                    for (k = jp1; k < n; k++) {
+                        sum = zero;
+                        ij = j + m * k;
+                        jj = j + m * j;
+                        for (i = j; i < m; i++) {
+                            sum += a[jj] * a[ij];
+                            ij += 1; // [i+m*k]
+                            jj += 1; // [i+m*j]
+                        }
+                        temp = sum / a[j + m * j];
+                        ij = j + m * k;
+                        jj = j + m * j;
+                        for (i = j; i < m; i++) {
+                            a[ij] -= temp * a[jj];
+                            ij += 1; // [i+m*k]
+                            jj += 1; // [i+m*j]
+                        }
+                        if ((pivot != 0) && (rdiag[k] != zero)) {
+                            temp = a[j + m * k] / rdiag[k];
+                            temp = Math.max(zero, one - temp * temp);
+                            rdiag[k] *= Math.sqrt(temp);
+                            temp = rdiag[k] / wa[k];
+                            if ((p05 * temp * temp) <= MACHEP) {
+                                rdiag[k] = enorm(m - j - 1, a, jp1 + m * k);
+                                wa[k] = rdiag[k];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // L100:
+            rdiag[j] = -ajnorm;
+        }
     }
 
 
