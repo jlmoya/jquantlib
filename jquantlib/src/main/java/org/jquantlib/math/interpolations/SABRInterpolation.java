@@ -162,11 +162,12 @@ public class SABRInterpolation extends AbstractInterpolation {
 			// constructor's *IsFixed flags were ignored and NULL_REAL flowed
 			// straight through validateSabrParameters() (which rightly throws
 			// on β > 1). Match the C++ contract by comparing against NULL_REAL.
+			final boolean alphaWasNull = (alpha_ == Constants.NULL_REAL);
 			if (alpha_ != Constants.NULL_REAL) {
                 alphaIsFixed_ = alphaIsFixed;
-            } else {
-                alpha_ = Math.sqrt(0.2);
             }
+			// alpha_ default is forward-aware and depends on the final beta_,
+			// so we defer it until after the beta_ branch has run (see below).
 			if (beta_ != Constants.NULL_REAL) {
                 betaIsFixed_ = betaIsFixed;
             } else {
@@ -182,6 +183,16 @@ public class SABRInterpolation extends AbstractInterpolation {
             } else {
                 rho_ = 0.0;
             }
+			// Match C++ v1.42.1 xabrinterpolation.hpp SABRSpecs::defaultValues:
+			//     params[0] = (params[1] < 0.9999)
+			//                 ? 0.2 * std::pow(forward, 1.0 - params[1])
+			//                 : std::sqrt(0.2);
+			// Computed after beta_ defaulting so the now-final beta_ is used.
+			if (alphaWasNull) {
+				alpha_ = (beta_ < 0.9999)
+						? 0.2 * Math.pow(forward_, 1.0 - beta_)
+						: Math.sqrt(0.2);
+			}
 			(new Sabr()).validateSabrParameters(alpha_, beta_, nu_, rho_);
 		}
 
