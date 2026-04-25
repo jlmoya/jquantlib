@@ -79,6 +79,30 @@ non-calibration code path is unchanged (the `ConstantParameter`
 writes already came through). Phase-1 numerical_suspect marker
 cleared.
 
+**Resolution (Phase 2b WI-3):**
+Fixed across the entire one-factor model family. Each model's
+`Parameter` member fields are now accessor methods that read live
+through `arguments_.get(i)`; constructors populate `arguments_`
+directly via `set()`, so subsequent `ConstantParameter` writes
+propagate to the calibratable vector — restoring C++'s
+`Parameter&` reference-binding semantics in a Java-idiomatic way.
+
+  - `Vasicek` — commit `dc02443` (folded with `CalibratedModel`
+    pre-fill of `NullParameter` slots and a HullWhite minimum
+    compile-restoring patch); accessor visibility broadened from
+    private to protected in chore `17e2f5b`.
+  - `HullWhite` — commit `244bc92` (no Java source change required
+    after `17e2f5b`; probe + Java test added).
+  - `BlackKarasinski` — commit `072d25d` (own slots 0=a, 1=sigma;
+    reflection-based test since BK has no closed-form pricing).
+  - `CoxIngersollRoss` — commit `82697d2` (4 slots: theta/k/sigma/r0;
+    `discountBond` fingerprint test; sigma constraint corrected
+    from `VolatilityConstraint(k,theta)` → `PositiveConstraint`
+    matching v1.42.1's `withFellerConstraint=false` default).
+
+Calibration round-trip / fingerprint tests landed for each model
+(`*CalibrationTest`). Phase-2b WI-3 fully closed.
+
 ---
 
 ## WI-2-carveout-simplex — OptimizerTest Simplex dimension bug
