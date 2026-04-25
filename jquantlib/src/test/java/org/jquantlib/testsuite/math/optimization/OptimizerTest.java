@@ -34,7 +34,6 @@ import org.jquantlib.math.optimization.NoConstraint;
 import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.math.optimization.Problem;
 import org.jquantlib.math.optimization.Simplex;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class OptimizerTest {
@@ -44,13 +43,9 @@ public class OptimizerTest {
     };
 
 
-    // Phase-2a status (2026-04-24): LM gate lifted but the test's active
-    // optimizationMethodTypes list contains only Simplex (line 104 has
-    // LevenbergMarquardt commented out). Un-skipping exposes a Simplex
-    // bug — "Independent variable must be 1 dimensional" from the Array
-    // layout Simplex builds — that is unrelated to Phase 2a scope.
-    // Carved to docs/migration/phase2a-carveouts.md (WI-2-carveout-simplex).
-    @Ignore
+    // Un-skipped in Phase 2b WI-2: Simplex 1D-dim bug fixed in commit
+    // f593de6; both Simplex and LevenbergMarquardt now run via the
+    // active optimizationMethodTypes matrix below.
     @Test
     public void testOptimizers() {
 
@@ -113,7 +108,10 @@ public class OptimizerTest {
                 .get(maxStationaryStateIterations_.size() - 1), rootEpsilons_.get(rootEpsilons_.size() - 1), functionEpsilons_
                 .get(functionEpsilons_.size() - 1), gradientNormEpsilons_.get(gradientNormEpsilons_.size() - 1)));
         // Set optimization methods for optimizer
-        final OptimizationMethodType optimizationMethodTypes[] = { OptimizationMethodType.simplex };/* OptimizationMethodType.levenbergMarquardt};*/
+        final OptimizationMethodType optimizationMethodTypes[] = {
+            OptimizationMethodType.simplex,
+            OptimizationMethodType.levenbergMarquardt
+        };
         final double simplexLambda = 0.1;
         final double levenbergMarquardtEpsfcn = Math.pow(10, -0.8); //FIXME: how to write this as 1e-0.8???
         final double levenbergMarquardtXtol = Math.pow(10, -0.8); //FIXME: how to write this as 1e-0.8???

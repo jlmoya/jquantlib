@@ -103,7 +103,11 @@ an integration mismatch with the `Array(0)` zero-size construction
 used at line 91. Pre-existing, unrelated to Phase 2a.
 
 **Disposition:**
-Re-gated with `@Ignore` + pointer to this file. Phase 2b (Simplex
-cleanup or OptimizerTest rework). Note that the commented-out
-LM line should be uncommented once the Simplex path is fixed, so
-the full optimizer matrix runs.
+Fixed in Phase 2b WI-2:
+- Simplex 1D-dim bug root-caused and fixed in commit `f593de6` (the
+  test's `initialValue` was built via the non-mutating `Array.add(double)`
+  and the size-1 result was discarded; aligned to C++
+  `test-suite/optimizers.cpp:231-232` idiom `new Array(new double[]{-100.0})`).
+- `OptimizerTest#testOptimizers` un-skipped in this commit, with the
+  `LevenbergMarquardt` entry uncommented in the `optimizationMethodTypes`
+  matrix. Both Simplex and LM now run; `Skipped` 25 → 24.
