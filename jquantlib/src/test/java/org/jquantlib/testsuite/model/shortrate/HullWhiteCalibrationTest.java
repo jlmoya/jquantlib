@@ -7,6 +7,8 @@ package org.jquantlib.testsuite.model.shortrate;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.instruments.Option;
+import org.jquantlib.methods.lattices.Lattice;
+import org.jquantlib.methods.lattices.TreeLattice1D;
 import org.jquantlib.model.shortrate.onefactormodels.HullWhite;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -18,10 +20,12 @@ import org.jquantlib.testsuite.util.ReferenceReader.Case;
 import org.jquantlib.testsuite.util.Tolerance;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
+import org.jquantlib.time.TimeGrid;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 public class HullWhiteCalibrationTest {
@@ -116,6 +120,56 @@ public class HullWhiteCalibrationTest {
             }
             if (!Tolerance.tight(gotPut, expPut)) {
                 fail("5-arg put[" + i + "]: exp=" + expPut + " got=" + gotPut);
+            }
+        }
+    }
+
+    @Test
+    public void treeGridDiscountFingerprint_matchesCpp() {
+        final ReferenceReader reader = ReferenceReader.load("model/shortrate/hullwhite_calibration");
+        final Case c = reader.getCase("hw_tree_grid_4steps");
+        final JSONObject in = c.inputs();
+
+        final Date today = new Date(22, Month.April, 2026);
+        new Settings().setEvaluationDate(today);
+        final YieldTermStructure ts = new FlatForward(today,
+                new Handle<Quote>(new SimpleQuote(in.getDouble("r_curve"))),
+                new Actual365Fixed());
+
+        final HullWhite model = new HullWhite(
+                new Handle<YieldTermStructure>(ts),
+                in.getDouble("a"), in.getDouble("sigma"));
+        final TimeGrid grid = new TimeGrid(in.getDouble("grid_end"), in.getInt("grid_steps"));
+        final Lattice lattice = model.tree(grid);
+        assertNotNull("tree(grid) must not return null", lattice);
+        final TreeLattice1D tree = (TreeLattice1D) lattice;
+
+        final JSONObject exp = (JSONObject) c.expectedRaw();
+        final JSONArray samples = exp.getJSONArray("samples");
+        // Loose tier (1e-8) per design §4.3 per-test loosening allowance.
+        // Rationale: HullWhite.tree(grid) calibrates per-step phi via a
+        // Brent solver targeting 1e-7 phi tolerance, propagating to
+        // ~1e-11 in discount values. Same noise floor as BK's tree
+        // fingerprint (commit be09786) — the dominant trinomial-shape
+        // bugs in this code path are fixed (commits aed9147 fixing
+        // Branching probs_ initialization, and bdbc1e5 fixing dx_
+        // off-by-one); what remains is solver-noise-floor, not
+        // port-correctness-floor.
+        for (int k = 0; k < samples.length(); k++) {
+            final JSONObject s = samples.getJSONObject(k);
+            final int i = s.getInt("i");
+            final int j = s.getInt("j");
+            final double expDiscount = s.getDouble("discount");
+            final double expUnderlying = s.getDouble("underlying");
+            final double gotDiscount = tree.discount(i, j);
+            final double gotUnderlying = tree.underlying(i, j);
+            if (!Tolerance.loose(gotDiscount, expDiscount)) {
+                fail("discount[i=" + i + ",j=" + j + "]: exp="
+                        + expDiscount + " got=" + gotDiscount);
+            }
+            if (!Tolerance.loose(gotUnderlying, expUnderlying)) {
+                fail("underlying[i=" + i + ",j=" + j + "]: exp="
+                        + expUnderlying + " got=" + gotUnderlying);
             }
         }
     }

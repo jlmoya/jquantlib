@@ -102,11 +102,121 @@
         "note": "static method, varies (a, t, T, sigma)"
       },
       "name": "hullwhite_convexity_bias"
+    },
+    {
+      "expected": {
+        "samples": [
+          {
+            "discount": 0.9900498337491681,
+            "i": 0,
+            "j": 0,
+            "underlying": 0.0
+          },
+          {
+            "discount": 0.9921683464446461,
+            "i": 1,
+            "j": 0,
+            "underlying": -0.008553120088536637
+          },
+          {
+            "discount": 0.9900490792916404,
+            "i": 1,
+            "j": 1,
+            "underlying": 0.0
+          },
+          {
+            "discount": 0.9879343388838004,
+            "i": 1,
+            "j": 2,
+            "underlying": 0.008553120088536637
+          },
+          {
+            "discount": 0.9942899513310657,
+            "i": 2,
+            "j": 0,
+            "underlying": -0.017106240177073274
+          },
+          {
+            "discount": 0.9921661524395061,
+            "i": 2,
+            "j": 1,
+            "underlying": -0.008553120088536637
+          },
+          {
+            "discount": 0.9900468899728856,
+            "i": 2,
+            "j": 2,
+            "underlying": 0.0
+          },
+          {
+            "discount": 0.9879321542414207,
+            "i": 2,
+            "j": 3,
+            "underlying": 0.008553120088536637
+          },
+          {
+            "discount": 0.9858219355760253,
+            "i": 2,
+            "j": 4,
+            "underlying": 0.017106240177073274
+          },
+          {
+            "discount": 0.996414755862524,
+            "i": 3,
+            "j": 0,
+            "underlying": -0.02565936026560991
+          },
+          {
+            "discount": 0.9942864183979833,
+            "i": 3,
+            "j": 1,
+            "underlying": -0.017106240177073274
+          },
+          {
+            "discount": 0.992162627052753,
+            "i": 3,
+            "j": 2,
+            "underlying": -0.008553120088536637
+          },
+          {
+            "discount": 0.9900433721163429,
+            "i": 3,
+            "j": 3,
+            "underlying": 0.0
+          },
+          {
+            "discount": 0.9879286438990038,
+            "i": 3,
+            "j": 4,
+            "underlying": 0.008553120088536637
+          },
+          {
+            "discount": 0.9858184327316841,
+            "i": 3,
+            "j": 5,
+            "underlying": 0.017106240177073274
+          },
+          {
+            "discount": 0.9837127289659852,
+            "i": 3,
+            "j": 6,
+            "underlying": 0.02565936026560991
+          }
+        ]
+      },
+      "inputs": {
+        "a": 0.1,
+        "grid_end": 1.0,
+        "grid_steps": 4,
+        "r_curve": 0.04,
+        "sigma": 0.01
+      },
+      "name": "hw_tree_grid_4steps"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-25T20:16:41Z",
+  "generated_at": "2026-04-25T21:57:38Z",
   "generated_by": "hullwhite_calibration_probe",
   "test_group": "model/shortrate/hullwhite_calibration"
 }

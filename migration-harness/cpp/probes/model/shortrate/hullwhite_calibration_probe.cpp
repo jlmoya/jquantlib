@@ -10,6 +10,7 @@
 #include <ql/quotes/simplequote.hpp>
 #include <ql/time/calendars/nullcalendar.hpp>
 #include <ql/time/daycounters/actual365fixed.hpp>
+#include <ql/timegrid.hpp>
 #include "../../common.hpp"
 
 #include <vector>
@@ -85,6 +86,35 @@ int main() {
     out.addCase("hullwhite_convexity_bias",
         json{{"note", "static method, varies (a, t, T, sigma)"}},
         json{{"samples", convexityArr}});
+
+    // Tree-grid fingerprint case (Phase 2c WI-4 Task 4.3 follow-on).
+    // Captures the full (i, j) discount/underlying fingerprint of a
+    // 4-step grid for the same (r=0.04, a=0.1, sigma=0.01) setup as
+    // BK's tree fingerprint. Walks i = 0 .. grid.size()-2 because the
+    // terminal grid node has no fitted phi (HullWhite calibrates phi
+    // for t = grid[0..size-2] just like BlackKarasinski).
+    {
+        Settings::instance().evaluationDate() = Date(22, April, 2026);
+        Handle<YieldTermStructure> tsTree(
+            ext::make_shared<FlatForward>(Date(22, April, 2026), 0.04, Actual365Fixed()));
+        HullWhite treeModel(tsTree, 0.1, 0.01);
+        TimeGrid grid(/*end*/1.0, /*steps*/4);
+        auto lattice = treeModel.tree(grid);
+        auto tree = ext::dynamic_pointer_cast<OneFactorModel::ShortRateTree>(lattice);
+
+        json treeArr = json::array();
+        for (Size i = 0; i + 1 < grid.size(); ++i) {
+            for (Size j = 0; j < tree->size(i); ++j) {
+                treeArr.push_back({{"i", i}, {"j", j},
+                                   {"discount",   tree->discount(i, j)},
+                                   {"underlying", tree->underlying(i, j)}});
+            }
+        }
+        out.addCase("hw_tree_grid_4steps",
+            json{{"r_curve", 0.04}, {"a", 0.1}, {"sigma", 0.01},
+                 {"grid_end", 1.0}, {"grid_steps", 4}},
+            json{{"samples", treeArr}});
+    }
 
     out.write();
     return 0;
