@@ -75,7 +75,6 @@ public class TrinomialTree extends Tree {
 
 	public TrinomialTree(final StochasticProcess1D process, final TimeGrid timeGrid, final boolean isPositive) {
 		super(timeGrid.size());
-		dx_.add(new Double(1));
 		dx_.add(new Double(0.0));
 		timeGrid_ = timeGrid;
 		x0_ = process.x0();
