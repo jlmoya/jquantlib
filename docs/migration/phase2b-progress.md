@@ -1,8 +1,8 @@
 # Phase 2b — Execution Progress
 
 **Last update:** 2026-04-25
-**Tip commit:** `f593de6` on `origin/main`
-**Baseline test suite:** 628 tests, 25 skipped, 0 failures.
+**Tip commit:** `aa1a993` on `origin/main`
+**Baseline test suite:** 628 tests, 24 skipped, 0 failures.
 **Scanner:** 2 stubs (2 WIP — CapHelper + G2; both Phase-2c carveouts, unchanged from Phase 2a tip).
 
 ---
@@ -15,12 +15,15 @@
 | L1 | WI-1 HestonProcess `QuadraticExponentialMartingale` | `d0de1e4` | 626 → 628 tests. QEM enum + martingale `k0` correction in both psi sub-branches; probe extended with 2 cases; 2 new Java tests. Spec-reviewed and code-quality-reviewed. |
 | L1 chore | HestonProcessTest header refresh for QEM coverage | `29f4dbf` | Picked up the 3 minor doc-hygiene findings from L1 code review. Behavior unchanged. |
 | L2 Task 2.2 | WI-2 Simplex 1D fix (test-side) | `f593de6` | Diagnosis A held: `Array.add(double)` is non-mutating. Fix: replace `new Array(0); initialValue.add(-100.0)` with `new Array(new double[] { -100.0 })` aligned to C++ `test-suite/optimizers.cpp:231-232`. OptimizerTest stays `@Ignore`d (un-skip is Task 2.3). Suite unchanged at 628/0/0/25. |
+| L2 Task 2.3 | WI-2 un-skip `OptimizerTest` | `aa1a993` | `@Ignore` + carveout-pointer comment + unused `Ignore` import removed; `LevenbergMarquardt` uncommented in the active method matrix. Both Simplex and LM converge to x ≈ −0.5 inside `rootEpsilon=1e-8`. `phase2a-carveouts.md::WI-2-carveout-simplex` disposition updated. Skipped 25 → 24. WI-2 fully closed. |
 
 ---
 
-## Next — L2 Task 2.3 (un-skip `OptimizerTest`)
+## Next — L3 Task 3.1 (Vasicek + indirection pattern, A8 armed)
 
-Remove `@Ignore` + the stale carveout-pointer comment block from `OptimizerTest::testOptimizers`. Uncomment the `LevenbergMarquardt` entry on line 116 so both Simplex and LM run in the active method matrix. Update `phase2a-carveouts.md::WI-2-carveout-simplex` disposition to "Fixed in Phase 2b WI-2 (commit f593de6); un-skipped in <this commit>". Skipped 25 → 24.
+Replace Vasicek's `protected Parameter` member fields with package-private accessors that route every read through `arguments_.get(i)`; constructor populates `arguments_` directly via `set()`. Build the `vasicek_calibration_probe` (discountBondOption fingerprint at three (strike, maturity, bondMaturity) tuples), capture references, write the Java test, ensure tight-tier match.
+
+A8 trigger armed: if the indirection breaks any previously-passing test, pause and ask the user (revise / carve-Vasicek / carve-family). The other three one-factor models (HullWhite, BlackKarasinski, CoxIngersollRoss) inherit the pattern in Tasks 3.2-3.4 — so getting 3.1's shape right matters across the family.
 
 ---
 
@@ -34,8 +37,7 @@ Remove `@Ignore` + the stale carveout-pointer comment block from `OptimizerTest:
 
 ## Remaining work (from `phase2b-plan.md`)
 
-- L2 Task 2.3 — Un-skip `OptimizerTest` (next)
-- L3 Task 3.1 — Vasicek + indirection pattern (A8 risk)
+- L3 Task 3.1 — Vasicek + indirection pattern (A8 risk; next)
 - L3 Task 3.2 — HullWhite indirection (A8 risk)
 - L3 Task 3.3 — BlackKarasinski indirection (A8 risk)
 - L3 Task 3.4 — CoxIngersollRoss indirection (A8 risk)
