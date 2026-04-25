@@ -32,6 +32,7 @@ json vec(const double* p, int n) {
 
 struct QECase {
     std::string name;
+    HestonProcess::Discretization disc;
     Real r, q, s0;
     Real v0, kappa, theta, sigma, rho;
     Real t0, dt;
@@ -46,7 +47,7 @@ void runAndEmit(ReferenceWriter& out, const QECase& tc) {
 
     HestonProcess process(rCurve, qCurve, spot,
                           tc.v0, tc.kappa, tc.theta, tc.sigma, tc.rho,
-                          HestonProcess::QuadraticExponential);
+                          tc.disc);
 
     Array x0(2);
     x0[0] = tc.x00;
@@ -83,6 +84,7 @@ int main() {
     {
         QECase tc;
         tc.name = "qe_psiLow_centralVol";
+        tc.disc = HestonProcess::QuadraticExponential;
         tc.r = 0.05; tc.q = 0.02; tc.s0 = 100.0;
         tc.v0 = 0.04; tc.kappa = 2.0; tc.theta = 0.04;
         tc.sigma = 0.5; tc.rho = -0.7;
@@ -98,6 +100,7 @@ int main() {
     {
         QECase tc;
         tc.name = "qe_psiHigh_lowInitV";
+        tc.disc = HestonProcess::QuadraticExponential;
         tc.r = 0.03; tc.q = 0.0; tc.s0 = 100.0;
         tc.v0 = 0.005; tc.kappa = 0.3; tc.theta = 0.04;
         tc.sigma = 1.0; tc.rho = -0.9;
@@ -112,12 +115,41 @@ int main() {
     {
         QECase tc;
         tc.name = "qe_psiHigh_zeroVarianceDraw";
+        tc.disc = HestonProcess::QuadraticExponential;
         tc.r = 0.03; tc.q = 0.0; tc.s0 = 100.0;
         tc.v0 = 0.005; tc.kappa = 0.3; tc.theta = 0.04;
         tc.sigma = 1.0; tc.rho = -0.9;
         tc.t0 = 0.0; tc.dt = 0.25;
         tc.x00 = 100.0; tc.x01 = 0.005;
         tc.dw0 = -0.1; tc.dw1 = -2.0;  // u = N(-2.0) ≈ 0.023; likely u <= p
+        runAndEmit(out, tc);
+    }
+
+    // --- Case 4: QEM, psi-low sub-branch (martingale correction A < 1/(2*a)) ---
+    {
+        QECase tc;
+        tc.name = "qem_psiLow_centralVol";
+        tc.disc = HestonProcess::QuadraticExponentialMartingale;
+        tc.r = 0.05; tc.q = 0.02; tc.s0 = 100.0;
+        tc.v0 = 0.04; tc.kappa = 2.0; tc.theta = 0.04;
+        tc.sigma = 0.5; tc.rho = -0.7;
+        tc.t0 = 0.5; tc.dt = 0.1;
+        tc.x00 = 100.0; tc.x01 = 0.04;
+        tc.dw0 = 0.3; tc.dw1 = -0.2;
+        runAndEmit(out, tc);
+    }
+
+    // --- Case 5: QEM, psi-high sub-branch (martingale correction A < beta) ---
+    {
+        QECase tc;
+        tc.name = "qem_psiHigh_lowInitV";
+        tc.disc = HestonProcess::QuadraticExponentialMartingale;
+        tc.r = 0.03; tc.q = 0.0; tc.s0 = 100.0;
+        tc.v0 = 0.005; tc.kappa = 0.3; tc.theta = 0.04;
+        tc.sigma = 1.0; tc.rho = -0.9;
+        tc.t0 = 0.0; tc.dt = 0.25;
+        tc.x00 = 100.0; tc.x01 = 0.005;
+        tc.dw0 = 0.5; tc.dw1 = 1.5;
         runAndEmit(out, tc);
     }
 

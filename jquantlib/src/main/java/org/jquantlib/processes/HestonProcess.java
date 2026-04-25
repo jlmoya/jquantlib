@@ -22,6 +22,7 @@
 
 package org.jquantlib.processes;
 
+import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
@@ -43,7 +44,8 @@ public class HestonProcess extends StochasticProcess {
     private final RelinkableHandle<Quote> v0_, kappa_, theta_, sigma_, rho_;
 
     public enum Discretization {
-        PartialTruncation, FullTruncation, Reflection, QuadraticExponential
+        PartialTruncation, FullTruncation, Reflection,
+        QuadraticExponential, QuadraticExponentialMartingale
     };
 
     private final Discretization discretization_;
@@ -252,8 +254,10 @@ public class HestonProcess extends StochasticProcess {
                 retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
                 retVal[1] = vol * vol + nu * dt + vol2 * sdt * (rhov_ * dw0 + sqrhov_ * dw1);
                 break;
-            case QuadraticExponential: {
-                // Port of QuantLib v1.42.1 QuadraticExponential branch,
+            case QuadraticExponential:
+            case QuadraticExponentialMartingale: {
+                // Port of QuantLib v1.42.1 QuadraticExponential /
+                // QuadraticExponentialMartingale branch,
                 // ql/processes/hestonprocess.cpp 461-516. See Leif
                 // Andersen, "Efficient Simulation of the Heston Stochastic
                 // Volatility Model" (2008) for the derivation.
@@ -265,21 +269,37 @@ public class HestonProcess extends StochasticProcess {
 
                 final double g1 = 0.5;
                 final double g2 = 0.5;
-                final double k0 = -rhov_ * kappav_ * thetav_ * dt / sigmav_;
+                double k0 = -rhov_ * kappav_ * thetav_ * dt / sigmav_;
                 final double k1 = g1 * dt * (kappav_ * rhov_ / sigmav_ - 0.5) - rhov_ / sigmav_;
                 final double k2 = g2 * dt * (kappav_ * rhov_ / sigmav_ - 0.5) + rhov_ / sigmav_;
                 final double k3 = g1 * dt * (1 - rhov_ * rhov_);
                 final double k4 = g2 * dt * (1 - rhov_ * rhov_);
+                final double A  = k2 + 0.5 * k4;
 
                 if (psi < 1.5) {
                     final double b2 = 2 / psi - 1 + Math.sqrt(2 / psi * (2 / psi - 1));
                     final double b = Math.sqrt(b2);
                     final double a = m / (1 + b2);
+
+                    if (discretization_ == Discretization.QuadraticExponentialMartingale) {
+                        // martingale correction; mirrors hestonprocess.cpp 488-493
+                        QL.require(A < 1 / (2 * a), "illegal value");
+                        k0 = -A * b2 * a / (1 - 2 * A * a)
+                                + 0.5 * Math.log(1 - 2 * A * a)
+                                - (k1 + 0.5 * k3) * x01;
+                    }
                     retVal[1] = a * (b + dw1) * (b + dw1);
                 } else {
                     final double pp = (psi - 1) / (psi + 1);
                     final double beta = (1 - pp) / m;
                     final double u = new CumulativeNormalDistribution().op(dw1);
+
+                    if (discretization_ == Discretization.QuadraticExponentialMartingale) {
+                        // martingale correction; mirrors hestonprocess.cpp 502-506
+                        QL.require(A < beta, "illegal value");
+                        k0 = -Math.log(pp + beta * (1 - pp) / (beta - A))
+                                - (k1 + 0.5 * k3) * x01;
+                    }
                     retVal[1] = (u <= pp) ? 0.0 : Math.log((1 - pp) / (1 - u)) / beta;
                 }
 

@@ -47,7 +47,24 @@ public class HestonProcessTest {
         runCase("qe_psiHigh_zeroVarianceDraw");
     }
 
+    @Test
+    public void qem_psiLow_centralVol() {
+        runCase("qem_psiLow_centralVol",
+                HestonProcess.Discretization.QuadraticExponentialMartingale);
+    }
+
+    @Test
+    public void qem_psiHigh_lowInitV() {
+        runCase("qem_psiHigh_lowInitV",
+                HestonProcess.Discretization.QuadraticExponentialMartingale);
+    }
+
     private static void runCase(final String name) {
+        runCase(name, HestonProcess.Discretization.QuadraticExponential);
+    }
+
+    private static void runCase(final String name,
+                                final HestonProcess.Discretization disc) {
         final ReferenceReader reader = ReferenceReader.load("processes/hestonprocess_qe");
         final Case c = reader.getCase(name);
         final JSONObject in = c.inputs();
@@ -77,7 +94,7 @@ public class HestonProcessTest {
                 new Handle<YieldTermStructure>(rCurve),
                 new Handle<YieldTermStructure>(qCurve),
                 spot, v0, kappa, theta, sigma, rho,
-                HestonProcess.Discretization.QuadraticExponential);
+                disc);
         process.update();
 
         final Array x0 = new Array(new double[] { x0a.getDouble(0), x0a.getDouble(1) });

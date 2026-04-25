@@ -86,11 +86,69 @@
         ]
       },
       "name": "qe_psiHigh_zeroVarianceDraw"
+    },
+    {
+      "expected": {
+        "evolved": [
+          103.10339262552665,
+          0.02916298655699248
+        ]
+      },
+      "inputs": {
+        "dt": 0.1,
+        "dw": [
+          0.3,
+          -0.2
+        ],
+        "kappa": 2.0,
+        "q": 0.02,
+        "r": 0.05,
+        "rho": -0.7,
+        "s0": 100.0,
+        "sigma": 0.5,
+        "t0": 0.5,
+        "theta": 0.04,
+        "v0": 0.04,
+        "x0": [
+          100.0,
+          0.04
+        ]
+      },
+      "name": "qem_psiLow_centralVol"
+    },
+    {
+      "expected": {
+        "evolved": [
+          101.30773099680867,
+          0.01099943435780453
+        ]
+      },
+      "inputs": {
+        "dt": 0.25,
+        "dw": [
+          0.5,
+          1.5
+        ],
+        "kappa": 0.3,
+        "q": 0.0,
+        "r": 0.03,
+        "rho": -0.9,
+        "s0": 100.0,
+        "sigma": 1.0,
+        "t0": 0.0,
+        "theta": 0.04,
+        "v0": 0.005,
+        "x0": [
+          100.0,
+          0.005
+        ]
+      },
+      "name": "qem_psiHigh_lowInitV"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-24T19:58:54Z",
+  "generated_at": "2026-04-25T12:24:52Z",
   "generated_by": "hestonprocess_qe_probe",
   "test_group": "processes/hestonprocess_qe"
 }
