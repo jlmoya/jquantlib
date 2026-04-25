@@ -66,11 +66,12 @@ public class BlackKarasinski extends OneFactorModel implements TermStructureCons
         super(2);
 
         termstructureConsistentModel = new TermStructureConsistentModelClass(termStructure);
-        this.a_ = arguments_.get(0);
-        this.sigma_ = arguments_.get(1);
-        //FIXME: bug?
-        this.a_ = new ConstantParameter(a, new PositiveConstraint());
-        this.sigma_ = new ConstantParameter(sigma, new PositiveConstraint());
+        // Phase 2b WI-3: write Parameters directly into arguments_ so the
+        // calibratable vector and the read accessors share one source of
+        // truth (replaces C++'s Parameter& reference-binding pattern).
+        // See docs/migration/phase2b-design.md §3.3.
+        arguments_.set(0, new ConstantParameter(a, new PositiveConstraint()));
+        arguments_.set(1, new ConstantParameter(sigma, new PositiveConstraint()));
 
         // seems like we should have this.termStructure
 
@@ -79,16 +80,19 @@ public class BlackKarasinski extends OneFactorModel implements TermStructureCons
         //registerWith(termStructure);
     }
 
+    // Internal Parameter accessors (Phase 2b WI-3 indirection — replaces
+    // the C++ Parameter& reference binding in the init list). Visibility
+    // is protected for consistency with the Vasicek pattern.
+    protected Parameter aParam()     { return arguments_.get(0); }
+    protected Parameter sigmaParam() { return arguments_.get(1); }
+
     public double /* @Real */a() {
-        return a_.get(0.0);
+        return aParam().get(0.0);
     }
 
     public double /* @Real */sigma() {
-        return sigma_.get(0.0);
+        return sigmaParam().get(0.0);
     }
-
-    private Parameter a_;
-    private Parameter sigma_;
 
 
     private class Helper implements Ops.DoubleOp {
