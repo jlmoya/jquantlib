@@ -1,7 +1,7 @@
 # Phase 2b — Execution Progress
 
 **Last update:** 2026-04-25
-**Tip commit:** `d8a4d0d` on `origin/main` (plus the L3 Task 3.5 carveout-doc commit landing alongside this snapshot).
+**Tip commit:** `9855bc6` on `origin/main`
 **Baseline test suite:** 632 tests, 24 skipped, 0 failures.
 **Scanner:** 2 stubs (2 WIP — CapHelper + G2; both Phase-2c carveouts, unchanged from Phase 2a tip).
 
@@ -31,15 +31,19 @@ The CalibratedModel pre-fill silently rescued construction of `BlackKarasinski`,
 
 ---
 
-## Next — L4 Task 4.1 (SABR investigation, time-boxed)
+## L4 Task 4.1 — SABR investigation done; diagnosis = branch (a) with twist
 
-Read `SABRInterpolation.java` lines 399–500-ish (`SabrParametersTransformation` and surrounding init/calibration glue) against C++ `sabrinterpolation.hpp` (`SABRWrapper`, `SABRSpecs::guess`). Diagnose whether the β-out-of-`[0,1]` failure on un-skip is:
+The β-out-of-[0,1] failure is in `SABRCoeffHolder`'s constructor (`SABRInterpolation.java:163-183`), NOT in the transformation. The throw fires during construction, before any LM/Simplex iteration. Root cause: Java tests `!Double.isNaN(beta_)` to detect "no guess provided", but the QuantLib API contract uses `Constants.NULL_REAL = Double.MAX_VALUE` for that sentinel. The check never matches, so the four NULL_REAL slots flow through to `validateSabrParameters` which rightly throws (β = MAX_VALUE > 1).
 
-- (a) transcription bug in the transformation (line-412 commented `atan` hint suggests this)
-- (b) missing initial-guess strategy feeding an illegal β to `validateSabrParameters`
-- (c) deeper algorithmic divergence
+The phase2a-carveouts.md hypothesis ("LM converges to β outside [0,1]") was wrong — optimizer never runs. The line-412 commented `atan` hint in the design doc is also a red herring; the transformation `direct(x) = exp(-x²)` matches C++ identically.
 
-If (a) or (b): proceed to Task 4.2 fix path. If (c) or fix needs new infrastructure outside the existing 61 packages: A4 fires automatically, write `phase2c-carveouts.md::WI-2-SABR` and ship Phase 2b without un-skip.
+**Branch (a) confirmed.** A4 NOT triggered — fix is ~5-10 LOC inside `SABRInterpolation.java` (replace `!Double.isNaN(x)` with `x != Constants.NULL_REAL` for α, β, ν, ρ; remove the unconditional `*IsFixed_ = false` lines that defeat the constructor's `*IsFixed` arguments). Both SABR tests share the exact same root cause; both unblock together.
+
+Secondary divergences flagged but not gating the throw (track for later if test convergence assertions fail after sentinel fix): α default formula differs (Java=√0.2, C++=0.2·F^(1−β)), missing Halton multi-restart, missing `shift`/`volatilityType`/`errorAccept`/`useMaxError`/`maxGuesses` plumbing.
+
+## Next — L4 Task 4.2 (SABR sentinel fix, branch (a))
+
+Apply the sentinel fix in `SABRInterpolation.java::SABRCoeffHolder` ctor; ensure both gated tests un-skip and pass; if convergence assertions fail after the throw goes away, decide whether to land secondary alignments in this commit or carve them as Phase-2c residual.
 
 ---
 
@@ -53,7 +57,7 @@ If (a) or (b): proceed to Task 4.2 fix path. If (c) or fix needs new infrastruct
 
 ## Remaining work (from `phase2b-plan.md`)
 
-- L4 Task 4.1 — SABR investigation (next; A4 carve gate active)
+- L4 Task 4.2 — SABR sentinel fix (next; branch (a) per Task 4.1 diagnosis)
 - L3 Task 3.2 — HullWhite indirection (A8 risk)
 - L3 Task 3.3 — BlackKarasinski indirection (A8 risk)
 - L3 Task 3.4 — CoxIngersollRoss indirection (A8 risk)
