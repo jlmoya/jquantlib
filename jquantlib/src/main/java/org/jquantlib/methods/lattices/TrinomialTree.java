@@ -161,6 +161,16 @@ public class TrinomialTree extends Tree {
 		private int kMin_, jMin_, kMax_, jMax_;
 
 		public Branching() {
+			// Phase 2c WI-5 align: C++ initializes probs_ with three empty
+			// per-branch vectors (probs_(3)); Branching.add() then pushes
+			// one element to each. The previous Java code created brand-new
+			// 1-element vectors per add() call and appended them, which
+			// made probs_ grow as 3*N entries and probability(i, b) only
+			// ever return the b-th column of the FIRST node (and throw on
+			// any other index). See trinomialtree.hpp ctor at line 105-107.
+			probs_.add(new Vector<Double>());
+			probs_.add(new Vector<Double>());
+			probs_.add(new Vector<Double>());
 			kMin_ = Integer.MAX_VALUE;
 			jMin_ = Integer.MAX_VALUE;
 			kMax_ = Integer.MIN_VALUE;
@@ -188,25 +198,18 @@ public class TrinomialTree extends Tree {
 		}
 
 		public void add(final int k, final double p1, final double p2, final double p3) {
-			// store
+			// store: append one prob per branch to the corresponding column
+			// (matching C++ Branching::add's probs_[0/1/2].push_back).
 			k_.add(k);
-			final Vector<Double> v1 = new Vector<Double>();
-			final Vector<Double> v2 = new Vector<Double>();
-			final Vector<Double> v3 = new Vector<Double>();
-			v1.add(new Double(p1));
-			v2.add(new Double(p2));
-			v3.add(new Double(p3));
-
-			probs_.add(v1);
-			probs_.add(v2);
-			probs_.add(v3);
+			probs_.elementAt(0).add(new Double(p1));
+			probs_.elementAt(1).add(new Double(p2));
+			probs_.elementAt(2).add(new Double(p3));
 
 			// maintain invariants
 			kMin_ = Math.min(kMin_, k);
 			jMin_ = kMin_ - 1;
 			kMax_ = Math.max(kMax_, k);
 			jMax_ = kMax_ + 1;
-
 		}
 
 	}
