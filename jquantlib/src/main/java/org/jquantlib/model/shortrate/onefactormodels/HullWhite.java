@@ -170,7 +170,7 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
      *
      *  @note t and T should be expressed in yearfraction using deposit day counter, F_quoted is futures' market price.
      */
-    public /* @Rate */ double convexityBias(
+    public static /* @Rate */ double convexityBias(
             final double futurePrice,
             final /* @Time */ double t,
             final /* @Time */ double T,
@@ -180,25 +180,31 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
         QL.require(futurePrice >= 0.0 , "negative futures price not allowed"); // TODO: message
         QL.require(t >= 0.0 , "negative t not allowed"); // TODO: message
         QL.require(T >= t , "T must not be less than t"); // TODO: message
+        QL.require(sigma >= 0.0 , "negative sigma not allowed"); // TODO: message
         QL.require(a >= 0.0 , "negative a not allowed"); // TODO: message
 
+        // temp(x) = (1 - exp(-a*x)) / a, with a small-a Taylor fallback to x.
+        // Aligned to v1.42.1 hullwhite.cpp convexityBias.
         final double /* @Time */deltaT = (T - t);
-        final double /* @Real */tempDeltaT = (1. - Math.exp(-a * deltaT)) / a;
+        final double /* @Real */tempDeltaT = (a < Constants.QL_EPSILON) ? deltaT : (1.0 - Math.exp(-a * deltaT)) / a;
         final double /* @Real */halfSigmaSquare = sigma * sigma / 2.0;
 
         // lambda adjusts for the fact that the underlying is an interest rate
-        final double /* @Real */lambda = halfSigmaSquare * (1. - Math.exp(-2.0 * a * t)) / a * tempDeltaT * tempDeltaT;
+        final double /* @Real */temp2t = (a < Constants.QL_EPSILON) ? (2.0 * t) : (1.0 - Math.exp(-2.0 * a * t)) / a;
+        final double /* @Real */lambda = temp2t * tempDeltaT;
 
-        final double /* @Real */tempT = (1.0 - Math.exp(-a * t)) / a;
+        final double /* @Real */tempT = (a < Constants.QL_EPSILON) ? t : (1.0 - Math.exp(-a * t)) / a;
 
         // phi is the MtM adjustment
-        final double /* @Real */phi = halfSigmaSquare * tempDeltaT * tempT * tempT;
+        final double /* @Real */phi = tempT * tempT;
 
         // the adjustment
-        final double /* @Real */z = lambda + phi;
+        final double /* @Real */z = halfSigmaSquare * (lambda + phi);
 
         final double /* @Rate */futureRate = (100.0 - futurePrice) / 100.0;
-        return (1.0 - Math.exp(-z)) * (futureRate + 1.0 / (T - t));
+        return (deltaT < Constants.QL_EPSILON)
+                ? z
+                : (1.0 - Math.exp(-z * tempDeltaT)) * (futureRate + 1.0 / deltaT);
     }
 
 

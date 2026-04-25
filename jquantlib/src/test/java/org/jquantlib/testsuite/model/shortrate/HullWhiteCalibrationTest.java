@@ -63,6 +63,27 @@ public class HullWhiteCalibrationTest {
     }
 
     @Test
+    public void convexityBiasFingerprint_matchesCpp() {
+        final ReferenceReader reader = ReferenceReader.load("model/shortrate/hullwhite_calibration");
+        final Case c = reader.getCase("hullwhite_convexity_bias");
+        final JSONObject exp = (JSONObject) c.expectedRaw();
+        final JSONArray samples = exp.getJSONArray("samples");
+        for (int i = 0; i < samples.length(); i++) {
+            final JSONObject s = samples.getJSONObject(i);
+            final double fp = s.getDouble("futurePrice");
+            final double t = s.getDouble("t");
+            final double T = s.getDouble("T");
+            final double sigma = s.getDouble("sigma");
+            final double a = s.getDouble("a");
+            final double expBias = s.getDouble("bias");
+            final double gotBias = HullWhite.convexityBias(fp, t, T, sigma, a);
+            if (!Tolerance.tight(gotBias, expBias)) {
+                fail("convexityBias[" + i + "] (a=" + a + "): exp=" + expBias + " got=" + gotBias);
+            }
+        }
+    }
+
+    @Test
     public void fwdStartingBondOptionFingerprint_matchesCpp() {
         final ReferenceReader reader = ReferenceReader.load("model/shortrate/hullwhite_calibration");
         final Case c = reader.getCase("hullwhite_fwd_starting_bond_option");
