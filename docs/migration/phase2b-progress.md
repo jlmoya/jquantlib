@@ -1,8 +1,8 @@
 # Phase 2b — Execution Progress
 
 **Last update:** 2026-04-25
-**Tip commit:** `dc02443` on `origin/main` (plus a doc-only follow-up commit landing alongside this snapshot).
-**Baseline test suite:** 629 tests, 24 skipped, 0 failures.
+**Tip commit:** `244bc92` on `origin/main`
+**Baseline test suite:** 630 tests, 24 skipped, 0 failures.
 **Scanner:** 2 stubs (2 WIP — CapHelper + G2; both Phase-2c carveouts, unchanged from Phase 2a tip).
 
 ---
@@ -17,6 +17,8 @@
 | L2 Task 2.2 | WI-2 Simplex 1D fix (test-side) | `f593de6` | Diagnosis A held: `Array.add(double)` is non-mutating. Fix: replace `new Array(0); initialValue.add(-100.0)` with `new Array(new double[] { -100.0 })` aligned to C++ `test-suite/optimizers.cpp:231-232`. OptimizerTest stays `@Ignore`d (un-skip is Task 2.3). Suite unchanged at 628/0/0/25. |
 | L2 Task 2.3 | WI-2 un-skip `OptimizerTest` | `aa1a993` | `@Ignore` + carveout-pointer comment + unused `Ignore` import removed; `LevenbergMarquardt` uncommented in the active method matrix. Both Simplex and LM converge to x ≈ −0.5 inside `rootEpsilon=1e-8`. `phase2a-carveouts.md::WI-2-carveout-simplex` disposition updated. Skipped 25 → 24. WI-2 fully closed. |
 | L3 Task 3.1 | WI-3 Vasicek arguments_-indirection | `dc02443` | A8 fired at compile time (HullWhite reaches into Vasicek's deleted fields; CalibratedModel had latent IOOB). Resolved by folding two adjacent patches into the same commit: (a) `CalibratedModel(int nArguments)` pre-fills `arguments_` with `NullParameter` slots so `set(i, ...)` works; (b) HullWhite's two `b_=NullParameter()` / `lambda_=NullParameter()` lines patched to `arguments_.set(1/3, NullParameter())`. Vasicek itself: 4 fields deleted, 4 `aParam()/bParam()/sigmaParam()/lambdaParam()` accessors added (originally `private`, broadened to `protected` in fast-follow), scalar accessors routed through them, ctor uses `arguments_.set(...)`. Probe + test added; tight tier passes. 628 → 629 tests. |
+| L3 Task 3.1 chore | Broaden Vasicek Param accessors + side-effect note | `17e2f5b` | Promoted `aParam()/bParam()/sigmaParam()/lambdaParam()` from `private` to `protected` so HullWhite (and Tasks 3.3/3.4) can reuse them. Doc note added recording that the CalibratedModel pre-fill silently rescued construction of BK/CIR/G2 (no longer throws IOOB; still has the field-copy bug — to be migrated by Tasks 3.3/3.4; G2 is Phase-2c). |
+| L3 Task 3.2 | WI-3 HullWhite arguments_-indirection coverage | `244bc92` | Zero Java source changes — HullWhite's reads were already routing through inherited Vasicek `a()/sigma()` scalar accessors which themselves now hit the indirection. The two-line slot-set patch from Task 3.1 (`arguments_.set(1, NullParameter)`, `set(3, NullParameter)`) was already correct. Probe + Java test added (discountBondOption fingerprint at three (strike, mat, bondMat) tuples against flat 4% curve, `a=0.1, sigma=0.01`). Tight tier passes. 629 → 630 tests. Pre-existing HullWhite drift flagged but out of scope: missing 5-arg `discountBondOption` overload, `convexityBias` formula divergence, `tree(grid)` index-vs-time key mismatch (already marked with `// ?????` in source). |
 
 ---
 
@@ -26,9 +28,11 @@ The CalibratedModel pre-fill silently rescued construction of `BlackKarasinski`,
 
 ---
 
-## Next — L3 Task 3.2 (HullWhite full indirection)
+## Next — L3 Task 3.3 (BlackKarasinski full indirection)
 
-Migrate HullWhite's own Parameter members onto the indirection (the Task-3.1 commit only patched the two slot-set lines that broke compile). HullWhite extends Vasicek, so it inherits `aParam()`/`sigmaParam()` through the protected accessors. Its own state (sigma_, anything HullWhite-specific) needs the same treatment. Probe + Java test mirroring `vasicek_calibration_probe`, expected 629 → 630.
+Migrate BlackKarasinski onto the indirection. BK does NOT extend Vasicek (it extends `OneFactorModel` directly), so it owns its own slot indices (0=a, 1=sigma per its 2-parameter ctor). The current Phase-1 code does `this.a_ = arguments_.get(0); this.sigma_ = arguments_.get(1);` then immediately overwrites those fields with `new ConstantParameter(...)` — same field-copy bug Vasicek had. Apply the indirection: delete the two `protected Parameter a_; sigma_;` fields, add `protected Parameter aParam()/sigmaParam()` accessors, route any internal reads, ctor uses `arguments_.set(0/1, ...)`.
+
+BlackKarasinski uses a tree-based discountBondOption (not closed-form), so the fingerprint probe approach used for Vasicek/HullWhite may not be a clean fit. Per the plan, fall back to a reflection-based test that confirms `aParam()`/`sigmaParam()` return the same instance held in `arguments_` if a fingerprint isn't available; the refactor itself is the deliverable for this model.
 
 ---
 
@@ -42,7 +46,7 @@ Migrate HullWhite's own Parameter members onto the indirection (the Task-3.1 com
 
 ## Remaining work (from `phase2b-plan.md`)
 
-- L3 Task 3.2 — HullWhite full indirection (next; A8 still armed)
+- L3 Task 3.3 — BlackKarasinski full indirection (next; A8 still armed)
 - L3 Task 3.2 — HullWhite indirection (A8 risk)
 - L3 Task 3.3 — BlackKarasinski indirection (A8 risk)
 - L3 Task 3.4 — CoxIngersollRoss indirection (A8 risk)
