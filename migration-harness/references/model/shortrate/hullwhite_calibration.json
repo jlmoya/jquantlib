@@ -1,0 +1,42 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "samples": [
+          {
+            "bondMaturity": 1.0,
+            "call": 0.029600699510905607,
+            "maturity": 0.5,
+            "put": 2.3063426261253026e-24,
+            "strike": 0.95
+          },
+          {
+            "bondMaturity": 2.0,
+            "call": 8.94166930274771e-09,
+            "maturity": 1.0,
+            "put": 0.03767310170735662,
+            "strike": 1.0
+          },
+          {
+            "bondMaturity": 5.0,
+            "call": 1.0722878500168256e-09,
+            "maturity": 2.0,
+            "put": 0.15054141170027363,
+            "strike": 1.05
+          }
+        ]
+      },
+      "inputs": {
+        "a": 0.1,
+        "r_curve": 0.04,
+        "sigma": 0.01
+      },
+      "name": "hullwhite_round_trip"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-25T13:56:30Z",
+  "generated_by": "hullwhite_calibration_probe",
+  "test_group": "model/shortrate/hullwhite_calibration"
+}
