@@ -140,7 +140,14 @@ Captured during Phase 2b execution; carry forward:
 
 - **`CapHelper#Period`** — original Phase-2c carveout (IborLeg scaffolding).
 - **`G2#G2`** — original Phase-2c carveout (TreeLattice2D grid + two-factor calibration).
-- **`HestonProcess.discountBondOption` for CIR** — stub returns hard-coded 0.0/1.0; needs `NonCentralChiSquaredDistribution` aligned with v1.42.1 first (~1.5e-12 divergence in that distribution).
+- **HestonProcess.discountBondOption (Phase-2b seed-list misclassification)**:
+  HestonProcess does not have a discountBondOption method. The seed-list
+  entry was a conflation with CIR.discountBondOption (which IS the stub
+  actually depending on the chi-squared distribution). Resolved in Phase
+  2c by porting the chi-squared distribution family AND unstubbing CIR;
+  HestonProcess required no change. (The chi-squared-dependent
+  NonCentralChiSquareVariance and BroadieKaya× HestonProcess
+  discretizations remain Phase-2c-out-of-scope per phase2c-design §2.2.)
 - **HestonProcess remaining schemes** — `NonCentralChiSquareVariance`, `BroadieKaya×3` still missing; need `InverseCumulativeNonCentralChiSquare` and Fourier-inversion + quadrature infrastructure.
 - **HullWhite latent items** — missing 5-arg `discountBondOption` overload; `convexityBias` formula divergence (small-`a` Taylor fallback); `tree(grid)` index-vs-time key mismatch (already self-flagged with `// ?????` in source).
 - **BlackKarasinski tree-pricing** — `numericTree = null` stub blocks tree-based `dynamics()`; full pricing path needs `ShortRateTree` un-stubbed.
