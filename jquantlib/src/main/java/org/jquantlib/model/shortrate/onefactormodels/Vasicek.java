@@ -74,11 +74,13 @@ public class Vasicek extends OneFactorAffineModel {
     //
 
     // Internal Parameter accessors (Phase 2b WI-3 indirection — replaces
-    // the C++ Parameter& reference binding in the init list).
-    private Parameter aParam()      { return arguments_.get(0); }
-    private Parameter bParam()      { return arguments_.get(1); }
-    private Parameter sigmaParam()  { return arguments_.get(2); }
-    private Parameter lambdaParam() { return arguments_.get(3); }
+    // the C++ Parameter& reference binding in the init list). Visibility
+    // is protected so subclasses (HullWhite et al., Tasks 3.2-3.4) can
+    // read through them without re-deriving the slot indices.
+    protected Parameter aParam()      { return arguments_.get(0); }
+    protected Parameter bParam()      { return arguments_.get(1); }
+    protected Parameter sigmaParam()  { return arguments_.get(2); }
+    protected Parameter lambdaParam() { return arguments_.get(3); }
 
     protected double a() /* @ReadOnly */ {
         return aParam().get(0.0);

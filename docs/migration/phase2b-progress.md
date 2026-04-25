@@ -1,8 +1,8 @@
 # Phase 2b — Execution Progress
 
 **Last update:** 2026-04-25
-**Tip commit:** `aa1a993` on `origin/main`
-**Baseline test suite:** 628 tests, 24 skipped, 0 failures.
+**Tip commit:** `dc02443` on `origin/main` (plus a doc-only follow-up commit landing alongside this snapshot).
+**Baseline test suite:** 629 tests, 24 skipped, 0 failures.
 **Scanner:** 2 stubs (2 WIP — CapHelper + G2; both Phase-2c carveouts, unchanged from Phase 2a tip).
 
 ---
@@ -16,14 +16,19 @@
 | L1 chore | HestonProcessTest header refresh for QEM coverage | `29f4dbf` | Picked up the 3 minor doc-hygiene findings from L1 code review. Behavior unchanged. |
 | L2 Task 2.2 | WI-2 Simplex 1D fix (test-side) | `f593de6` | Diagnosis A held: `Array.add(double)` is non-mutating. Fix: replace `new Array(0); initialValue.add(-100.0)` with `new Array(new double[] { -100.0 })` aligned to C++ `test-suite/optimizers.cpp:231-232`. OptimizerTest stays `@Ignore`d (un-skip is Task 2.3). Suite unchanged at 628/0/0/25. |
 | L2 Task 2.3 | WI-2 un-skip `OptimizerTest` | `aa1a993` | `@Ignore` + carveout-pointer comment + unused `Ignore` import removed; `LevenbergMarquardt` uncommented in the active method matrix. Both Simplex and LM converge to x ≈ −0.5 inside `rootEpsilon=1e-8`. `phase2a-carveouts.md::WI-2-carveout-simplex` disposition updated. Skipped 25 → 24. WI-2 fully closed. |
+| L3 Task 3.1 | WI-3 Vasicek arguments_-indirection | `dc02443` | A8 fired at compile time (HullWhite reaches into Vasicek's deleted fields; CalibratedModel had latent IOOB). Resolved by folding two adjacent patches into the same commit: (a) `CalibratedModel(int nArguments)` pre-fills `arguments_` with `NullParameter` slots so `set(i, ...)` works; (b) HullWhite's two `b_=NullParameter()` / `lambda_=NullParameter()` lines patched to `arguments_.set(1/3, NullParameter())`. Vasicek itself: 4 fields deleted, 4 `aParam()/bParam()/sigmaParam()/lambdaParam()` accessors added (originally `private`, broadened to `protected` in fast-follow), scalar accessors routed through them, ctor uses `arguments_.set(...)`. Probe + test added; tight tier passes. 628 → 629 tests. |
 
 ---
 
-## Next — L3 Task 3.1 (Vasicek + indirection pattern, A8 armed)
+## Side effect to track (from L3 Task 3.1 code review)
 
-Replace Vasicek's `protected Parameter` member fields with package-private accessors that route every read through `arguments_.get(i)`; constructor populates `arguments_` directly via `set()`. Build the `vasicek_calibration_probe` (discountBondOption fingerprint at three (strike, maturity, bondMaturity) tuples), capture references, write the Java test, ensure tight-tier match.
+The CalibratedModel pre-fill silently rescued construction of `BlackKarasinski`, `CoxIngersollRoss`, and `G2` — all three previously threw `IndexOutOfBoundsException` from `arguments_.get(i)` immediately after `super(N)` (because the ArrayList had capacity but size 0). They still have the same field-copy bug Vasicek used to have (assign `private Parameter foo_ = arguments_.get(i)` then immediately overwrite that field with `new ConstantParameter(...)` — Parameter remains stuck at `NullParameter`). Construction now succeeds but parameters remain unbound from `arguments_`. Tasks 3.2 (HullWhite), 3.3 (BlackKarasinski), 3.4 (CoxIngersollRoss) migrate them onto the indirection. G2 is a Phase-2c carveout — its drift will be addressed there.
 
-A8 trigger armed: if the indirection breaks any previously-passing test, pause and ask the user (revise / carve-Vasicek / carve-family). The other three one-factor models (HullWhite, BlackKarasinski, CoxIngersollRoss) inherit the pattern in Tasks 3.2-3.4 — so getting 3.1's shape right matters across the family.
+---
+
+## Next — L3 Task 3.2 (HullWhite full indirection)
+
+Migrate HullWhite's own Parameter members onto the indirection (the Task-3.1 commit only patched the two slot-set lines that broke compile). HullWhite extends Vasicek, so it inherits `aParam()`/`sigmaParam()` through the protected accessors. Its own state (sigma_, anything HullWhite-specific) needs the same treatment. Probe + Java test mirroring `vasicek_calibration_probe`, expected 629 → 630.
 
 ---
 
@@ -37,7 +42,7 @@ A8 trigger armed: if the indirection breaks any previously-passing test, pause a
 
 ## Remaining work (from `phase2b-plan.md`)
 
-- L3 Task 3.1 — Vasicek + indirection pattern (A8 risk; next)
+- L3 Task 3.2 — HullWhite full indirection (next; A8 still armed)
 - L3 Task 3.2 — HullWhite indirection (A8 risk)
 - L3 Task 3.3 — BlackKarasinski indirection (A8 risk)
 - L3 Task 3.4 — CoxIngersollRoss indirection (A8 risk)
