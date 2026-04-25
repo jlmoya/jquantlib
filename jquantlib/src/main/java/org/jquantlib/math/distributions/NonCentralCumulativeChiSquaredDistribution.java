@@ -72,9 +72,13 @@ public class NonCentralCumulativeChiSquaredDistribution implements Ops.DoubleOp 
         if (f2 * Constants.QL_EPSILON > 0.125
                 && Math.abs(x2 - f2) < Math.sqrt(Constants.QL_EPSILON) * f2) {
             // Asymptotic branch in C++ when (df, x) are both very large
-            // and very close together. NB: the C++ uses an uninitialised
-            // local `t` here as part of the formula — preserve the value
-            // (zero in C++ given no prior assignment at this call-site).
+            // and very close together. C++ chisquaredistribution.cpp:47
+            // explicitly assigns `Real t = 0.0;` before this branch and
+            // the formula on lines 50-51 references that `t` (which is
+            // 0.0 here, since `t` is not updated before being read).
+            // We inline the constant 0.0 directly to keep the formula
+            // transparent; numerically identical to the C++ expression
+            // `(1 - t) * (2 - t/(f2+1))` evaluated at t == 0.0.
             t = Math.exp((1.0 - 0.0) * (2.0 - 0.0 / (f2 + 1.0)))
                     / Math.sqrt(2.0 * Math.PI * (f2 + 1.0));
         } else {
