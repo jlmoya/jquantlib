@@ -183,15 +183,15 @@ public class SABRInterpolation extends AbstractInterpolation {
             } else {
                 rho_ = 0.0;
             }
-			// Match C++ v1.42.1 xabrinterpolation.hpp SABRSpecs::defaultValues:
-			//     params[0] = (params[1] < 0.9999)
-			//                 ? 0.2 * std::pow(forward, 1.0 - params[1])
-			//                 : std::sqrt(0.2);
+			// C++ sabrinterpolation.hpp lines 71-76: alpha = 0.2 * (beta < 0.9999
+			// ? pow(forward, 1 - beta) : 1.0). The 0.2 factor is OUTSIDE the
+			// ternary -- both arms multiply by 0.2. The high-beta arm yields
+			// 0.2 * 1.0 = 0.2 (NOT sqrt(0.2)).
 			// Computed after beta_ defaulting so the now-final beta_ is used.
 			if (alphaWasNull) {
-				alpha_ = (beta_ < 0.9999)
-						? 0.2 * Math.pow(forward_, 1.0 - beta_)
-						: Math.sqrt(0.2);
+				alpha_ = 0.2 * ((beta_ < 0.9999)
+						? Math.pow(forward_, 1.0 - beta_)
+						: 1.0);
 			}
 			(new Sabr()).validateSabrParameters(alpha_, beta_, nu_, rho_);
 		}

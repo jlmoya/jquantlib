@@ -37,7 +37,7 @@ import static org.junit.Assert.fail;
 /**
  * Cross-validated construction-time test for {@code SABRCoeffHolder}'s
  * post-default parameter state, against C++ v1.42.1
- * {@code xabrinterpolation.hpp::SABRSpecs::defaultValues}.
+ * {@code sabrinterpolation.hpp::SABRSpecs::defaultValues}.
  *
  * <p>Consumes the orphan {@code sabr_interpolation_probe} reference
  * generated during Phase 2b L4 (alpha/beta/nu/rho post-default values).
@@ -78,6 +78,49 @@ public class SABRInterpolationConstructionTest {
                 null, null);
         // Don't call update() — we're asserting the post-construction state
         // produced by SABRCoeffHolder's defaultValues, not a fitted result.
+
+        assertParamMatches(exp, "alpha_post_default", sabr.alpha());
+        assertParamMatches(exp, "beta_post_default",  sabr.beta());
+        assertParamMatches(exp, "nu_post_default",    sabr.nu());
+        assertParamMatches(exp, "rho_post_default",   sabr.rho());
+    }
+
+    /**
+     * High-beta arm of the alpha-default formula. C++ v1.42.1
+     * sabrinterpolation.hpp:71-76 has the {@code 0.2} factor OUTSIDE
+     * the ternary, so the {@code beta >= 0.9999} branch yields
+     * {@code 0.2 * 1.0 = 0.2} — NOT {@code sqrt(0.2) ~= 0.4472}.
+     * This case pins {@code beta=1.0} with {@code betaIsFixed=true} so
+     * beta stays at 1.0 through construction and the high-beta arm is
+     * exercised.
+     */
+    @Test
+    public void highBeta_alphaDefault_returnsZeroPointTwo() {
+        final ReferenceReader reader =
+                ReferenceReader.load("math/interpolations/sabr_interpolation");
+        final Case c = reader.getCase("highbeta_defaults");
+        final JSONObject in = c.inputs();
+        final JSONObject exp = (JSONObject) c.expectedRaw();
+
+        final JSONArray strikesJson = in.getJSONArray("strikes");
+        final JSONArray volsJson = in.getJSONArray("volatilities");
+        final double[] strikes = new double[strikesJson.length()];
+        final double[] volatilities = new double[volsJson.length()];
+        for (int i = 0; i < strikes.length; i++) {
+            strikes[i] = strikesJson.getDouble(i);
+            volatilities[i] = volsJson.getDouble(i);
+        }
+        final double expiry = in.getDouble("expiry");
+        final double forward = in.getDouble("forward");
+
+        final SABRInterpolation sabr = new SABRInterpolation(
+                new Array(strikes), new Array(volatilities),
+                expiry, forward,
+                Constants.NULL_REAL, 1.0,
+                Constants.NULL_REAL, Constants.NULL_REAL,
+                false, true, false, false,    // betaIsFixed=true so beta stays at 1.0
+                false,
+                null, null);
 
         assertParamMatches(exp, "alpha_post_default", sabr.alpha());
         assertParamMatches(exp, "beta_post_default",  sabr.beta());

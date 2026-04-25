@@ -60,6 +60,36 @@ int main() {
     };
     out.addCase("nullguess_defaults", inputs, expected);
 
+    // Case 2: high-beta defaults — exercises the alpha-default arm where
+    // beta >= 0.9999 (C++ formula returns 0.2 * 1.0 = 0.2). Pin beta=1.0
+    // with betaIsFixed=true so beta stays at 1.0 through construction.
+    SABRInterpolation sabrHi(strikes.begin(), strikes.end(), volatilities.begin(),
+                            expiry, forward,
+                            Null<Real>(), 1.0,
+                            Null<Real>(), Null<Real>(),
+                            false, true, false, false,    // betaIsFixed=true
+                            false,
+                            ext::shared_ptr<EndCriteria>(),
+                            ext::shared_ptr<OptimizationMethod>());
+    json inputs2 = {
+        {"strikes", strikes},
+        {"volatilities", volatilities},
+        {"expiry", expiry},
+        {"forward", forward},
+        {"alphaGuess", "Null<Real>"},
+        {"betaGuess",  1.0},
+        {"nuGuess",    "Null<Real>"},
+        {"rhoGuess",   "Null<Real>"},
+        {"betaIsFixed", true}
+    };
+    json expected2 = {
+        {"alpha_post_default", sabrHi.alpha()},
+        {"beta_post_default",  sabrHi.beta()},
+        {"nu_post_default",    sabrHi.nu()},
+        {"rho_post_default",   sabrHi.rho()}
+    };
+    out.addCase("highbeta_defaults", inputs2, expected2);
+
     out.write();
     return 0;
 }

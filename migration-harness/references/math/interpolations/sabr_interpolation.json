@@ -28,11 +28,41 @@
         ]
       },
       "name": "nullguess_defaults"
+    },
+    {
+      "expected": {
+        "alpha_post_default": 0.2,
+        "beta_post_default": 1.0,
+        "nu_post_default": 0.6324555320336759,
+        "rho_post_default": 0.0
+      },
+      "inputs": {
+        "alphaGuess": "Null<Real>",
+        "betaGuess": 1.0,
+        "betaIsFixed": true,
+        "expiry": 1.0,
+        "forward": 0.06,
+        "nuGuess": "Null<Real>",
+        "rhoGuess": "Null<Real>",
+        "strikes": [
+          0.05,
+          0.06,
+          0.07,
+          0.08
+        ],
+        "volatilities": [
+          0.3,
+          0.28,
+          0.27,
+          0.27
+        ]
+      },
+      "name": "highbeta_defaults"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-25T14:54:07Z",
+  "generated_at": "2026-04-25T22:04:11Z",
   "generated_by": "sabr_interpolation_probe",
   "test_group": "math/interpolations/sabr_interpolation"
 }
