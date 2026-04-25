@@ -147,10 +147,12 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
         final double /*@Real*/ call = discountS*chis.op(2.0*z*(rho+psi+b)) -
         strike*discountT*chit.op(2.0*z*(rho+psi));
 
+        // Mirrors v1.42.1 coxingersollross.cpp:119-122 — put-call parity
+        // gives the Put leg directly from the Call leg.
         if (type == Option.Type.Call) {
-            return 0.0;
+            return call;
         } else {
-            return 1.0;
+            return call - discountS + strike * discountT;
         }
     }
 
