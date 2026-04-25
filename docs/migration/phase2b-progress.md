@@ -1,7 +1,7 @@
 # Phase 2b — Execution Progress
 
 **Last update:** 2026-04-25
-**Tip commit:** `d0de1e4` on `origin/main`
+**Tip commit:** `f593de6` on `origin/main`
 **Baseline test suite:** 628 tests, 25 skipped, 0 failures.
 **Scanner:** 2 stubs (2 WIP — CapHelper + G2; both Phase-2c carveouts, unchanged from Phase 2a tip).
 
@@ -12,22 +12,15 @@
 | Layer | Task | Commit | Notes |
 |---|---|---|---|
 | L0 | Pre-flight (baseline green, scanner snapshot, harness verified) | — (no commit) | 626/0/0/25 confirmed; scanner = 2 (CapHelper + G2). |
-| L1 | WI-1 HestonProcess `QuadraticExponentialMartingale` | `d0de1e4` | 626 → 628 tests. QEM enum + martingale `k0` correction in both psi sub-branches; probe extended with 2 cases; 2 new Java tests. Spec-reviewed and code-quality-reviewed (3 minor doc-hygiene findings — header refresh below). |
+| L1 | WI-1 HestonProcess `QuadraticExponentialMartingale` | `d0de1e4` | 626 → 628 tests. QEM enum + martingale `k0` correction in both psi sub-branches; probe extended with 2 cases; 2 new Java tests. Spec-reviewed and code-quality-reviewed. |
+| L1 chore | HestonProcessTest header refresh for QEM coverage | `29f4dbf` | Picked up the 3 minor doc-hygiene findings from L1 code review. Behavior unchanged. |
+| L2 Task 2.2 | WI-2 Simplex 1D fix (test-side) | `f593de6` | Diagnosis A held: `Array.add(double)` is non-mutating. Fix: replace `new Array(0); initialValue.add(-100.0)` with `new Array(new double[] { -100.0 })` aligned to C++ `test-suite/optimizers.cpp:231-232`. OptimizerTest stays `@Ignore`d (un-skip is Task 2.3). Suite unchanged at 628/0/0/25. |
 
 ---
 
-## In flight
+## Next — L2 Task 2.3 (un-skip `OptimizerTest`)
 
-L1 doc-hygiene chore (HestonProcessTest header + Javadoc updated to mention QEM) — separate `chore(processes)` commit landing alongside this progress snapshot.
-
----
-
-## Next — L2 Task 2.1+2.2 (Simplex 1D-dim fix)
-
-See `docs/migration/phase2b-plan.md` §Layer 2. Approximate scope:
-- Reproduce `OptimizerTest#testOptimizers` failure (`Independent variable must be 1 dimensional`) and identify whether the bug is in `Array.add(double)`, `Simplex.minimize`, or `Constraint.update`.
-- Apply the smallest fix that resolves it (≤ 20 LOC expected).
-- Commit, then Task 2.3 un-skips `OptimizerTest` and uncomments the LM entry in line 104.
+Remove `@Ignore` + the stale carveout-pointer comment block from `OptimizerTest::testOptimizers`. Uncomment the `LevenbergMarquardt` entry on line 116 so both Simplex and LM run in the active method matrix. Update `phase2a-carveouts.md::WI-2-carveout-simplex` disposition to "Fixed in Phase 2b WI-2 (commit f593de6); un-skipped in <this commit>". Skipped 25 → 24.
 
 ---
 
@@ -41,8 +34,7 @@ See `docs/migration/phase2b-plan.md` §Layer 2. Approximate scope:
 
 ## Remaining work (from `phase2b-plan.md`)
 
-- L2 Task 2.1 + 2.2 — Simplex fix (next)
-- L2 Task 2.3 — Un-skip `OptimizerTest`
+- L2 Task 2.3 — Un-skip `OptimizerTest` (next)
 - L3 Task 3.1 — Vasicek + indirection pattern (A8 risk)
 - L3 Task 3.2 — HullWhite indirection (A8 risk)
 - L3 Task 3.3 — BlackKarasinski indirection (A8 risk)
