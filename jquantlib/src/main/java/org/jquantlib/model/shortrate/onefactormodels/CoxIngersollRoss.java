@@ -58,10 +58,13 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
     private static final String strike_must_be_positive = "strike must be positive";
     private static final String unsupported_option_type = "unsupported option type";
 
-    private Parameter theta_;
-    private Parameter k_;
-    private Parameter sigma_;
-    private Parameter r0_;
+    // Internal Parameter accessors (Phase 2b WI-3 indirection — replaces
+    // the C++ Parameter& reference binding `theta_(arguments_[0]), ...`
+    // in coxingersollross.cpp).
+    protected Parameter thetaParam()  { return arguments_.get(0); }
+    protected Parameter kParam()      { return arguments_.get(1); }
+    protected Parameter sigmaParam()  { return arguments_.get(2); }
+    protected Parameter r0Param()     { return arguments_.get(3); }
 
     public CoxIngersollRoss() {
         this(0.05, 0.1, 0.1, 0.1);
@@ -69,30 +72,30 @@ public class CoxIngersollRoss extends OneFactorAffineModel {
 
     public CoxIngersollRoss(final double /* @Rate */r0, final double /* @Real */theta, final double /* @Real */k, final double /* @Real */sigma) {
         super(4);
-        theta_ = (arguments_.get(0));
-        k_ = arguments_.get(1);
-        sigma_ = arguments_.get(2);
-        r0_ = arguments_.get(3);
-        theta_ = new ConstantParameter(theta, new PositiveConstraint());
-        k_ = new ConstantParameter(k, new PositiveConstraint());
-        sigma_ = new ConstantParameter(sigma, new VolatilityConstraint(k, theta));
-        r0_ = new ConstantParameter(r0, new PositiveConstraint());
+        // Matches v1.42.1 default (withFellerConstraint=false): all four
+        // arguments use PositiveConstraint. The previous Java code used
+        // VolatilityConstraint(k,theta) for sigma unconditionally, which
+        // diverges from the C++ default-arg branch.
+        arguments_.set(0, new ConstantParameter(theta, new PositiveConstraint()));
+        arguments_.set(1, new ConstantParameter(k,     new PositiveConstraint()));
+        arguments_.set(2, new ConstantParameter(sigma, new PositiveConstraint()));
+        arguments_.set(3, new ConstantParameter(r0,    new PositiveConstraint()));
     }
 
     protected double /* @Real */theta() {
-        return theta_.get(0.0);
+        return thetaParam().get(0.0);
     }
 
     protected double /* @Real */k() {
-        return k_.get(0.0);
+        return kParam().get(0.0);
     }
 
     protected double /* @Real */sigma() {
-        return sigma_.get(0.0);
+        return sigmaParam().get(0.0);
     }
 
     protected double /* @Real */x0() {
-        return r0_.get(0.0);
+        return r0Param().get(0.0);
     }
 
 

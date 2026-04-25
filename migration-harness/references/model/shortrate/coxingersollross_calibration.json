@@ -1,0 +1,37 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "samples": [
+          {
+            "T": 1.0,
+            "discountBond": 0.9492139379597381,
+            "t": 0.0
+          },
+          {
+            "T": 2.0,
+            "discountBond": 0.9236521117587566,
+            "t": 0.5
+          },
+          {
+            "T": 5.0,
+            "discountBond": 0.800560640135354,
+            "t": 1.0
+          }
+        ]
+      },
+      "inputs": {
+        "k": 0.5,
+        "r0": 0.05,
+        "sigma": 0.04,
+        "theta": 0.06
+      },
+      "name": "cir_discountbond_fingerprint"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-25T14:31:34Z",
+  "generated_by": "coxingersollross_calibration_probe",
+  "test_group": "model/shortrate/coxingersollross_calibration"
+}
