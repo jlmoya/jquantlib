@@ -1,6 +1,7 @@
 /*
  Copyright (C) 2026 JQuantLib migration contributors.
- Tests for HestonProcess QuadraticExponential. See phase2a-plan §WI-3.
+ Tests for HestonProcess QuadraticExponential / QuadraticExponentialMartingale.
+ See phase2a-plan §WI-3 (QE) and phase2b-design §3.1 WI-1 (QEM).
  */
 package org.jquantlib.testsuite.processes;
 
@@ -26,8 +27,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 /**
- * Cross-validated tests for the QuadraticExponential branch of
- * {@link HestonProcess#evolve} against v1.42.1 via
+ * Cross-validated tests for the QuadraticExponential and
+ * QuadraticExponentialMartingale branches of {@link HestonProcess#evolve}
+ * against v1.42.1 via
  * {@code migration-harness/references/processes/hestonprocess_qe.json}.
  */
 public class HestonProcessTest {
