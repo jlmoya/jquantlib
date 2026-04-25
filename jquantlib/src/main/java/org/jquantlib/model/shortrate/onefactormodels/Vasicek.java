@@ -49,10 +49,6 @@ public class Vasicek extends OneFactorAffineModel {
     //
 
     protected double r0_;
-    protected Parameter  a_;
-    protected Parameter  b_;
-    protected Parameter  sigma_;
-    protected Parameter  lambda_;
 
 
     //
@@ -62,21 +58,14 @@ public class Vasicek extends OneFactorAffineModel {
     public Vasicek(/* @Rate */ final double r0, final double a, final double b, final double sigma, final double lambda) {
         super(4);
         this.r0_ = r0;
-
-        // Deviation from C++: QuantLib's Vasicek binds a_, b_, sigma_,
-        // lambda_ by reference to arguments_[i] in the ctor init list
-        // so the subsequent `a_ = ConstantParameter(...)` writes also
-        // update the calibratable parameter vector. Java has no
-        // reference semantics for fields — the two copies of each
-        // parameter diverge. The bug is latent for callers that don't
-        // calibrate (all current JQuantLib tests); it becomes material
-        // when Vasicek is calibrated via arguments_, which is Phase 2b
-        // scope along with CapHelper and G2. Carved to
-        // docs/migration/phase2a-carveouts.md (WI-4-carveout-Vasicek).
-        this.a_ = new ConstantParameter(a, new PositiveConstraint());
-        this.b_ = new ConstantParameter(b, new NoConstraint());
-        this.sigma_ = new ConstantParameter(sigma, new PositiveConstraint());
-        this.lambda_ = new ConstantParameter(lambda, new NoConstraint());
+        // Phase 2b WI-3: write Parameters directly into arguments_ so the
+        // calibratable vector and the read accessors share one source of
+        // truth (replaces C++'s Parameter& reference-binding pattern).
+        // See docs/migration/phase2b-design.md §3.3.
+        arguments_.set(0, new ConstantParameter(a, new PositiveConstraint()));
+        arguments_.set(1, new ConstantParameter(b, new NoConstraint()));
+        arguments_.set(2, new ConstantParameter(sigma, new PositiveConstraint()));
+        arguments_.set(3, new ConstantParameter(lambda, new NoConstraint()));
     }
 
 
@@ -84,20 +73,27 @@ public class Vasicek extends OneFactorAffineModel {
     // protected methods
     //
 
+    // Internal Parameter accessors (Phase 2b WI-3 indirection — replaces
+    // the C++ Parameter& reference binding in the init list).
+    private Parameter aParam()      { return arguments_.get(0); }
+    private Parameter bParam()      { return arguments_.get(1); }
+    private Parameter sigmaParam()  { return arguments_.get(2); }
+    private Parameter lambdaParam() { return arguments_.get(3); }
+
     protected double a() /* @ReadOnly */ {
-        return a_.get(0.0);
+        return aParam().get(0.0);
     }
 
     protected double b() /* @ReadOnly */ {
-        return b_.get(0.0);
+        return bParam().get(0.0);
     }
 
     protected double lambda() /* @ReadOnly */ {
-        return lambda_.get(0.0);
+        return lambdaParam().get(0.0);
     }
 
     protected double sigma() /* @ReadOnly */ {
-        return sigma_.get(0.0);
+        return sigmaParam().get(0.0);
     }
 
 

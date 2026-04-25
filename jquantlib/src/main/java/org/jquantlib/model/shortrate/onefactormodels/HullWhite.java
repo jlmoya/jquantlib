@@ -87,8 +87,8 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
                 a, 0.0, sigma, 0.0);
 
         termStructureConsistentModelClass = new TermStructureConsistentModelClass(termStructure);
-        b_ = new NullParameter();
-        lambda_ = new NullParameter();
+        arguments_.set(1, new NullParameter());  // b slot — Phase 2b WI-3 indirection
+        arguments_.set(3, new NullParameter());  // lambda slot — Phase 2b WI-3 indirection
         generateArguments();
 
         termStructureConsistentModelClass.termStructure().addObserver(this);

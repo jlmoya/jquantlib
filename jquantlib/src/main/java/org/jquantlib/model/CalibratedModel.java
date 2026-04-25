@@ -69,6 +69,14 @@ public abstract class CalibratedModel implements Observer, Observable {
 
     public CalibratedModel(final int nArguments) {
         this.arguments_ = new ArrayList<Parameter>(nArguments);
+        // Pre-fill the slots with NullParameter so subclasses can use
+        // arguments_.set(i, ...) per the C++ Parameter& reference-binding
+        // pattern. Phase 2b WI-3 indirection: without pre-fill, set(i, ...)
+        // throws IndexOutOfBoundsException because new ArrayList(capacity)
+        // sets capacity but leaves size 0.
+        for (int i = 0; i < nArguments; i++) {
+            this.arguments_.add(new NullParameter());
+        }
         this.constraint_ = new PrivateConstraint(arguments_);
         this.shortRateEndCriteria_ = EndCriteria.Type.None;
     }
