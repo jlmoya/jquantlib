@@ -137,9 +137,22 @@ public class BlackKarasinski extends OneFactorModel implements TermStructureCons
 
     @Override
     public Lattice tree(final TimeGrid grid) {
+        // Phase 2c WI-5 align: two BK-vs-C++ divergences in this method
+        // (independent of the stub-fix that follows in the next commit):
+        //   (1) TrinomialTree(... , isPositive=false) — C++
+        //       blackkarasinski.cpp uses the default `isPositive=false`.
+        //       The BK state x = ln(r) - phi is naturally signed, and
+        //       isPositive=true triggers an infinite loop in TrinomialTree
+        //       branching at x0_=0 (the "force x>0" while-loop never exits
+        //       when the increment makes no progress on a zero pivot).
+        //   (2) impl.set(grid.at(i), value) — C++ writes phi keyed on the
+        //       grid TIME (grid[i]), not the integer index; NumericalImpl
+        //       looks up by Time on subsequent tree.discount queries.
+        // The numericTree placeholder remains for now; the WI-5 stub-fix
+        // commit replaces it with a real ShortRateTree.
         final TermStructureFittingParameter phi = new TermStructureFittingParameter(termstructureConsistentModel.termStructure());
         final ShortRateDynamics numericDynamics = (new Dynamics(phi, a(), sigma()));
-        final TrinomialTree trinomial = new TrinomialTree(numericDynamics.process(), grid, true);
+        final TrinomialTree trinomial = new TrinomialTree(numericDynamics.process(), grid);
         final ShortRateTree numericTree = null;//new ShortRateTree(trinomial, numericDynamics, grid);
 
         final TermStructureFittingParameter.NumericalImpl impl = (TermStructureFittingParameter.NumericalImpl) (phi.implementation());
@@ -156,9 +169,7 @@ public class BlackKarasinski extends OneFactorModel implements TermStructureCons
             final Brent s1d = new Brent();
             s1d.setMaxEvaluations(1000);
             value = s1d.solve(finder, 1e-7, value, vMin, vMax);
-            impl.set(grid.index(i) /* [i] */, value);
-            // vMin = value - 10.0;
-            // vMax = value + 10.0;
+            impl.set(grid.at(i), value);
         }
         return numericTree;
     }
