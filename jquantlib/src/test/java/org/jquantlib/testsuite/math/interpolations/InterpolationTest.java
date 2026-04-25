@@ -1037,10 +1037,9 @@ public class InterpolationTest {
 
 
 
-    // Phase-2a status (2026-04-24): LM gate lifted; same SABR β-range
-    // validation failure as SABRInterpolationTest. Carved to
-    // docs/migration/phase2a-carveouts.md (WI-2-carveout-SABR).
-    @Ignore
+    // Un-skipped in Phase 2b WI-4: SABRCoeffHolder sentinel check fixed
+    // in this commit (Constants.NULL_REAL was being tested via
+    // !Double.isNaN, which never matched MAX_VALUE).
     @Test
     public void testSabrInterpolation(){
 

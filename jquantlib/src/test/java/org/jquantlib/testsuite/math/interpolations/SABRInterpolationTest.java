@@ -39,19 +39,13 @@ import org.jquantlib.math.optimization.LevenbergMarquardt;
 import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.math.optimization.Simplex;
 import org.jquantlib.termstructures.volatilities.Sabr;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class SABRInterpolationTest {
 
-    // Phase-2a status (2026-04-24): the Minpack.lmdif gate is gone, LM
-    // runs, but the test still fails with "beta must be in (0.0, 1.0)" —
-    // SABRInterpolation converges to a β outside [0,1] (or the guess
-    // path feeds one to Sabr.validateSabrParameters). Root cause lives
-    // in SABRInterpolation's initial-guess / transformation logic, not
-    // in the optimizer. Carved to docs/migration/phase2a-carveouts.md
-    // (WI-2-carveout-SABR).
-    @Ignore
+    // Un-skipped in Phase 2b WI-4: SABRCoeffHolder sentinel check fixed
+    // in this commit (Constants.NULL_REAL was being tested via
+    // !Double.isNaN, which never matched MAX_VALUE).
     @Test
     public void testSABRInterpolationTest() {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");

@@ -150,32 +150,34 @@ public class SABRInterpolation extends AbstractInterpolation {
 			beta_ = beta;
 			nu_ = nu;
 			rho_ = rho;
-			alphaIsFixed_ = false;
-			betaIsFixed_ = false;
-			nuIsFixed_ = false;
-			rhoIsFixed_ = false;
 			weights_ = new Array(0);//ZH:TBD:verify with QL097, it is vector<Real> in QL097
 			error_ = Constants.NULL_REAL;
 			maxError_ = Constants.NULL_REAL;
 			SABREndCriteria_ = EndCriteria.Type.None;
 
 			QL.require(t > 0.0, "expiry time must be positive: " + t + " not allowed");
-			if (!Double.isNaN(alpha_)) {
+			// Sentinel detection: QuantLib uses Null<Real> == Double.MAX_VALUE
+			// (Constants.NULL_REAL) to mean "no guess supplied". The previous
+			// !Double.isNaN(...) check never matched MAX_VALUE, so the
+			// constructor's *IsFixed flags were ignored and NULL_REAL flowed
+			// straight through validateSabrParameters() (which rightly throws
+			// on β > 1). Match the C++ contract by comparing against NULL_REAL.
+			if (alpha_ != Constants.NULL_REAL) {
                 alphaIsFixed_ = alphaIsFixed;
             } else {
                 alpha_ = Math.sqrt(0.2);
             }
-			if (!Double.isNaN(beta_)) {
+			if (beta_ != Constants.NULL_REAL) {
                 betaIsFixed_ = betaIsFixed;
             } else {
                 beta_ = 0.5;
             }
-			if (!Double.isNaN(nu_)) {
+			if (nu_ != Constants.NULL_REAL) {
                 nuIsFixed_ = nuIsFixed;
             } else {
                 nu_ = Math.sqrt(0.4);
             }
-			if (!Double.isNaN(rho_)) {
+			if (rho_ != Constants.NULL_REAL) {
                 rhoIsFixed_ = rhoIsFixed;
             } else {
                 rho_ = 0.0;

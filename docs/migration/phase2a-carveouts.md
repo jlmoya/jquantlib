@@ -35,6 +35,42 @@ Re-gated with `@Ignore` + pointer to this file. LM itself verified
 independently via `LevenbergMarquardtTest` and
 `MinpackTest#lmdif_*`. Phase 2b (or a dedicated SABR pass).
 
+**Resolution (Phase 2b WI-4):**
+Branch (a) per the Task 4.1 diagnosis — but with a different specific
+suspect than the carveout originally hypothesized. The β-out-of-[0,1]
+throw fires during `SABRCoeffHolder` construction, BEFORE any
+LM/Simplex iteration; the parameters-transformation path the
+hypothesis pointed at never even ran. Root cause: Java tested
+`!Double.isNaN(beta_)` to detect "no guess provided", but the
+QuantLib API contract uses `Constants.NULL_REAL = Double.MAX_VALUE`
+(verified at `Constants.java:170`) for that sentinel. The check
+never matches; the four NULL_REAL slots flow straight through
+`validateSabrParameters` which rightly throws on β > 1.
+
+Fix landed in this commit:
+- Replace `!Double.isNaN(X_)` with `X_ != Constants.NULL_REAL` for
+  α, β, ν, ρ in `SABRInterpolation.java::SABRCoeffHolder` ctor.
+- Remove the unconditional `*IsFixed_ = false` block that was
+  defeating the constructor's `*IsFixed` arguments (the existing
+  per-slot `if (...) { *IsFixed_ = ... }` branches now take effect
+  via the same code path C++ uses).
+- New `sabr_interpolation_probe` captures the C++
+  post-`defaultValues()` params (β=0.5, α=0.2·F^(1−β) for β<0.9999,
+  ν=√0.4, ρ=0); Java construction now reaches the same flow.
+
+Both `SABRInterpolationTest::testSABRInterpolationTest` and
+`InterpolationTest::testSabrInterpolation` un-skipped and pass
+(LM and Simplex × all 16 IsFixed combinations × vegaWeighted both
+ways at calibration tolerance 5e-8).
+
+Note for Phase 2c follow-up: the Java α default is `Math.sqrt(0.2)`
+(constant), whereas v1.42.1's `SABRSpecs::defaultValues` uses
+`0.2 * F^(1−β)` when β<0.9999. The current tests pass because they
+either fix α (via `alphaIsFixed=true`) or run enough optimizer
+iterations to converge from the looser initial point. If a future
+test passes a tight `errorAccept` with α free, this divergence
+could re-surface.
+
 ---
 
 ## WI-4-carveout-Vasicek — Parameter-reference semantics drift
