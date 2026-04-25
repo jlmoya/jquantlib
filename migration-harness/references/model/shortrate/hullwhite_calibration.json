@@ -32,11 +32,47 @@
         "sigma": 0.01
       },
       "name": "hullwhite_round_trip"
+    },
+    {
+      "expected": {
+        "samples": [
+          {
+            "bondMaturity": 2.0,
+            "bondStart": 1.0,
+            "call": 0.010446438846254128,
+            "maturity": 0.5,
+            "put": 8.005965432534122e-05,
+            "strike": 0.95
+          },
+          {
+            "bondMaturity": 3.0,
+            "bondStart": 2.0,
+            "call": 7.514632438138346e-10,
+            "maturity": 1.0,
+            "put": 0.036195910420941585,
+            "strike": 1.0
+          },
+          {
+            "bondMaturity": 5.0,
+            "bondStart": 3.0,
+            "call": 1.3752427460912011e-12,
+            "maturity": 2.0,
+            "put": 0.11253570547640887,
+            "strike": 1.05
+          }
+        ]
+      },
+      "inputs": {
+        "a": 0.1,
+        "r_curve": 0.04,
+        "sigma": 0.01
+      },
+      "name": "hullwhite_fwd_starting_bond_option"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-25T13:56:30Z",
+  "generated_at": "2026-04-25T20:13:32Z",
   "generated_by": "hullwhite_calibration_probe",
   "test_group": "model/shortrate/hullwhite_calibration"
 }

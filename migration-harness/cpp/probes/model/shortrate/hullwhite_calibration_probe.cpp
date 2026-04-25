@@ -46,6 +46,26 @@ int main() {
         json{{"r_curve", 0.04}, {"a", a}, {"sigma", sigma}},
         json{{"samples", sampleArr}});
 
+    // 5-arg discountBondOption(strike, maturity, bondStart, bondMaturity).
+    // Verifies the forward-starting bond-option overload added in Phase 2c WI-4.1.
+    json sample5Arr = json::array();
+    for (auto t : {std::make_tuple(0.95, 0.5, 1.0, 2.0),
+                   std::make_tuple(1.00, 1.0, 2.0, 3.0),
+                   std::make_tuple(1.05, 2.0, 3.0, 5.0)}) {
+        const Real strike = std::get<0>(t);
+        const Time mat = std::get<1>(t);
+        const Time bStart = std::get<2>(t);
+        const Time bMat = std::get<3>(t);
+        sample5Arr.push_back({{"strike", strike}, {"maturity", mat},
+                              {"bondStart", bStart}, {"bondMaturity", bMat},
+                              {"call", model.discountBondOption(Option::Call, strike, mat, bStart, bMat)},
+                              {"put",  model.discountBondOption(Option::Put,  strike, mat, bStart, bMat)}});
+    }
+
+    out.addCase("hullwhite_fwd_starting_bond_option",
+        json{{"r_curve", 0.04}, {"a", a}, {"sigma", sigma}},
+        json{{"samples", sample5Arr}});
+
     out.write();
     return 0;
 }

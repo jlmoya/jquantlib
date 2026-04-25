@@ -127,6 +127,42 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
     }
 
     /**
+     * 5-argument overload for European option on a forward-starting discount bond.
+     * <p>
+     * Aligned to v1.42.1 hullwhite.cpp: option matures at {@code maturity}, written
+     * on a discount bond running from {@code bondStart} to {@code bondMaturity}.
+     */
+    public double discountBondOption(
+            final Option.Type type,
+            final double strike,
+            final double /* @Time */ maturity,
+            final double /* @Time */ bondStart,
+            final double /* @Time */ bondMaturity) /* @ReadOnly */ {
+
+        final double /* @Real */_a = a();
+        double /* @Real */v;
+        if (_a < Math.sqrt(Constants.QL_EPSILON)) {
+            v = sigma() * B(bondStart, bondMaturity) * Math.sqrt(maturity);
+        } else {
+            final double c =
+                    Math.exp(-2.0 * _a * (bondStart - maturity))
+                    - Math.exp(-2.0 * _a * bondStart)
+                    - 2.0 * (Math.exp(-_a * (bondStart + bondMaturity - 2.0 * maturity))
+                             - Math.exp(-_a * (bondStart + bondMaturity)))
+                    + Math.exp(-2.0 * _a * (bondMaturity - maturity))
+                    - Math.exp(-2.0 * _a * bondMaturity);
+            // The above should always be positive, but due to numerical
+            // errors it can be a very small negative number. Floor at 0
+            // to avoid NaNs (matches v1.42.1 hullwhite.cpp).
+            v = sigma() / (_a * Math.sqrt(2.0 * _a)) * Math.sqrt(Math.max(c, 0.0));
+        }
+        final double /* @Real */f = termStructureConsistentModelClass.termStructure().currentLink().discount(bondMaturity);
+        final double /* @Real */k = termStructureConsistentModelClass.termStructure().currentLink().discount(bondStart) * strike;
+
+        return blackFormula(type, k, f, v);
+    }
+
+    /**
      *  Futures convexity bias (i.e., the difference between
      *  futures implied rate and forward rate) calculated as in
      *  <p>
