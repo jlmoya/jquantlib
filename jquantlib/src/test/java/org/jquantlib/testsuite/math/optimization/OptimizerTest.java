@@ -95,8 +95,13 @@ public class OptimizerTest {
         // Set Constraint for optimizers: unconstrained problem
         constraints_.add(new NoConstraint());
         // Set initial guess for optimizer
-        final Array initialValue = new Array(0);
-        initialValue.add(-100.0);
+        // Aligned with QuantLib v1.42.1 test-suite/optimizers.cpp:231-232:
+        //   Array initialValue(1); initialValue[0] = -100;
+        // Previously used `new Array(0); initialValue.add(-100.0);` which is a
+        // bug: Array.add(double) is non-mutating (returns a new Array); the
+        // original code discards the returned size-1 Array, leaving
+        // initialValue at size 0 and breaking the 1-D cost function.
+        final Array initialValue = new Array(new double[] { -100.0 });
         initialValues_.add(initialValue);
         // Set end criteria for optimizer
         maxIterations_.add(1000); // maxIterations
