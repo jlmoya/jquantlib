@@ -1,5 +1,6 @@
 /*
  Copyright (C) 2008 Richard Gomes
+ Copyright (C) 2026 JQuantLib migration contributors.
 
  This source code is release under the BSD License.
 
@@ -22,99 +23,37 @@
 
 package org.jquantlib.math.distributions;
 
-import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
 
-
 /**
+ * Non-central chi-squared cumulative distribution (legacy alias).
+ * <p>
+ * Despite the name (which omits "Cumulative"), this class has always been a
+ * cumulative distribution function — JQuantLib historically dropped the
+ * "Cumulative" qualifier from QuantLib's
+ * {@code NonCentralCumulativeChiSquareDistribution}. Note that v1.42.1 does
+ * <strong>not</strong> define a non-central chi-squared probability density
+ * (PDF) class; the public surface is the cumulative distribution, the
+ * Sankaran approximation, and the inverse cumulative distribution.
+ * <p>
+ * This class is retained for source compatibility with existing callers
+ * (e.g. {@link org.jquantlib.model.shortrate.onefactormodels.CoxIngersollRoss},
+ * {@link org.jquantlib.model.shortrate.onefactormodels.ExtendedCoxIngersollRoss})
+ * and now delegates to {@link NonCentralCumulativeChiSquaredDistribution},
+ * which is the canonical fresh port from v1.42.1.
+ *
  * @author Richard Gomes
  */
 public class NonCentralChiSquaredDistribution implements Ops.DoubleOp {
 
-    private static final String FAILED_TO_CONVERGE = "failed to converge";
+    private final NonCentralCumulativeChiSquaredDistribution delegate_;
 
-	//
-	// private fields
-	//
+    public NonCentralChiSquaredDistribution(final double df, final double ncp) {
+        this.delegate_ = new NonCentralCumulativeChiSquaredDistribution(df, ncp);
+    }
 
-	/** degrees of freedom */
-	private final double df;
-
-	/** non-centrality parameter */
-	private final double ncp;
-
-	private final GammaFunction gammaFunction_ = new GammaFunction();
-
-
-	//
-	// public constructor
-	//
-
-	public NonCentralChiSquaredDistribution(final double df, final double ncp){
-		//TODO check on valid parameters
-		this.df = df;
-		this.ncp = ncp;
-	}
-
-
-	//
-	// implements Ops.DoubleOp
-	//
-
-	@Override
-	public double op(final double x) /* @Read-only */ {
-		//C++ appears to be based on Algorithm AS 275 with perhaps one addition, see below
-        if (x <= 0.0) return 0.0;
-
-        final double errmax = 1e-12;
-        final int itrmax = 10000;
-        final double lam = 0.5 * ncp;
-
-        double u = Math.exp(-lam);
-        double v = u;
-        final double x2 = 0.5 * x;
-        final double f2 = 0.5 * df;
-
-        double t = 0.0;
-        if (f2 * Constants.QL_EPSILON > 0.125 && Math.abs(x2 - f2) < Math.sqrt(Constants.QL_EPSILON) * f2) {
-            // TODO check if this part is AS 275?? or a known asymptotic
-            t = Math.exp((1 - t) * (2 - t / (f2 + 1))) / Math.sqrt(2.0 * Math.PI * (f2 + 1.0));
-        } else {
-            t = Math.exp(f2 * Math.log(x2) - x2 - gammaFunction_.logValue(f2 + 1));
-        }
-
-        double ans = v*t;
-        int n = 1;
-        double f_2n = df + 2.0;
-        double f_x_2n = df + 2.0 - x;
-
-        // restructure C++ algo to avoid goto...
-        while (f_x_2n <= 0.0) {
-            u *= lam / n;
-            v += u;
-            t *= x / f_2n;
-            ans += v * t;
-            n++;
-            f_2n += 2.0;
-            f_x_2n += 2.0;
-        }
-
-        while (n <= itrmax) {
-            final double bound = t * x / f_x_2n;
-            if (bound > errmax) {
-                u *= lam / n;
-                v += u;
-                t *= x / f_2n;
-                ans += v * t;
-                n++;
-                f_2n += 2.0;
-                f_x_2n += 2.0;
-            } else {
-                return ans;
-            }
-        }
-
-        throw new ArithmeticException(FAILED_TO_CONVERGE); // TODO: message
-	}
-
+    @Override
+    public double op(final double x) /* @Read-only */ {
+        return delegate_.op(x);
+    }
 }

@@ -1,0 +1,61 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "samples": [
+          {
+            "cdf": 0.520499877813017,
+            "degrees": 1.0,
+            "inv_cdf_at_cdf_x": 0.5,
+            "ncp": 0.0,
+            "x": 0.5
+          },
+          {
+            "cdf": 0.4795291573072244,
+            "degrees": 2.5,
+            "inv_cdf_at_cdf_x": 3.0,
+            "ncp": 1.5,
+            "x": 3.0
+          },
+          {
+            "cdf": 0.1551378715445518,
+            "degrees": 5.0,
+            "inv_cdf_at_cdf_x": 7.999999999999998,
+            "ncp": 10.0,
+            "x": 8.0
+          },
+          {
+            "cdf": 0.004005013238985776,
+            "degrees": 8.0,
+            "inv_cdf_at_cdf_x": 60.00000000000001,
+            "ncp": 100.0,
+            "x": 60.0
+          },
+          {
+            "cdf": 1.6924997214251392e-11,
+            "degrees": 4.0,
+            "inv_cdf_at_cdf_x": 250.00000000000006,
+            "ncp": 500.0,
+            "x": 250.0
+          },
+          {
+            "cdf": 0.6533142151956396,
+            "degrees": 10.0,
+            "inv_cdf_at_cdf_x": 65.00000000000018,
+            "ncp": 50.0,
+            "x": 65.0
+          }
+        ]
+      },
+      "inputs": {
+        "points": 6
+      },
+      "name": "noncentral_chi_squared_grid"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-25T20:20:44Z",
+  "generated_by": "noncentral_chi_squared_probe",
+  "test_group": "math/distributions/noncentral_chi_squared"
+}
