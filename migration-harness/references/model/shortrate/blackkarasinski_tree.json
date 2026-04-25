@@ -1,0 +1,119 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "samples": [
+          {
+            "discount": 0.990049833731384,
+            "i": 0,
+            "j": 0,
+            "underlying": 0.0
+          },
+          {
+            "discount": 0.9901342749291839,
+            "i": 1,
+            "j": 0,
+            "underlying": -0.008553120088536637
+          },
+          {
+            "discount": 0.9900499533048861,
+            "i": 1,
+            "j": 1,
+            "underlying": 0.0
+          },
+          {
+            "discount": 0.9899649146482565,
+            "i": 1,
+            "j": 2,
+            "underlying": 0.008553120088536637
+          },
+          {
+            "discount": 0.9902179949039056,
+            "i": 2,
+            "j": 0,
+            "underlying": -0.017106240177073274
+          },
+          {
+            "discount": 0.9901343852573316,
+            "i": 2,
+            "j": 1,
+            "underlying": -0.008553120088536637
+          },
+          {
+            "discount": 0.9900500645712542,
+            "i": 2,
+            "j": 2,
+            "underlying": 0.0
+          },
+          {
+            "discount": 0.9899650268607417,
+            "i": 2,
+            "j": 3,
+            "underlying": 0.008553120088536637
+          },
+          {
+            "discount": 0.9898792660915544,
+            "i": 2,
+            "j": 4,
+            "underlying": 0.017106240177073274
+          },
+          {
+            "discount": 0.9903010004429914,
+            "i": 3,
+            "j": 0,
+            "underlying": -0.02565936026560991
+          },
+          {
+            "discount": 0.9902180967589193,
+            "i": 3,
+            "j": 1,
+            "underlying": -0.017106240177073274
+          },
+          {
+            "discount": 0.9901344879785857,
+            "i": 3,
+            "j": 2,
+            "underlying": -0.008553120088536637
+          },
+          {
+            "discount": 0.9900501681660407,
+            "i": 3,
+            "j": 3,
+            "underlying": 0.0
+          },
+          {
+            "discount": 0.9899651313364126,
+            "i": 3,
+            "j": 4,
+            "underlying": 0.008553120088536637
+          },
+          {
+            "discount": 0.9898793714555223,
+            "i": 3,
+            "j": 5,
+            "underlying": 0.017106240177073274
+          },
+          {
+            "discount": 0.9897928824394963,
+            "i": 3,
+            "j": 6,
+            "underlying": 0.02565936026560991
+          }
+        ]
+      },
+      "inputs": {
+        "a": 0.1,
+        "grid_end": 1.0,
+        "grid_steps": 4,
+        "r_curve": 0.04,
+        "sigma": 0.01
+      },
+      "name": "bk_tree_grid_4steps"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-25T20:20:53Z",
+  "generated_by": "blackkarasinski_tree_probe",
+  "test_group": "model/shortrate/blackkarasinski_tree"
+}

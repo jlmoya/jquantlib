@@ -148,12 +148,15 @@ public class BlackKarasinski extends OneFactorModel implements TermStructureCons
         //   (2) impl.set(grid.at(i), value) — C++ writes phi keyed on the
         //       grid TIME (grid[i]), not the integer index; NumericalImpl
         //       looks up by Time on subsequent tree.discount queries.
-        // The numericTree placeholder remains for now; the WI-5 stub-fix
-        // commit replaces it with a real ShortRateTree.
+        // The numericTree below replaces the prior `null` placeholder.
         final TermStructureFittingParameter phi = new TermStructureFittingParameter(termstructureConsistentModel.termStructure());
         final ShortRateDynamics numericDynamics = (new Dynamics(phi, a(), sigma()));
         final TrinomialTree trinomial = new TrinomialTree(numericDynamics.process(), grid);
-        final ShortRateTree numericTree = null;//new ShortRateTree(trinomial, numericDynamics, grid);
+        // Phase 2c WI-5 stub-fix: build the calibrating ShortRateTree
+        // mirroring C++ blackkarasinski.cpp tree(grid). Uses the inherited
+        // 3-arg ShortRateTree ctor (no theta) — this method's own Brent
+        // loop drives the per-step fit through impl.set(...) below.
+        final ShortRateTree numericTree = new OneFactorModel.ShortRateTree(trinomial, numericDynamics, grid);
 
         final TermStructureFittingParameter.NumericalImpl impl = (TermStructureFittingParameter.NumericalImpl) (phi.implementation());
         impl.reset();
