@@ -1,8 +1,8 @@
 # Phase 2b — Execution Progress
 
 **Last update:** 2026-04-25
-**Tip commit:** `9855bc6` on `origin/main`
-**Baseline test suite:** 632 tests, 24 skipped, 0 failures.
+**Tip commit:** `e7d550e` on `origin/main`
+**Baseline test suite:** 632 tests, 22 skipped, 0 failures.
 **Scanner:** 2 stubs (2 WIP — CapHelper + G2; both Phase-2c carveouts, unchanged from Phase 2a tip).
 
 ---
@@ -21,7 +21,9 @@
 | L3 Task 3.2 | WI-3 HullWhite arguments_-indirection coverage | `244bc92` | Zero Java source changes — HullWhite's reads were already routing through inherited Vasicek `a()/sigma()` scalar accessors which themselves now hit the indirection. The two-line slot-set patch from Task 3.1 (`arguments_.set(1, NullParameter)`, `set(3, NullParameter)`) was already correct. Probe + Java test added (discountBondOption fingerprint at three (strike, mat, bondMat) tuples against flat 4% curve, `a=0.1, sigma=0.01`). Tight tier passes. 629 → 630 tests. Pre-existing HullWhite drift flagged but out of scope: missing 5-arg `discountBondOption` overload, `convexityBias` formula divergence, `tree(grid)` index-vs-time key mismatch (already marked with `// ?????` in source). |
 | L3 Task 3.3 | WI-3 BlackKarasinski arguments_-indirection | `072d25d` | BK extends OneFactorModel (NOT Vasicek), so it owns its own slots (0=a, 1=sigma). Same pattern as Vasicek: 2 fields deleted, 2 `protected Parameter aParam()/sigmaParam()` accessors added, scalar `a()/sigma()` route through indirection, ctor uses `arguments_.set(0/1, ...)`. Reflection-based Java test (BK has no closed-form pricing — its tree-based `dynamics()` requires the still-stubbed `numericTree`, which is Phase-2c material). Test asserts `aParam()`/`sigmaParam()` return live `arguments_[i]` instances and reflect ctor's a/sigma. 630 → 631 tests. |
 | L3 Task 3.4 | WI-3 CoxIngersollRoss arguments_-indirection | `82697d2` | CIR extends OneFactorAffineModel; 4 slots (0=theta, 1=k, 2=sigma, 3=r0 per C++ v1.42.1 init list). Same pattern: 4 fields deleted, 4 protected param accessors added, scalar accessors routed, ctor uses `arguments_.set(0..3, ...)`. Bonus align-fix: sigma constraint corrected from Java's prior `VolatilityConstraint(k, theta)` (too strict) → `PositiveConstraint()` matching C++'s `withFellerConstraint=false` default. Fingerprint test pivoted to `discountBond` (closed-form A·exp(−B·r0)) rather than `discountBondOption` because the latter depends on Java's `NonCentralChiSquaredDistribution`, which has a separate ~1.5e-12 latent drift from C++ — deferred to Phase 2c. 631 → 632 tests. |
-| L3 Task 3.5 | WI-3 update Vasicek carveout disposition | (this commit) | Doc-only. `phase2a-carveouts.md::WI-4-carveout-Vasicek` Disposition block extended with the four fix-commit references (dc02443, 244bc92, 072d25d, 82697d2 + chore 17e2f5b). WI-3 fully closed; L3 done. |
+| L3 Task 3.5 | WI-3 update Vasicek carveout disposition | `9855bc6` | Doc-only. `phase2a-carveouts.md::WI-4-carveout-Vasicek` Disposition block extended with the four fix-commit references (dc02443, 244bc92, 072d25d, 82697d2 + chore 17e2f5b). WI-3 fully closed; L3 done. |
+| L4 Task 4.1 | WI-4 SABR investigation | (no commit; diagnosis recorded in `93f2774` progress doc) | Diagnosis: branch (a). Throw fires during `SABRCoeffHolder` construction, BEFORE any LM iteration. Java tests `!Double.isNaN(beta_)` to detect "no guess provided", but the API contract uses `Constants.NULL_REAL = Double.MAX_VALUE`; check never matches; NULL_REAL flows to `validateSabrParameters` which throws on β > 1. Phase-2a carveout hypothesis (transformation drift) was wrong. A4 NOT triggered — fix is local and small. |
+| L4 Task 4.2 | WI-4 SABR sentinel fix + un-skip | `e7d550e` | Replaces `!Double.isNaN(X_)` with `X_ != Constants.NULL_REAL` for α/β/ν/ρ in `SABRInterpolation.java::SABRCoeffHolder`. Removes the unconditional `*IsFixed_ = false` block that defeated the constructor's IsFixed args. New `sabr_interpolation_probe` captures C++ post-defaultValues params. Both `SABRInterpolationTest::testSABRInterpolationTest` and `InterpolationTest::testSabrInterpolation` un-skipped (LM and Simplex × 16 IsFixed combos × vegaWeighted both ways at 5e-8). `phase2a-carveouts.md::WI-2-carveout-SABR` Resolution block added. Skipped 24 → 22; suite at 632/0/0/22. WI-4 closed. |
 
 ---
 
@@ -30,6 +32,15 @@
 The CalibratedModel pre-fill silently rescued construction of `BlackKarasinski`, `CoxIngersollRoss`, and `G2` — all three previously threw `IndexOutOfBoundsException` from `arguments_.get(i)` immediately after `super(N)` (because the ArrayList had capacity but size 0). They still have the same field-copy bug Vasicek used to have (assign `private Parameter foo_ = arguments_.get(i)` then immediately overwrite that field with `new ConstantParameter(...)` — Parameter remains stuck at `NullParameter`). Construction now succeeds but parameters remain unbound from `arguments_`. Tasks 3.2 (HullWhite), 3.3 (BlackKarasinski), 3.4 (CoxIngersollRoss) migrate them onto the indirection. G2 is a Phase-2c carveout — its drift will be addressed there.
 
 ---
+
+## Code-review followups for Phase 2c
+
+Captured during Phase 2b reviews; not blocking 2b but worth tracking:
+
+- **WI-4 / SABR probe needs a Java consumer.** `migration-harness/references/math/interpolations/sabr_interpolation.json` is currently an orphan reference — the fix's regression coverage rides on the calibration tests (which would also catch a sentinel revert, but indirectly). A small Java test asserting `sabr.beta() / .nu() / .rho()` post-construction equal the JSON values would directly pin the sentinel logic. Skip α in the assertion (Java's α default formula `Math.sqrt(0.2)` differs from C++'s `0.2·F^(1−β)`, also Phase-2c).
+- **WI-4 / SABR test 16-IsFixed loop is a silent no-op when guesses are NULL_REAL.** The two un-skipped tests pass `Constants.NULL_REAL` for all four guesses, so even with the `*IsFixed_` flags now wired correctly, every `else` branch fires and the loop runs 16 identical calibrations. Either augment the tests with seeded guesses or add an explanatory comment; the latter is the cheaper move.
+- **WI-3 / one-factor model α-default formulas (cross-cutting).** Java's α default in SABR is `√0.2` (constant); C++ is `0.2·F^(1−β)` (forward-aware). Same nature of divergence applies to other one-factor models' default-population paths.
+- **WI-1 / HestonProcess `discountBondOption` stub** returns hard-coded 0.0/1.0 — depends on aligning Java's `NonCentralChiSquaredDistribution` (~1.5e-12 drift from C++) before the fix can be cross-validated.
 
 ## L4 Task 4.1 — SABR investigation done; diagnosis = branch (a) with twist
 
@@ -41,9 +52,9 @@ The phase2a-carveouts.md hypothesis ("LM converges to β outside [0,1]") was wro
 
 Secondary divergences flagged but not gating the throw (track for later if test convergence assertions fail after sentinel fix): α default formula differs (Java=√0.2, C++=0.2·F^(1−β)), missing Halton multi-restart, missing `shift`/`volatilityType`/`errorAccept`/`useMaxError`/`maxGuesses` plumbing.
 
-## Next — L4 Task 4.2 (SABR sentinel fix, branch (a))
+## Next — L5 (completion doc + tag)
 
-Apply the sentinel fix in `SABRInterpolation.java::SABRCoeffHolder` ctor; ensure both gated tests un-skip and pass; if convergence assertions fail after the throw goes away, decide whether to land secondary alignments in this commit or carve them as Phase-2c residual.
+Write `docs/migration/phase2b-completion.md` per `phase2b-design.md` §6 exit criteria. Tag `jquantlib-phase2b-complete` at the final commit, push.
 
 ---
 
@@ -57,7 +68,7 @@ Apply the sentinel fix in `SABRInterpolation.java::SABRCoeffHolder` ctor; ensure
 
 ## Remaining work (from `phase2b-plan.md`)
 
-- L4 Task 4.2 — SABR sentinel fix (next; branch (a) per Task 4.1 diagnosis)
+- L5 — completion doc + tag (next; final task)
 - L3 Task 3.2 — HullWhite indirection (A8 risk)
 - L3 Task 3.3 — BlackKarasinski indirection (A8 risk)
 - L3 Task 3.4 — CoxIngersollRoss indirection (A8 risk)
