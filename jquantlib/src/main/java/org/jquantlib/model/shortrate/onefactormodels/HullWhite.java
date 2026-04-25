@@ -217,7 +217,12 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
         final TermStructureFittingParameter phi = new TermStructureFittingParameter(termStructureConsistentModelClass.termStructure());
         // needed to activate the above constructor
         final ShortRateDynamics numericDynamics = (new Dynamics(phi, a(), sigma()));
-        final TrinomialTree trinomial = new TrinomialTree(numericDynamics.process(), grid, true);
+        // Aligned to v1.42.1 hullwhite.cpp: TrinomialTree built with default
+        // isPositive=false. The previous Java code passed isPositive=true,
+        // which sends the inner Branching loop in TrinomialTree (lines
+        // 102-105) into a non-terminating while when dx is small relative
+        // to x0_, hanging tree(grid).
+        final TrinomialTree trinomial = new TrinomialTree(numericDynamics.process(), grid);
         final ShortRateTree numericTree = new OneFactorModel.ShortRateTree(trinomial, numericDynamics, grid);
 
         // typedef TermStructureFittingParameter::NumericalImpl NumericalImpl;
@@ -236,8 +241,10 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
                 x += dx;
             }
             value = Math.log(value / discountBond) / dt;
-            // impl->set(grid[i], value);
-            impl.set(grid.index(i), value); // ???????????????
+            // Aligned to v1.42.1 hullwhite.cpp tree(grid) — key is the time
+            // value at index i, not the grid index. C++ uses grid[i] which
+            // returns Time; Java equivalent is grid.at(i).
+            impl.set(grid.at(i), value);
         }
         return numericTree;
     }
