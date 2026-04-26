@@ -73,6 +73,12 @@ public class IborLeg {
         schedule_ = (schedule);
         index_ = (index);
         paymentAdjustment_ = BusinessDayConvention.Following;
+        // Mirror C++ v1.42.1 ql/cashflows/iborcoupon.hpp: paymentDayCounter_
+        // is a default-constructed DayCounter (empty()) until withPaymentDayCounter
+        // is called. The downstream FloatingRateCoupon ctor checks
+        // dayCounter_.empty() and substitutes index.dayCounter() — which
+        // requires a non-null DayCounter instance, not Java's default null.
+        paymentDayCounter_ = new DayCounter();
 
         // TODO : review initialization
         // these are vectors in quantlib, therfor they must be initalized to default
