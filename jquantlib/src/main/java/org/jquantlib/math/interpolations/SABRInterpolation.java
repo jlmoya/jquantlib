@@ -27,6 +27,7 @@
  Copyright (C) 2007 Giorgio Facchinetti
  Copyright (C) 2006 Mario Pucci
  Copyright (C) 2006 StatPro Italia srl
+ Copyright (C) 2014 Peter Caspers
 
  This file is part of QuantLib, a free-software/open-source library
  for financial quantitative analysts and developers - http://quantlib.org/
@@ -49,427 +50,310 @@ import org.jquantlib.lang.annotation.Time;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.matrixutilities.Array;
-import org.jquantlib.math.optimization.CostFunction;
+import org.jquantlib.math.optimization.Constraint;
 import org.jquantlib.math.optimization.EndCriteria;
 import org.jquantlib.math.optimization.NoConstraint;
 import org.jquantlib.math.optimization.OptimizationMethod;
-import org.jquantlib.math.optimization.ParametersTransformation;
-import org.jquantlib.math.optimization.Problem;
-import org.jquantlib.math.optimization.ProjectedCostFunction;
-import org.jquantlib.math.optimization.Simplex;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.termstructures.volatilities.Sabr;
 
 /**
  * SABR smile interpolation between discrete volatility points.
  *
+ * <p>Phase 2d WI-3 refactor: the per-instance calibration state and the
+ * Halton multi-restart loop now live in {@link XABRInterpolationImpl} via the
+ * generic {@link XABRSpecs} contract; {@link SABRSpecs} (a static nested
+ * class) supplies the SABR-specific dimension, default values, guess
+ * synthesis, parameter transformations, and volatility evaluation. This
+ * mirrors C++ v1.42.1 {@code ql/math/interpolations/sabrinterpolation.hpp}
+ * lines 41-149 (the {@code detail::SABRSpecs} struct + the
+ * {@code SABRInterpolation} facade).
+ *
+ * <p>Java single-inheritance forces a delegation bridge: the inner
+ * {@link SABRInterpolationImpl} extends {@link AbstractInterpolation.Impl}
+ * (preserving the existing {@link Interpolation} pattern) and forwards
+ * {@code update()} / {@code op(x)} to a held
+ * {@code XABRInterpolationImpl<SABRSpecs>}. C++ achieves the same via
+ * multiple inheritance from {@code Interpolation::templateImpl} and
+ * {@code XABRCoeffHolder<Model>}.
+ *
  * @author Selene Makarios
  */
 public class SABRInterpolation extends AbstractInterpolation {
 
-    private final SABRCoeffHolder coeffs_;
+    private final XABRInterpolationImpl<SABRSpecs> xabrImpl_;
 
-	public SABRInterpolation(
-			final Array vx, // x = strikes
-			final Array vy, // y = volatilities
-			@Time final double t, // option expiry
-			final double forward,
-			final double alpha,
-			final double beta,
-			final double nu,
-			final double rho,
-			final boolean alphaIsFixed,
-			final boolean betaIsFixed,
-			final boolean nuIsFixed,
-			final boolean rhoIsFixed,
-			final boolean vegaWeighted,
-			final EndCriteria endCriteria,
-			final OptimizationMethod optMethod) {
+    public SABRInterpolation(
+            final Array vx, // x = strikes
+            final Array vy, // y = volatilities
+            @Time final double t, // option expiry
+            final double forward,
+            final double alpha,
+            final double beta,
+            final double nu,
+            final double rho,
+            final boolean alphaIsFixed,
+            final boolean betaIsFixed,
+            final boolean nuIsFixed,
+            final boolean rhoIsFixed,
+            final boolean vegaWeighted,
+            final EndCriteria endCriteria,
+            final OptimizationMethod optMethod) {
+        this(vx, vy, t, forward, alpha, beta, nu, rho,
+                alphaIsFixed, betaIsFixed, nuIsFixed, rhoIsFixed,
+                vegaWeighted, endCriteria, optMethod,
+                0.0020 /* errorAccept (C++ default) */,
+                false  /* useMaxError (C++ default) */,
+                50     /* maxGuesses  (C++ default) */,
+                0.0    /* shift       (C++ default) */);
+    }
 
-		impl = new SABRInterpolationImpl(vx, vy, t, forward, alpha, beta, nu, rho, alphaIsFixed, betaIsFixed, nuIsFixed, rhoIsFixed, vegaWeighted,
-				endCriteria, optMethod);
-		coeffs_ = ((SABRInterpolationImpl) impl).itsCoeffs;
-	}
+    /**
+     * Full-arity constructor mirroring C++ v1.42.1
+     * {@code SABRInterpolation::SABRInterpolation} (sabrinterpolation.hpp
+     * lines 152-181) including the {@code errorAccept}, {@code useMaxError},
+     * {@code maxGuesses}, and {@code shift} parameters that drive the Halton
+     * multi-restart loop.
+     */
+    public SABRInterpolation(
+            final Array vx,
+            final Array vy,
+            @Time final double t,
+            final double forward,
+            final double alpha,
+            final double beta,
+            final double nu,
+            final double rho,
+            final boolean alphaIsFixed,
+            final boolean betaIsFixed,
+            final boolean nuIsFixed,
+            final boolean rhoIsFixed,
+            final boolean vegaWeighted,
+            final EndCriteria endCriteria,
+            final OptimizationMethod optMethod,
+            final double errorAccept,
+            final boolean useMaxError,
+            final int maxGuesses,
+            final double shift) {
 
-	public double expiry() {
-		return coeffs_.t_;
-	}
+        final double[] xArr = new double[vx.size()];
+        final double[] yArr = new double[vy.size()];
+        for (int i = 0; i < vx.size(); ++i) xArr[i] = vx.get(i);
+        for (int i = 0; i < vy.size(); ++i) yArr[i] = vy.get(i);
 
-	public double forward() {
-		return coeffs_.forward_;
-	}
+        final double[] params = { alpha, beta, nu, rho };
+        final boolean[] paramIsFixed = { alphaIsFixed, betaIsFixed, nuIsFixed, rhoIsFixed };
+        final double[] addParams = { shift };
 
-	public double alpha() {
-		return coeffs_.alpha_;
-	}
+        this.xabrImpl_ = new XABRInterpolationImpl<SABRSpecs>(
+                xArr, yArr, t, forward, params, paramIsFixed,
+                vegaWeighted, endCriteria, optMethod,
+                errorAccept, useMaxError, maxGuesses,
+                addParams, new SABRSpecs());
 
-	public double beta() {
-		return coeffs_.beta_;
-	}
+        impl = new SABRInterpolationImpl(vx, vy);
+    }
 
-	public double nu() {
-		return coeffs_.nu_;
-	}
+    public double expiry()   { return xabrImpl_.t_; }
+    public double forward()  { return xabrImpl_.forward_; }
+    public double alpha()    { return xabrImpl_.params_[0]; }
+    public double beta()     { return xabrImpl_.params_[1]; }
+    public double nu()       { return xabrImpl_.params_[2]; }
+    public double rho()      { return xabrImpl_.params_[3]; }
+    public double rmsError() { return xabrImpl_.error_; }
+    public double maxError() { return xabrImpl_.maxError_; }
 
-	public double rho() {
-		return coeffs_.rho_;
-	}
+    public Array interpolationWeights() {
+        final Array w = new Array(xabrImpl_.weights_.length);
+        for (int i = 0; i < xabrImpl_.weights_.length; ++i) {
+            w.set(i, xabrImpl_.weights_[i]);
+        }
+        return w;
+    }
 
-	public double rmsError() {
-		return coeffs_.error_;
-	}
+    public EndCriteria.Type endCriteria() { return xabrImpl_.XABREndCriteria_; }
 
-	public double maxError() {
-		return coeffs_.maxError_;
-	}
+    /** Accessor for the held XABR impl (test plumbing / introspection). */
+    public XABRInterpolationImpl<SABRSpecs> xabrImpl() {
+        return xabrImpl_;
+    }
 
-	public Array interpolationWeights() {
-		return coeffs_.weights_;
-	}
+    /**
+     * SABR Model concept (mirrors C++ {@code detail::SABRSpecs} struct in
+     * {@code ql/math/interpolations/sabrinterpolation.hpp} lines 65-149).
+     *
+     * <p>Stateless — every method takes its inputs as parameters so a single
+     * instance can be shared across calls. This matches the C++ default-
+     * constructed {@code Model()} usage.
+     */
+    public static final class SABRSpecs implements XABRSpecs {
 
-	public EndCriteria.Type endCriteria() {
-		return coeffs_.SABREndCriteria_;
-	}
+        private static final double EPS1 = 1e-7;
+        private static final double EPS2 = 0.9999;
 
-	private class SABRCoeffHolder {
+        @Override
+        public int dimension() { return 4; }
 
-		public SABRCoeffHolder(
-		        final @Time double t,
-		        final double forward,
-		        final double alpha,
-		        final double beta,
-		        final double nu,
-		        final double rho,
-		        final boolean alphaIsFixed,
-				final boolean betaIsFixed,
-				final boolean nuIsFixed,
-				final boolean rhoIsFixed) {
-			t_ = t;
-			forward_ = forward;
-			alpha_ = alpha;
-			beta_ = beta;
-			nu_ = nu;
-			rho_ = rho;
-			weights_ = new Array(0);//ZH:TBD:verify with QL097, it is vector<Real> in QL097
-			error_ = Constants.NULL_REAL;
-			maxError_ = Constants.NULL_REAL;
-			SABREndCriteria_ = EndCriteria.Type.None;
-
-			QL.require(t > 0.0, "expiry time must be positive: " + t + " not allowed");
-			// Sentinel detection: QuantLib uses Null<Real> == Double.MAX_VALUE
-			// (Constants.NULL_REAL) to mean "no guess supplied". The previous
-			// !Double.isNaN(...) check never matched MAX_VALUE, so the
-			// constructor's *IsFixed flags were ignored and NULL_REAL flowed
-			// straight through validateSabrParameters() (which rightly throws
-			// on β > 1). Match the C++ contract by comparing against NULL_REAL.
-			final boolean alphaWasNull = (alpha_ == Constants.NULL_REAL);
-			if (alpha_ != Constants.NULL_REAL) {
-                alphaIsFixed_ = alphaIsFixed;
+        @Override
+        public void defaultValues(final double[] params, final boolean[] paramIsFixed,
+                final double forward, final double t, final double[] addParams) {
+            // Mirrors C++ sabrinterpolation.hpp lines 67-82. Order is critical:
+            // beta first (alpha default is forward+shift-aware in beta), then
+            // alpha, then nu, then rho. Sentinel = Constants.NULL_REAL
+            // (Double.MAX_VALUE), the QuantLib Null<Real>.
+            final double shift = (addParams != null && addParams.length > 0) ? addParams[0] : 0.0;
+            if (params[1] == Constants.NULL_REAL) {
+                params[1] = 0.5;
             }
-			// alpha_ default is forward-aware and depends on the final beta_,
-			// so we defer it until after the beta_ branch has run (see below).
-			if (beta_ != Constants.NULL_REAL) {
-                betaIsFixed_ = betaIsFixed;
-            } else {
-                beta_ = 0.5;
+            if (params[0] == Constants.NULL_REAL) {
+                // adapt alpha to beta level
+                params[0] = 0.2 * ((params[1] < 0.9999)
+                        ? Math.pow(forward + shift, 1.0 - params[1])
+                        : 1.0);
             }
-			if (nu_ != Constants.NULL_REAL) {
-                nuIsFixed_ = nuIsFixed;
-            } else {
-                nu_ = Math.sqrt(0.4);
+            if (params[2] == Constants.NULL_REAL) {
+                params[2] = Math.sqrt(0.4);
             }
-			if (rho_ != Constants.NULL_REAL) {
-                rhoIsFixed_ = rhoIsFixed;
-            } else {
-                rho_ = 0.0;
+            if (params[3] == Constants.NULL_REAL) {
+                params[3] = 0.0;
             }
-			// C++ sabrinterpolation.hpp lines 71-76: alpha = 0.2 * (beta < 0.9999
-			// ? pow(forward, 1 - beta) : 1.0). The 0.2 factor is OUTSIDE the
-			// ternary -- both arms multiply by 0.2. The high-beta arm yields
-			// 0.2 * 1.0 = 0.2 (NOT sqrt(0.2)).
-			// Computed after beta_ defaulting so the now-final beta_ is used.
-			if (alphaWasNull) {
-				alpha_ = 0.2 * ((beta_ < 0.9999)
-						? Math.pow(forward_, 1.0 - beta_)
-						: 1.0);
-			}
-			(new Sabr()).validateSabrParameters(alpha_, beta_, nu_, rho_);
-		}
+        }
 
-		/* ! Option expiry */
-		public double t_;
-		/* ! */
-		public double forward_;
-		/* ! Sabr parameters */
-		public double alpha_, beta_, nu_, rho_;
-		public boolean alphaIsFixed_, betaIsFixed_, nuIsFixed_, rhoIsFixed_;
-		public Array weights_;
-		/* ! Sabr interpolation results */
-		public double error_, maxError_;
-		public EndCriteria.Type SABREndCriteria_;
-	}
-
-	private class SABRInterpolationImpl extends AbstractInterpolation.Impl {
-
-        EndCriteria endCriteria_;
-        OptimizationMethod optMethod_;
-        double forward_;
-        boolean vegaWeighted_;
-        ParametersTransformation transformation_;
-        NoConstraint constraint_;
-
-        public SABRCoeffHolder itsCoeffs;
-
-        public SABRInterpolationImpl(
-                final Array vx,
-                final Array vy,
-                final @Time double t,
-                final double forward,
-                final double alpha,
-                final double beta,
-                final double nu,
-                final double rho,
-                final boolean alphaIsFixed,
-                final boolean betaIsFixed,
-                final boolean nuIsFixed,
-                final boolean rhoIsFixed,
-                final boolean vegaWeighted,
-                final EndCriteria endCriteria,
-                final OptimizationMethod optMethod) {
-			super(vx, vy);
-			itsCoeffs = new SABRCoeffHolder(t, forward, alpha, beta, nu, rho, alphaIsFixed, betaIsFixed, nuIsFixed, rhoIsFixed);
-			endCriteria_ = endCriteria;
-			optMethod_ = optMethod;
-			forward_ = forward;
-			vegaWeighted_ = vegaWeighted;
-
-			// if no optimization method or endCriteria is provided, we provide
-			// one
-			if (optMethod_ != null) {
-                // optMethod_ = boost::shared_ptr<OptimizationMethod>(new
-				// LevenbergMarquardt(1e-8, 1e-8, 1e-8));
-				optMethod_ = new Simplex(0.01);
+        @Override
+        public void guess(final double[] values, final boolean[] paramIsFixed,
+                final double forward, final double t,
+                final double[] sampleValue, final double[] addParams) {
+            // Mirrors C++ sabrinterpolation.hpp lines 84-99: use the next
+            // Halton sample to build a fresh per-restart guess. Note: 'j' is
+            // the running index into sampleValue and is incremented only when
+            // the corresponding parameter is NOT fixed (matches C++ exactly).
+            final double shift = (addParams != null && addParams.length > 0) ? addParams[0] : 0.0;
+            int j = 0;
+            if (!paramIsFixed[1]) {
+                values[1] = (1.0 - 2e-6) * sampleValue[j++] + 1e-6;
             }
-			if (endCriteria_ != null) {
-				endCriteria_ = new EndCriteria(60000, 100, 1e-8, 1e-8, 1e-8);
-			}
-			itsCoeffs.weights_ = new Array(vx.size());
-			for (int i = 0; i < itsCoeffs.weights_.size(); i++) {
-                itsCoeffs.weights_.set(i, 1.0 / vx.size());
-            }
-		}
-
-		@Override
-        public void update() {
-			// forward_ might have changed
-			QL.require(forward_ > 0.0, "at the money forward rate must be " + "positive: " + forward_ + " not allowed");
-
-			// we should also check that y contains positive values only
-
-			// we must update weights if it is vegaWeighted
-			if (vegaWeighted_) {
-				// itsCoeffs.weights_.clear();
-				double weightsSum = 0.0;
-				for (int i = 0; i < vx.size(); i++) {
-					final double x = vx.get(i);
-					final double y = vy.get(i);
-					final double stdDev = Math.sqrt(y * y * itsCoeffs.t_);
-					itsCoeffs.weights_.set(i, BlackFormula.blackFormulaStdDevDerivative(x, forward_, stdDev));
-					weightsSum += itsCoeffs.weights_.get(i);
-				}
-				// weight normalization
-				for (int i = 0; i < itsCoeffs.weights_.size(); i++) {
-                    itsCoeffs.weights_.set(i, itsCoeffs.weights_.get(i) / weightsSum);
+            if (!paramIsFixed[0]) {
+                values[0] = (1.0 - 2e-6) * sampleValue[j++] + 1e-6; // lognormal vol guess
+                // adapt this to beta level
+                if (values[1] < 0.999) {
+                    values[0] *= Math.pow(forward + shift, 1.0 - values[1]);
                 }
-			}
+            }
+            if (!paramIsFixed[2]) {
+                values[2] = 1.5 * sampleValue[j++] + 1e-6;
+            }
+            if (!paramIsFixed[3]) {
+                values[3] = (2.0 * sampleValue[j++] - 1.0) * (1.0 - 1e-6);
+            }
+        }
 
-			// there is nothing to optimize
-			if (itsCoeffs.alphaIsFixed_ && itsCoeffs.betaIsFixed_ && itsCoeffs.nuIsFixed_ && itsCoeffs.rhoIsFixed_) {
-				itsCoeffs.error_ = interpolationError();
-				itsCoeffs.maxError_ = interpolationMaxError();
-				itsCoeffs.SABREndCriteria_ = EndCriteria.Type.None;
-				return;
+        @Override
+        public Array inverse(final Array y, final boolean[] paramIsFixed,
+                final double[] params, final double forward) {
+            // Mirrors C++ sabrinterpolation.hpp lines 104-114. Branched
+            // formulas guard against domain errors when the unconstrained
+            // params drift outside the standard transformation domain.
+            final Array x = new Array(4);
+            x.set(0, y.get(0) < 25.0 + EPS1
+                    ? Math.sqrt(y.get(0) - EPS1)
+                    : (y.get(0) - EPS1 + 25.0) / 10.0);
+            x.set(1, Math.sqrt(-Math.log(y.get(1))));
+            x.set(2, y.get(2) < 25.0 + EPS1
+                    ? Math.sqrt(y.get(2) - EPS1)
+                    : (y.get(2) - EPS1 + 25.0) / 10.0);
+            x.set(3, Math.asin(y.get(3) / EPS2));
+            return x;
+        }
 
-			} else {
+        @Override
+        public Array direct(final Array x, final boolean[] paramIsFixed,
+                final double[] params, final double forward) {
+            // Mirrors C++ sabrinterpolation.hpp lines 116-129.
+            final Array y = new Array(4);
+            y.set(0, Math.abs(x.get(0)) < 5.0
+                    ? x.get(0) * x.get(0) + EPS1
+                    : (10.0 * Math.abs(x.get(0)) - 25.0) + EPS1);
+            y.set(1, Math.abs(x.get(1)) < Math.sqrt(-Math.log(EPS1))
+                    ? Math.exp(-(x.get(1) * x.get(1)))
+                    : EPS1);
+            y.set(2, Math.abs(x.get(2)) < 5.0
+                    ? x.get(2) * x.get(2) + EPS1
+                    : (10.0 * Math.abs(x.get(2)) - 25.0) + EPS1);
+            y.set(3, Math.abs(x.get(3)) < 2.5 * Math.PI
+                    ? EPS2 * Math.sin(x.get(3))
+                    : EPS2 * (x.get(3) > 0.0 ? 1.0 : -1.0));
+            return y;
+        }
 
-				final SABRError costFunction = new SABRError(this);
-				transformation_ = new SabrParametersTransformation();
+        @Override
+        public double volatility(final double strike, final double forward,
+                final double t, final double[] params) {
+            // The C++ template routes this through SABRWrapper, which calls
+            // shiftedSabrVolatility with the addParams[0] shift. The Java
+            // Sabr port is the unshifted formula; the standard SABR shift is
+            // not used by any current Java caller (always passed as 0.0), so
+            // we route directly to sabrVolatility.
+            return new Sabr().sabrVolatility(strike, forward, t,
+                    params[0], params[1], params[2], params[3]);
+        }
 
-				final Array guess = new Array(4);
-				guess.set(0, itsCoeffs.alpha_);
-				guess.set(1, itsCoeffs.beta_);
-				guess.set(2, itsCoeffs.nu_);
-				guess.set(3, itsCoeffs.rho_);
+        @Override
+        public Constraint constraint(final double forward) {
+            // C++ uses NoConstraint (xabrinterpolation.hpp line 208); the
+            // SABR transformation handles parameter feasibility via direct().
+            return new NoConstraint();
+        }
 
-				final boolean[] parameterAreFixed = new boolean[4];
-				parameterAreFixed[0] = itsCoeffs.alphaIsFixed_;
-				parameterAreFixed[1] = itsCoeffs.betaIsFixed_;
-				parameterAreFixed[2] = itsCoeffs.nuIsFixed_;
-				parameterAreFixed[3] = itsCoeffs.rhoIsFixed_;
+        @Override
+        public double weight(final double strike, final double forward,
+                final double stdDev, final double[] addParams) {
+            // C++ uses blackFormulaStdDevDerivative(..., 1.0, addParams[0]);
+            // the Java overload with shift takes (strike, forward, stddev,
+            // discount, displacement). Pass shift via the Java displacement
+            // parameter to match.
+            final double shift = (addParams != null && addParams.length > 0) ? addParams[0] : 0.0;
+            return BlackFormula.blackFormulaStdDevDerivative(strike, forward, stdDev, 1.0, shift);
+        }
+    }
 
-				final Array inversedTransformatedGuess = new Array(transformation_.inverse(guess));
+    /**
+     * Inner impl bridging {@link AbstractInterpolation.Impl} (which the Java
+     * {@link Interpolation} contract requires) to the standalone
+     * {@link XABRInterpolationImpl} that holds the calibration state. Java
+     * single inheritance prevents the C++-style multi-inheritance directly.
+     */
+    private final class SABRInterpolationImpl extends AbstractInterpolation.Impl {
 
-				final ProjectedCostFunction constrainedSABRError = new ProjectedCostFunction(costFunction, inversedTransformatedGuess, parameterAreFixed);
+        SABRInterpolationImpl(final Array vx, final Array vy) {
+            super(vx, vy);
+        }
 
-				final Array projectedGuess = new Array(constrainedSABRError.project(inversedTransformatedGuess));
+        @Override
+        public void update() {
+            QL.require(xabrImpl_.forward_ > 0.0,
+                    "at the money forward rate must be positive: " + xabrImpl_.forward_ + " not allowed");
+            xabrImpl_.calculate();
+        }
 
-				final NoConstraint constraint = new NoConstraint();
-				final Problem problem = new Problem(constrainedSABRError, constraint, projectedGuess);
-				itsCoeffs.SABREndCriteria_ = optMethod_.minimize(problem, endCriteria_);
-				final Array projectedResult = new Array(problem.currentValue());
-				final Array transfResult = new Array(constrainedSABRError.include(projectedResult));
-
-				final Array result = transformation_.direct(transfResult);
-				itsCoeffs.alpha_ = result.get(0);
-				itsCoeffs.beta_ = result.get(1);
-				itsCoeffs.nu_ = result.get(2);
-				itsCoeffs.rho_ = result.get(3);
-
-			}
-			itsCoeffs.error_ = interpolationError();
-			itsCoeffs.maxError_ = interpolationMaxError();
-
-		}
-
-		@Override
+        @Override
         public double op(final double x) {
-			QL.require(x > 0.0, "strike must be positive: " + x + " not allowed");
-			return (new Sabr()).sabrVolatility(x, forward_, itsCoeffs.t_, itsCoeffs.alpha_, itsCoeffs.beta_, itsCoeffs.nu_, itsCoeffs.rho_);
-		}
+            QL.require(x > 0.0, "strike must be positive: " + x + " not allowed");
+            return xabrImpl_.value(x);
+        }
 
-		@Override
+        @Override
         public double primitive(final double x) {
-			throw new LibraryException("SABR primitive not implemented");
-		}
+            throw new LibraryException("SABR primitive not implemented");
+        }
 
-		@Override
+        @Override
         public double derivative(final double x) {
-			throw new LibraryException("SABR derivative not implemented");
-		}
+            throw new LibraryException("SABR derivative not implemented");
+        }
 
-		@Override
+        @Override
         public double secondDerivative(final double x) {
-			throw new LibraryException("SABR secondDerivative not implemented");
-		}
-
-		// calculate total squared weighted difference (L2 norm)
-		public double interpolationSquaredError() {
-			double error, totalError = 0.0;
-			int ix = vx.begin();
-			int iy = vy.begin();
-			int iw = itsCoeffs.weights_.begin();
-			while (ix < vx.end()) {
-				final double x = vx.get(ix);
-				final double y = vy.get(iy);
-				final double w = itsCoeffs.weights_.get(iw);
-				error = (op(x) - y);
-				totalError += error * error * w;
-				ix++;
-				iy++;
-				iw++;
-			}
-			return totalError;
-		}
-
-		// calculate weighted differences
-		public Array interpolationErrors(final Array not_used) {
-			final Array results = new Array(vx.size());
-			int ix = vx.begin();
-			int iy = vy.begin();
-			int iw = itsCoeffs.weights_.begin();
-			int ir = results.begin();
-			while (ix < vx.end()) {
-				final double x = vx.get(ix);
-				final double y = vy.get(iy);
-				final double w = itsCoeffs.weights_.get(iw);
-				results.set(ir, (op(x) - y) * Math.sqrt(w));
-				ix++;
-				iy++;
-				iw++;
-				ir++;
-			}
-			return results;
-		}
-
-		public double interpolationError() {
-			final int n = vx.size();
-			final double squaredError = interpolationSquaredError();
-			return Math.sqrt(n * squaredError / (n - 1));
-		}
-
-		public double interpolationMaxError() {
-			double error, maxError = Constants.DBL_MIN;
-			for (int i = 0; i < vx.size(); i++) {
-				final double x = vx.get(i);
-				final double y = vy.get(i);
-				error = Math.abs(op(x) - y);
-				maxError = Math.max(maxError, error);
-			}
-			return maxError;
-		}
-
-
-		private class SabrParametersTransformation implements ParametersTransformation {
-			Array y_;
-			final double eps1_, eps2_;//, dilationFactor_;
-
-			public SabrParametersTransformation() {
-				y_ = new Array(4);
-				eps1_ = .0000001;
-				eps2_ = .9999;
-				//dilationFactor_ = 0.001;
-			}
-
-			public Array direct(final Array x) {
-				y_.set(0, x.get(0) * x.get(0) + eps1_);
-				// y_(1) = std::atan(dilationFactor_*x(1))/M_PI + 0.5;
-				y_.set(1, Math.exp(-(x.get(1) * x.get(1))));
-				y_.set(2, x.get(2) * x.get(2) + eps1_);
-				y_.set(3, eps2_ * Math.sin(x.get(3)));
-				return y_;
-			}
-
-			public Array inverse(final Array x) {
-				y_.set(0, Math.sqrt(x.get(0) - eps1_));
-				// y_(1) = std::tan(M_PI*(x(1) - 0.5))/dilationFactor_;
-				y_.set(1, Math.sqrt(-Math.log(x.get(1))));
-				y_.set(2, Math.sqrt(x.get(2) - eps1_));
-				y_.set(3, Math.asin(x.get(3) / eps2_));
-
-				return y_;
-			}
-		}
-
-
-		private class SABRError extends CostFunction {
-
-			public SABRError(final SABRInterpolationImpl sabr) {
-				this.sabr_ = sabr;
-			}
-
-			@Override
-            public double value(final Array x) {
-				final Array y = sabr_.transformation_.direct(x);
-				sabr_.itsCoeffs.alpha_ = y.get(0);
-				sabr_.itsCoeffs.beta_ = y.get(1);
-				sabr_.itsCoeffs.nu_ = y.get(2);
-				sabr_.itsCoeffs.rho_ = y.get(3);
-				return sabr_.interpolationSquaredError();
-			}
-
-			@Override
-            public Array values(final Array x) {
-				final Array y = sabr_.transformation_.direct(x);
-				sabr_.itsCoeffs.alpha_ = y.get(0);
-				sabr_.itsCoeffs.beta_ = y.get(1);
-				sabr_.itsCoeffs.nu_ = y.get(2);
-				sabr_.itsCoeffs.rho_ = y.get(3);
-				return sabr_.interpolationErrors(x);
-			}
-
-			private final SABRInterpolationImpl sabr_;
-		}
-
-	}
-
+            throw new LibraryException("SABR secondDerivative not implemented");
+        }
+    }
 }
