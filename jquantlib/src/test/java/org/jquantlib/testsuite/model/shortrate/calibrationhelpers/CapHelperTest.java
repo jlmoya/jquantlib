@@ -1,6 +1,7 @@
 /*
  Copyright (C) 2026 JQuantLib migration contributors.
- Tests for CapHelper performCalculations / fairRate path (Phase 2d WI-1).
+ Tests for CapHelper performCalculations / fairRate path (Phase 2d WI-1)
+ and CapHelper modelValue / blackPrice (Phase 2e WI-2).
  */
 package org.jquantlib.testsuite.model.shortrate.calibrationhelpers;
 
@@ -21,6 +22,7 @@ import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.instruments.Swap;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.model.shortrate.calibrationhelpers.CapHelper;
+import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -54,13 +56,13 @@ import org.junit.Test;
  * without throwing (the only structural invariants reachable in this
  * commit).
  *
- * <p><strong>Out of scope</strong> — {@code modelValue()} and
- * {@code blackPrice(volatility)}: these depend on
- * {@code BlackCapFloorEngine} and {@code CapFloor.NPV()}, both of
- * which remain commented-out stubs in jquantlib. They are documented
- * Phase 2e seams and will be cross-validated once those classes are
- * ported. The probe reference also intentionally captures only the
- * fairRate path so the two sides stay aligned.
+ * <p><strong>Phase 2e WI-2 retrofit</strong> — the
+ * {@code modelValue_and_blackPrice_matchCpp} test additionally
+ * cross-validates {@link CapHelper#modelValue()} and
+ * {@link CapHelper#blackPrice(double)} against
+ * {@code model_value_and_black_price} in the same probe, now that
+ * {@code BlackCapFloorEngine} is real and {@code CapFloor.NPV()}
+ * dispatches through the engine.
  *
  * <p><strong>Tolerance tier</strong> — tight (1e-12 rel + 1e-14 abs).
  * Closed-form arithmetic on swap NPV (DiscountingSwapEngine accumulates
@@ -160,16 +162,78 @@ public class CapHelperTest {
         // Same fixture; CapHelper is expected to construct and run
         // performCalculations() without throwing (the WI-1 unstub
         // promise). The internal fairRate is private, so we assert it
-        // indirectly via the parallel swap above. marketValue() is the
-        // shortest public path that triggers calculate() ->
-        // performCalculations(). It returns blackPrice(vol) which is a
-        // documented Phase 2e seam returning 0.0 — we deliberately do
-        // NOT assert on its value, only that the trigger does not throw.
+        // indirectly via the parallel swap above.
         final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(0.20));
         final CapHelper helper = new CapHelper(
                 length, vol, idx, fixedLegFrequency, fixedLegDayCounter,
                 includeFirstSwaplet, ts);
         assertNotNull("CapHelper must construct", helper);
         helper.marketValue();
+    }
+
+    /**
+     * Phase 2e WI-2 retrofit: BlackCapFloorEngine is now real,
+     * CapFloor.NPV() wired to engine. tight tier (1e-12 rel + 1e-14 abs);
+     * closed-form Black-76 sum over optionlets — DiscountingSwapEngine
+     * fairRate path stays bit-equal between Java/C++ for these inputs;
+     * the Black formula adds CumulativeNormalDistribution evaluations
+     * which are deterministic functions of strike/forward/stddev.
+     */
+    @Test
+    public void modelValue_and_blackPrice_matchCpp() {
+        final ReferenceReader reader = ReferenceReader.load(
+                "model/shortrate/calibrationhelpers/caphelper");
+        final Case ref = reader.getCase("model_value_and_black_price");
+        final JSONObject in = ref.inputs();
+        final JSONObject exp = (JSONObject) ref.expectedRaw();
+
+        // Same fixture as fair_rate_intermediate (both cases share inputs
+        // captured at probe time). Reading flat_rate / index_tenor /
+        // length / etc from the helper-vol case keeps the two test
+        // methods independently runnable and avoids hidden coupling.
+        final Date eval = new Date(15, Month.January, 2026);
+        new Settings().setEvaluationDate(eval);
+        final DayCounter dc = new Actual365Fixed();
+        final Calendar cal = new Target();
+        final BusinessDayConvention bdc = BusinessDayConvention.ModifiedFollowing;
+        final Currency ccy = new EURCurrency();
+
+        final double flatRate = 0.05;
+        final YieldTermStructure flat = new FlatForward(
+                eval, new Handle<Quote>(new SimpleQuote(flatRate)), dc,
+                Compounding.Continuous, Frequency.Annual);
+        final Handle<YieldTermStructure> ts = new Handle<YieldTermStructure>(flat);
+
+        final Period idxTenor = new Period(3, TimeUnit.Months);
+        final IborIndex idx = new IborIndex(
+                "TestIbor3M", idxTenor, 0, ccy, cal, bdc, false, dc, ts);
+
+        final Period length = new Period(5, TimeUnit.Years);
+        final Frequency fixedLegFrequency = Frequency.Annual;
+        final DayCounter fixedLegDayCounter = new Thirty360(Thirty360.Convention.European);
+        final boolean includeFirstSwaplet = true;
+
+        final double helperVol = in.getDouble("helper_vol");
+        final Handle<Quote> volHandle = new Handle<Quote>(new SimpleQuote(helperVol));
+        final CapHelper helper = new CapHelper(
+                length, volHandle, idx, fixedLegFrequency, fixedLegDayCounter,
+                includeFirstSwaplet, ts);
+        // engine_ on the helper is what modelValue() prices the cap with.
+        // Mirror the C++ probe: same vol Handle, same termStructure.
+        helper.setPricingEngine(new BlackCapFloorEngine(ts, volHandle, dc));
+
+        final double expModelValue       = exp.getDouble("model_value");
+        final double expBlackPriceAtVol  = exp.getDouble("black_price_at_vol");
+
+        final double modelValue      = helper.modelValue();
+        final double blackPriceAtVol = helper.blackPrice(helperVol);
+
+        if (!Tolerance.tight(modelValue, expModelValue)) {
+            fail("helper.modelValue(): exp=" + expModelValue + " got=" + modelValue);
+        }
+        if (!Tolerance.tight(blackPriceAtVol, expBlackPriceAtVol)) {
+            fail("helper.blackPrice(vol): exp=" + expBlackPriceAtVol
+                    + " got=" + blackPriceAtVol);
+        }
     }
 }

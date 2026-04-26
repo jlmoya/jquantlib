@@ -1,21 +1,22 @@
 // migration-harness/cpp/probes/model/shortrate/calibrationhelpers/caphelper_probe.cpp
 //
-// Probe for Phase 2d WI-1: CapHelper internal fairRate cross-validation.
+// Probe for Phase 2d WI-1 + Phase 2e WI-2: CapHelper cross-validation.
 //
-// Captures the swap-implied fairRate intermediate computed inside
-// CapHelper::performCalculations (caphelper.cpp:91-144 in QuantLib v1.42.1).
-// The downstream modelValue() and blackPrice(volatility) values are NOT
-// captured here — the Java BlackCapFloorEngine and CapFloor.NPV() pricing
-// path are documented Phase 2e seams (still stubbed in jquantlib).
-// Cross-validating fairRate exercises the only path of CapHelper that has
-// a fully-functional Java counterpart in this commit: building the
-// floating + fixed legs and a Swap priced by DiscountingSwapEngine.
+// Captures:
+//  * fair_rate_intermediate: swap-implied fairRate computed inside
+//    CapHelper::performCalculations (caphelper.cpp:91-144 in QuantLib v1.42.1).
+//  * model_value: CapHelper::modelValue() with engine_ = BlackCapFloorEngine
+//    on the same termStructure / vol Handle as the helper itself.
+//  * black_price_at_vol: CapHelper::blackPrice(0.20). This is independent
+//    of engine_ — the helper builds a transient BlackCapFloorEngine with a
+//    SimpleQuote(sigma) inside blackPrice().
 //
 // fairRate is private to performCalculations() in C++; rather than
-// reflecting/befriending CapHelper, this probe replicates the exact
+// reflecting/befriending CapHelper, the fair-rate case replicates the exact
 // setup verbatim and computes fairRate directly from
-//   swap.NPV(), swap.legBPS(1), the dummy fixedRate=0.04
-// which is what the Java CapHelper test must also do.
+//   swap.NPV(), swap.legBPS(1), the dummy fixedRate=0.04.
+// model_value / black_price_at_vol are read off the actual CapHelper public
+// API to avoid drift between the probe and the helper internals.
 
 #include <ql/version.hpp>
 
@@ -25,6 +26,8 @@
 #include <ql/currencies/europe.hpp>
 #include <ql/indexes/iborindex.hpp>
 #include <ql/instruments/swap.hpp>
+#include <ql/models/shortrate/calibrationhelpers/caphelper.hpp>
+#include <ql/pricingengines/capfloor/blackcapfloorengine.hpp>
 #include <ql/pricingengines/swap/discountingswapengine.hpp>
 #include <ql/quotes/simplequote.hpp>
 #include <ql/settings.hpp>
@@ -124,6 +127,32 @@ int main() {
     };
 
     out.addCase("fair_rate_intermediate", inputs, expected);
+
+    // --- Phase 2e WI-2: modelValue() + blackPrice() cases ---
+    // Build the CapHelper exactly as the Java test does, set its engine_
+    // to a BlackCapFloorEngine with the same vol Handle, then read
+    // modelValue() and blackPrice(0.20) off the helper's public API.
+    const Real helperVol = 0.20;
+    const Handle<Quote> volQuote(ext::make_shared<SimpleQuote>(helperVol));
+    ext::shared_ptr<CapHelper> helper(new CapHelper(
+        length, volQuote, idx, fixedLegFrequency, fixedLegDayCounter,
+        includeFirstSwaplet, ts));
+    ext::shared_ptr<PricingEngine> capEngine(
+        new BlackCapFloorEngine(ts, volQuote, Actual365Fixed()));
+    helper->setPricingEngine(capEngine);
+
+    const Real modelValue       = helper->modelValue();
+    const Real blackPriceAtVol  = helper->blackPrice(helperVol);
+
+    json mvInputs = {
+        {"helper_vol", helperVol}
+    };
+    json mvExpected = {
+        {"model_value",         modelValue},
+        {"black_price_at_vol",  blackPriceAtVol}
+    };
+    out.addCase("model_value_and_black_price", mvInputs, mvExpected);
+
     out.write();
     return 0;
 }

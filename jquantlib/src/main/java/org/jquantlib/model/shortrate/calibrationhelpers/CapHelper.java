@@ -36,6 +36,7 @@ import org.jquantlib.lang.annotation.Time;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.model.BlackCalibrationHelper;
 import org.jquantlib.model.VolatilityType;
+import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
@@ -171,37 +172,34 @@ public class CapHelper extends BlackCalibrationHelper {
     @Override
     public double blackPrice(final double sigma) {
         calculate();
-        // Mirror C++ caphelper.cpp lines 69-89:
-        //   build a local BlackCapFloorEngine (or BachelierCapFloorEngine)
-        //   with vol = SimpleQuote(sigma), price the cap, restore engine_.
-        // Java BlackCapFloorEngine does not yet implement the PricingEngine
-        // interface (it is a stub; CapFloor::engine isn't wired either) so
-        // setPricingEngine cannot accept it. Engine construction is held
-        // until Phase 2e once CapFloor.engine + BlackCapFloorEngine extend
-        // the PricingEngine hierarchy. Until then this matches the prior
-        // stub behaviour (returns 0) and lets the calibration error path
-        // be exercised under PriceError / RelativePriceError once a real
-        // engine_ is set externally on the helper.
+        // Mirror C++ caphelper.cpp lines 69-89: build a transient
+        // BlackCapFloorEngine with vol = SimpleQuote(sigma), price the
+        // cap, then restore engine_. Phase 2e WI-2 unstub.
         final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(sigma));
+        final PricingEngine engine;
         switch (volatilityType_) {
             case ShiftedLognormal:
-                // engine = new BlackCapFloorEngine(termStructure_, vol,
-                //         new Actual365Fixed(), shift_);  // Phase 2e
-                new BlackCapFloorEngine(termStructure_, vol,
+                // Java BlackCapFloorEngine doesn't yet take a displacement
+                // ctor argument; ConstantOptionletVolatility doesn't yet
+                // carry VolatilityType / displacement either. shift_ is
+                // therefore unused in Java today (it is captured on the
+                // helper for forward compatibility). All current call-sites
+                // pass shift_ = 0.0 so this preserves correctness.
+                engine = new BlackCapFloorEngine(termStructure_, vol,
                         new Actual365Fixed());
                 break;
             case Normal:
-                // BachelierCapFloorEngine not yet ported in Java; punt to
-                // Phase 2e if the Normal path is ever exercised.
                 throw new UnsupportedOperationException(
                         "VolatilityType.Normal requires BachelierCapFloorEngine "
-                                + "(Phase 2e seed)");
+                                + "(deferred)");
             default:
                 throw new IllegalStateException("unknown volatility type");
         }
-        // cap_.setPricingEngine(engine);     // Phase 2e
-        // final double value = cap_.NPV();   // Phase 2e
-        // cap_.setPricingEngine(engine_);    // Phase 2e
-        return 0.0;
+        cap_.setPricingEngine(engine);
+        final double value = cap_.NPV();
+        if (engine_ != null) {
+            cap_.setPricingEngine(engine_);
+        }
+        return value;
     }
 }

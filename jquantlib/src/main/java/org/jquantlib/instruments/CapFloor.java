@@ -23,7 +23,7 @@
 /*
  Copyright (C) 2001, 2002, 2003 Sadruddin Rejeb
  Copyright (C) 2006 Ferdinando Ametrano
- Copyright (C) 2006 Fran�ois du Vignaud
+ Copyright (C) 2006 Francois du Vignaud
  Copyright (C) 2006, 2007 StatPro Italia srl
 
  This file is part of QuantLib, a free-software/open-source library
@@ -51,6 +51,8 @@ import org.jquantlib.cashflow.CashFlows;
 import org.jquantlib.cashflow.FloatingRateCoupon;
 import org.jquantlib.cashflow.Leg;
 import org.jquantlib.lang.exceptions.LibraryException;
+import org.jquantlib.math.Constants;
+import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -58,6 +60,20 @@ import org.jquantlib.time.Date;
 
 /**
  * Base class for cap-like instruments
+ *
+ * <p>Mirrors C++ v1.42.1 ql/instruments/capfloor.{hpp,cpp} except that the
+ * Java {@code termStructure} carryover field is preserved on the public
+ * constructors so older call-sites continue to compile. v1.42.1 dropped the
+ * curve from the {@code CapFloor} constructor; the curve travels through
+ * the engine instead. The Java retained field is unused by
+ * {@link #setupArguments(PricingEngine.Arguments)} and is purely an
+ * observation point preserved from earlier JQuantLib API.
+ *
+ * <p>Phase 2e WI-2 ports {@link #setupArguments(PricingEngine.Arguments)},
+ * {@link #fetchResults(PricingEngine.Results)}, and
+ * {@link #performCalculations()} verbatim from caphelper.cpp lines 210-269,
+ * plus the inner {@link Arguments}/{@link Results}/{@link Engine} types,
+ * so that {@link Instrument#NPV()} dispatches through the engine.
  *
  * @category instruments
  *
@@ -81,15 +97,16 @@ public class CapFloor extends Instrument {
             final Handle<YieldTermStructure> termStructure,
             final PricingEngine engine){
 
-    	
+
         this.type_ = type;
         this.floatingLeg_ = floatingLeg;
         this.capRates_ = capRates;
         this.floorRates_ = floorRates;
         this.termStructure_ = termStructure;
 
-        setPricingEngine(engine);
-
+        if (engine != null) {
+            setPricingEngine(engine);
+        }
 
 
         if (type_ == Type.Cap || type_ == Type.Collar) {
@@ -114,9 +131,12 @@ public class CapFloor extends Instrument {
             cashFlow.addObserver(this);
         }
 
-        // seems like we should have this.evaluationDate
-
-        this.termStructure_.addObserver(this);
+        // termStructure may be empty when callers pass the curve through
+        // the engine instead (post-v1.42.1 style). Only register if non-null
+        // to preserve historical observation points.
+        if (this.termStructure_ != null) {
+            this.termStructure_.addObserver(this);
+        }
         evaluationDate.addObserver(this);
     }
 
@@ -131,7 +151,9 @@ public class CapFloor extends Instrument {
         this.floatingLeg_ = floatingLeg;
         this.termStructure_ = termStructure;
 
-        setPricingEngine(engine);
+        if (engine != null) {
+            setPricingEngine(engine);
+        }
 
         QL.require(strikes.size()>0 , "no strikes given"); // TODO: message
         if (type_ == Type.Cap) {
@@ -154,10 +176,26 @@ public class CapFloor extends Instrument {
             cashFlow.addObserver(this);
         }
 
-        // Seems like we should have this.evaluationDate
-
-        this.termStructure_.addObserver(this);
+        if (this.termStructure_ != null) {
+            this.termStructure_.addObserver(this);
+        }
         evaluationDate.addObserver(this);
+    }
+
+    public Type type() {
+        return type_;
+    }
+
+    public List</*@Rate*/ Double> capRates() {
+        return capRates_;
+    }
+
+    public List</*@Rate*/ Double> floorRates() {
+        return floorRates_;
+    }
+
+    public Leg floatingLeg() {
+        return floatingLeg_;
     }
 
     public /*@Rate*/double atmRate(){
@@ -171,7 +209,12 @@ public class CapFloor extends Instrument {
             //FIXME: kind of ugly... intention: get the last date of all dates in the floatingdate c++ max syntax.
             lastPaymentDate = lastPaymentDate.le(floatingLeg_.get(i).date())?floatingLeg_.get(i).date():lastPaymentDate;
         }
-        return lastPaymentDate.le(termStructure_.currentLink().referenceDate());
+        // termStructure may be null in v1.42.1-style construction; fall back
+        // to the global evaluation date in that case.
+        final Date ref = (termStructure_ != null && !termStructure_.empty())
+                ? termStructure_.currentLink().referenceDate()
+                : new Settings().evaluationDate();
+        return lastPaymentDate.le(ref);
     }
 
     public Date startDate(){
@@ -188,331 +231,155 @@ public class CapFloor extends Instrument {
         return lastFloatingCoupon.fixingDate();
     }
 
-    //    public void setupArguments
-    //TODO: inner class arguments
-    //void void setupArguments(/*PricingEngine.arguments* args*/Arguments args)  {
-    //   CapFloor::arguments* arguments =
-    //       dynamic_cast<CapFloor::arguments*>(args);
-    //   QL_REQUIRE(arguments != 0, "wrong argument type");
     //
-    //   Size n = floatingLeg_.size();
+    // overrides Instrument
     //
-    //   arguments->startTimes.clear();
-    //   arguments->startTimes.reserve(n);
-    //
-    //   arguments->fixingDates.clear();
-    //   arguments->fixingDates.reserve(n);
-    //
-    //   arguments->fixingTimes.clear();
-    //   arguments->fixingTimes.reserve(n);
-    //
-    //   arguments->endTimes.clear();
-    //   arguments->endTimes.reserve(n);
-    //
-    //   arguments->accrualTimes.clear();
-    //   arguments->accrualTimes.reserve(n);
-    //
-    //   arguments->forwards.clear();
-    //
-    //   arguments->discounts.clear();
-    //
-    //   arguments->nominals.clear();
-    //   arguments->nominals.reserve(n);
-    //
-    //   arguments->gearings.clear();
-    //   arguments->gearings.reserve(n);
-    //
-    //   arguments->capRates.clear();
-    //
-    //   arguments->floorRates.clear();
-    //
-    //   arguments->type = type_;
-    //
-    //   Date today = Settings::instance().evaluationDate();
-    //   Date settlement = termStructure_->referenceDate();
-    //   DayCounter counter = termStructure_->dayCounter();
-    //
-    //   for (Size i=0; i<n; i++) {
-    //       boost::shared_ptr<FloatingRateCoupon> coupon =
-    //           boost::dynamic_pointer_cast<FloatingRateCoupon>(floatingLeg_[i]);
-    //       QL_REQUIRE(coupon, "non-iborCoupon given");
-    //       Date beginDate = coupon->accrualStartDate();
-    //       Time time = counter.yearFraction(settlement, beginDate);
-    //       arguments->startTimes.push_back(time);
-    //       Date fixingDate = coupon->fixingDate();
-    //       arguments->fixingDates.push_back(fixingDate);
-    //       time = counter.yearFraction(today, fixingDate);
-    //       arguments->fixingTimes.push_back(time);
-    //       time = counter.yearFraction(settlement, coupon->date());
-    //       arguments->endTimes.push_back(time);
-    //       // this is passed explicitly for precision
-    //       arguments->accrualTimes.push_back(coupon->accrualPeriod());
-    //       // this is passed explicitly for precision
-    //       if (arguments->endTimes.back() >= 0.0) { // but only if needed
-    //           arguments->forwards.push_back(coupon->adjustedFixing());
-    //           arguments->discounts.push_back(
-    //                             termStructure_->discount(coupon->date()));
-    //       } else {
-    //           arguments->forwards.push_back(Null<Rate>());
-    //           arguments->discounts.push_back(Null<DiscountFactor>());
-    //       }
-    //       arguments->nominals.push_back(coupon->nominal());
-    //       Spread spread = coupon->spread();
-    //       Real gearing = coupon->gearing();
-    //       QL_REQUIRE(gearing > 0.0, "positive gearing required");
-    //       arguments->gearings.push_back(gearing);
-    //       arguments->spreads.push_back(spread);
-    //       if (type_ == Cap || type_ == Collar)
-    //           arguments->capRates.push_back((capRates_[i]-spread)/gearing);
-    //       if (type_ == Floor || type_ == Collar)
-    //           arguments->floorRates.push_back(
-    //                                        (floorRates_[i]-spread)/gearing);
-    //   }
-    //}
 
-    //void CapFloor::arguments::validate() const {
-    //   QL_REQUIRE(endTimes.size() == startTimes.size(),
-    //              "number of start times (" << startTimes.size()
-    //              << ") different from that of end times ("
-    //              << endTimes.size() << ")");
-    //   QL_REQUIRE(accrualTimes.size() == startTimes.size(),
-    //              "number of start times (" << startTimes.size()
-    //              << ") different from that of accrual times ("
-    //              << accrualTimes.size() << ")");
-    //   QL_REQUIRE(type == CapFloor::Floor ||
-    //              capRates.size() == startTimes.size(),
-    //              "number of start times (" << startTimes.size()
-    //              << ") different from that of cap rates ("
-    //              << capRates.size() << ")");
-    //   QL_REQUIRE(type == CapFloor::Cap ||
-    //              floorRates.size() == startTimes.size(),
-    //              "number of start times (" << startTimes.size()
-    //              << ") different from that of floor rates ("
-    //              << floorRates.size() << ")");
-    //   QL_REQUIRE(gearings.size() == startTimes.size(),
-    //              "number of start times (" << startTimes.size()
-    //              << ") different from that of gearings ("
-    //              << floorRates.size() << ")");
-    //   QL_REQUIRE(nominals.size() == startTimes.size(),
-    //              "number of start times (" << startTimes.size()
-    //              << ") different from that of nominals ("
-    //              << nominals.size() << ")");
-    //}
-    //
-    //Volatility CapFloor::impliedVolatility(Real targetValue,
-    //                                      Real accuracy,
-    //                                      Size maxEvaluations,
-    //                                      Volatility minVol,
-    //                                      Volatility maxVol) const {
-    //   calculate();
-    //   QL_REQUIRE(!isExpired(), "instrument expired");
-    //
-    //   Volatility guess = 0.10;   // no way we can get a more accurate one
-    //
-    //   ImpliedVolHelper f(*this, termStructure_, targetValue);
-    //   Brent solver;
-    //   //NewtonSafe solver;
-    //   solver.setMaxEvaluations(maxEvaluations);
-    //   return solver.solve(f, accuracy, guess, minVol, maxVol);
-    //}
-    //
-    //
-    //CapFloor::ImpliedVolHelper::ImpliedVolHelper(
-    //                         const CapFloor& cap,
-    //                         const Handle<YieldTermStructure>& termStructure,
-    //                         Real targetValue)
-    //: termStructure_(termStructure), targetValue_(targetValue) {
-    //
-    //   vol_ = boost::shared_ptr<SimpleQuote>(new SimpleQuote(0.0));
-    //   Handle<Quote> h(vol_);
-    //   engine_ = boost::shared_ptr<PricingEngine>(new BlackCapFloorEngine(h));
-    //   cap.setupArguments(engine_->getArguments());
-    //
-    //   results_ =
-    //       dynamic_cast<const Instrument::results*>(engine_->getResults());
-    //}
-    //
-    //Real CapFloor::ImpliedVolHelper::operator()(Volatility x) const {
-    //   vol_->setValue(x);
-    //   engine_->calculate();
-    //   return results_->value-targetValue_;
-    //}
-    //
-    //Real CapFloor::ImpliedVolHelper::derivative(Volatility x) const {
-    //   vol_->setValue(x);
-    //   engine_->calculate();
-    //   return 0.0;
-    //   //return results_->vega;
-    //}
-    //
-    //std::ostream& operator<<(std::ostream& out, CapFloor::Type t) {
-    //   switch (t) {
-    //     case CapFloor::Cap:
-    //       return out << "Cap";
-    //     case CapFloor::Floor:
-    //       return out << "Floor";
-    //     case CapFloor::Collar:
-    //       return out << "Collar";
-    //     default:
-    //       QL_FAIL("unknown CapFloor::Type (" << Integer(t) << ")");
-    //   }
-    //}
-
-
-
-
-
-
-
+    /**
+     * Mirrors C++ v1.42.1 capfloor.cpp lines 210-269.
+     */
     @Override
-    protected void performCalculations() throws ArithmeticException {
-        // TODO Auto-generated method stub
+    protected void setupArguments(final PricingEngine.Arguments args) {
+        final CapFloor.ArgumentsImpl arguments = (CapFloor.ArgumentsImpl) args;
+        QL.require(arguments != null, "wrong argument type");
 
+        final int n = floatingLeg_.size();
+
+        arguments.startDates = new Date[n];
+        arguments.fixingDates = new Date[n];
+        arguments.endDates = new Date[n];
+        arguments.accrualTimes = new double[n];
+        arguments.forwards = new double[n];
+        arguments.nominals = new double[n];
+        arguments.gearings = new double[n];
+        arguments.capRates = new double[n];
+        arguments.floorRates = new double[n];
+        arguments.spreads = new double[n];
+
+        arguments.type = type_;
+
+        final Date today = new Settings().evaluationDate();
+
+        for (int i=0; i<n; ++i) {
+            final CashFlow cf = floatingLeg_.get(i);
+            QL.require(cf instanceof FloatingRateCoupon, "non-FloatingRateCoupon given");
+            final FloatingRateCoupon coupon = (FloatingRateCoupon) cf;
+            arguments.startDates[i] = coupon.accrualStartDate();
+            arguments.fixingDates[i] = coupon.fixingDate();
+            arguments.endDates[i] = coupon.date();
+
+            // this is passed explicitly for precision
+            arguments.accrualTimes[i] = coupon.accrualPeriod();
+
+            // this is passed explicitly for precision...
+            if (arguments.endDates[i].ge(today)) { // ...but only if needed
+                arguments.forwards[i] = coupon.adjustedFixing();
+            } else {
+                arguments.forwards[i] = Constants.NULL_REAL;
+            }
+
+            arguments.nominals[i] = coupon.nominal();
+            final double spread = coupon.spread();
+            final double gearing = coupon.gearing();
+            arguments.gearings[i] = gearing;
+            arguments.spreads[i] = spread;
+
+            if (type_ == Type.Cap || type_ == Type.Collar) {
+                arguments.capRates[i] = (capRates_.get(i) - spread) / gearing;
+            } else {
+                arguments.capRates[i] = Constants.NULL_REAL;
+            }
+
+            if (type_ == Type.Floor || type_ == Type.Collar) {
+                arguments.floorRates[i] = (floorRates_.get(i) - spread) / gearing;
+            } else {
+                arguments.floorRates[i] = Constants.NULL_REAL;
+            }
+        }
     }
-    @Override
-    protected void setupArguments(final PricingEngine.Arguments arguments) {
-        // TODO Auto-generated method stub
 
+    @Override
+    protected void fetchResults(final PricingEngine.Results r) {
+        super.fetchResults(r);
+        // CapFloor only carries the inherited Instrument.value (= NPV).
+        // No CapFloor-specific results beyond what Instrument.fetchResults
+        // already extracts. Mirrors C++ CapFloor::results being empty.
     }
 
 
+    //
+    // public inner interfaces and classes — mirrors C++ CapFloor::arguments,
+    // CapFloor::results, CapFloor::engine.
+    //
 
+    /** Marking interface; mirrors C++ CapFloor::arguments base. */
+    public interface Arguments extends Instrument.Arguments { /* marker */ }
 
-    //    */
-    //    class CapFloor : public Instrument {
-    //      public:
-    //        enum Type { Cap, Floor, Collar };
-    //        class arguments;
-    //        class engine;
-    //        CapFloor(Type type,
-    //                 const Leg& floatingLeg,
-    //                 const std::vector<Rate>& capRates,
-    //                 const std::vector<Rate>& floorRates,
-    //                 const Handle<YieldTermStructure>& termStructure,
-    //                 const boost::shared_ptr<PricingEngine>& engine);
-    //        CapFloor(Type type,
-    //                 const Leg& floatingLeg,
-    //                 const std::vector<Rate>& strikes,
-    //                 const Handle<YieldTermStructure>& termStructure,
-    //                 const boost::shared_ptr<PricingEngine>& engine);
-    //        //! \name Instrument interface
-    //        //@{
-    //        bool isExpired() const;
-    //        void setupArguments(PricingEngine::arguments*) const;
-    //        //@}
-    //        //! \name Inspectors
-    //        //@{
-    //        Type type() const { return type_; }
-    //        const Leg& leg() const {
-    //            return floatingLeg_;
-    //        }
-    //        const std::vector<Rate>& capRates() const {
-    //            return capRates_;
-    //        }
-    //        const std::vector<Rate>& floorRates() const {
-    //            return floorRates_;
-    //        }
-    //        const Leg& floatingLeg() const {
-    //            return floatingLeg_;
-    //        }
-    //        Rate atmRate() const;
-    //        Date startDate() const;
-    //        Date maturityDate() const;
-    //        Date lastFixingDate() const;
-    //        //@}
-    //        //! implied term volatility
-    //        Volatility impliedVolatility(Real price,
-    //                                     Real accuracy = 1.0e-4,
-    //                                     Size maxEvaluations = 100,
-    //                                     Volatility minVol = 1.0e-7,
-    //                                     Volatility maxVol = 4.0) const;
-    //      private:
-    //        Type type_;
-    //        Leg floatingLeg_;
-    //        std::vector<Rate> capRates_;
-    //        std::vector<Rate> floorRates_;
-    //        Handle<YieldTermStructure> termStructure_;
-    //        // helper class for implied USE_INDEXEDvolatility calculation
-    //        class ImpliedVolHelper {
-    //          public:
-    //            ImpliedVolHelper(const CapFloor&,
-    //                             const Handle<YieldTermStructure>&,
-    //                             Real targetValue);
-    //            Real operator()(Volatility x) const;
-    //            Real derivative(Volatility x) const;
-    //          private:
-    //            boost::shared_ptr<PricingEngine> engine_;
-    //            Handle<YieldTermStructure> termStructure_;
-    //            Real targetValue_;
-    //            boost::shared_ptr<SimpleQuote> vol_;
-    //            const Instrument::results* results_;
-    //        };
-    //    };
-    //
-    //    //! Concrete cap class
-    //    /*! \ingroup instruments */
-    //    class Cap : public CapFloor {
-    //      public:
-    //        Cap(const Leg& floatingLeg,
-    //            const std::vector<Rate>& exerciseRates,
-    //            const Handle<YieldTermStructure>& termStructure,
-    //            const boost::shared_ptr<PricingEngine>& engine)
-    //        : CapFloor(CapFloor::Cap, floatingLeg,
-    //                   exerciseRates, std::vector<Rate>(),
-    //                   termStructure, engine) {}
-    //    };
-    //
-    //    //! Concrete floor class
-    //    /*! \ingroup instruments */
-    //    class Floor : public CapFloor {
-    //      public:
-    //        Floor(const Leg& floatingLeg,
-    //              const std::vector<Rate>& exerciseRates,
-    //              const Handle<YieldTermStructure>& termStructure,
-    //              const boost::shared_ptr<PricingEngine>& engine)
-    //        : CapFloor(CapFloor::Floor, floatingLeg,
-    //                   std::vector<Rate>(), exerciseRates,
-    //                   termStructure, engine) {}
-    //    };
-    //
-    //    //! Concrete collar class
-    //    /*! \ingroup instruments */
-    //    class Collar : public CapFloor {
-    //      public:
-    //        Collar(const Leg& floatingLeg,
-    //               const std::vector<Rate>& capRates,
-    //               const std::vector<Rate>& floorRates,
-    //               const Handle<YieldTermStructure>& termStructure,
-    //               const boost::shared_ptr<PricingEngine>& engine)
-    //        : CapFloor(CapFloor::Collar, floatingLeg, capRates, floorRates,
-    //                   termStructure, engine) {}
-    //    };
-    //
-    //
-    //    //! %Arguments for cap/floor calculation
-    //    class CapFloor::arguments : public virtual PricingEngine::arguments {
-    //      public:
-    //        arguments() : type(CapFloor::Type(-1)) {}
-    //        CapFloor::Type type;
-    //        std::vector<Time> startTimes;
-    //        std::vector<Date> fixingDates;
-    //        std::vector<Time> fixingTimes;
-    //        std::vector<Time> endTimes;
-    //        std::vector<Time> accrualTimes;
-    //        std::vector<Rate> capRates;
-    //        std::vector<Rate> floorRates;
-    //        std::vector<Rate> forwards;
-    //        std::vector<Real> gearings;
-    //        std::vector<Real> spreads;
-    //        std::vector<DiscountFactor> discounts;
-    //        std::vector<Real> nominals;
-    //        void validate() const;
-    //    };
-    //
-    //    //! base class for cap/floor engines
-    //    class CapFloor::engine
-    //        : public GenericEngine<CapFloor::arguments, CapFloor::results> {};
-    //
-    //    std::ostream& operator<<(std::ostream&, CapFloor::Type);
+    /** Marking interface; mirrors C++ CapFloor::results being empty. */
+    public interface Results extends Instrument.Results { /* marker */ }
 
+    /**
+     * Concrete arguments DTO populated by {@link CapFloor#setupArguments}
+     * and consumed by {@link Engine#calculate}. Mirrors C++
+     * CapFloor::arguments fields verbatim (capfloor.hpp:138-154); the
+     * v1.42.1 {@code indexes} and {@code spreads} fields are present;
+     * {@code spreads} is populated by setupArguments (Java had previously
+     * dropped the field).
+     */
+    static public class ArgumentsImpl implements CapFloor.Arguments {
+        public CapFloor.Type type;
+        public Date[] startDates;
+        public Date[] fixingDates;
+        public Date[] endDates;
+        public double[] accrualTimes;
+        public double[] capRates;
+        public double[] floorRates;
+        public double[] forwards;
+        public double[] gearings;
+        public double[] spreads;
+        public double[] nominals;
+
+        @Override
+        public void validate() {
+            QL.require(endDates.length == startDates.length,
+                    "number of start dates different from that of end dates");
+            QL.require(accrualTimes.length == startDates.length,
+                    "number of start dates different from that of accrual times");
+            QL.require(type == CapFloor.Type.Floor
+                    || capRates.length == startDates.length,
+                    "number of start dates different from that of cap rates");
+            QL.require(type == CapFloor.Type.Cap
+                    || floorRates.length == startDates.length,
+                    "number of start dates different from that of floor rates");
+            QL.require(gearings.length == startDates.length,
+                    "number of start dates different from that of gearings");
+            QL.require(spreads.length == startDates.length,
+                    "number of start dates different from that of spreads");
+            QL.require(nominals.length == startDates.length,
+                    "number of start dates different from that of nominals");
+            QL.require(forwards.length == startDates.length,
+                    "number of start dates different from that of forwards");
+        }
+    }
+
+    /**
+     * Concrete results DTO. CapFloor inherits Instrument's value/error
+     * fields; this subclass exists only to give the GenericEngine a
+     * concrete CapFloor.Results to instantiate.
+     */
+    static public class ResultsImpl extends Instrument.ResultsImpl
+            implements CapFloor.Results {
+    }
+
+    /**
+     * Base class for cap/floor pricing engines.
+     * Mirrors C++ CapFloor::engine
+     *   = GenericEngine<CapFloor::arguments, CapFloor::results>.
+     */
+    static public abstract class Engine
+            extends GenericEngine<CapFloor.Arguments, CapFloor.Results> {
+        protected Engine() {
+            super(new CapFloor.ArgumentsImpl(), new CapFloor.ResultsImpl());
+        }
+    }
 }
