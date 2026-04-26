@@ -1,0 +1,37 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "black_price_at_vol": 0.03007360493961577,
+        "market_value": 0.03007360493961577,
+        "model_value": 0.018937053542603364
+      },
+      "inputs": {
+        "calibration_error_type": "RelativePriceError",
+        "eval_date": "2026-01-15",
+        "fixed_day_counter": "30/360 European",
+        "fixed_leg_tenor": "1Y",
+        "flat_rate": 0.05,
+        "floating_day_counter": "Actual/365 Fixed",
+        "hw_a": 0.1,
+        "hw_sigma": 0.01,
+        "index": "Euribor3M",
+        "length_years": 5,
+        "maturity_years": 5,
+        "nominal": 1.0,
+        "shift": 0.0,
+        "strike": "ATM",
+        "time_steps": 100,
+        "vol": 0.2,
+        "vol_type": "ShiftedLognormal",
+        "yts_day_counter": "Actual/365 Fixed"
+      },
+      "name": "atm_5y5y_hw_tree"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-26T22:36:57Z",
+  "generated_by": "swaptionhelper_probe",
+  "test_group": "model/shortrate/calibrationhelpers/swaptionhelper"
+}
