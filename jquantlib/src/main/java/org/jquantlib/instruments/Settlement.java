@@ -21,13 +21,57 @@ When applicable, the original copyright notice follows this notice.
  */
 package org.jquantlib.instruments;
 
+import org.jquantlib.QL;
+
 /**
+ * Settlement information for swaptions.
+ * <p>
+ * Port of C++ QuantLib v1.42.1 {@code ql/instruments/swaption.hpp} (the
+ * {@code Settlement} struct).
  *
  * @author Praneet Tiwari
  */
 public class Settlement {
 
+    /**
+     * Settlement type: how the swaption settles when exercised.
+     */
     public static enum Type {
-        Physical, Cash
-    };
+        Physical,
+        Cash
+    }
+
+    /**
+     * Settlement method: details of how cash or physical settlement is performed.
+     * Mirrors C++ {@code Settlement::Method}.
+     */
+    public static enum Method {
+        PhysicalOTC,
+        PhysicalCleared,
+        CollateralizedCashPrice,
+        ParYieldCurve
+    }
+
+    /**
+     * Check consistency of settlement type and method.
+     * Mirrors C++ {@code Settlement::checkTypeAndMethodConsistency}.
+     *
+     * @throws IllegalStateException if {@code type}/{@code method} are incompatible
+     */
+    public static void checkTypeAndMethodConsistency(
+            final Settlement.Type type,
+            final Settlement.Method method) {
+        if (type == Type.Physical) {
+            QL.require(method == Method.PhysicalOTC || method == Method.PhysicalCleared,
+                    "invalid settlement method for physical settlement");
+        }
+        if (type == Type.Cash) {
+            QL.require(method == Method.CollateralizedCashPrice || method == Method.ParYieldCurve,
+                    "invalid settlement method for cash settlement");
+        }
+    }
+
+    private Settlement() {
+        // utility holder
+    }
 }
