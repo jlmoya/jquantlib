@@ -1,0 +1,28 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "fair_rate": 0.051302774413477706,
+        "leg_bps_1": 0.00043137217663295107,
+        "n_fixed_periods": 5,
+        "n_floating_periods": 20,
+        "swap_npv": -0.048757024007331035
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "fixed_freq": "Annual",
+        "fixed_rate_dummy": 0.04,
+        "flat_rate": 0.05,
+        "include_first_swaplet": true,
+        "index_tenor_months": 3,
+        "length_years": 5
+      },
+      "name": "fair_rate_intermediate"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-26T14:22:12Z",
+  "generated_by": "caphelper_probe",
+  "test_group": "model/shortrate/calibrationhelpers/caphelper"
+}
