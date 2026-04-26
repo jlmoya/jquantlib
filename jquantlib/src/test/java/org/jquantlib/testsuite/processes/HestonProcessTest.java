@@ -61,13 +61,59 @@ public class HestonProcessTest {
                 HestonProcess.Discretization.QuadraticExponentialMartingale);
     }
 
+    // --- NonCentralChiSquareVariance (Phase 2d WI-2) -----------------------
+
+    @Test
+    public void nccv_midNcp() {
+        runNccvCase("nccv_midNcp");
+    }
+
+    @Test
+    public void nccv_lowNcp_lowV0() {
+        runNccvCase("nccv_lowNcp_lowV0");
+    }
+
+    @Test
+    public void nccv_highV0() {
+        runNccvCase("nccv_highV0");
+    }
+
+    @Test
+    public void nccv_pureMean() {
+        runNccvCase("nccv_pureMean");
+    }
+
+    @Test
+    public void nccv_highV0_dingRegion() {
+        runNccvCase("nccv_highV0_dingRegion");
+    }
+
     private static void runCase(final String name) {
         runCase(name, HestonProcess.Discretization.QuadraticExponential);
     }
 
     private static void runCase(final String name,
                                 final HestonProcess.Discretization disc) {
-        final ReferenceReader reader = ReferenceReader.load("processes/hestonprocess_qe");
+        runFromGroup("processes/hestonprocess_qe", name, disc, true);
+    }
+
+    /**
+     * NCCV evolve uses an inverse-CDF Brent solver on the non-central
+     * chi-squared distribution. The solver's convergence noise floor is
+     * around 1e-9 relative — well outside the tight tier — so we cross-
+     * validate at the {@code loose} tier (abs 1e-8 + rel 1e-8). Same
+     * precedent as Phase 2c WI-1 CIR calibration.
+     */
+    private static void runNccvCase(final String name) {
+        runFromGroup("processes/hestonprocess_nccv", name,
+                HestonProcess.Discretization.NonCentralChiSquareVariance,
+                false);
+    }
+
+    private static void runFromGroup(final String group, final String name,
+                                     final HestonProcess.Discretization disc,
+                                     final boolean tight) {
+        final ReferenceReader reader = ReferenceReader.load(group);
         final Case c = reader.getCase(name);
         final JSONObject in = c.inputs();
         final double r = in.getDouble("r");
@@ -106,8 +152,13 @@ public class HestonProcessTest {
 
         final JSONObject exp = (JSONObject) c.expectedRaw();
         final JSONArray evExp = exp.getJSONArray("evolved");
-        assertDoubleTight(name + ".evolved[0]", evExp.getDouble(0), evolved.get(0));
-        assertDoubleTight(name + ".evolved[1]", evExp.getDouble(1), evolved.get(1));
+        if (tight) {
+            assertDoubleTight(name + ".evolved[0]", evExp.getDouble(0), evolved.get(0));
+            assertDoubleTight(name + ".evolved[1]", evExp.getDouble(1), evolved.get(1));
+        } else {
+            assertDoubleLoose(name + ".evolved[0]", evExp.getDouble(0), evolved.get(0));
+            assertDoubleLoose(name + ".evolved[1]", evExp.getDouble(1), evolved.get(1));
+        }
     }
 
     private static void assertDoubleTight(final String label, final double exp, final double got) {
@@ -116,5 +167,12 @@ public class HestonProcessTest {
         }
         // Route through assertEquals for the test report's convenience.
         assertEquals(label, exp, got, Math.abs(exp) * 1.0e-12 + 1.0e-14);
+    }
+
+    private static void assertDoubleLoose(final String label, final double exp, final double got) {
+        if (!Tolerance.loose(got, exp)) {
+            fail(label + ": exp=" + exp + " got=" + got + " Δ=" + Math.abs(exp - got));
+        }
+        assertEquals(label, exp, got, Math.abs(exp) * Tolerance.LOOSE_REL + Tolerance.LOOSE_ABS);
     }
 }
