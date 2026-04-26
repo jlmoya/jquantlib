@@ -282,7 +282,30 @@ public class VanillaSwap extends Swap {
     public void fetchResults(final PricingEngine.Results results) /* @ReadOnly */ {
         super.fetchResults(results);
 
-        if (results.getClass().isAssignableFrom(VanillaSwap.Results.class)) {
+        // Two pre-existing bugs fixed here while preparing the
+        // BlackSwaptionEngine port (Phase 2e WI-3):
+        //
+        //  1. The original isAssignableFrom check was inverted —
+        //     {@code results.getClass().isAssignableFrom(VanillaSwap.Results.class)}
+        //     asks "is VanillaSwap.Results a supertype of results' class?",
+        //     which is false for the common case (results is Swap.ResultsImpl
+        //     produced by DiscountingSwapEngine, not a VanillaSwap.ResultsImpl).
+        //     The intended check is "is results an instance of VanillaSwap.Results"
+        //     i.e. {@code VanillaSwap.Results.class.isAssignableFrom(results.getClass())}
+        //     — equivalently {@code results instanceof VanillaSwap.Results}.
+        //
+        //  2. The fallback below tested {@code Double.isNaN(fairRate)} but
+        //     {@code Constants.NULL_REAL == Double.MAX_VALUE} (matches C++
+        //     {@code std::numeric_limits<float>::max()}), which is not NaN.
+        //     Without this fix the fallback never fired for non-Vanilla swap
+        //     engines and {@code fairRate()} returned MAX_VALUE.
+        //
+        // C++ v1.42.1 takes a different code path (FixedVsFloatingSwap stores
+        // fairRate as a private mutable populated by fetchResults from
+        // FixedVsFloatingSwap::results which DiscountingSwapEngine derives
+        // from). Java's narrower hierarchy here means the fallback is the
+        // common case and must work.
+        if (results instanceof VanillaSwap.Results) {
             final VanillaSwap.ResultsImpl r = (VanillaSwap.ResultsImpl)results;
             fairRate = r.fairRate;
             fairSpread = r.fairSpread;
@@ -291,15 +314,15 @@ public class VanillaSwap extends Swap {
             fairSpread = Constants.NULL_REAL;
         }
 
-        if (Double.isNaN(fairRate)) {
+        if (fairRate == Constants.NULL_REAL || Double.isNaN(fairRate)) {
             // calculate it from other results
-            if (!Double.isNaN(legBPS[0])) {
+            if (legBPS[0] != Constants.NULL_REAL && !Double.isNaN(legBPS[0])) {
                 fairRate = fixedRate- NPV/(legBPS[0]/basisPoint);
             }
         }
-        if (Double.isNaN(fairSpread)) {
+        if (fairSpread == Constants.NULL_REAL || Double.isNaN(fairSpread)) {
             // ditto
-            if (!Double.isNaN(legBPS[1])) {
+            if (legBPS[1] != Constants.NULL_REAL && !Double.isNaN(legBPS[1])) {
                 fairSpread = spread - NPV/(legBPS[1]/basisPoint);
             }
         }
