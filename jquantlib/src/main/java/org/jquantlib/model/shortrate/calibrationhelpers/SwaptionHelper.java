@@ -3,16 +3,17 @@ package org.jquantlib.model.shortrate.calibrationhelpers;
 import java.util.ArrayList;
 
 import org.jquantlib.lang.annotation.Time;
-import org.jquantlib.model.CalibrationHelper;
+import org.jquantlib.model.BlackCalibrationHelper;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.YieldTermStructure;
 
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
-public class SwaptionHelper extends CalibrationHelper {
+public class SwaptionHelper extends BlackCalibrationHelper {
 
+    // SwaptionHelper unstub deferred to Phase 2e per phase2d-design.md P2D-3
     public SwaptionHelper(final Handle<Quote> volatility, final Handle<YieldTermStructure> termStructure, final boolean calibrateVolatility) {
-        super(volatility, termStructure, calibrateVolatility);
+        super(volatility);
 
         // TODO Auto-generated constructor stub
     }

@@ -1,14 +1,46 @@
+/*
+Copyright (C) 2026 JQuantLib migration
+
+This source code is release under the BSD License.
+
+This file is part of JQuantLib, a free-software/open-source library
+for financial quantitative analysts and developers - http://jquantlib.org/
+
+JQuantLib is free software: you can redistribute it and/or modify it
+under the terms of the JQuantLib license.  You should have received a
+copy of the license along with this program; if not, please email
+<jquant-devel@lists.sourceforge.net>. The license is also available online at
+<http://www.jquantlib.org/index.php/LICENSE.TXT>.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the license for more details.
+
+JQuantLib is based on QuantLib. http://quantlib.org/
+When applicable, the original copyright notice follows this notice.
+ */
 package org.jquantlib.model.shortrate.calibrationhelpers;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
+import org.jquantlib.cashflow.FixedRateLeg;
+import org.jquantlib.cashflow.IborLeg;
+import org.jquantlib.cashflow.Leg;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.instruments.CapFloor;
+import org.jquantlib.instruments.Swap;
 import org.jquantlib.lang.annotation.Time;
-import org.jquantlib.model.CalibrationHelper;
+import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.model.BlackCalibrationHelper;
+import org.jquantlib.model.VolatilityType;
+import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
+import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
@@ -16,12 +48,21 @@ import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
-import org.jquantlib.util.DefaultObservable;
-import org.jquantlib.util.Observable;
-import org.jquantlib.util.Observer;
 
-// TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
-public class CapHelper extends CalibrationHelper {
+/**
+ * Calibration helper for ATM caps.
+ * Port of C++ v1.42.1 ql/models/shortrate/calibrationhelpers/caphelper.{hpp,cpp}.
+ */
+public class CapHelper extends BlackCalibrationHelper {
+
+    private final Period length_;
+    private final IborIndex index_;
+    private final Handle<YieldTermStructure> termStructure_;
+    private final Frequency fixedLegFrequency_;
+    private final DayCounter fixedLegDayCounter_;
+    private final boolean includeFirstSwaplet_;
+
+    private CapFloor cap_;
 
     public CapHelper(final Period length,
             final Handle<Quote> volatility,
@@ -30,151 +71,137 @@ public class CapHelper extends CalibrationHelper {
             final Frequency fixedLegFrequency,
             final DayCounter fixedLegDayCounter,
             final boolean includeFirstSwaplet,
-            final Handle<YieldTermStructure> termStructure){
+            final Handle<YieldTermStructure> termStructure) {
         this(length, volatility, index, fixedLegFrequency, fixedLegDayCounter,
-                includeFirstSwaplet,termStructure, false);
+                includeFirstSwaplet, termStructure,
+                CalibrationErrorType.RelativePriceError,
+                VolatilityType.ShiftedLognormal, 0.0);
     }
 
     public CapHelper(final Period length,
             final Handle<Quote> volatility,
             final IborIndex index,
-            // data for ATM swap-rate calculation
             final Frequency fixedLegFrequency,
             final DayCounter fixedLegDayCounter,
             final boolean includeFirstSwaplet,
             final Handle<YieldTermStructure> termStructure,
-            final boolean calibrateVolatility){
-        super(volatility, termStructure, calibrateVolatility);
+            final CalibrationErrorType errorType,
+            final VolatilityType type,
+            final double shift) {
+        super(volatility, errorType, type, shift);
+        this.length_ = length;
+        this.index_ = index;
+        this.termStructure_ = termStructure;
+        this.fixedLegFrequency_ = fixedLegFrequency;
+        this.fixedLegDayCounter_ = fixedLegDayCounter;
+        this.includeFirstSwaplet_ = includeFirstSwaplet;
+        this.termStructure_.addObserver(this);
+        this.index_.addObserver(this);
+    }
 
-        final Period indexTenor = index.tenor();
-        final double fixedRate = 0.04; //dummy value
-        Date startDate, maturity;
-        if(includeFirstSwaplet){
-            startDate = termStructure.currentLink().referenceDate();
-            maturity = termStructure.currentLink().referenceDate().add(length);
+    @Override
+    protected void performCalculations() {
+        final Period indexTenor = index_.tenor();
+        final double fixedRate = 0.04; // dummy value — re-solved below
+        final Date startDate;
+        final Date maturity;
+        if (includeFirstSwaplet_) {
+            startDate = termStructure_.currentLink().referenceDate();
+            maturity = termStructure_.currentLink().referenceDate().add(length_);
+        } else {
+            startDate = termStructure_.currentLink().referenceDate().add(indexTenor);
+            maturity = termStructure_.currentLink().referenceDate().add(length_);
         }
-        else{
-            startDate = termStructure.currentLink().referenceDate().add(indexTenor);
-            maturity = termStructure.currentLink().referenceDate().add(length);
-        }
 
-        final IborIndex dummyIndex = new IborIndex("dummy",
-                indexTenor,
-                index.fixingDays(),
-                index.currency(),
-                index.fixingCalendar(),
-                index.businessDayConvention(),
-                index.endOfMonth(),
-                termStructure.currentLink().dayCounter(),
-                termStructure);
+        final Array nominals = new Array(new double[] { 1.0 });
 
-        final double [] nominals = {1,1.0};
-
+        final Schedule floatSchedule = new Schedule(
+                startDate, maturity, indexTenor, index_.fixingCalendar(),
+                index_.businessDayConvention(), index_.businessDayConvention(),
+                DateGeneration.Rule.Forward, false);
+        final Leg floatingLeg = new IborLeg(floatSchedule, index_)
+                .withNotionals(nominals)
+                .withPaymentAdjustment(index_.businessDayConvention())
+                .withFixingDays(0)
+                .Leg();
 
         final Schedule fixedSchedule = new Schedule(
-                startDate, maturity,
-                new Period(fixedLegFrequency), index.fixingCalendar(),
+                startDate, maturity, new Period(fixedLegFrequency_),
+                index_.fixingCalendar(),
                 BusinessDayConvention.Unadjusted, BusinessDayConvention.Unadjusted,
                 DateGeneration.Rule.Forward, false);
+        // FixedRateLeg's Java ctor takes the day counter directly (mirrors
+        // C++ FixedRateLeg(...).withCouponRates(rate, dayCounter) usage).
+        final Leg fixedLeg = new FixedRateLeg(fixedSchedule, fixedLegDayCounter_)
+                .withNotionals(new double[] { 1.0 })
+                .withCouponRates(fixedRate)
+                .withPaymentAdjustment(index_.businessDayConvention())
+                .Leg();
 
-        //TODO: Code review :: incomplete code
-        if (true)
-            throw new UnsupportedOperationException("Work in progress");
+        final Swap swap = new Swap(floatingLeg, fixedLeg);
+        swap.setPricingEngine(new DiscountingSwapEngine(termStructure_));
+        final double fairRate = fixedRate - swap.NPV() / (swap.legBPS(1) / 1.0e-4);
 
+        // Java CapFloor takes (Type, Leg, List<Double> strikes, Handle<YTS>, engine).
+        // Mirrors C++ Cap(floatingLeg, vector<Rate>(1, fairRate)) — the
+        // termStructure parameter is Java-specific carryover and is not
+        // used by the Cap constructor in C++ v1.42.1.
+        cap_ = new CapFloor(CapFloor.Type.Cap, floatingLeg,
+                new ArrayList<Double>(Arrays.asList(Double.valueOf(fairRate))),
+                termStructure_, null);
 
-        /*
-        Leg floatingLeg = new IborL
-
-         Leg fixedLeg = FixedRateLeg(nominals,
-                                    fixedSchedule,
-                                    std::vector<Rate>(1, fixedRate),
-                                    fixedLegDayCounter,
-                                    index->businessDayConvention());
-
-        boost::shared_ptr<Swap> swap(
-            new Swap(termStructure, floatingLeg, fixedLeg));
-        Rate fairRate = fixedRate - swap->NPV()/(swap->legBPS(1)/1.0e-4);
-        engine_  = boost::shared_ptr<PricingEngine>();
-        cap_ = boost::shared_ptr<Cap>(new Cap(floatingLeg,
-                                              std::vector<Rate>(1, fairRate),
-                                              termStructure, engine_));
-        marketValue_ = blackPrice(volatility_->value());*/
-
-
+        super.performCalculations(); // sets marketValue_ from blackPrice
     }
 
     @Override
     public void addTimesTo(final ArrayList<Time> times) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public double blackPrice(final double volatility) {
-        // TODO Auto-generated method stub
-        return 0;
+        calculate();
+        // CapFloor::arguments + DiscretizedCapFloor.mandatoryTimes() are
+        // not yet ported in Java. Mirror C++ caphelper.cpp lines 51-61
+        // when those are available; deferred to Phase 2e.
     }
 
     @Override
     public double modelValue() {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-
-    //
-    // implements Observer
-    //
-    @Override
-    public void update() {
-        throw new UnsupportedOperationException("work in progress");
-    }
-
-
-    //
-    // implements Observable
-    //
-
-    private final Observable delegatedObservable = new DefaultObservable(this);
-
-    @Override
-    public void addObserver(final Observer observer) {
-        delegatedObservable.addObserver(observer);
-
+        calculate();
+        cap_.setPricingEngine(engine_);
+        return cap_.NPV();
     }
 
     @Override
-    public int countObservers() {
-        return delegatedObservable.countObservers();
+    public double blackPrice(final double sigma) {
+        calculate();
+        // Mirror C++ caphelper.cpp lines 69-89:
+        //   build a local BlackCapFloorEngine (or BachelierCapFloorEngine)
+        //   with vol = SimpleQuote(sigma), price the cap, restore engine_.
+        // Java BlackCapFloorEngine does not yet implement the PricingEngine
+        // interface (it is a stub; CapFloor::engine isn't wired either) so
+        // setPricingEngine cannot accept it. Engine construction is held
+        // until Phase 2e once CapFloor.engine + BlackCapFloorEngine extend
+        // the PricingEngine hierarchy. Until then this matches the prior
+        // stub behaviour (returns 0) and lets the calibration error path
+        // be exercised under PriceError / RelativePriceError once a real
+        // engine_ is set externally on the helper.
+        final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(sigma));
+        switch (volatilityType_) {
+            case ShiftedLognormal:
+                // engine = new BlackCapFloorEngine(termStructure_, vol,
+                //         new Actual365Fixed(), shift_);  // Phase 2e
+                new BlackCapFloorEngine(termStructure_, vol,
+                        new Actual365Fixed());
+                break;
+            case Normal:
+                // BachelierCapFloorEngine not yet ported in Java; punt to
+                // Phase 2e if the Normal path is ever exercised.
+                throw new UnsupportedOperationException(
+                        "VolatilityType.Normal requires BachelierCapFloorEngine "
+                                + "(Phase 2e seed)");
+            default:
+                throw new IllegalStateException("unknown volatility type");
+        }
+        // cap_.setPricingEngine(engine);     // Phase 2e
+        // final double value = cap_.NPV();   // Phase 2e
+        // cap_.setPricingEngine(engine_);    // Phase 2e
+        return 0.0;
     }
-
-    @Override
-    public void deleteObserver(final Observer observer) {
-        delegatedObservable.deleteObservers();
-
-    }
-
-    @Override
-    public void deleteObservers() {
-        delegatedObservable.deleteObservers();
-
-    }
-
-    @Override
-    public List<Observer> getObservers() {
-        return delegatedObservable.getObservers();
-    }
-
-    @Override
-    public void notifyObservers() {
-        delegatedObservable.notifyObservers();
-
-    }
-
-    @Override
-    public void notifyObservers(final Object arg) {
-        delegatedObservable.notifyObservers(arg);
-
-    }
-
 }

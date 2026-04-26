@@ -131,6 +131,28 @@ public class Swap extends Instrument {
     // public methods
     //
 
+    /**
+     * Returns the BPS of leg {@code j}.
+     * Mirrors C++ v1.42.1 ql/instruments/swap.hpp Swap::legBPS(Size j) const.
+     */
+    public /*@Real*/ double legBPS(final int j) /* @ReadOnly */ {
+        QL.require(j < legs.size(), "leg index out of range"); // TODO: message
+        calculate();
+        QL.require(!Double.isNaN(legBPS[j]), "result not available"); // TODO: message
+        return legBPS[j];
+    }
+
+    /**
+     * Returns the NPV of leg {@code j}.
+     * Mirrors C++ v1.42.1 ql/instruments/swap.hpp Swap::legNPV(Size j) const.
+     */
+    public /*@Real*/ double legNPV(final int j) /* @ReadOnly */ {
+        QL.require(j < legs.size(), "leg index out of range"); // TODO: message
+        calculate();
+        QL.require(!Double.isNaN(legNPV[j]), "result not available"); // TODO: message
+        return legNPV[j];
+    }
+
     public Date startDate() /* @ReadOnly */ {
         QL.require(legs.size() > 0 , "no legs given"); // TODO: message
         Date d = CashFlows.getInstance().startDate(this.legs.get(0));
