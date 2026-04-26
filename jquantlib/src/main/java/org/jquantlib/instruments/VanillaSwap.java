@@ -173,6 +173,16 @@ public class VanillaSwap extends Swap {
         }
     }
 
+    /**
+     * @return the swap type (Payer/Receiver).
+     * Mirrors C++ {@code VanillaSwap::type()} (FixedVsFloatingSwap::type in v1.42.1).
+     * Exposed so engines (e.g. BlackSwaptionEngine) can branch on payer vs
+     * receiver without reflection.
+     */
+    public Type type() /* @ReadOnly */ {
+        return type;
+    }
+
     public /*@Rate*/ double  fairRate() /* @ReadOnly */ {
         calculate();
         QL.require(!Double.isNaN(fairRate) , "result not available"); // TODO: message
@@ -192,6 +202,34 @@ public class VanillaSwap extends Swap {
 
     public final Leg floatingLeg() /* @ReadOnly */ {
         return legs.get(1);
+    }
+
+    /**
+     * @return the fixed-leg schedule. Mirrors C++ {@code VanillaSwap::fixedSchedule()}.
+     */
+    public final Schedule fixedSchedule() /* @ReadOnly */ {
+        return fixedSchedule;
+    }
+
+    /**
+     * @return the floating-leg schedule. Mirrors C++ {@code VanillaSwap::floatingSchedule()}.
+     */
+    public final Schedule floatingSchedule() /* @ReadOnly */ {
+        return floatingSchedule;
+    }
+
+    /**
+     * @return the fixed rate. Mirrors C++ {@code VanillaSwap::fixedRate()}.
+     */
+    public final /*@Rate*/ double fixedRate() /* @ReadOnly */ {
+        return fixedRate;
+    }
+
+    /**
+     * @return the spread on the floating leg. Mirrors C++ {@code VanillaSwap::spread()}.
+     */
+    public final /*@Spread*/ double spread() /* @ReadOnly */ {
+        return spread;
     }
 
 
