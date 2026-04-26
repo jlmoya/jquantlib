@@ -131,8 +131,16 @@ public abstract class TwoFactorModel extends ShortRateModel {
 
         final ShortRateDynamics dyn = dynamics();
 
-        final TrinomialTree tree1 = new TrinomialTree(dyn.xProcess(), grid, true);
-        final TrinomialTree tree2 = new TrinomialTree(dyn.yProcess(), grid, true);
+        // Aligned to v1.42.1 twofactormodel.cpp: TrinomialTree built with
+        // default isPositive=false (Phase 2e WI-1; same divergence the
+        // Phase 2c WI-4 HullWhite.tree(grid) fix addressed for the
+        // one-factor case). isPositive=true sends the inner Branching
+        // loop in TrinomialTree (lines 102-105) into a non-terminating
+        // while when dx is small relative to x0_; even when it does
+        // terminate, the resulting tree underlying values diverge from
+        // the C++ reference by ~5x.
+        final TrinomialTree tree1 = new TrinomialTree(dyn.xProcess(), grid);
+        final TrinomialTree tree2 = new TrinomialTree(dyn.yProcess(), grid);
 
         return new ShortRateTree(tree1, tree2, dyn);
 
