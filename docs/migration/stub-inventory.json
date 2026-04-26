@@ -1,14 +1,1 @@
-[
-  {
-    "id": "model.shortrate.twofactormodels.G2#G2",
-    "file": "jquantlib/src/main/java/org/jquantlib/model/shortrate/twofactormodels/G2.java",
-    "line": 126,
-    "kind": "work_in_progress",
-    "method_signature": "public G2( final Handle<YieldTermStructure> termStructure, final double /* @Real */ a, final double /* @Real */ sigma, final double /* @Real */ b, final double /* @Real */ eta, final double /* @Real */ rho)",
-    "cpp_counterpart": "",
-    "depends_on": [],
-    "existing_test": null,
-    "cpp_tests": [],
-    "notes": ""
-  }
-]
+[]
