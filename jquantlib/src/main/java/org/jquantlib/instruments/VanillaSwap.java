@@ -179,6 +179,13 @@ public class VanillaSwap extends Swap {
      * Exposed so engines (e.g. BlackSwaptionEngine) can branch on payer vs
      * receiver without reflection.
      */
+    /**
+     * @return the swap's notional. Mirrors C++ {@code FixedVsFloatingSwap::nominal()}.
+     */
+    public /*@Real*/ double nominal() /* @ReadOnly */ {
+        return nominal;
+    }
+
     public Type type() /* @ReadOnly */ {
         return type;
     }

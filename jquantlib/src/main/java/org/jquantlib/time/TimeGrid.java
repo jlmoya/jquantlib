@@ -135,6 +135,99 @@ public class TimeGrid {
 
 
     /**
+     * Time grid with mandatory time points and a target number of steps.
+     * <p>
+     * Mandatory points are guaranteed to belong to the grid; additional inner
+     * points are then added with regular spacing between pairs of mandatory
+     * times in order to reach approximately {@code steps} total steps.
+     * <p>
+     * Port of C++ v1.42.1 {@code TimeGrid(Iterator begin, Iterator end, Size steps)}
+     * (timegrid.hpp template ctor). Surface needed by Phase 2e WI-3
+     * {@code TreeSwaptionEngine.calculate()} which builds a TimeGrid from
+     * {@code DiscretizedSwaption.mandatoryTimes()} plus a step count.
+     *
+     * @param mandatoryPoints mandatory time points (will be sorted and de-duplicated)
+     * @param steps target number of steps; if 0, the smallest mandatory-time
+     *              spacing is used as {@code dtMax}; otherwise {@code last/steps}
+     */
+    public TimeGrid(final List</*@Time*/ Double> mandatoryPoints, final /*@NonNegative*/ int steps) {
+        QL.require(!mandatoryPoints.isEmpty(), "empty mandatory-times vector");
+
+        // Sort + dedup.
+        final List<Double> sorted = new ArrayList<Double>(mandatoryPoints);
+        java.util.Collections.sort(sorted);
+        QL.require(sorted.get(0) >= 0.0, "negative times not allowed");
+        final List<Double> mts = new ArrayList<Double>();
+        mts.add(sorted.get(0));
+        for (int i = 1; i < sorted.size(); i++) {
+            if (!Closeness.isCloseEnough(sorted.get(i), mts.get(mts.size() - 1))) {
+                mts.add(sorted.get(i));
+            }
+        }
+
+        // Mirror C++ timegrid template ctor logic.
+        final double last = mts.get(mts.size() - 1);
+        final double dtMax;
+        if (steps == 0) {
+            // Use smallest non-zero adjacent-difference as dtMax.
+            double minDiff = Double.MAX_VALUE;
+            double prev = mts.get(0);
+            for (int i = 1; i < mts.size(); i++) {
+                final double diff = mts.get(i) - prev;
+                if (diff > 0.0 && diff < minDiff) {
+                    minDiff = diff;
+                }
+                prev = mts.get(i);
+            }
+            // If all mandatory points coincide, fall back to last itself
+            // (one step). Matches C++ behaviour for the degenerate case.
+            dtMax = (minDiff == Double.MAX_VALUE) ? last : minDiff;
+        } else {
+            dtMax = last / steps;
+        }
+
+        final List<Double> tList = new ArrayList<Double>();
+        double periodBegin = 0.0;
+        tList.add(periodBegin);
+        for (int idx = 0; idx < mts.size(); idx++) {
+            final double periodEnd = mts.get(idx);
+            if (periodEnd != 0.0) {
+                // Number of steps to nearest integer, at least 1.
+                int nSteps = (int) ((periodEnd - periodBegin) / dtMax + 0.5);
+                if (nSteps == 0) {
+                    nSteps = 1;
+                }
+                final double dt = (periodEnd - periodBegin) / nSteps;
+                for (int n = 1; n <= nSteps; n++) {
+                    tList.add(periodBegin + n * dt);
+                }
+            }
+            periodBegin = periodEnd;
+        }
+
+        this.times = new Array(tList.size());
+        for (int i = 0; i < tList.size(); i++) {
+            this.times.set(i, tList.get(i));
+        }
+
+        this.mandatoryTimes = new Array(mts.size());
+        for (int i = 0; i < mts.size(); i++) {
+            this.mandatoryTimes.set(i, mts.get(i));
+        }
+
+        // dt[i] = times[i+1] - times[i].
+        if (this.times.size() > 1) {
+            this.dt = new Array(this.times.size() - 1);
+            for (int i = 0; i < this.dt.size(); i++) {
+                this.dt.set(i, this.times.get(i + 1) - this.times.get(i));
+            }
+        } else {
+            this.dt = new Array(0);
+        }
+    }
+
+
+    /**
      * Time grid with mandatory time points
      * <p>
      * Mandatory points are guaranteed to belong to the grid.
