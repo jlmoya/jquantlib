@@ -60,8 +60,14 @@ int main() {
         auto lattice = model.tree(grid);
         auto tree = ext::dynamic_pointer_cast<TwoFactorModel::ShortRateTree>(lattice);
 
+        // Walk i = 0 .. grid.size()-2: the terminal grid node has
+        // no dt(i) defined (TimeGrid stores size()-1 dt values), so
+        // discount(size-1, ...) is UB on the C++ side. The Java
+        // ShortRateTree.discount mirrors the same dt(i) read and
+        // throws out-of-bounds. Match the BK / HullWhite tree-probe
+        // convention: skip the terminal cell.
         json treeArr = json::array();
-        for (Size i = 0; i < grid.size(); ++i) {
+        for (Size i = 0; i + 1 < grid.size(); ++i) {
             const Size sz = tree->size(i);
             for (Size index = 0; index < sz; ++index) {
                 treeArr.push_back({{"i", i}, {"index", index},
