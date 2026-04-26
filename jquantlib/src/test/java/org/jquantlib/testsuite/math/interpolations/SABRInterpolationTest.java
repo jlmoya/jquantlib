@@ -24,14 +24,16 @@
 package org.jquantlib.testsuite.math.interpolations;
 
 import static java.lang.Math.abs;
+import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.QL;
 import org.jquantlib.lang.annotation.Time;
-import org.jquantlib.math.Constants;
 import org.jquantlib.math.interpolations.SABRInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.EndCriteria;
@@ -39,37 +41,24 @@ import org.jquantlib.math.optimization.LevenbergMarquardt;
 import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.math.optimization.Simplex;
 import org.jquantlib.termstructures.volatilities.Sabr;
-import org.junit.Ignore;
+import org.jquantlib.testsuite.util.ReferenceReader;
+import org.jquantlib.testsuite.util.ReferenceReader.Case;
+import org.jquantlib.testsuite.util.Tolerance;
+import org.json.JSONObject;
 import org.junit.Test;
 
 public class SABRInterpolationTest {
 
-    // Re-skipped in Phase 2c WI-2 after landing the C++-aligned alpha-default
-    // formula (alpha = 0.2 * F^(1-beta) when beta<0.9999, else sqrt(0.2)).
+    // Phase 2d WI-3: un-skipped after porting the Halton multi-restart loop
+    // from xabrinterpolation.hpp::XABRInterpolationImpl::calculate (lines
+    // ~138-236). The full-arity SABRInterpolation ctor exposes
+    // errorAccept/useMaxError/maxGuesses/shift to drive the loop; with
+    // errorAccept=1e-10 (matching C++ test-suite/interpolations.cpp:1378
+    // which passes 1E-10 as the 18th positional arg) all 64 IsFixed × vegaW
+    // × method combinations converge to within 5e-8 of the true params.
     //
-    // Background: Phase 2b WI-4 un-skipped this test after fixing the
-    // SABRCoeffHolder sentinel check, observing that all 16 IsFixed
-    // combinations converged to within 5e-8. That convergence relied on
-    // the prior (incorrect) alpha default of sqrt(0.2) ~ 0.447, which
-    // happened to start the optimizer close enough to the true alpha=0.3
-    // to converge in a single Simplex/LM run.
-    //
-    // With the C++-correct default alpha = 0.2 * 0.039^(1-0.6) ~ 0.054
-    // for the test's forward=0.039 and beta=0.6, the optimizer settles
-    // at a local minimum around 0.29917 (error ~8e-4, far above 5e-8).
-    //
-    // C++ achieves the tight tolerance via a Halton-sequence random-restart
-    // loop in xabrinterpolation.hpp::XABRInterpolationImpl::calculate
-    // (lines ~187-228), guarded by errorAccept_ / maxGuesses_ / useMaxError_
-    // — none of which the Java port currently has. Wiring those up is
-    // strictly outside the WI-2/WI-3 scope; tracked as a Phase 2+ follow-up.
-    //
-    // The IsFixed-loop body below has been corrected to mirror C++
-    // test-suite/interpolations.cpp:1408-1414 (pass initialAlpha/Beta/Nu/Rho
-    // when k_a/k_b/k_n/k_r is true, else NULL_REAL) so the moment the
-    // random-restart loop lands, removing @Ignore should be a one-liner.
-    @Ignore("Phase 2c WI-2: requires Halton random-restart loop port " +
-            "from xabrinterpolation.hpp; see in-method comment.")
+    // Cross-validated against migration-harness/cpp/probes/math/interpolations
+    // /sabr_calibration_probe.cpp -> sabr_calibration.json (fixture_1 case).
     @Test
     public void testSABRInterpolationTest() {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
@@ -135,11 +124,14 @@ public class SABRInterpolationTest {
         }
 
         // Test SABR calibration against input parameters
-        // Initial null guesses (uses default values)
-        final double alphaGuess = Constants.NULL_REAL;
-        final double betaGuess = Constants.NULL_REAL;
-        final double nuGuess = Constants.NULL_REAL;
-        final double rhoGuess = Constants.NULL_REAL;
+        // Initial guesses match C++ test-suite/interpolations.cpp lines 1331-1334
+        // (sqrt(0.2), 0.5, sqrt(0.4), 0.0). NOT NULL_REAL — using NULL_REAL
+        // delegates to SABRCoeffHolder::defaultValues which produces a
+        // forward-aware alpha default that lands in a different LM basin.
+        final double alphaGuess = sqrt(0.2);
+        final double betaGuess = 0.5;
+        final double nuGuess = sqrt(0.4);
+        final double rhoGuess = 0.0;
 
         final boolean vegaWeighted[]= {true, false};
         final boolean isAlphaFixed[]= {true, false};
@@ -154,26 +146,30 @@ public class SABRInterpolationTest {
         methods_.add(new LevenbergMarquardt(1e-8, 1e-8, 1e-8));
         // Initialize end criteria
         final EndCriteria endCriteria = new EndCriteria(100000, 100, 1e-8, 1e-8, 1e-8);
-        // Test looping over all possibilities. With Phase 2c WI-3's
-        // conditional-seed fix below (k_? ? initial : NULL_REAL), the
-        // IsFixed loop now exercises 16 distinct constraint topologies
-        // matching the C++ test. Previously the four guesses were passed
-        // as NULL_REAL unconditionally, making the IsFixed loop a silent
-        // no-op (all 16 iterations were behaviourally identical).
-        // Test looping over all possibilities
+
+        // Per-combo cross-validation against the C++ probe. The probe was
+        // built with the identical fixture / guesses / errorAccept=1e-10,
+        // so each Java run should match its C++ counterpart up to LM
+        // floating-point noise (loose tier, ~1e-8).
+        final ReferenceReader reader = ReferenceReader.load("math/interpolations/sabr_calibration");
+        final Case probeCase = reader.getCase("fixture_1");
+        final JSONObject combos = (JSONObject) probeCase.expectedRaw();
+
+        // Test looping over all possibilities. errorAccept=1e-10 mirrors
+        // C++ test-suite/interpolations.cpp:1378 ("method, 1E-10)") which
+        // tightens the Halton-loop accept threshold so the random restart
+        // mechanism can break out of the local minimum near alpha~0.299
+        // that the first iteration falls into. Without this Halton loop
+        // (Phase 2d WI-3) and tight accept threshold, the calibration
+        // tolerance assertion below cannot be met for several IsFixed
+        // topologies.
+        final String[] methodNames = {"Simplex", "LM"};
         for (int j=0; j<methods_.size(); ++j) {
           for (int i=0; i<vegaWeighted.length; ++i) {
             for (int k_a=0; k_a<isAlphaFixed.length; ++k_a) {
               for (int k_b=0; k_b<isBetaFixed.length; ++k_b) {
                 for (int k_n=0; k_n<isNuFixed.length; ++k_n) {
                   for (int k_r=0; k_r<isRhoFixed.length; ++k_r) {
-                    // Mirror C++ test-suite/interpolations.cpp lines 1408-1414:
-                    // when *IsFixed is true, seed the corresponding parameter
-                    // with the known initial value; otherwise pass NULL_REAL so
-                    // SABRCoeffHolder's defaultValues kick in. Previously this
-                    // file passed NULL_REAL unconditionally for all four
-                    // guesses, which silently turned the IsFixed loop into a
-                    // no-op (see Phase 2c WI-3 commit log for context).
                     final SABRInterpolation sabrInterpolation =
                     	new SABRInterpolation(strikeArray, volatilityArray, expiry, forward,
 				                                 isAlphaFixed[k_a] ? initialAlpha : alphaGuess,
@@ -183,7 +179,11 @@ public class SABRInterpolationTest {
 				                                 isAlphaFixed[k_a], isBetaFixed[k_b],
 				                                 isNuFixed[k_n], isRhoFixed[k_r],
 				                                 vegaWeighted[i],
-				                                 endCriteria, methods_.get(j));
+				                                 endCriteria, methods_.get(j),
+				                                 /*errorAccept*/ 1e-10,
+				                                 /*useMaxError*/ false,
+				                                 /*maxGuesses*/  50,
+				                                 /*shift*/       0.0);
                     sabrInterpolation.update();
 
                     // Recover SABR calibration parameters
@@ -193,7 +193,7 @@ public class SABRInterpolationTest {
                     final double calibratedRho = sabrInterpolation.rho();
                     double error;
 
-                    // compare results: alpha
+                    // compare results: alpha (against true input value)
                     error = abs(initialAlpha-calibratedAlpha);
                     assertFalse("\nfailed to calibrate alpha Sabr parameter:" +
                                     "\n    expected:        " + initialAlpha +
@@ -221,6 +221,23 @@ public class SABRInterpolationTest {
                                     "\n    calibrated:      " + calibratedRho +
                                     "\n    error:           " + error,
                                 error > calibrationTolerance);
+
+                    // Cross-validate per-combo against C++ probe at loose
+                    // tier (LM/Simplex floating-point convergence noise:
+                    // Java's port and C++ Boost MINPACK accumulate slightly
+                    // differently; observed delta ~3e-11 on alpha, well
+                    // inside loose tier 1e-8).
+                    final String key = methodNames[j]
+                            + "_vw" + (vegaWeighted[i] ? 1 : 0)
+                            + "_a" + (isAlphaFixed[k_a] ? 1 : 0)
+                            + "_b" + (isBetaFixed[k_b]  ? 1 : 0)
+                            + "_n" + (isNuFixed[k_n]    ? 1 : 0)
+                            + "_r" + (isRhoFixed[k_r]   ? 1 : 0);
+                    final JSONObject expCombo = combos.getJSONObject(key);
+                    crossCheck(key, "alpha", calibratedAlpha, expCombo.getDouble("alpha"));
+                    crossCheck(key, "beta",  calibratedBeta,  expCombo.getDouble("beta"));
+                    crossCheck(key, "nu",    calibratedNu,    expCombo.getDouble("nu"));
+                    crossCheck(key, "rho",   calibratedRho,   expCombo.getDouble("rho"));
                   }
                 }
               }
@@ -228,6 +245,31 @@ public class SABRInterpolationTest {
           }
         }
 
+    }
+
+    /**
+     * Per-test loose-tier extension: 5e-8 abs/rel.
+     *
+     * <p>Justification: the Halton+LM/Simplex stack accumulates fp error
+     * differently between Java's port and C++ Boost. Even with bit-exact
+     * Halton samples (verified by HaltonRsgTest) and identical
+     * {@code errorAccept=1e-10}, observed per-combo rho/nu deltas reach
+     * ~2.5e-8 (worst-case combo {@code Simplex_vw0_a0_b0_n1_r0}: Java
+     * rho=0.009999989587 vs C++ rho=0.010000013114). The test's PRIMARY
+     * assertion (calibrated params within 5e-8 of the truth — same as
+     * the C++ test) passes for ALL 64 combos with strictly tight
+     * tolerance; this cross-check is a secondary diagnostic ensuring
+     * Java and C++ agree on the converged minimum location, not just
+     * that they each find some local optimum.
+     */
+    private static void crossCheck(final String key, final String label,
+                                   final double got, final double expected) {
+        final double tol = 5.0e-8;
+        if (!Tolerance.within(got, expected, tol,
+                "Halton+LM/Simplex fp accumulation between Java port and C++ Boost")) {
+            fail("[" + key + "] " + label + ": Java=" + got + " Cpp=" + expected
+                    + " (per-test 5e-8 tier — fp accumulation between port and C++)");
+        }
     }
 
 }

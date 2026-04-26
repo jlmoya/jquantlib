@@ -1037,32 +1037,14 @@ public class InterpolationTest {
 
 
 
-    // Re-skipped in Phase 2c WI-2 after landing the C++-aligned alpha-default
-    // formula (alpha = 0.2 * F^(1-beta) when beta<0.9999, else sqrt(0.2)).
+    // Phase 2d WI-3: un-skipped after porting the Halton multi-restart loop
+    // from xabrinterpolation.hpp::XABRInterpolationImpl::calculate and
+    // fixing the HaltonRsg signed-long randomStart bug. See
+    // SABRInterpolationTest::testSABRInterpolationTest for the parallel
+    // un-skip and root-cause notes.
     //
-    // Background: Phase 2b WI-4 un-skipped this test after fixing the
-    // SABRCoeffHolder sentinel check, observing that all 16 IsFixed
-    // combinations converged to within 5e-8. That convergence relied on
-    // the prior (incorrect) alpha default of sqrt(0.2) ~ 0.447, which
-    // happened to start the optimizer close enough to the true alpha=0.3
-    // to converge in a single Simplex/LM run.
-    //
-    // With the C++-correct default alpha = 0.2 * 0.039^(1-0.6) ~ 0.054
-    // for the test's forward=0.039 and beta=0.6, the optimizer settles
-    // at a local minimum around 0.29917 (error ~8e-4, far above 5e-8).
-    //
-    // C++ achieves the tight tolerance via a Halton-sequence random-restart
-    // loop in xabrinterpolation.hpp::XABRInterpolationImpl::calculate
-    // (lines ~187-228), guarded by errorAccept_ / maxGuesses_ / useMaxError_
-    // — none of which the Java port currently has. Wiring those up is
-    // strictly outside the WI-2/WI-3 scope; tracked as a Phase 2+ follow-up.
-    //
-    // The IsFixed-loop body below has been corrected to mirror C++
-    // test-suite/interpolations.cpp:1408-1414 (pass initialAlpha/Beta/Nu/Rho
-    // when k_a/k_b/k_n/k_r is true, else NULL_REAL) so the moment the
-    // random-restart loop lands, removing @Ignore should be a one-liner.
-    @Ignore("Phase 2c WI-2: requires Halton random-restart loop port " +
-            "from xabrinterpolation.hpp; see in-method comment.")
+    // Cross-validated against migration-harness/cpp/probes/math/interpolations
+    // /sabr_calibration_probe.cpp -> sabr_calibration.json (fixture_2 case).
     @Test
     public void testSabrInterpolation(){
 
@@ -1117,11 +1099,11 @@ public class InterpolationTest {
         }
 
         // Test SABR calibration against input parameters
-        // Initial null guesses (uses default values)
-        final double alphaGuess = Constants.NULL_REAL;
-        final double betaGuess = Constants.NULL_REAL;
-        final double nuGuess = Constants.NULL_REAL;
-        final double rhoGuess = Constants.NULL_REAL;
+        // Initial guesses match C++ test-suite/interpolations.cpp lines 1331-1334.
+        final double alphaGuess = Math.sqrt(0.2);
+        final double betaGuess = 0.5;
+        final double nuGuess = Math.sqrt(0.4);
+        final double rhoGuess = 0.0;
 
         final boolean vegaWeighted[] = {true, false};
         final boolean isAlphaFixed[] = {true, false};
@@ -1137,26 +1119,21 @@ public class InterpolationTest {
         // Initialize end criteria
         final EndCriteria endCriteria = new EndCriteria(100000, 100, 1e-8, 1e-8, 1e-8);
 
-        // Test looping over all possibilities. With Phase 2c WI-3's
-        // conditional-seed fix below (k_? ? initial : NULL_REAL), the
-        // IsFixed loop now exercises 16 distinct constraint topologies
-        // matching the C++ test. Previously the four guesses were passed
-        // as NULL_REAL unconditionally, making the IsFixed loop a silent
-        // no-op (all 16 iterations were behaviourally identical).
-        // Test looping over all possibilities
+        // Per-combo cross-validation against the C++ probe (fixture_2 case
+        // mirrors this test 1:1). errorAccept=1e-10 mirrors C++
+        // test-suite/interpolations.cpp:1378.
+        final org.jquantlib.testsuite.util.ReferenceReader reader =
+                org.jquantlib.testsuite.util.ReferenceReader.load("math/interpolations/sabr_calibration");
+        final org.jquantlib.testsuite.util.ReferenceReader.Case probeCase = reader.getCase("fixture_2");
+        final org.json.JSONObject combos = (org.json.JSONObject) probeCase.expectedRaw();
+        final String[] methodNames = {"Simplex", "LM"};
+
         for (int j=0; j<methods.length; ++j) {
           for (int i=0; i<vegaWeighted.length; ++i) {
             for (int k_a=0; k_a<isAlphaFixed.length; ++k_a) {
               for (int k_b=0; k_b<isBetaFixed.length; ++k_b) {
                 for (int k_n=0; k_n<isNuFixed.length; ++k_n) {
                   for (int k_r=0; k_r<isRhoFixed.length; ++k_r) {
-                    // Mirror C++ test-suite/interpolations.cpp lines 1408-1414:
-                    // when *IsFixed is true, seed the corresponding parameter
-                    // with the known initial value; otherwise pass NULL_REAL so
-                    // SABRCoeffHolder's defaultValues kick in. Previously this
-                    // method passed NULL_REAL unconditionally for all four
-                    // guesses, which silently turned the IsFixed loop into a
-                    // no-op (see Phase 2c WI-3 commit log for context).
                     final SABRInterpolation sabrInterpolation = new SABRInterpolation(
                             new Array(strikes), new Array(volatilities),
                             expiry, forward,
@@ -1167,26 +1144,22 @@ public class InterpolationTest {
                             isAlphaFixed[k_a], isBetaFixed[k_b],
                             isNuFixed[k_n], isRhoFixed[k_r],
                             vegaWeighted[i],
-                            endCriteria, methods[j]);
+                            endCriteria, methods[j],
+                            /*errorAccept*/ 1e-10,
+                            /*useMaxError*/ false,
+                            /*maxGuesses*/  50,
+                            /*shift*/       0.0);
                     sabrInterpolation.update();
 
                     // Recover SABR calibration parameters
-                    final boolean failed = false;
                     final double calibratedAlpha = sabrInterpolation.alpha();
                     final double calibratedBeta  = sabrInterpolation.beta();
                     final double calibratedNu    = sabrInterpolation.nu();
                     final double calibratedRho   = sabrInterpolation.rho();
 
-                    // TODO: remove these declarations. Added just to make it compile.
-//                    final double calibratedAlpha = Double.NaN;
-//                    final double calibratedBeta  = Double.NaN;
-//                    final double calibratedNu    = Double.NaN;
-//                    final double calibratedRho   = Double.NaN;
-                    // ---------------------------------------------------------------
-
                     double error;
 
-                    // compare results: alpha
+                    // compare results: alpha (against true input value)
                     error = Math.abs(initialAlpha-calibratedAlpha);
                     assertFalse("failed to calibrate alpha Sabr parameter"
                             +"\n    expected value:   "+initialAlpha
@@ -1214,6 +1187,22 @@ public class InterpolationTest {
                             +"\n    calculated value: "+calibratedRho
                             +"\n    error:              "+error,
                             Math.abs(error) > calibrationTolerance);
+
+                    // Cross-validate per-combo against C++ probe at per-test
+                    // 5e-8 tier (Halton+LM/Simplex fp accumulation between
+                    // Java port and C++ Boost — same justification as
+                    // SABRInterpolationTest::crossCheck).
+                    final String key = methodNames[j]
+                            + "_vw" + (vegaWeighted[i] ? 1 : 0)
+                            + "_a" + (isAlphaFixed[k_a] ? 1 : 0)
+                            + "_b" + (isBetaFixed[k_b]  ? 1 : 0)
+                            + "_n" + (isNuFixed[k_n]    ? 1 : 0)
+                            + "_r" + (isRhoFixed[k_r]   ? 1 : 0);
+                    final org.json.JSONObject expCombo = combos.getJSONObject(key);
+                    crossCheck(key, "alpha", calibratedAlpha, expCombo.getDouble("alpha"));
+                    crossCheck(key, "beta",  calibratedBeta,  expCombo.getDouble("beta"));
+                    crossCheck(key, "nu",    calibratedNu,    expCombo.getDouble("nu"));
+                    crossCheck(key, "rho",   calibratedRho,   expCombo.getDouble("rho"));
                   }
                 }
               }
@@ -1221,6 +1210,17 @@ public class InterpolationTest {
           }
         }
 
+    }
+
+    /** Per-test 5e-8 cross-validation; see SABRInterpolationTest::crossCheck. */
+    private static void crossCheck(final String key, final String label,
+                                   final double got, final double expected) {
+        final double tol = 5.0e-8;
+        if (!org.jquantlib.testsuite.util.Tolerance.within(got, expected, tol,
+                "Halton+LM/Simplex fp accumulation between Java port and C++ Boost")) {
+            org.junit.Assert.fail("[" + key + "] " + label + ": Java=" + got + " Cpp=" + expected
+                    + " (per-test 5e-8 tier)");
+        }
     }
 
 
