@@ -1,0 +1,33 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "atm_rate": 0.05059858531885231,
+        "swaption_npv_hw_tree": 2.130229406572716
+      },
+      "inputs": {
+        "calendar": "TARGET",
+        "dummy_fixed_rate": 0.04,
+        "eval_date": "2026-01-15",
+        "exercise_years": 5,
+        "fixed_day_counter": "30/360 European",
+        "fixed_freq": "Annual",
+        "flat_rate": 0.05,
+        "float_tenor_months": 3,
+        "hw_a": 0.1,
+        "hw_sigma": 0.01,
+        "index": "Euribor3M",
+        "nominal": 100.0,
+        "swap_years": 5,
+        "time_steps": 100,
+        "yts_day_counter": "Actual/365 Fixed"
+      },
+      "name": "atm_payer_5y5y_hw_tree"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-26T22:22:42Z",
+  "generated_by": "treeswaptionengine_probe",
+  "test_group": "pricingengines/swaption/treeswaptionengine"
+}

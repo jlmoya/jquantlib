@@ -186,6 +186,38 @@ public class VanillaSwap extends Swap {
         return nominal;
     }
 
+    /**
+     * @return the fixed-leg day counter. Mirrors C++
+     * {@code FixedVsFloatingSwap::fixedDayCount()}.
+     */
+    public DayCounter fixedDayCount() /* @ReadOnly */ {
+        return fixedDayCount;
+    }
+
+    /**
+     * @return the floating-leg day counter. Mirrors C++
+     * {@code FixedVsFloatingSwap::floatingDayCount()}.
+     */
+    public DayCounter floatingDayCount() /* @ReadOnly */ {
+        return floatingDayCount;
+    }
+
+    /**
+     * @return the floating-leg index. Mirrors C++
+     * {@code FixedVsFloatingSwap::iborIndex()}.
+     */
+    public IborIndex iborIndex() /* @ReadOnly */ {
+        return iborIndex;
+    }
+
+    /**
+     * @return the payment business-day convention. Mirrors C++
+     * {@code FixedVsFloatingSwap::paymentConvention()}.
+     */
+    public BusinessDayConvention paymentConvention() /* @ReadOnly */ {
+        return paymentConvention;
+    }
+
     public Type type() /* @ReadOnly */ {
         return type;
     }
