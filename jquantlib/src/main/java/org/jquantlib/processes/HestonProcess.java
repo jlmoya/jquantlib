@@ -45,6 +45,7 @@ public class HestonProcess extends StochasticProcess {
 
     public enum Discretization {
         PartialTruncation, FullTruncation, Reflection,
+        NonCentralChiSquareVariance,
         QuadraticExponential, QuadraticExponentialMartingale
     };
 
@@ -206,6 +207,23 @@ public class HestonProcess extends StochasticProcess {
         return new Array(tmp);
     }
 
+    /**
+     * Exact non-central chi-squared sampling for the variance leg.
+     * Port of C++ v1.42.1 hestonprocess.cpp lines 569-582.
+     */
+    private double varianceDistribution(final double v, final double dw, final double dt) {
+        final double df  = 4.0 * thetav_ * kappav_ / (sigmav_ * sigmav_);
+        final double ncp = 4.0 * kappav_ * Math.exp(-kappav_ * dt)
+                / (sigmav_ * sigmav_ * (1.0 - Math.exp(-kappav_ * dt))) * v;
+
+        final double cn = new org.jquantlib.math.distributions.CumulativeNormalDistribution().op(dw);
+        final double p = Math.min(1.0 - Constants.QL_EPSILON, Math.max(0.0, cn));
+
+        final double x = new org.jquantlib.math.distributions.InverseNonCentralCumulativeChiSquaredDistribution(
+                df, ncp, 100, 1.0e-8).op(p);
+        return sigmav_ * sigmav_ * (1.0 - Math.exp(-kappav_ * dt)) / (4.0 * kappav_) * x;
+    }
+
     @Override
     public Array evolve(/* @Time */final double t0, final Array x0, /* @Time */final double dt, final Array dw) {
         final double[] retVal = new double[2];
@@ -254,6 +272,21 @@ public class HestonProcess extends StochasticProcess {
                 retVal[0] = x00 * Math.exp(mu * dt + vol * dw0 * sdt);
                 retVal[1] = vol * vol + nu * dt + vol2 * sdt * (rhov_ * dw0 + sqrhov_ * dw1);
                 break;
+            case NonCentralChiSquareVariance: {
+                // Alan Lewis decorrelation trick — exact sampling for the
+                // variance process, equity process driven by Ito-correction.
+                // Mirrors C++ v1.42.1 hestonprocess.cpp lines 444-460.
+                vol = (x01 > 0.0) ? Math.sqrt(x01) : 0.0;
+                mu = riskFreeRate_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
+                        - dividendYield_.currentLink().forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
+                        - 0.5 * vol * vol;
+
+                retVal[1] = varianceDistribution(x01, dw1, dt);
+                final double dy = (mu - rhov_ / sigmav_ * kappav_ * (thetav_ - vol * vol)) * dt
+                        + vol * sqrhov_ * dw0 * sdt;
+                retVal[0] = x00 * Math.exp(dy + rhov_ / sigmav_ * (retVal[1] - x01));
+                break;
+            }
             case QuadraticExponential:
             case QuadraticExponentialMartingale: {
                 // Port of QuantLib v1.42.1 QuadraticExponential /
