@@ -20,7 +20,7 @@ All 3 worktrees were created off main tip `855f45d` at L0. All independent in th
 
 ## Pause-trigger status
 
-- A4 sharpened (new `pricingengines.swaption` directory in scope, planned not surprise; includes ConstantOptionletVolatility / ConstantSwaptionVolatility small mechanical helpers if needed): not fired
+- A4 sharpened (new `pricingengines.swaption` directory in scope, planned not surprise; includes ConstantOptionletVolatility / ConstantSwaptionVolatility small mechanical helpers if needed): **FIRED on WI-3 first-chunk dispatch** — Java's `Swaption` instrument scaffold is missing entirely (no `Instrument`/`Option` parent, no Engine/Arguments/Results pattern, no `Settlement` enum). Inserted plan task C.0 (NEW): scaffold Swaption + Settlement infrastructure (~150 LOC port from C++ swaption.{hpp,cpp} + settlement.hpp). Then C.1+C.2+C.3 proceed as originally planned.
 - A6 disabled per memory `feedback_phase2a_no_a6.md`
 - A8 inactive (G2 is two-factor, not one-factor family fan-out)
 - A9 worktree-merge-conflict: not fired
@@ -44,7 +44,9 @@ _(Pending — first implementer dispatched)_
 _(Pending — first implementer dispatched)_
 
 #### WI-3 (worktree C) — Swaption infrastructure + SwaptionHelper full body
-_(Pending — first implementer dispatched)_
+
+- **First implementer dispatch (C.1+C.2+C.3): BLOCKED — A4 trigger.** Java `Swaption` instrument is a near-empty stub: no `Instrument` parent, constructor body empty, `setupArguments` throws, no `Arguments`/`Results`/`EngineImpl`, no `Settlement` enum. `BlackSwaptionEngine` cannot compile without this scaffold. No commits made; worktree clean.
+- **C.0 (NEW, in flight)** — implementer dispatched to scaffold `Swaption` + `Settlement` (~150 LOC port from C++ `swaption.{hpp,cpp}` + `settlement.hpp`) as one atomic `align(instruments)` commit. After C.0 lands, C.1+C.2+C.3 will follow.
 
 ### L2 — completion doc + tag
 _(Not yet started)_
