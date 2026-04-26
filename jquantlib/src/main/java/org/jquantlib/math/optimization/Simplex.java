@@ -103,19 +103,35 @@ public class Simplex extends OptimizationMethod {
 		return result / vertices.size();
 	}
 
-	public double extrapolate(final Problem P, final int iHighest, double factor) {
+	/**
+	 * Mirrors C++ {@code simplex.cpp::Simplex::extrapolate} (lines 54-77).
+	 * The {@code factor} argument is an in/out parameter: C++ passes by
+	 * reference ({@code Real &factor}) and the caller observes the
+	 * post-call value to drive the reflection/expansion/contraction logic.
+	 * Java emulates this with a single-element {@code double[]} since
+	 * primitives are pass-by-value.
+	 *
+	 * <p>Aligned with v1.42.1 in Phase 2d WI-3 — prior Java port took
+	 * {@code double factor} by value, silently losing the {@code *= 0.5}
+	 * (constraint-shrink loop) and {@code *= 2.0} (post-shrink restore)
+	 * mutations. The lost mutations broke the caller's
+	 * {@code factor == -1.0} / {@code |factor| > EPS} checks, allowing
+	 * the simplex to drift into NaN territory on cost functions with
+	 * narrow valid domains (e.g., SABR's {@code alpha > 0} validation).
+	 */
+	public double extrapolate(final Problem P, final int iHighest, final double[] factor) {
 
 		Array pTry;
 		do {
 			final int dimensions = values_.size() - 1;
-			final double factor1 = (1.0 - factor) / dimensions;
-			final double factor2 = factor1 - factor;
+			final double factor1 = (1.0 - factor[0]) / dimensions;
+			final double factor2 = factor1 - factor[0];
 			pTry = sum_.mul(factor1).sub(vertices_.get(iHighest).mul(factor2));
-			factor *= 0.5;
-		} while (!P.constraint().test(pTry) && Math.abs(factor) > Constants.QL_EPSILON); // QL_EPSILON);
-		if (Math.abs(factor) <= Constants.QL_EPSILON)
+			factor[0] *= 0.5;
+		} while (!P.constraint().test(pTry) && Math.abs(factor[0]) > Constants.QL_EPSILON); // QL_EPSILON);
+		if (Math.abs(factor[0]) <= Constants.QL_EPSILON)
             return values_.get(iHighest);
-		factor *= 2.0;
+		factor[0] *= 2.0;
 		final double vTry = P.value(pTry);
 		if (vTry < values_.get(iHighest)) {
 			values_.set(iHighest, vTry);
@@ -209,18 +225,21 @@ public class Simplex extends OptimizationMethod {
 				P.setCurrentValue(x_);
 				return ecType[0];
 			}
-			// If end criteria is not met, continue
-			double factor = -1.0;
+			// If end criteria is not met, continue.
+			// factor is in/out — see extrapolate() javadoc; callsite reads
+			// post-call value to choose reflection vs expansion vs
+			// contraction (matches C++ simplex.cpp:160-185).
+			final double[] factor = { -1.0 };
 			double vTry = extrapolate(P, iHighest, factor);
-			if ((vTry <= values_.get(iLowest)) && (factor == -1.0)) {
-				factor = 2.0;
+			if ((vTry <= values_.get(iLowest)) && (factor[0] == -1.0)) {
+				factor[0] = 2.0;
 				extrapolate(P, iHighest, factor);
-			} else if (Math.abs(factor) > Constants.QL_EPSILON) {
+			} else if (Math.abs(factor[0]) > Constants.QL_EPSILON) {
 				if (vTry >= values_.get(iNextHighest)) {
 					final double vSave = values_.get(iHighest);
-					factor = 0.5;
+					factor[0] = 0.5;
 					vTry = extrapolate(P, iHighest, factor);
-					if (vTry >= vSave && Math.abs(factor) > Constants.QL_EPSILON) {
+					if (vTry >= vSave && Math.abs(factor[0]) > Constants.QL_EPSILON) {
 						for (int i = 0; i <= n; i++) {
 							if (i != iLowest) {
 								vertices_.set(i, (vertices_.get(i).add(vertices_.get(iLowest))).mul(0.5));
@@ -231,7 +250,7 @@ public class Simplex extends OptimizationMethod {
 				}
 			}
 			// If can't extrapolate given theraints, exit
-			if (Math.abs(factor) <= Constants.QL_EPSILON) {
+			if (Math.abs(factor[0]) <= Constants.QL_EPSILON) {
 				x_ = vertices_.get(iLowest);
 				final double low = values_.get(iLowest);
 				P.setFunctionValue(low);

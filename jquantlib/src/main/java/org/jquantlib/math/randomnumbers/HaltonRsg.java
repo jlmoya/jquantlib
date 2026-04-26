@@ -86,7 +86,20 @@ public class HaltonRsg {
                             MersenneTwisterUniformRng.class, dimensionality, seed);
             if (randomStart) {
                 final long[] starts = uniformRsg.nextInt32Sequence();
-                System.arraycopy(starts, 0, this.randomStart_, 0, dimensionality);
+                // C++ stores randomStart_ as unsigned long (haltonrsg.hpp:59);
+                // Java's nextInt32() returns SIGNED long (sign-extended from
+                // the MT 32-bit word — see MersenneTwisterTest:432 for the
+                // documented workaround pattern). Mask each value to the
+                // low 32 bits so the radical-inverse counter
+                // `k = sequenceCounter_ + randomStart_[i]` stays non-negative
+                // and matches the C++ unsigned arithmetic. Without this mask,
+                // a negative randomStart_ propagates a negative k through the
+                // van der Corput loop and produces NEGATIVE Halton sample
+                // values (observed: SABR Halton restart at iteration 1 for
+                // free-alpha free-beta combos generated sample[1]=-0.308).
+                for (int i = 0; i < dimensionality; ++i) {
+                    this.randomStart_[i] = starts[i] & 0xFFFFFFFFL;
+                }
             }
             if (randomShift) {
                 final double[] shifts = uniformRsg.nextSequence().value();
