@@ -40,6 +40,7 @@ package org.jquantlib.termstructures.volatilities.optionlet;
 
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.annotation.Time;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.termstructures.volatilities.VolatilityTermStructure;
 import org.jquantlib.time.BusinessDayConvention;
@@ -182,6 +183,26 @@ public abstract class OptionletVolatilityStructure extends VolatilityTermStructu
 	 */
 	public SmileSection smileSection(final @Time double optionTime) {
 		return smileSection(optionTime, false);
+	}
+
+	/**
+	 * Volatility type used by this structure.
+	 * <p>
+	 * Mirrors C++ QuantLib v1.42.1 {@code OptionletVolatilityStructure::volatilityType()}
+	 * which defaults to {@code ShiftedLognormal}.
+	 */
+	public VolatilityType volatilityType() {
+		return VolatilityType.ShiftedLognormal;
+	}
+
+	/**
+	 * Shift used in conjunction with {@link VolatilityType#ShiftedLognormal}.
+	 * <p>
+	 * Mirrors C++ QuantLib v1.42.1 {@code OptionletVolatilityStructure::displacement()}
+	 * which defaults to {@code 0.0}.
+	 */
+	public double displacement() {
+		return 0.0;
 	}
 
 
