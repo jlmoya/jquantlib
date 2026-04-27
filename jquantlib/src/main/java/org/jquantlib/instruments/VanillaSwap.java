@@ -41,6 +41,7 @@ When applicable, the original copyright notice follows this notice.
 package org.jquantlib.instruments;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.jquantlib.QL;
@@ -308,7 +309,18 @@ public class VanillaSwap extends Swap {
     @Override
     public void setupArguments(final PricingEngine.Arguments arguments) /* @ReadOnly */ {
         super.setupArguments(arguments);
-        if (arguments.getClass().isAssignableFrom(VanillaSwap.Arguments.class)) {
+        // Phase 2g WI-1: align with C++ v1.42.1 fixedvsfloatingswap.cpp
+        // setupArguments. C++ does dynamic_cast<FixedVsFloatingSwap::arguments*>
+        // and returns early on a null cast — the equivalent Java check is
+        // "is `arguments` an instance of VanillaSwap.Arguments", i.e.
+        // VanillaSwap.Arguments.class.isAssignableFrom(arguments.getClass())
+        // or simply arguments instanceof VanillaSwap.Arguments. The previous
+        // arguments.getClass().isAssignableFrom(VanillaSwap.Arguments.class)
+        // check was inverted (asks the opposite question) and was always
+        // false for the common subclass case (e.g. SwaptionArgumentsImpl
+        // extending VanillaSwap.ArgumentsImpl), so swaption engines never
+        // saw populated swap args.
+        if (arguments instanceof VanillaSwap.Arguments) {
             final VanillaSwap.ArgumentsImpl a = (VanillaSwap.ArgumentsImpl) arguments;
 
             a.type = type;
@@ -316,11 +328,18 @@ public class VanillaSwap extends Swap {
 
             final Leg fixedCoupons = fixedLeg();
 
-            a.fixedResetDates = new ArrayList<Date>(fixedCoupons.size());
-            a.fixedPayDates = new ArrayList<Date>(fixedCoupons.size());
-            a.fixedCoupons = new ArrayList</*@Real*/ Double>(fixedCoupons.size());
+            // Phase 2g WI-1: ArrayList(int) only sets *capacity*; .set(i, ...)
+            // throws IndexOutOfBoundsException because size() == 0. C++
+            // std::vector<Date>(n) creates a vector OF SIZE n with default-
+            // constructed elements; the Java mirror is
+            // new ArrayList<>(Collections.nCopies(size, null)) which yields
+            // size() == n with null entries ready to be overwritten via .set().
+            final int nFixed = fixedCoupons.size();
+            a.fixedResetDates = new ArrayList<Date>(Collections.nCopies(nFixed, (Date) null));
+            a.fixedPayDates = new ArrayList<Date>(Collections.nCopies(nFixed, (Date) null));
+            a.fixedCoupons = new ArrayList</*@Real*/ Double>(Collections.nCopies(nFixed, (Double) null));
 
-            for (int i=0; i<fixedCoupons.size(); i++) {
+            for (int i=0; i<nFixed; i++) {
                 final FixedRateCoupon coupon = (FixedRateCoupon) fixedCoupons.get(i);
                 a.fixedPayDates.set(i, coupon.date());
                 a.fixedResetDates.set(i, coupon.accrualStartDate());
@@ -329,14 +348,15 @@ public class VanillaSwap extends Swap {
 
             final Leg floatingCoupons = floatingLeg();
 
-            a.floatingResetDates = new ArrayList<Date>(floatingCoupons.size());
-            a.floatingPayDates = new ArrayList<Date>(floatingCoupons.size());
-            a.floatingFixingDates = new ArrayList<Date>(floatingCoupons.size());
+            final int nFloat = floatingCoupons.size();
+            a.floatingResetDates = new ArrayList<Date>(Collections.nCopies(nFloat, (Date) null));
+            a.floatingPayDates = new ArrayList<Date>(Collections.nCopies(nFloat, (Date) null));
+            a.floatingFixingDates = new ArrayList<Date>(Collections.nCopies(nFloat, (Date) null));
 
-            a.floatingAccrualTimes = new ArrayList</*@Time*/ Double>(floatingCoupons.size());
-            a.floatingSpreads = new ArrayList</*@Spread*/ Double>(floatingCoupons.size());
-            a.floatingCoupons = new ArrayList</*@Real*/ Double>(floatingCoupons.size());
-            for (int i=0; i<floatingCoupons.size(); ++i) {
+            a.floatingAccrualTimes = new ArrayList</*@Time*/ Double>(Collections.nCopies(nFloat, (Double) null));
+            a.floatingSpreads = new ArrayList</*@Spread*/ Double>(Collections.nCopies(nFloat, (Double) null));
+            a.floatingCoupons = new ArrayList</*@Real*/ Double>(Collections.nCopies(nFloat, (Double) null));
+            for (int i=0; i<nFloat; ++i) {
                 final IborCoupon coupon = (IborCoupon) floatingCoupons.get(i);
 
                 a.floatingResetDates.set(i, coupon.accrualStartDate());
