@@ -50,19 +50,12 @@ import org.junit.Test;
  * Jamshidian bond-option decomposition against a C++ v1.42.1 probe (see
  * {@code migration-harness/cpp/probes/pricingengines/swaption/jamshidianswaptionengine_probe.cpp}).
  *
- * <p><strong>Tolerance tier</strong> — loose (abs 1e-8 + rel 1e-8) for the
- * Jamshidian NPV; tight for the swap fixture sanity values. Bond / bond-option
- * pricers are deterministic and bit-exact match C++; the noise floor comes
- * from the Brent solver's r*. The Java {@link org.jquantlib.math.solvers1D.Brent}
- * solver's pre-loop initialisation differs from the C++ v1.42.1
- * {@code brent.hpp} (Java seeds the algorithm with {@code root = xMax} while
- * C++ evaluates {@code f(guess)} first to seed {@code root_/d/e}); the
- * algorithmic divergence yields an ~5e-9 root drift which propagates to a
- * ~7e-11 absolute NPV difference (~37x the tight-tier ceiling, ~5 orders of
- * magnitude below the loose-tier ceiling). Aligning the Java Brent
- * initialisation is out of scope for Phase 2f WI-2 because every Brent
- * caller in the codebase would need re-fingerprinting; the work is captured
- * in {@code docs/migration/phase2f-progress.md} as a deferred align.
+ * <p><strong>Tolerance tier</strong> — tight (abs 1e-14 + rel 1e-12)
+ * across all three values. Phase 2g WI-1 aligned Java
+ * {@link org.jquantlib.math.solvers1D.Brent#solveImpl} with C++ v1.42.1
+ * {@code brent.hpp} pre-loop initialisation, eliminating the ~5e-9 r*
+ * drift and ~7e-11 absolute NPV difference that previously gated this
+ * test at the loose tier.
  */
 public class JamshidianSwaptionEngineTest {
 
@@ -146,11 +139,10 @@ public class JamshidianSwaptionEngineTest {
         if (!Tolerance.tight(atmRate, expAtmRate)) {
             fail("atmRate: exp=" + expAtmRate + " got=" + atmRate);
         }
-        // Loose tier (justification at class-level Javadoc): pre-existing
-        // Java Brent.solveImpl() initialisation diverges from C++ brent.hpp
-        // (root = xMax vs. f(guess) seed) — leaks ~5e-9 into r* and ~7e-11
-        // into NPV.
-        if (!Tolerance.loose(npv, expSwaptionNPV)) {
+        // Phase 2g WI-1: post-Brent-fix tier promotion (was LOOSE due to
+        // pre-fix Brent pre-loop init divergence; new Brent matches C++
+        // bit-faithfully).
+        if (!Tolerance.tight(npv, expSwaptionNPV)) {
             fail("jamshidian.NPV(): exp=" + expSwaptionNPV + " got=" + npv);
         }
     }

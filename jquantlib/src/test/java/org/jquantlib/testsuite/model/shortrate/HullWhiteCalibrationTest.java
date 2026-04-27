@@ -146,15 +146,12 @@ public class HullWhiteCalibrationTest {
 
         final JSONObject exp = (JSONObject) c.expectedRaw();
         final JSONArray samples = exp.getJSONArray("samples");
-        // Loose tier (1e-8) per design §4.3 per-test loosening allowance.
-        // Rationale: HullWhite.tree(grid) calibrates per-step phi via a
-        // Brent solver targeting 1e-7 phi tolerance, propagating to
-        // ~1e-11 in discount values. Same noise floor as BK's tree
-        // fingerprint (commit be09786) — the dominant trinomial-shape
-        // bugs in this code path are fixed (commits aed9147 fixing
-        // Branching probs_ initialization, and bdbc1e5 fixing dx_
-        // off-by-one); what remains is solver-noise-floor, not
-        // port-correctness-floor.
+        // Phase 2g WI-1: tight tier promotion (was LOOSE due to pre-fix
+        // Brent.solveImpl Java/C++ pre-loop init divergence — same noise
+        // floor as BK tree). Phase 2g WI-1 aligned Java Brent with C++
+        // brent.hpp; the per-step phi calibration now matches C++
+        // bit-faithfully and the tree discount/underlying values match
+        // at tight tier.
         for (int k = 0; k < samples.length(); k++) {
             final JSONObject s = samples.getJSONObject(k);
             final int i = s.getInt("i");
@@ -163,11 +160,11 @@ public class HullWhiteCalibrationTest {
             final double expUnderlying = s.getDouble("underlying");
             final double gotDiscount = tree.discount(i, j);
             final double gotUnderlying = tree.underlying(i, j);
-            if (!Tolerance.loose(gotDiscount, expDiscount)) {
+            if (!Tolerance.tight(gotDiscount, expDiscount)) {
                 fail("discount[i=" + i + ",j=" + j + "]: exp="
                         + expDiscount + " got=" + gotDiscount);
             }
-            if (!Tolerance.loose(gotUnderlying, expUnderlying)) {
+            if (!Tolerance.tight(gotUnderlying, expUnderlying)) {
                 fail("underlying[i=" + i + ",j=" + j + "]: exp="
                         + expUnderlying + " got=" + gotUnderlying);
             }

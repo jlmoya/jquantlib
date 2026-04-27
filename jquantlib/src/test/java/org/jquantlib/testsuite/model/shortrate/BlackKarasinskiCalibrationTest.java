@@ -45,8 +45,8 @@ import static org.junit.Assert.fail;
  *       the live {@code arguments_[i]} instances.</li>
  *   <li>{@code treeFingerprint_matchesCpp} — Phase 2c WI-5 fingerprint
  *       cross-validating the now-unstubbed {@code tree(grid)} calibration
- *       against C++ v1.42.1 reference values (loose tier; see inline
- *       justification on the assertions).</li>
+ *       against C++ v1.42.1 reference values (tight tier post Phase 2g
+ *       WI-1 Brent.solveImpl alignment; see inline justification).</li>
  * </ul>
  */
 public class BlackKarasinskiCalibrationTest {
@@ -115,22 +115,13 @@ public class BlackKarasinskiCalibrationTest {
 
         final JSONObject exp = (JSONObject) c.expectedRaw();
         final JSONArray samples = exp.getJSONArray("samples");
-        // Loose tier (1e-8 abs + 1e-8 rel) per design §4.3 per-test
-        // loosening allowance. Rationale: BlackKarasinski.tree(grid)
-        // calibrates a per-step phi via Brent solver targeting 1e-7
-        // tolerance on phi (both Java and C++ v1.42.1 use the same
-        // bracketed root finder with the same target). The dominant
-        // ~8.5e-3 structural error from the prior TrinomialTree.dx_
-        // off-by-one was eliminated in commit 1cc6b3a; the residual
-        // ~1.7e-11 is genuine solver-noise-floor as the per-step phi
-        // searches converge to slightly different points within the
-        // 1e-7 phi tolerance in Java vs C++ (a 1e-7 phi delta
-        // propagates to ~1.7e-11 in exp(-phi*dt) discount values).
-        // Tolerance.tight (1e-12 rel + 1e-14 abs) cannot accommodate
-        // this without tightening Brent globally, which would change
-        // BK behavior and require C++-side parity review — out of
-        // WI-5 scope. This is the textbook per-test loosening case
-        // the design explicitly allows.
+        // Phase 2g WI-1: tight tier promotion (was LOOSE per Phase 2c WI-5
+        // due to pre-fix Brent.solveImpl Java/C++ pre-loop init divergence
+        // — that ~1.7e-11 residual on exp(-phi*dt) discount values came
+        // from per-step phi searches converging to slightly different
+        // points within the 1e-7 Brent tolerance). Phase 2g WI-1 aligned
+        // Java Brent with C++ brent.hpp, eliminating the divergence; the
+        // tree now matches C++ at tight tier.
         for (int k = 0; k < samples.length(); k++) {
             final JSONObject s = samples.getJSONObject(k);
             final int i = s.getInt("i");
@@ -139,11 +130,11 @@ public class BlackKarasinskiCalibrationTest {
             final double expUnderlying = s.getDouble("underlying");
             final double gotDiscount = tree.discount(i, j);
             final double gotUnderlying = tree.underlying(i, j);
-            if (!Tolerance.loose(gotUnderlying, expUnderlying)) {
+            if (!Tolerance.tight(gotUnderlying, expUnderlying)) {
                 fail("underlying[i=" + i + ",j=" + j + "]: exp="
                         + expUnderlying + " got=" + gotUnderlying);
             }
-            if (!Tolerance.loose(gotDiscount, expDiscount)) {
+            if (!Tolerance.tight(gotDiscount, expDiscount)) {
                 fail("discount[i=" + i + ",j=" + j + "]: exp="
                         + expDiscount + " got=" + gotDiscount);
             }

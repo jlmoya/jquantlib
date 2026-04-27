@@ -49,15 +49,18 @@ import org.junit.Test;
  * C++ v1.42.1 probe (see
  * {@code migration-harness/cpp/probes/pricingengines/swaption/treeswaptionengine_probe.cpp}).
  *
- * <p><strong>Tolerance tier — loose</strong> (abs 1e-8 + rel 1e-8).
- * Tree-based pricing depends on the model's tree construction, including
- * the Brent solver in {@code TermStructureFittingParameter} for
- * term-structure-consistent models. Phase 2c WI-5 BK tree precedent
- * (Brent solver convergence noise floor) — same Brent dependency here.
+ * <p><strong>Tolerance tier — tight</strong> (abs 1e-14 + rel 1e-12)
+ * post Phase 2g WI-1 Brent.solveImpl alignment. Tree-based pricing
+ * depends on the model's tree construction, including the Brent solver
+ * in {@code TermStructureFittingParameter} for term-structure-consistent
+ * models. Phase 2g WI-1 aligned Java Brent with C++ v1.42.1 brent.hpp,
+ * eliminating the Phase 2c WI-5 BK tree precedent's solver-noise-floor
+ * justification for loose tier.
  */
 public class TreeSwaptionEngineTest {
 
-    private static final double LOOSE_TOL = 1.0e-8;
+    private static final double TIGHT_REL_TOL = 1.0e-12;
+    private static final double TIGHT_ABS_TOL = 1.0e-14;
 
     @Test
     public void atmPayerSwaption_hwTreeNpvMatchesCpp() {
@@ -130,9 +133,10 @@ public class TreeSwaptionEngineTest {
         final double npv = swaption.NPV();
 
         // ---- Cross-validate ----
+        // Phase 2g WI-1: tight tier (abs 1e-14 + rel 1e-12) post-Brent fix.
         final double expNpv = exp.getDouble("swaption_npv_hw_tree");
-        if (Math.abs(npv - expNpv) > LOOSE_TOL
-                && Math.abs((npv - expNpv) / expNpv) > LOOSE_TOL) {
+        if (Math.abs(npv - expNpv) > TIGHT_ABS_TOL
+                && Math.abs((npv - expNpv) / expNpv) > TIGHT_REL_TOL) {
             fail("swaption.NPV() (HW tree): exp=" + expNpv + " got=" + npv
                     + " absDiff=" + (npv - expNpv));
         }

@@ -217,16 +217,12 @@ public class G2Test {
             fail("atmRate: exp=" + expAtm + " got=" + atmRate);
         }
 
-        // Loose tier (1e-8 abs + 1e-8 rel). Justification: G2.swaption
-        // composes SegmentIntegral over an inner Brent solver. Both the
-        // outer trapezoid sum (50 sub-intervals) and the inner Brent
-        // root-finding (1e-6 accuracy plus a known Java/C++ pre-loop
-        // initialisation divergence in Brent.solveImpl — see
-        // JamshidianSwaptionEngineTest class-level note) compound a
-        // floating-point noise floor well below 1e-8 absolute. Tightening
-        // requires aligning Java Brent with C++ brent.hpp first; deferred.
+        // Phase 2g WI-1: post-Brent-fix tier promotion (was LOOSE due to
+        // pre-fix Brent pre-loop init divergence; new Brent matches C++
+        // bit-faithfully, so the SegmentIntegral-over-Brent composition
+        // tightens to the same level as the standalone Brent caller).
         final double expSwaption = exp.getDouble("swaption_integral");
-        if (!Tolerance.loose(got, expSwaption)) {
+        if (!Tolerance.tight(got, expSwaption)) {
             fail("g2.swaption: exp=" + expSwaption + " got=" + got);
         }
         // Suppress unused-import warnings if Settlement isn't read elsewhere.
