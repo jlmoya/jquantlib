@@ -59,9 +59,16 @@ public class BrentTest {
             fail("expected: 1.0 but was: " + (soln - accuracy));
         }
 
-        // assertEquals(10, brent.getNumEvaluations());
-        if (brent.getNumEvaluations() != 10) {
-            fail("expected: 10" + " but was: " + brent.getNumEvaluations());
+        // Phase 2g WI-1: counts updated post-Brent.solveImpl C++ alignment.
+        // C++ brent.hpp evaluates f(root_) once before the main loop and
+        // once again right before returning at convergence; both increment
+        // evaluationNumber_. The new pre-loop init also seeds Brent state
+        // from a different starting bracket (root vs. fxMin/fxMax sign
+        // partition rather than xMax-anchored), which changes the
+        // Dekker-Brent pivot trajectory and hence the iteration count.
+        // Pre-fix counts were 10 (here) and 13 (below).
+        if (brent.getNumEvaluations() != 12) {
+            fail("expected: 12" + " but was: " + brent.getNumEvaluations());
         }
 
         soln = brent.solve(square, accuracy, 0.01, 0.1);
@@ -71,9 +78,8 @@ public class BrentTest {
             fail("expected: 1.0 but was: " + (soln - accuracy));
         }
 
-        // assertEquals(13, brent.getNumEvaluations());
-        if (brent.getNumEvaluations() != 13) {
-            fail("expected: 13" + " but was: " + brent.getNumEvaluations());
+        if (brent.getNumEvaluations() != 12) {
+            fail("expected: 12" + " but was: " + brent.getNumEvaluations());
         }
 
     }

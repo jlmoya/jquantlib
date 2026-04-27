@@ -49,10 +49,24 @@ public class Brent extends AbstractSolver1D<Ops.DoubleOp> {
 
         double min1, min2;
         double froot, p, q, r, s, xAcc1, xMid;
-        double d = 0.0, e = 0.0;
 
-        root = xMax;
-        froot = fxMax;
+        // Phase 2g WI-1: align with C++ v1.42.1 brent.hpp pre-loop init.
+        // Evaluate f at root_ (which equals the guess set by AbstractSolver1D.solve)
+        // before entering the main loop. This seeds the Brent state on the
+        // correct side of the bracket and changes downstream Dekker-Brent
+        // pivot selection to match C++.
+        froot = f.op(root);
+        evaluationNumber++;
+        if (froot * fxMin < 0) {
+            xMax = xMin;
+            fxMax = fxMin;
+        } else {
+            xMin = xMax;
+            fxMin = fxMax;
+        }
+        double d = root - xMax;
+        double e = d;
+
         while (evaluationNumber <= getMaxEvaluations()) {
             if ((froot > 0.0 && fxMax > 0.0) || (froot < 0.0 && fxMax < 0.0)) {
                 // Rename xMin, root, xMax and adjust bounds
@@ -73,8 +87,13 @@ public class Brent extends AbstractSolver1D<Ops.DoubleOp> {
             // Convergence check
             xAcc1 = 2.0 * Constants.QL_EPSILON * Math.abs(root) + 0.5 * xAccuracy;
             xMid = (xMax - root) / 2.0;
-            if (Math.abs(xMid) <= xAcc1 || froot == 0.0)
+            if (Math.abs(xMid) <= xAcc1 || Closeness.isClose(froot, 0.0)) {
+                // Phase 2g WI-1: C++ brent.hpp evaluates f(root_) once more
+                // before returning, matching final-evaluation-count semantics.
+                f.op(root);
+                evaluationNumber++;
                 return root;
+            }
 
             if (Math.abs(e) >= xAcc1 && Math.abs(fxMin) > Math.abs(froot)) {
                 // Attempt inverse quadratic interpolation
