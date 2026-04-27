@@ -1,0 +1,33 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "atm_rate": 0.05059858531885231,
+        "jamshidian_swaption_npv": 2.1092300933089394,
+        "swap0_npv": 3.559262722997847
+      },
+      "inputs": {
+        "calendar": "TARGET",
+        "dummy_fixed_rate": 0.04,
+        "eval_date": "2026-01-15",
+        "exercise_years": 5,
+        "fixed_day_counter": "30/360 European",
+        "fixed_freq": "Annual",
+        "flat_rate": 0.05,
+        "float_tenor_months": 3,
+        "hw_a": 0.1,
+        "hw_sigma": 0.01,
+        "index": "Euribor3M",
+        "nominal": 100.0,
+        "swap_years": 5,
+        "yts_day_counter": "Actual/365 Fixed"
+      },
+      "name": "atm_payer_5y5y"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-27T01:57:14Z",
+  "generated_by": "jamshidianswaptionengine_probe",
+  "test_group": "pricingengines/swaption/jamshidianswaptionengine"
+}
