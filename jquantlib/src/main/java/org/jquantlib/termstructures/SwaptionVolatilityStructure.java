@@ -2,6 +2,7 @@ package org.jquantlib.termstructures;
 
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
@@ -78,6 +79,31 @@ public abstract class SwaptionVolatilityStructure extends AbstractTermStructure 
 
     // ! the business day convention used for option date calculation
     public abstract BusinessDayConvention businessDayConvention();
+
+    /**
+     * Volatility quoting convention.
+     * <p>
+     * Mirrors C++ QuantLib v1.42.1 {@code SwaptionVolatilityStructure::volatilityType()}
+     * (ql/termstructures/volatility/swaption/swaptionvolstructure.hpp lines 188-191):
+     * the base implementation returns {@link VolatilityType#ShiftedLognormal} so that
+     * legacy concrete subclasses (which never overrode this hook) continue to be quoted
+     * in lognormal terms.
+     */
+    public VolatilityType volatilityType() {
+        return VolatilityType.ShiftedLognormal;
+    }
+
+    /**
+     * Shift applied to the underlying rate when {@link #volatilityType()} is
+     * {@link VolatilityType#ShiftedLognormal}; zero by default for legacy lognormal
+     * quoting. Mirrors C++ QuantLib v1.42.1 {@code SwaptionVolatilityStructure::shiftImpl}
+     * default (see ql/termstructures/volatility/swaption/swaptionvolstructure.hpp
+     * lines 478-480), exposed here as a convenience accessor used by Bachelier-aware
+     * pricing engines.
+     */
+    public double shift() {
+        return 0.0;
+    }
 
     // ! implements the conversion between optionTenors and optionDates
     // public abstract Date optionDateFromTenor( Period optionTenor);
