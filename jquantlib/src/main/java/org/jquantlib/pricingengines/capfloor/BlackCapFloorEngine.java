@@ -36,6 +36,7 @@ import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.CapFloor;
 import org.jquantlib.instruments.Option;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -154,6 +155,16 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
         final Date today = vol_.currentLink().referenceDate();
         final Date settlement = discountCurve_.currentLink().referenceDate();
 
+        // Phase 2f WI-1: optionlet vol surfaces now expose volatilityType().
+        // When the surface is stripped under the normal model, dispatch
+        // each optionlet to the Bachelier closed form. C++ keeps Black /
+        // Bachelier as separate engines and asserts the surface type at
+        // construction; Java picks the formula at calculate() time so the
+        // same Java BlackCapFloorEngine instance can be used regardless
+        // of how the OVS was stripped.
+        final boolean useBachelier =
+                vol_.currentLink().volatilityType() == VolatilityType.Normal;
+
         for (int i = 0; i < optionlets; ++i) {
             final Date paymentDate = arguments.endDates[i];
             // handling of settlementDate, npvDate and includeSettlementFlows
@@ -181,8 +192,11 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
                         stdDev = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
                     }
                     // include caplets with past fixing date
-                    letValue = BlackFormula.blackFormula(Option.Type.Call,
-                            strike, forward, stdDev, discountedAccrual, displacement_);
+                    letValue = useBachelier
+                            ? BlackFormula.bachelierBlackFormula(Option.Type.Call,
+                                    strike, forward, stdDev, discountedAccrual)
+                            : BlackFormula.blackFormula(Option.Type.Call,
+                                    strike, forward, stdDev, discountedAccrual, displacement_);
                 }
                 if (type == CapFloor.Type.Floor || type == CapFloor.Type.Collar) {
                     final double strike = arguments.floorRates[i];
@@ -190,8 +204,11 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
                     if (sqrtTime > 0.0) {
                         stdDev = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
                     }
-                    final double floorlet = BlackFormula.blackFormula(Option.Type.Put,
-                            strike, forward, stdDev, discountedAccrual, displacement_);
+                    final double floorlet = useBachelier
+                            ? BlackFormula.bachelierBlackFormula(Option.Type.Put,
+                                    strike, forward, stdDev, discountedAccrual)
+                            : BlackFormula.blackFormula(Option.Type.Put,
+                                    strike, forward, stdDev, discountedAccrual, displacement_);
                     if (type == CapFloor.Type.Floor) {
                         letValue = floorlet;
                     } else {

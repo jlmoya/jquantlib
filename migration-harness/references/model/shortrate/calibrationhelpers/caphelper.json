@@ -28,11 +28,21 @@
         "helper_vol": 0.2
       },
       "name": "model_value_and_black_price"
+    },
+    {
+      "expected": {
+        "bachelier_price_at_vol": 0.022405244084893215,
+        "model_value_normal": 0.022405244084893215
+      },
+      "inputs": {
+        "helper_normal_vol": 0.01
+      },
+      "name": "normal_vol_model_value_and_bachelier_price"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-26T21:16:51Z",
+  "generated_at": "2026-04-27T02:14:47Z",
   "generated_by": "caphelper_probe",
   "test_group": "model/shortrate/calibrationhelpers/caphelper"
 }

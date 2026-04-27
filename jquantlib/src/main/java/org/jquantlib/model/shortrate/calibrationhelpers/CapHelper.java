@@ -37,6 +37,7 @@ import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.model.BlackCalibrationHelper;
 import org.jquantlib.model.VolatilityType;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.capfloor.BachelierCapFloorEngine;
 import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
@@ -189,9 +190,11 @@ public class CapHelper extends BlackCalibrationHelper {
                         new Actual365Fixed());
                 break;
             case Normal:
-                throw new UnsupportedOperationException(
-                        "VolatilityType.Normal requires BachelierCapFloorEngine "
-                                + "(deferred)");
+                // Phase 2f WI-1: BachelierCapFloorEngine is now real;
+                // mirror C++ caphelper.cpp lines 78-86.
+                engine = new BachelierCapFloorEngine(termStructure_, vol,
+                        new Actual365Fixed());
+                break;
             default:
                 throw new IllegalStateException("unknown volatility type");
         }

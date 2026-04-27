@@ -21,7 +21,10 @@ import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.instruments.Swap;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.model.BlackCalibrationHelper;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.model.shortrate.calibrationhelpers.CapHelper;
+import org.jquantlib.pricingengines.capfloor.BachelierCapFloorEngine;
 import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
@@ -234,6 +237,71 @@ public class CapHelperTest {
         if (!Tolerance.tight(blackPriceAtVol, expBlackPriceAtVol)) {
             fail("helper.blackPrice(vol): exp=" + expBlackPriceAtVol
                     + " got=" + blackPriceAtVol);
+        }
+    }
+
+    /**
+     * Phase 2f WI-1 retrofit: build the helper with VolatilityType.Normal
+     * and a BachelierCapFloorEngine. Cross-validates {@code modelValue()}
+     * (engine-driven) and {@code blackPrice(sigma)} (transient
+     * BachelierCapFloorEngine inside the helper). Tight tier — closed-form
+     * Bachelier sum over optionlets, deterministic schedule arithmetic.
+     */
+    @Test
+    public void normalVol_modelValue_and_bachelierPrice_matchCpp() {
+        final ReferenceReader reader = ReferenceReader.load(
+                "model/shortrate/calibrationhelpers/caphelper");
+        final Case ref = reader.getCase(
+                "normal_vol_model_value_and_bachelier_price");
+        final JSONObject in = ref.inputs();
+        final JSONObject exp = (JSONObject) ref.expectedRaw();
+
+        final Date eval = new Date(15, Month.January, 2026);
+        new Settings().setEvaluationDate(eval);
+        final DayCounter dc = new Actual365Fixed();
+        final Calendar cal = new Target();
+        final BusinessDayConvention bdc = BusinessDayConvention.ModifiedFollowing;
+        final Currency ccy = new EURCurrency();
+
+        final double flatRate = 0.05;
+        final YieldTermStructure flat = new FlatForward(
+                eval, new Handle<Quote>(new SimpleQuote(flatRate)), dc,
+                Compounding.Continuous, Frequency.Annual);
+        final Handle<YieldTermStructure> ts = new Handle<YieldTermStructure>(flat);
+
+        final Period idxTenor = new Period(3, TimeUnit.Months);
+        final IborIndex idx = new IborIndex(
+                "TestIbor3M", idxTenor, 0, ccy, cal, bdc, false, dc, ts);
+
+        final Period length = new Period(5, TimeUnit.Years);
+        final Frequency fixedLegFrequency = Frequency.Annual;
+        final DayCounter fixedLegDayCounter = new Thirty360(Thirty360.Convention.European);
+        final boolean includeFirstSwaplet = true;
+
+        final double helperNormalVol = in.getDouble("helper_normal_vol");
+        final Handle<Quote> volHandle =
+                new Handle<Quote>(new SimpleQuote(helperNormalVol));
+        final CapHelper helper = new CapHelper(
+                length, volHandle, idx, fixedLegFrequency, fixedLegDayCounter,
+                includeFirstSwaplet, ts,
+                BlackCalibrationHelper.CalibrationErrorType.RelativePriceError,
+                VolatilityType.Normal,
+                0.0);
+        helper.setPricingEngine(new BachelierCapFloorEngine(ts, volHandle, dc));
+
+        final double expModelValueN          = exp.getDouble("model_value_normal");
+        final double expBachelierPriceAtVol  = exp.getDouble("bachelier_price_at_vol");
+
+        final double modelValueN          = helper.modelValue();
+        final double bachelierPriceAtVol  = helper.blackPrice(helperNormalVol);
+
+        if (!Tolerance.tight(modelValueN, expModelValueN)) {
+            fail("helper.modelValue() (normal): exp=" + expModelValueN
+                    + " got=" + modelValueN);
+        }
+        if (!Tolerance.tight(bachelierPriceAtVol, expBachelierPriceAtVol)) {
+            fail("helper.blackPrice(vol) (normal): exp=" + expBachelierPriceAtVol
+                    + " got=" + bachelierPriceAtVol);
         }
     }
 }

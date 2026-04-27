@@ -27,6 +27,7 @@
 #include <ql/indexes/iborindex.hpp>
 #include <ql/instruments/swap.hpp>
 #include <ql/models/shortrate/calibrationhelpers/caphelper.hpp>
+#include <ql/pricingengines/capfloor/bacheliercapfloorengine.hpp>
 #include <ql/pricingengines/capfloor/blackcapfloorengine.hpp>
 #include <ql/pricingengines/swap/discountingswapengine.hpp>
 #include <ql/quotes/simplequote.hpp>
@@ -152,6 +153,38 @@ int main() {
         {"black_price_at_vol",  blackPriceAtVol}
     };
     out.addCase("model_value_and_black_price", mvInputs, mvExpected);
+
+    // --- Phase 2f WI-1: Normal-vol case ---
+    // Same fixture/length but built with a normal-vol helper. This
+    // exercises the BachelierCapFloorEngine wiring inside CapHelper
+    // (CapHelper.blackPrice picks BachelierCapFloorEngine when
+    // volatilityType == Normal). model_value_normal is read from the
+    // helper's engine_ (we wire a BachelierCapFloorEngine onto it for
+    // parity with the lognormal case above).
+    const Real helperNormalVol = 0.01;  // 100 bp absolute
+    const Handle<Quote> volQuoteN(ext::make_shared<SimpleQuote>(helperNormalVol));
+    ext::shared_ptr<CapHelper> helperN(new CapHelper(
+        length, volQuoteN, idx, fixedLegFrequency, fixedLegDayCounter,
+        includeFirstSwaplet, ts,
+        BlackCalibrationHelper::RelativePriceError,
+        Normal,
+        0.0));
+    ext::shared_ptr<PricingEngine> capEngineN(
+        new BachelierCapFloorEngine(ts, volQuoteN, Actual365Fixed()));
+    helperN->setPricingEngine(capEngineN);
+
+    const Real modelValueN      = helperN->modelValue();
+    const Real bachelierPriceAtVol = helperN->blackPrice(helperNormalVol);
+
+    json mvNInputs = {
+        {"helper_normal_vol", helperNormalVol}
+    };
+    json mvNExpected = {
+        {"model_value_normal",       modelValueN},
+        {"bachelier_price_at_vol",   bachelierPriceAtVol}
+    };
+    out.addCase("normal_vol_model_value_and_bachelier_price",
+                mvNInputs, mvNExpected);
 
     out.write();
     return 0;
