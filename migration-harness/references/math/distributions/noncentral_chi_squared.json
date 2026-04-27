@@ -44,18 +44,74 @@
             "inv_cdf_at_cdf_x": 65.00000000000018,
             "ncp": 50.0,
             "x": 65.0
+          },
+          {
+            "cdf": 0.5934051800830165,
+            "degrees": 3.0,
+            "inv_cdf_at_cdf_x": 5.0,
+            "ncp": 2.0,
+            "x": 5.0
+          },
+          {
+            "cdf": 0.45614019943877165,
+            "degrees": 7.0,
+            "inv_cdf_at_cdf_x": 25.000000000000014,
+            "ncp": 20.0,
+            "x": 25.0
+          },
+          {
+            "cdf": 0.030348982388398612,
+            "degrees": 0.5,
+            "inv_cdf_at_cdf_x": 149.99999999999997,
+            "ncp": 200.0,
+            "x": 150.0
+          },
+          {
+            "cdf": 0.05231858466151756,
+            "degrees": 1.0,
+            "inv_cdf_at_cdf_x": 900.0000000000001,
+            "ncp": 1000.0,
+            "x": 900.0
+          },
+          {
+            "cdf": 0.5206903689749994,
+            "degrees": 0.25,
+            "inv_cdf_at_cdf_x": 0.010000000000000012,
+            "ncp": 0.1,
+            "x": 0.01
+          },
+          {
+            "cdf": 0.3432714520442199,
+            "degrees": 0.1,
+            "inv_cdf_at_cdf_x": 2.4999999999999756,
+            "ncp": 5.0,
+            "x": 2.5
+          },
+          {
+            "cdf": 1.7983965688874803e-05,
+            "degrees": 4.0,
+            "inv_cdf_at_cdf_x": 1.999999999999998,
+            "ncp": 25.0,
+            "x": 2.0
+          },
+          {
+            "cdf": 2.2488794397677596e-10,
+            "degrees": 6.0,
+            "inv_cdf_at_cdf_x": 10.000000000000002,
+            "ncp": 80.0,
+            "x": 10.0
           }
         ]
       },
       "inputs": {
-        "points": 6
+        "points": 14
       },
       "name": "noncentral_chi_squared_grid"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-25T20:20:44Z",
+  "generated_at": "2026-04-27T01:55:21Z",
   "generated_by": "noncentral_chi_squared_probe",
   "test_group": "math/distributions/noncentral_chi_squared"
 }

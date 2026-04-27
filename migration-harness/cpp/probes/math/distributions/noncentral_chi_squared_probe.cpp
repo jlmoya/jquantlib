@@ -2,7 +2,16 @@
 // Reference values for the NonCentralCumulativeChiSquare* family — CDF
 // and inverse CDF — at a grid of (degrees, ncp, x) tuples covering the
 // AS-275-style series across small/medium/large non-centrality regimes.
-// Tight tier.
+//
+// Phase 2f WI-3 C.1 extends the original Phase 2c grid with eight
+// additional fixtures targeting the four candidate drift sources:
+//   (a) Sankaran/Patnaik switching threshold — points near
+//       (df+ncp) where x2 ≈ f2 to land on the asymptotic branch
+//   (b) Series convergence boundary — small x with f_x_2n flipping sign
+//       early vs. late
+//   (c) FMA accumulation pattern — stress points with very long
+//       Poisson series (large ncp + small df)
+//   (d) Bessel/log-gamma tail — extreme f2 values
 //
 // Note: QuantLib v1.42.1 does NOT define a non-central chi-squared PDF
 // distribution class. The chisquaredistribution.hpp public surface is
@@ -35,12 +44,34 @@ int main() {
                         "noncentral_chi_squared_probe");
 
     std::vector<Point> points = {
+        // --- Phase 2c original grid -----------------------------------
         { 1.0,    0.0,   0.5  },   // central chi-squared boundary (ncp=0)
         { 2.5,    1.5,   3.0  },   // small ncp
         { 5.0,   10.0,   8.0  },   // small/medium ncp
         { 8.0,  100.0,  60.0  },   // medium-large ncp
         { 4.0,  500.0, 250.0  },   // large ncp
-        {10.0,  50.0,   65.0 },   // medium ncp, near (df+ncp) mean
+        {10.0,   50.0,  65.0  },   // medium ncp, near (df+ncp) mean
+        // --- Phase 2f WI-3 C.1 regression suite -----------------------
+        // (a) Series convergence boundary (Patnaik series): f_x_2n
+        //     = df - x flips sign after several iterations. Pick x
+        //     close to df+ncp so the bracket-search phase (flag=false)
+        //     runs through several u/v steps before flag flips true.
+        { 3.0,     2.0,    5.0  },
+        { 7.0,    20.0,   25.0  },
+        // (b) Long Poisson series — ncp ≫ df pushes lambda = 0.5*ncp
+        //     large so the geometric u *= lam/n term needs many
+        //     iterations to decay below errmax.
+        { 0.5,   200.0,  150.0  },
+        { 1.0,  1000.0,  900.0  },
+        // (c) log-gamma tail — small f2 stresses the GammaFunction
+        //     logValue(f2 + 1) call (Stirling-vs-Lanczos sensitivity).
+        { 0.25,    0.1,   0.01  },
+        { 0.1,     5.0,   2.5   },
+        // (d) Asymmetric x — small x with big ncp lands in the deep
+        //     left tail where the series term t starts tiny and the
+        //     Poisson reweighting v dominates the accumulation.
+        { 4.0,    25.0,   2.0   },
+        { 6.0,    80.0,  10.0   },
     };
 
     json arr = json::array();
