@@ -113,12 +113,14 @@ public class HestonProcessTest {
 
     /**
      * BroadieKaya schemes drive (a) an inverse non-central chi-squared
-     * variance draw (NCCV solver noise floor ~1e-9 — same as nccv_*),
-     * plus (b) a Brent root-find against a Fourier-inverted CDF that
-     * itself depends on Math.exp / Math.cos / Math.sin and the
-     * GammaFunction-driven modified Bessel I_nu series. All of these
-     * compound the A13 1-ULP-per-call drift between Math.* and libc++.
-     * Loose tier (abs 1e-8 + rel 1e-8) is mandatory.
+     * variance draw and (b) a Brent root-find against a Fourier-inverted
+     * CDF that depends on Math.exp / Math.cos / Math.sin and the
+     * GammaFunction-driven modified Bessel I_nu series. Phase 2g WI-1
+     * Brent alignment let the variance leg (a) tighten to TIGHT (same
+     * surface as nccv_*); the asset leg (b) still compounds A13
+     * 1-ULP-per-call drift between Math.* and libc++ across the
+     * Fourier-CDF, so it stays at within(5e-3) per the per-test
+     * inline justification at the assertion site.
      */
     private static void runBkCase(final String name,
                                   final HestonProcess.Discretization disc) {
@@ -168,19 +170,18 @@ public class HestonProcessTest {
         final JSONObject exp = (JSONObject) c.expectedRaw();
         final JSONArray evExp = exp.getJSONArray("evolved");
         // BroadieKaya per-test tolerance compromise (Phase 2f WI-3 A14
-        // documentation): the variance leg evolved[1] sits at LOOSE
-        // because it only depends on the inverse non-central chi-squared
-        // (same surface as nccv_*). The asset leg evolved[0] depends
-        // on a Brent root-find against a Fourier-inverted CDF that
-        // itself iterates Math.exp / Math.cos / Math.sin / GammaFunction
-        // / ModifiedBesselFunction — every Math.* call accumulates the
-        // A13 1-ULP-per-call drift between Java and libc++. Empirical
-        // floor is ~2e-3 absolute on the asset price (~2e-5 relative).
-        // Use Tolerance.within at 5e-3 abs / rel to absorb that compound
-        // drift; this is one tier looser than LOOSE and is justified
-        // by the structural Math.* divergence — not loosened to force
-        // green, the integrated rounding error genuinely exceeds LOOSE.
-        if (!Tolerance.loose(evolved.get(1), evExp.getDouble(1))) {
+        // documentation, updated Phase 2g WI-1):
+        // - The variance leg evolved[1] now sits at TIGHT post Phase 2g WI-1
+        //   Brent.solveImpl alignment — same surface as nccv_*, which
+        //   tightened in this commit's tier-promotion batch.
+        // - The asset leg evolved[0] still depends on a Brent root-find
+        //   against a Fourier-inverted CDF that iterates Math.exp / Math.cos
+        //   / Math.sin / GammaFunction / ModifiedBesselFunction — every
+        //   Math.* call accumulates the A13 1-ULP-per-call drift between
+        //   Java and libc++. Empirical floor is ~2e-3 absolute on the
+        //   asset price (~2e-5 relative). Tolerance.within at 5e-3 abs/rel
+        //   absorbs that compound drift; structurally beyond LOOSE per A13.
+        if (!Tolerance.tight(evolved.get(1), evExp.getDouble(1))) {
             fail(name + ".evolved[1]: exp=" + evExp.getDouble(1)
                     + " got=" + evolved.get(1)
                     + " Δ=" + Math.abs(evExp.getDouble(1) - evolved.get(1)));
@@ -204,17 +205,14 @@ public class HestonProcessTest {
 
     /**
      * NCCV evolve uses an inverse-CDF Brent solver on the non-central
-     * chi-squared distribution. Phase 2f WI-3 C.8 attempted to promote
-     * these to TIGHT post-NCCS tightening (C.1), but A13 firing on C.1
-     * meant NCCS still drifts ~3 ULPs from C++; the inverse-CDF Brent
-     * adds another decade of noise, leaving the empirical floor at
-     * ~1e-8 absolute / ~1e-10 relative — squarely inside LOOSE but
-     * outside TIGHT. C.8 stays at LOOSE.
+     * chi-squared distribution. Phase 2g WI-1 retry post Brent.solveImpl
+     * alignment: attempting TIGHT now that the inverse-CDF Brent matches
+     * C++ bit-faithfully.
      */
     private static void runNccvCase(final String name) {
         runFromGroup("processes/hestonprocess_nccv", name,
                 HestonProcess.Discretization.NonCentralChiSquareVariance,
-                false);
+                true);
     }
 
     private static void runFromGroup(final String group, final String name,
