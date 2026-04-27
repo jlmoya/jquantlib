@@ -2,7 +2,7 @@
   "cases": [
     {
       "expected": {
-        "analytic_cap_npv": 2.058040677333401
+        "bachelier_cap_npv": 2.389857048329723
       },
       "inputs": {
         "calendar": "TARGET",
@@ -10,18 +10,17 @@
         "cap_years": 5,
         "eval_date": "2026-01-15",
         "flat_rate": 0.05,
-        "hw_a": 0.1,
-        "hw_sigma": 0.01,
         "index_tenor_months": 3,
         "nominal": 100.0,
+        "normal_vol": 0.01,
         "yts_day_counter": "Actual/365 Fixed"
       },
-      "name": "hw_5y_cap_at_5pct"
+      "name": "bachelier_5y_cap_at_5pct"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-27T02:09:21Z",
-  "generated_by": "analyticcapfloorengine_probe",
-  "test_group": "pricingengines/capfloor/analyticcapfloorengine"
+  "generated_at": "2026-04-27T02:09:24Z",
+  "generated_by": "bacheliercapfloorengine_probe",
+  "test_group": "pricingengines/capfloor/bacheliercapfloorengine"
 }

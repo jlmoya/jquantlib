@@ -1,6 +1,6 @@
 /*
  Copyright (C) 2026 JQuantLib migration contributors.
- Tests for AnalyticCapFloorEngine NPV cross-validation (Phase 2f WI-1).
+ Tests for BachelierCapFloorEngine NPV cross-validation (Phase 2f WI-1).
  */
 package org.jquantlib.testsuite.pricingengines.capfloor;
 
@@ -18,8 +18,7 @@ import org.jquantlib.indexes.Euribor3M;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.instruments.CapFloor;
 import org.jquantlib.math.matrixutilities.Array;
-import org.jquantlib.model.shortrate.onefactormodels.HullWhite;
-import org.jquantlib.pricingengines.capfloor.AnalyticCapFloorEngine;
+import org.jquantlib.pricingengines.capfloor.BachelierCapFloorEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -43,28 +42,27 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 /**
- * Phase 2f WI-1 fingerprint test for {@link AnalyticCapFloorEngine}.
+ * Phase 2f WI-1 fingerprint test for {@link BachelierCapFloorEngine}.
  *
- * <p>Cross-validates a 5Y Euribor3M cap struck at 5% under HullWhite
- * (a=0.1, sigma=0.01) against a C++ probe-generated reference.
+ * <p>Cross-validates a 5Y Euribor3M cap struck at 5% under a constant
+ * normal (Bachelier) volatility of 100 bp absolute.
  *
  * <p><strong>Tolerance tier</strong> — tight (1e-12 rel + 1e-14 abs).
- * The pricing path is closed-form: HullWhite::discountBondOption is the
- * Jamshidian decomposition (analytic Black formula on bond options),
- * fed deterministic schedule arithmetic. No iterative solver. Java and
- * C++ should agree to within floating-point noise.
+ * Closed-form Bachelier formula sum over optionlets, plus deterministic
+ * schedule arithmetic. No solver. Java and C++ should agree to within
+ * floating-point noise.
  */
-public class AnalyticCapFloorEngineTest {
+public class BachelierCapFloorEngineTest {
 
     @Test
-    public void hullWhiteCap_npvMatchesCpp() {
+    public void bachelierCap_npvMatchesCpp() {
         final ReferenceReader reader = ReferenceReader.load(
-                "pricingengines/capfloor/analyticcapfloorengine");
-        final Case ref = reader.getCase("hw_5y_cap_at_5pct");
+                "pricingengines/capfloor/bacheliercapfloorengine");
+        final Case ref = reader.getCase("bachelier_5y_cap_at_5pct");
         final JSONObject in = ref.inputs();
         final JSONObject exp = (JSONObject) ref.expectedRaw();
 
-        // ---- Fixture (must match analyticcapfloorengine_probe.cpp exactly) ----
+        // ---- Fixture (must match bacheliercapfloorengine_probe.cpp exactly) ----
         final Date eval = new Date(15, Month.January, 2026);
         new Settings().setEvaluationDate(eval);
         final DayCounter dc = new Actual365Fixed();
@@ -82,11 +80,6 @@ public class AnalyticCapFloorEngineTest {
         final int years = in.getInt("cap_years");
         final Period idxTenor = new Period(in.getInt("index_tenor_months"),
                 TimeUnit.Months);
-        // Start the schedule one period after eval so the first fixing date
-        // is strictly in the future. This avoids relying on an
-        // IborIndex past-fixing lookup (Java's IborIndex.fixing path NPEs
-        // on missing-but-required-on-eval fixings, vs C++ falling through
-        // to the forecast); the probe fixture mirrors the same shift.
         final Date scheduleStart = eval.add(idxTenor);
         final Date maturity = eval.add(new Period(years, TimeUnit.Years));
         final Schedule schedule = new Schedule(
@@ -94,10 +87,8 @@ public class AnalyticCapFloorEngineTest {
                 DateGeneration.Rule.Forward, false);
 
         final double nominal = in.getDouble("nominal");
-        // Use the index's default fixingDays (2 for Euribor3M) — matching
-        // the probe. Java's FloatingRateCoupon ctor treats fixingDays==0
-        // as "use index default", a one-off divergence from C++ that this
-        // WI does not attempt to fix.
+        // Use the index's default fixingDays (2 for Euribor3M); see
+        // AnalyticCapFloorEngineTest for rationale.
         final Leg floatingLeg = new IborLeg(schedule, idx)
                 .withNotionals(new Array(new double[] { nominal }))
                 .withPaymentAdjustment(idx.businessDayConvention())
@@ -109,15 +100,13 @@ public class AnalyticCapFloorEngineTest {
                 new ArrayList<Double>(Arrays.asList(Double.valueOf(capStrike))),
                 ts, null);
 
-        final double hwA = in.getDouble("hw_a");
-        final double hwSigma = in.getDouble("hw_sigma");
-        final HullWhite hw = new HullWhite(ts, hwA, hwSigma);
-        cap.setPricingEngine(new AnalyticCapFloorEngine(hw, ts));
+        final double normalVol = in.getDouble("normal_vol");
+        cap.setPricingEngine(new BachelierCapFloorEngine(ts, normalVol, dc));
 
         final double npv = cap.NPV();
-        final double expected = exp.getDouble("analytic_cap_npv");
+        final double expected = exp.getDouble("bachelier_cap_npv");
         if (!Tolerance.tight(npv, expected)) {
-            fail("AnalyticCapFloorEngine NPV: exp=" + expected + " got=" + npv);
+            fail("BachelierCapFloorEngine NPV: exp=" + expected + " got=" + npv);
         }
     }
 }
