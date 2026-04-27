@@ -793,18 +793,27 @@ public class BlackFormula {
             @StdDev final double stddev,
             final @DiscountFactor double discount) {
 
-        QL.require(stddev >= 0.0 , "blackPrice must be non-negative"); // TODO: message
-        QL.require(discount > 0.0 , "discount must be positive"); // TODO: message
+        QL.require(stddev >= 0.0 , "stdDev must be non-negative");
+        QL.require(discount > 0.0 , "discount must be positive");
 
-        final double d = (forward - strike) * optionType.ordinal(), h = d / stddev;
+        // Mirrors C++ v1.42.1 blackformula.cpp lines 705-727.
+        // optionType.toInteger() returns ±1 (Call=+1, Put=-1); the
+        // pre-existing optionType.ordinal() form returned 0 for Call
+        // and 1 for Put, which broke both the call and put branches.
+        final double d = (forward - strike) * optionType.toInteger();
         if (stddev == 0.0) return discount * Math.max(d, 0.0);
+        final double h = d / stddev;
 
-        // TODO: code review
         final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
-        @NonNegative
-        final double result = discount * stddev * phi.derivative(h) + d * phi.op(h);
-        if (result >= 0.0) return result;
-        throw new ArithmeticException("negative value");
+        // C++: result = discount * (stdDev * phi.derivative(h) + d * phi(h));
+        // Pre-existing Java was missing the outer parens, applying
+        // discount only to the derivative term.
+        final double result = discount * (stddev * phi.derivative(h) + d * phi.op(h));
+        QL.ensure(result >= 0.0,
+                "negative value (" + result + ") for " + stddev + " stdDev, "
+                + optionType + " option, " + strike + " strike, "
+                + forward + " forward");
+        return result;
     }
 
     // ---
