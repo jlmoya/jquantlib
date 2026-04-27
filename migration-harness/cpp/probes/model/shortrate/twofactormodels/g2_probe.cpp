@@ -5,10 +5,18 @@
 // against C++ v1.42.1.
 
 #include <ql/version.hpp>
+#include <ql/exercise.hpp>
+#include <ql/indexes/ibor/euribor.hpp>
+#include <ql/instruments/swaption.hpp>
+#include <ql/instruments/vanillaswap.hpp>
 #include <ql/models/shortrate/twofactormodels/g2.hpp>
+#include <ql/pricingengines/swap/discountingswapengine.hpp>
 #include <ql/termstructures/yield/flatforward.hpp>
 #include <ql/time/calendars/nullcalendar.hpp>
+#include <ql/time/calendars/target.hpp>
 #include <ql/time/daycounters/actual365fixed.hpp>
+#include <ql/time/daycounters/thirty360.hpp>
+#include <ql/time/schedule.hpp>
 #include <ql/timegrid.hpp>
 #include "../../../common.hpp"
 
@@ -79,6 +87,75 @@ int main() {
                  {"b", b}, {"eta", eta}, {"rho", rho},
                  {"grid_end", 10.0}, {"grid_steps", 5}},
             json{{"samples", treeArr}});
+    }
+
+    // ----- G2.swaption(arguments, fixedRate, range, intervals) -----
+    // Phase 2f WI-2 carve from Phase 2e A11. Fixture: 5Y x 5Y ATM payer
+    // swaption (mirrors the BlackSwaptionEngine probe schedule shape but
+    // priced via the G2 integral path on the same flat 5% curve).
+    {
+        const Date eval = Date(15, January, 2026);
+        Settings::instance().evaluationDate() = eval;
+
+        const DayCounter dc = Actual365Fixed();
+        const Calendar cal = TARGET();
+
+        const Handle<YieldTermStructure> tsSwap(
+            ext::make_shared<FlatForward>(eval, 0.05, dc, Continuous, Annual));
+
+        const auto idx = ext::make_shared<Euribor3M>(tsSwap);
+
+        const Date exerciseDate = cal.advance(eval, Period(5, Years));
+        const auto exercise = ext::make_shared<EuropeanExercise>(exerciseDate);
+        const Date startDate = cal.advance(exerciseDate, 2, Days);
+        const Date maturity = cal.advance(startDate, Period(5, Years));
+
+        const DayCounter fixedDc = Thirty360(Thirty360::European);
+
+        Schedule fixedSchedule(startDate, maturity, Period(1, Years), cal,
+                               ModifiedFollowing, ModifiedFollowing,
+                               DateGeneration::Forward, false);
+        Schedule floatSchedule(startDate, maturity, Period(3, Months), cal,
+                               ModifiedFollowing, ModifiedFollowing,
+                               DateGeneration::Forward, false);
+
+        const Real nominal = 100.0;
+        const Rate dummyRate = 0.04;
+        auto swap0 = ext::make_shared<VanillaSwap>(
+            VanillaSwap::Payer, nominal, fixedSchedule, dummyRate, fixedDc,
+            floatSchedule, idx, 0.0, dc);
+        swap0->setPricingEngine(ext::make_shared<DiscountingSwapEngine>(tsSwap));
+        const Rate atmRate = swap0->fairRate();
+
+        auto swap = ext::make_shared<VanillaSwap>(
+            VanillaSwap::Payer, nominal, fixedSchedule, atmRate, fixedDc,
+            floatSchedule, idx, 0.0, dc);
+
+        Swaption swaption(swap, exercise);
+        Swaption::arguments swaptionArgs;
+        swaption.setupArguments(&swaptionArgs);
+
+        // Build a fresh G2 against the same curve so fitting parameter and
+        // integration both see the same yields the Java probe consumes.
+        G2 modelSw(tsSwap, a, sigma, b, eta, rho);
+
+        const Real range = 5.0;
+        const Size intervals = 50;
+        const Real swaptionPrice = modelSw.swaption(swaptionArgs, atmRate,
+                                                    range, intervals);
+
+        out.addCase("g2_swaption_integral_fingerprint",
+            json{{"r_curve", 0.05}, {"a", a}, {"sigma", sigma},
+                 {"b", b}, {"eta", eta}, {"rho", rho},
+                 {"nominal", nominal}, {"dummy_fixed_rate", dummyRate},
+                 {"exercise_years", 5}, {"swap_years", 5},
+                 {"fixed_freq", "Annual"}, {"float_tenor_months", 3},
+                 {"fixed_day_counter", "30/360 European"},
+                 {"yts_day_counter", "Actual/365 Fixed"},
+                 {"calendar", "TARGET"}, {"index", "Euribor3M"},
+                 {"range", range}, {"intervals", intervals}},
+            json{{"atm_rate", atmRate},
+                 {"swaption_integral", swaptionPrice}});
     }
 
     out.write();

@@ -26,13 +26,24 @@ package org.jquantlib.model.shortrate.twofactormodels;
 import static org.jquantlib.pricingengines.BlackFormula.blackFormula;
 
 import org.jquantlib.QL;
+import org.jquantlib.cashflow.Coupon;
+import org.jquantlib.cashflow.Leg;
+import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.Swap;
+import org.jquantlib.instruments.Swaption;
+import org.jquantlib.instruments.VanillaSwap;
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
+import org.jquantlib.math.Constants;
+import org.jquantlib.math.Ops;
+import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.integrals.SegmentIntegral;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.BoundaryConstraint;
 import org.jquantlib.math.optimization.PositiveConstraint;
+import org.jquantlib.math.solvers1D.Brent;
 import org.jquantlib.model.AffineModel;
 import org.jquantlib.model.ConstantParameter;
 import org.jquantlib.model.Parameter;
@@ -43,6 +54,7 @@ import org.jquantlib.processes.OrnsteinUhlenbeckProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 
 /**
@@ -190,21 +202,193 @@ public class G2 extends TwoFactorModel implements AffineModel, TermStructureCons
     public double /* @Real */ rho()   { return arguments_.get(4).get(0.0); }
 
     /**
-     * Swaption pricing via inner {@code SwaptionPricingFunction} integrated
-     * over the x-process axis.
+     * Swaption pricing via the inner {@link SwaptionPricingFunction}
+     * integrated over the x-process axis.
      * <p>
-     * Phase 2e WI-1: deferred to Phase 2f (see Phase 2e design §A11). The
-     * C++ implementation relies on {@code SegmentIntegral}'s function-object
-     * {@code operator()} interface plus a {@code Swaption::arguments} struct
-     * the Java port has not yet aligned with v1.42.1. Both the Brent-based
-     * inner pricing function and the surrounding integral wrapper are out of
-     * scope for the model-body port; the analytic + tree paths below carry
-     * the primary G2 value.
+     * Mirrors C++ v1.42.1 g2.cpp lines 218-246 verbatim. The integration
+     * domain is {@code [mux ± range*sigmax]} and uses {@link SegmentIntegral}
+     * with {@code intervals} subdivisions. The inner Brent solver finds the
+     * y-root of the bond-equality equation at each x sample.
+     *
+     * @param arguments  swaption arguments (must carry a {@link VanillaSwap}
+     *                   reference and the European exercise; nominal must be
+     *                   non-null).
+     * @param fixedRate  fixed rate of the underlying swap.
+     * @param range      half-width of the integration domain in units of
+     *                   {@code sigmax}.
+     * @param intervals  number of trapezoid-rule sub-intervals.
      */
-    public double swaption(final Object arguments, final double fixedRate,
+    public double swaption(final Swaption.ArgumentsImpl arguments, final double fixedRate,
                            final double range, final int intervals) {
-        throw new UnsupportedOperationException(
-                "G2.swaption(arguments,fixedRate,range,intervals) deferred to Phase 2f");
+        final double nominal = arguments.swap.nominal();
+        QL.require(!Double.isNaN(nominal) && nominal != Constants.NULL_REAL,
+                "non-constant nominals are not supported yet");
+
+        final Date settlement = termStructure().currentLink().referenceDate();
+        final DayCounter dayCounter = termStructure().currentLink().dayCounter();
+
+        // C++ reads arguments.floatingResetDates[0]; Java pulls it from the
+        // underlying swap's floating leg directly to avoid depending on
+        // VanillaSwap.setupArguments' projection (Phase 2e WI-3 retro-note —
+        // the projection chain has a known inverted isAssignableFrom check
+        // that prevents Swaption.ArgumentsImpl from receiving these fields).
+        final VanillaSwap swap = arguments.swap;
+        final Leg floatLeg = swap.floatingLeg();
+        final Date firstFloatReset = ((Coupon) floatLeg.get(0)).accrualStartDate();
+        final double start = dayCounter.yearFraction(settlement, firstFloatReset);
+
+        final double w = (swap.type() == VanillaSwap.Type.Payer) ? 1.0 : -1.0;
+
+        final Leg fixedLeg = swap.fixedLeg();
+        final int n = fixedLeg.size();
+        final double[] fixedPayTimes = new double[n];
+        for (int i = 0; i < n; i++) {
+            fixedPayTimes[i] = dayCounter.yearFraction(settlement,
+                    ((Coupon) fixedLeg.get(i)).date());
+        }
+
+        final SwaptionPricingFunction function = new SwaptionPricingFunction(
+                a(), sigma(), b(), eta(), rho(), w, start,
+                fixedPayTimes, fixedRate);
+
+        final double upper = function.mux() + range * function.sigmax();
+        final double lower = function.mux() - range * function.sigmax();
+        final SegmentIntegral integrator = new SegmentIntegral(intervals);
+        return nominal * w * termStructure().currentLink().discount(start)
+                * integrator.op(function, lower, upper);
+    }
+
+    /**
+     * Inner pricing-kernel function evaluated by SegmentIntegral over x.
+     * Mirrors C++ {@code G2::SwaptionPricingFunction} (g2.cpp lines 100-216).
+     */
+    private final class SwaptionPricingFunction implements Ops.DoubleOp {
+
+        private final double a_;
+        private final double sigma_;
+        private final double b_;
+        private final double eta_;
+        private final double rho_;
+        private final double w_;
+        private final double T_;
+        private final double[] t_;
+        private final double rate_;
+        private final int size_;
+        private final double[] A_;
+        private final double[] Ba_;
+        private final double[] Bb_;
+
+        private final double mux_;
+        private final double muy_;
+        private final double sigmax_;
+        private final double sigmay_;
+        private final double rhoxy_;
+
+        SwaptionPricingFunction(final double a, final double sigma,
+                final double b, final double eta, final double rho,
+                final double w, final double T, final double[] payTimes,
+                final double fixedRate) {
+            this.a_ = a;
+            this.sigma_ = sigma;
+            this.b_ = b;
+            this.eta_ = eta;
+            this.rho_ = rho;
+            this.w_ = w;
+            this.T_ = T;
+            this.t_ = payTimes;
+            this.rate_ = fixedRate;
+            this.size_ = payTimes.length;
+            this.A_ = new double[size_];
+            this.Ba_ = new double[size_];
+            this.Bb_ = new double[size_];
+
+            this.sigmax_ = sigma_ * Math.sqrt(0.5 * (1.0 - Math.exp(-2.0 * a_ * T_)) / a_);
+            this.sigmay_ = eta_ * Math.sqrt(0.5 * (1.0 - Math.exp(-2.0 * b_ * T_)) / b_);
+            this.rhoxy_ = rho_ * eta_ * sigma_ * (1.0 - Math.exp(-(a_ + b_) * T_))
+                    / ((a_ + b_) * sigmax_ * sigmay_);
+
+            double temp = sigma_ * sigma_ / (a_ * a_);
+            this.mux_ = -((temp + rho_ * sigma_ * eta_ / (a_ * b_))
+                            * (1.0 - Math.exp(-a_ * T_))
+                          - 0.5 * temp * (1.0 - Math.exp(-2.0 * a_ * T_))
+                          - rho_ * sigma_ * eta_ / (b_ * (a_ + b_))
+                            * (1.0 - Math.exp(-(b_ + a_) * T_)));
+
+            temp = eta_ * eta_ / (b_ * b_);
+            this.muy_ = -((temp + rho_ * sigma_ * eta_ / (a_ * b_))
+                            * (1.0 - Math.exp(-b_ * T_))
+                          - 0.5 * temp * (1.0 - Math.exp(-2.0 * b_ * T_))
+                          - rho_ * sigma_ * eta_ / (a_ * (a_ + b_))
+                            * (1.0 - Math.exp(-(b_ + a_) * T_)));
+
+            for (int i = 0; i < size_; i++) {
+                A_[i]  = G2.this.A(T_, t_[i]);
+                Ba_[i] = G2.this.B(a_, t_[i] - T_);
+                Bb_[i] = G2.this.B(b_, t_[i] - T_);
+            }
+        }
+
+        double mux()    { return mux_; }
+        double sigmax() { return sigmax_; }
+
+        @Override
+        public double op(final double x) {
+            final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
+            final double temp = (x - mux_) / sigmax_;
+            final double txy = Math.sqrt(1.0 - rhoxy_ * rhoxy_);
+
+            final double[] lambda = new double[size_];
+            for (int i = 0; i < size_; i++) {
+                final double tau = (i == 0) ? (t_[0] - T_) : (t_[i] - t_[i - 1]);
+                final double c = (i == size_ - 1) ? (1.0 + rate_ * tau) : (rate_ * tau);
+                lambda[i] = c * A_[i] * Math.exp(-Ba_[i] * x);
+            }
+
+            final SolvingFunction function = new SolvingFunction(lambda, Bb_);
+            final Brent s1d = new Brent();
+            s1d.setMaxEvaluations(1000);
+            final double searchBound = Math.max(10.0 * sigmay_, 1.0);
+            final double yb = s1d.solve(function, 1.0e-6, 0.00, -searchBound, searchBound);
+
+            final double h1 = (yb - muy_) / (sigmay_ * txy)
+                    - rhoxy_ * (x - mux_) / (sigmax_ * txy);
+            double value = phi.op(-w_ * h1);
+
+            for (int i = 0; i < size_; i++) {
+                final double h2 = h1 + Bb_[i] * sigmay_ * Math.sqrt(1.0 - rhoxy_ * rhoxy_);
+                final double kappa = -Bb_[i]
+                        * (muy_ - 0.5 * txy * txy * sigmay_ * sigmay_ * Bb_[i]
+                                + rhoxy_ * sigmay_ * (x - mux_) / sigmax_);
+                value -= lambda[i] * Math.exp(kappa) * phi.op(-w_ * h2);
+            }
+
+            return Math.exp(-0.5 * temp * temp) * value
+                    / (sigmax_ * Math.sqrt(2.0 * Math.PI));
+        }
+
+        /**
+         * Inner Brent cost function: returns
+         * {@code 1 - sum(lambda[i] * exp(-Bb[i] * y))}.
+         * Mirrors C++ {@code SolvingFunction} (g2.cpp lines 193-207).
+         */
+        private final class SolvingFunction implements Ops.DoubleOp {
+            private final double[] lambda_;
+            private final double[] Bb_;
+
+            SolvingFunction(final double[] lambda, final double[] Bb) {
+                this.lambda_ = lambda;
+                this.Bb_ = Bb;
+            }
+
+            @Override
+            public double op(final double y) {
+                double value = 1.0;
+                for (int i = 0; i < lambda_.length; i++) {
+                    value -= lambda_[i] * Math.exp(-Bb_[i] * y);
+                }
+                return value;
+            }
+        }
     }
 
 

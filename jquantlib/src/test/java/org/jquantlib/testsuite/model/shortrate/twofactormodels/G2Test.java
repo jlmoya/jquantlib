@@ -11,21 +11,39 @@ import static org.junit.Assert.fail;
 
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.daycounters.Thirty360;
+import org.jquantlib.exercise.EuropeanExercise;
+import org.jquantlib.exercise.Exercise;
+import org.jquantlib.indexes.Euribor3M;
 import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.Settlement;
+import org.jquantlib.instruments.Swaption;
+import org.jquantlib.instruments.VanillaSwap;
 import org.jquantlib.methods.lattices.Lattice;
 import org.jquantlib.methods.lattices.TreeLattice;
 import org.jquantlib.model.shortrate.twofactormodels.G2;
+import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.testsuite.util.ReferenceReader;
 import org.jquantlib.testsuite.util.ReferenceReader.Case;
 import org.jquantlib.testsuite.util.Tolerance;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeGrid;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.Target;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -114,6 +132,105 @@ public class G2Test {
                         + "]: exp=" + expPut + " got=" + gotPut);
             }
         }
+    }
+
+    @Test
+    public void testSwaptionIntegralFingerprint() {
+        final ReferenceReader reader =
+                ReferenceReader.load("model/shortrate/twofactormodels/g2");
+        final Case c = reader.getCase("g2_swaption_integral_fingerprint");
+        final JSONObject in = c.inputs();
+        final JSONObject exp = (JSONObject) c.expectedRaw();
+
+        // ---- Fixture (mirrors g2_probe.cpp swaption block exactly) ----
+        new Settings().setEvaluationDate(EVAL_DATE);
+        final DayCounter dc = new Actual365Fixed();
+        final Calendar cal = new Target();
+        final double rCurve = in.getDouble("r_curve");
+        final double nominal = in.getDouble("nominal");
+        final double dummyRate = in.getDouble("dummy_fixed_rate");
+
+        final YieldTermStructure flat = new FlatForward(
+                EVAL_DATE, new Handle<Quote>(new SimpleQuote(rCurve)), dc,
+                Compounding.Continuous, Frequency.Annual);
+        final Handle<YieldTermStructure> ts = new Handle<YieldTermStructure>(flat);
+
+        final Euribor3M idx = new Euribor3M(ts);
+
+        final Date exerciseDate = cal.advance(EVAL_DATE,
+                new Period(in.getInt("exercise_years"), TimeUnit.Years),
+                BusinessDayConvention.Following);
+        final Exercise exercise = new EuropeanExercise(exerciseDate);
+        final Date startDate = cal.advance(exerciseDate, 2, TimeUnit.Days,
+                BusinessDayConvention.Following, false);
+        final Date maturity = cal.advance(startDate,
+                new Period(in.getInt("swap_years"), TimeUnit.Years),
+                BusinessDayConvention.Following);
+
+        final DayCounter fixedDc = new Thirty360(Thirty360.Convention.European);
+
+        final Schedule fixedSchedule = new Schedule(
+                startDate, maturity, new Period(1, TimeUnit.Years), cal,
+                BusinessDayConvention.ModifiedFollowing,
+                BusinessDayConvention.ModifiedFollowing,
+                DateGeneration.Rule.Forward, false);
+        final Schedule floatSchedule = new Schedule(
+                startDate, maturity,
+                new Period(in.getInt("float_tenor_months"), TimeUnit.Months),
+                cal,
+                BusinessDayConvention.ModifiedFollowing,
+                BusinessDayConvention.ModifiedFollowing,
+                DateGeneration.Rule.Forward, false);
+
+        final VanillaSwap swap0 = new VanillaSwap(
+                VanillaSwap.Type.Payer, nominal, fixedSchedule, dummyRate, fixedDc,
+                floatSchedule, idx, 0.0, dc);
+        swap0.setPricingEngine(new DiscountingSwapEngine(ts));
+        final double atmRate = swap0.fairRate();
+
+        final VanillaSwap swap = new VanillaSwap(
+                VanillaSwap.Type.Payer, nominal, fixedSchedule, atmRate, fixedDc,
+                floatSchedule, idx, 0.0, dc);
+
+        final Swaption swaption = new Swaption(swap, exercise);
+        // Manually populate Swaption.ArgumentsImpl — Swaption.setupArguments
+        // is package-private and the projection chain (VanillaSwap → Swap)
+        // does not propagate the swap reference required by G2.swaption.
+        // Mirrors C++ swaption.setupArguments(&swaptionArgs) call site.
+        final Swaption.ArgumentsImpl args = new Swaption.ArgumentsImpl();
+        args.swap = swap;
+        args.exercise = exercise;
+        args.settlementType = swaption.settlementType();
+        args.settlementMethod = swaption.settlementMethod();
+
+        final G2 model = new G2(ts,
+                in.getDouble("a"), in.getDouble("sigma"),
+                in.getDouble("b"), in.getDouble("eta"), in.getDouble("rho"));
+
+        final double range = in.getDouble("range");
+        final int intervals = in.getInt("intervals");
+        final double got = model.swaption(args, atmRate, range, intervals);
+
+        // Sanity: the par-rate fixture must agree with the C++ reference.
+        final double expAtm = exp.getDouble("atm_rate");
+        if (!Tolerance.tight(atmRate, expAtm)) {
+            fail("atmRate: exp=" + expAtm + " got=" + atmRate);
+        }
+
+        // Loose tier (1e-8 abs + 1e-8 rel). Justification: G2.swaption
+        // composes SegmentIntegral over an inner Brent solver. Both the
+        // outer trapezoid sum (50 sub-intervals) and the inner Brent
+        // root-finding (1e-6 accuracy plus a known Java/C++ pre-loop
+        // initialisation divergence in Brent.solveImpl — see
+        // JamshidianSwaptionEngineTest class-level note) compound a
+        // floating-point noise floor well below 1e-8 absolute. Tightening
+        // requires aligning Java Brent with C++ brent.hpp first; deferred.
+        final double expSwaption = exp.getDouble("swaption_integral");
+        if (!Tolerance.loose(got, expSwaption)) {
+            fail("g2.swaption: exp=" + expSwaption + " got=" + got);
+        }
+        // Suppress unused-import warnings if Settlement isn't read elsewhere.
+        assertNotNull(Settlement.Type.Physical);
     }
 
     @Test

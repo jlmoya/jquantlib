@@ -752,11 +752,38 @@
         "sigma": 0.01
       },
       "name": "g2_tree_fingerprint"
+    },
+    {
+      "expected": {
+        "atm_rate": 0.05059858531885231,
+        "swaption_integral": 1.8395851406409884
+      },
+      "inputs": {
+        "a": 0.1,
+        "b": 0.1,
+        "calendar": "TARGET",
+        "dummy_fixed_rate": 0.04,
+        "eta": 0.005,
+        "exercise_years": 5,
+        "fixed_day_counter": "30/360 European",
+        "fixed_freq": "Annual",
+        "float_tenor_months": 3,
+        "index": "Euribor3M",
+        "intervals": 50,
+        "nominal": 100.0,
+        "r_curve": 0.05,
+        "range": 5.0,
+        "rho": -0.5,
+        "sigma": 0.01,
+        "swap_years": 5,
+        "yts_day_counter": "Actual/365 Fixed"
+      },
+      "name": "g2_swaption_integral_fingerprint"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-26T21:28:17Z",
+  "generated_at": "2026-04-27T02:11:15Z",
   "generated_by": "g2_probe",
   "test_group": "model/shortrate/twofactormodels/g2"
 }
