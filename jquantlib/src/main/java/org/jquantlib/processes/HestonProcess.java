@@ -25,9 +25,11 @@ package org.jquantlib.processes;
 import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.solvers1D.Brent;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
@@ -46,7 +48,10 @@ public class HestonProcess extends StochasticProcess {
     public enum Discretization {
         PartialTruncation, FullTruncation, Reflection,
         NonCentralChiSquareVariance,
-        QuadraticExponential, QuadraticExponentialMartingale
+        QuadraticExponential, QuadraticExponentialMartingale,
+        BroadieKayaExactSchemeLobatto,
+        BroadieKayaExactSchemeLaguerre,
+        BroadieKayaExactSchemeTrapezoidal
     };
 
     private final Discretization discretization_;
@@ -154,6 +159,24 @@ public class HestonProcess extends StochasticProcess {
     @Override
     public int size() {
         return 2;
+    }
+
+    /**
+     * Number of Brownian factors driving the process. The three
+     * BroadieKaya exact schemes need an extra independent normal draw
+     * for the conditional integrated-variance Fourier inversion (see
+     * {@link HestonHelpers#cdfNuDs}); all other discretizations use
+     * 2 factors. Mirrors C++ HestonProcess::factors().
+     */
+    public int factors() {
+        switch (discretization_) {
+            case BroadieKayaExactSchemeLobatto:
+            case BroadieKayaExactSchemeLaguerre:
+            case BroadieKayaExactSchemeTrapezoidal:
+                return 3;
+            default:
+                return 2;
+        }
     }
 
     @Override
@@ -341,6 +364,51 @@ public class HestonProcess extends StochasticProcess {
 
                 retVal[0] = x00 * Math.exp(mu * dt + k0 + k1 * x01 + k2 * retVal[1]
                         + Math.sqrt(k3 * x01 + k4 * retVal[1]) * dw0);
+                break;
+            }
+            case BroadieKayaExactSchemeLobatto:
+            case BroadieKayaExactSchemeLaguerre:
+            case BroadieKayaExactSchemeTrapezoidal: {
+                // Exact simulation per Broadie-Kaya 2006. Phase 2f WI-3
+                // C.4-C.6 port of C++ hestonprocess.cpp lines 517-543.
+                // Variance leg via non-central chi-squared inversion;
+                // conditional integrated-variance via Fourier inversion
+                // dispatched on the three subschemes (HestonHelpers).
+                final double nu_0 = x01;
+                final double nu_t = varianceDistribution(nu_0, dw1, dt);
+
+                final double dw2 = dw.get(2);
+                final double cnX = new CumulativeNormalDistribution().op(dw2);
+                final double xVal = Math.min(1.0 - Constants.QL_EPSILON,
+                        Math.max(0.0, cnX));
+
+                // Brent solve cdf_nu_ds_minus_x for vds. Mirrors
+                // C++:  Brent().solve(lambda, 1e-5, theta_*dt, 0.1*theta_*dt)
+                final HestonProcess self = this;
+                final Ops.DoubleOp resid = new Ops.DoubleOp() {
+                    public double op(final double xi) {
+                        return HestonHelpers.cdfNuDsMinusX(self, xi, nu_0, nu_t,
+                                dt, discretization_, xVal);
+                    }
+                };
+                final double vds = new Brent().solve(resid, 1.0e-5,
+                        thetav_ * dt, 0.1 * thetav_ * dt);
+
+                final double vdw = (nu_t - nu_0 - kappav_ * thetav_ * dt
+                        + kappav_ * vds) / sigmav_;
+
+                final double muLocal = (riskFreeRate_.currentLink()
+                        .forwardRate(t0, t0 + dt, Compounding.Continuous).rate()
+                        - dividendYield_.currentLink()
+                            .forwardRate(t0, t0 + dt, Compounding.Continuous).rate())
+                        * dt
+                        - 0.5 * vds + rhov_ * vdw;
+
+                final double sig = Math.sqrt((1 - rhov_ * rhov_) * vds);
+                final double s = x00 * Math.exp(muLocal + sig * dw0);
+
+                retVal[0] = s;
+                retVal[1] = nu_t;
                 break;
             }
             default:
