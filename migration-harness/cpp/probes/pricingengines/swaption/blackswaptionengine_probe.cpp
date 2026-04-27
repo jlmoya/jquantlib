@@ -7,12 +7,14 @@
 // BlackSwaptionEngine port.
 //
 // Captured outputs:
-//   - swap_npv  : par-rate of the underlying swap (atm strike)
-//   - atm_rate  : same as swap.fairRate() before re-pricing the ATM swap
-//   - npv       : Swaption.NPV() under BlackSwaptionEngine(ts, vol)
+//   - swap_npv               : par-rate of the underlying swap (atm strike)
+//   - atm_rate               : same as swap.fairRate() before re-pricing the ATM swap
+//   - swaption_npv           : Swaption.NPV() under BlackSwaptionEngine(ts, vol)
+//   - bachelier_swaption_npv : Swaption.NPV() under BachelierSwaptionEngine
+//                              with normal_vol = 0.01 (Phase 2f WI-2 extension)
 //
-// The Java port targets the Black76 path only (Bachelier deferred to a later
-// phase). The fixture mirrors the standard probe convention: eval=2026-01-15,
+// The Java port covers both Black76 and Bachelier (Phase 2f WI-2). The fixture
+// mirrors the standard probe convention: eval=2026-01-15,
 // FlatForward 5% Continuous Actual365Fixed on TARGET, Euribor3M float leg,
 // 30/360 European fixed leg, fixed leg Annual, exercise five years from eval,
 // underlying swap five years long, vol = 20%.
@@ -94,10 +96,20 @@ int main() {
         ext::make_shared<BlackSwaptionEngine>(ts, vol));
     const Real npv = swaption.NPV();
 
+    // Bachelier branch (Phase 2f WI-2). Use a typical normal vol level
+    // (1% absolute) for an ATM-quoted forward of ~5%, so the Bachelier price
+    // is in the same general magnitude as the lognormal one.
+    const Volatility normalVol = 0.01;
+    Swaption swaptionBach(swap, exercise);
+    swaptionBach.setPricingEngine(
+        ext::make_shared<BachelierSwaptionEngine>(ts, normalVol));
+    const Real bachelierNPV = swaptionBach.NPV();
+
     json inputs = {
         {"eval_date", "2026-01-15"},
         {"flat_rate", flatRate},
         {"vol", vol},
+        {"normal_vol", normalVol},
         {"exercise_years", 5},
         {"swap_years", 5},
         {"fixed_freq", "Annual"},
@@ -112,7 +124,8 @@ int main() {
     json expected = {
         {"swap0_npv", swap0NPV},
         {"atm_rate", atmRate},
-        {"swaption_npv", npv}
+        {"swaption_npv", npv},
+        {"bachelier_swaption_npv", bachelierNPV}
     };
 
     out.addCase("atm_payer_5y5y", inputs, expected);

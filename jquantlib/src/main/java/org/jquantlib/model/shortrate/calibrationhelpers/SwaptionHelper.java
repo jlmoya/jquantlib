@@ -36,7 +36,9 @@ import org.jquantlib.pricingengines.swaption.DiscretizedSwaption;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
@@ -44,6 +46,7 @@ import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
 
 /**
  * Swaption calibration helper.
@@ -308,24 +311,33 @@ public class SwaptionHelper extends BlackCalibrationHelper {
     public double blackPrice(final double sigma) {
         calculate();
         final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(sigma));
-        final PricingEngine engine;
+        // Phase 2f WI-2: Java collapses Black76 and Bachelier into a single
+        // BlackSwaptionEngine that branches on vol.volatilityType(). The
+        // helper builds a ConstantSwaptionVolatility carrying the right
+        // type/shift so the engine takes the matching path. This mirrors C++
+        // {@code SwaptionHelper::blackPrice} which constructs either a
+        // BlackSwaptionEngine or a BachelierSwaptionEngine depending on the
+        // helper's volatilityType_.
+        final Handle<SwaptionVolatilityStructure> volSurface;
         switch (volatilityType_) {
             case ShiftedLognormal:
-                // Java BlackSwaptionEngine doesn't yet take a displacement ctor
-                // argument; ConstantSwaptionVolatility doesn't yet carry
-                // VolatilityType / displacement either. shift_ is therefore
-                // unused in Java today. All current call-sites pass shift_ = 0
-                // so this preserves correctness (mirrors CapHelper Phase 2e WI-2
-                // pattern).
-                engine = BlackSwaptionEngine.fromVolQuote(termStructure_, vol);
+                volSurface = new Handle<SwaptionVolatilityStructure>(
+                        new ConstantSwaptionVolatility(0, new NullCalendar(),
+                                BusinessDayConvention.Following, vol,
+                                new Actual365Fixed(),
+                                VolatilityType.ShiftedLognormal, shift_));
                 break;
             case Normal:
-                throw new UnsupportedOperationException(
-                        "VolatilityType.Normal requires BachelierSwaptionEngine "
-                                + "(deferred to a later phase).");
+                volSurface = new Handle<SwaptionVolatilityStructure>(
+                        new ConstantSwaptionVolatility(0, new NullCalendar(),
+                                BusinessDayConvention.Following, vol,
+                                new Actual365Fixed(),
+                                VolatilityType.Normal, 0.0));
+                break;
             default:
                 throw new IllegalStateException("unknown volatility type");
         }
+        final PricingEngine engine = new BlackSwaptionEngine(termStructure_, volSurface);
         swaption_.setPricingEngine(engine);
         final double value = swaption_.NPV();
         // Restore the model-based engine.

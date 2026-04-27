@@ -1,0 +1,145 @@
+/*
+ Copyright (C) 2026 JQuantLib migration contributors.
+
+ This source code is release under the BSD License.
+ See LICENSE.TXT in the project root for licence terms.
+ */
+package org.jquantlib.testsuite.pricingengines.swaption;
+
+import static org.junit.Assert.fail;
+
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.daycounters.Thirty360;
+import org.jquantlib.exercise.EuropeanExercise;
+import org.jquantlib.exercise.Exercise;
+import org.jquantlib.indexes.Euribor3M;
+import org.jquantlib.instruments.Swaption;
+import org.jquantlib.instruments.VanillaSwap;
+import org.jquantlib.model.VolatilityType;
+import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
+import org.jquantlib.pricingengines.swaption.BlackSwaptionEngine;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.SwaptionVolatilityStructure;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.testsuite.util.ReferenceReader;
+import org.jquantlib.testsuite.util.ReferenceReader.Case;
+import org.jquantlib.testsuite.util.Tolerance;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
+import org.jquantlib.time.calendars.Target;
+import org.json.JSONObject;
+import org.junit.Test;
+
+/**
+ * Phase 2f WI-2 fingerprint test for the Bachelier branch of the unified
+ * Java {@link BlackSwaptionEngine}.
+ *
+ * <p>Cross-validates {@code Swaption.NPV()} for the same 5Y x 5Y ATM payer
+ * fixture as the Black76 test, but priced via a {@link VolatilityType#Normal}
+ * {@link ConstantSwaptionVolatility} (normal vol = 1%) so that the engine
+ * dispatches to {@link org.jquantlib.pricingengines.BlackFormula#bachelierBlackFormula}.
+ *
+ * <p><strong>Tolerance tier</strong> — tight (abs 1e-14 + rel 1e-12). Pure
+ * closed-form Bachelier on top of {@code DiscountingSwapEngine}; no iterative
+ * solver in the loop.
+ */
+public class BachelierBlackSwaptionEngineTest {
+
+    @Test
+    public void atmPayerSwaption_bachelierNpvMatchesCpp() {
+        final ReferenceReader reader = ReferenceReader.load(
+                "pricingengines/swaption/blackswaptionengine");
+        final Case ref = reader.getCase("atm_payer_5y5y");
+        final JSONObject in = ref.inputs();
+        final JSONObject exp = (JSONObject) ref.expectedRaw();
+
+        // ---- Fixture (mirrors blackswaptionengine_probe.cpp Bachelier branch) ----
+        final Date eval = new Date(15, Month.January, 2026);
+        new Settings().setEvaluationDate(eval);
+
+        final DayCounter dc = new Actual365Fixed();
+        final Calendar cal = new Target();
+        final double flatRate = in.getDouble("flat_rate");
+        final double normalVol = in.getDouble("normal_vol");
+        final double nominal = in.getDouble("nominal");
+        final double dummyRate = in.getDouble("dummy_fixed_rate");
+
+        final YieldTermStructure flat = new FlatForward(
+                eval, new Handle<Quote>(new SimpleQuote(flatRate)), dc,
+                Compounding.Continuous, Frequency.Annual);
+        final Handle<YieldTermStructure> ts = new Handle<YieldTermStructure>(flat);
+
+        final Euribor3M idx = new Euribor3M(ts);
+
+        final Date exerciseDate = cal.advance(eval,
+                new Period(in.getInt("exercise_years"), TimeUnit.Years),
+                BusinessDayConvention.Following);
+        final Exercise exercise = new EuropeanExercise(exerciseDate);
+        final Date startDate = cal.advance(exerciseDate, 2, TimeUnit.Days,
+                BusinessDayConvention.Following, false);
+        final Date maturity = cal.advance(startDate,
+                new Period(in.getInt("swap_years"), TimeUnit.Years),
+                BusinessDayConvention.Following);
+
+        final DayCounter fixedDc = new Thirty360(Thirty360.Convention.European);
+
+        final Schedule fixedSchedule = new Schedule(
+                startDate, maturity, new Period(1, TimeUnit.Years), cal,
+                BusinessDayConvention.ModifiedFollowing,
+                BusinessDayConvention.ModifiedFollowing,
+                DateGeneration.Rule.Forward, false);
+        final Schedule floatSchedule = new Schedule(
+                startDate, maturity,
+                new Period(in.getInt("float_tenor_months"), TimeUnit.Months),
+                cal,
+                BusinessDayConvention.ModifiedFollowing,
+                BusinessDayConvention.ModifiedFollowing,
+                DateGeneration.Rule.Forward, false);
+
+        // ATM swap.
+        final VanillaSwap swap0 = new VanillaSwap(
+                VanillaSwap.Type.Payer, nominal, fixedSchedule, dummyRate, fixedDc,
+                floatSchedule, idx, 0.0, dc);
+        swap0.setPricingEngine(new DiscountingSwapEngine(ts));
+        final double atmRate = swap0.fairRate();
+
+        final VanillaSwap swap = new VanillaSwap(
+                VanillaSwap.Type.Payer, nominal, fixedSchedule, atmRate, fixedDc,
+                floatSchedule, idx, 0.0, dc);
+
+        // Build a Normal-type ConstantSwaptionVolatility so the engine
+        // dispatches to the Bachelier branch.
+        final ConstantSwaptionVolatility normalSurface = new ConstantSwaptionVolatility(
+                0, new NullCalendar(), BusinessDayConvention.Following,
+                new Handle<Quote>(new SimpleQuote(normalVol)), new Actual365Fixed(),
+                VolatilityType.Normal, 0.0);
+        final Handle<SwaptionVolatilityStructure> volH =
+                new Handle<SwaptionVolatilityStructure>(normalSurface);
+
+        final Swaption swaption = new Swaption(swap, exercise);
+        swaption.setPricingEngine(new BlackSwaptionEngine(ts, volH));
+        final double npv = swaption.NPV();
+
+        // ---- Cross-validate ----
+        final double expBachelierNPV = exp.getDouble("bachelier_swaption_npv");
+
+        if (!Tolerance.tight(npv, expBachelierNPV)) {
+            fail("bachelier swaption NPV: exp=" + expBachelierNPV + " got=" + npv);
+        }
+    }
+}

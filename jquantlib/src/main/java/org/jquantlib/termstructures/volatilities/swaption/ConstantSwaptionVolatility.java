@@ -31,6 +31,7 @@
 package org.jquantlib.termstructures.volatilities.swaption;
 
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -69,32 +70,60 @@ public class ConstantSwaptionVolatility extends SwaptionVolatilityStructure {
 
     private final Handle<? extends Quote> volatility_;
     private final Period maxSwapTenor_;
+    private final VolatilityType volatilityType_;
+    private final double shift_;
 
     //
     // public constructors
     //
 
-    /** Floating reference date, floating market data. */
+    /** Floating reference date, floating market data. Defaults to ShiftedLognormal/0. */
     public ConstantSwaptionVolatility(final int settlementDays,
                                       final Calendar cal,
                                       final BusinessDayConvention bdc,
                                       final Handle<? extends Quote> vol,
                                       final DayCounter dc) {
+        this(settlementDays, cal, bdc, vol, dc, VolatilityType.ShiftedLognormal, 0.0);
+    }
+
+    /** Floating reference date, floating market data, explicit type / shift. */
+    public ConstantSwaptionVolatility(final int settlementDays,
+                                      final Calendar cal,
+                                      final BusinessDayConvention bdc,
+                                      final Handle<? extends Quote> vol,
+                                      final DayCounter dc,
+                                      final VolatilityType type,
+                                      final double shift) {
         super(settlementDays, cal, dc, bdc);
         this.volatility_ = vol;
         this.maxSwapTenor_ = new Period(100, TimeUnit.Years);
+        this.volatilityType_ = type;
+        this.shift_ = shift;
         this.volatility_.addObserver(this);
     }
 
-    /** Fixed reference date, floating market data. */
+    /** Fixed reference date, floating market data. Defaults to ShiftedLognormal/0. */
     public ConstantSwaptionVolatility(final Date referenceDate,
                                       final Calendar cal,
                                       final BusinessDayConvention bdc,
                                       final Handle<? extends Quote> vol,
                                       final DayCounter dc) {
+        this(referenceDate, cal, bdc, vol, dc, VolatilityType.ShiftedLognormal, 0.0);
+    }
+
+    /** Fixed reference date, floating market data, explicit type / shift. */
+    public ConstantSwaptionVolatility(final Date referenceDate,
+                                      final Calendar cal,
+                                      final BusinessDayConvention bdc,
+                                      final Handle<? extends Quote> vol,
+                                      final DayCounter dc,
+                                      final VolatilityType type,
+                                      final double shift) {
         super(referenceDate, cal, dc, bdc);
         this.volatility_ = vol;
         this.maxSwapTenor_ = new Period(100, TimeUnit.Years);
+        this.volatilityType_ = type;
+        this.shift_ = shift;
         this.volatility_.addObserver(this);
     }
 
@@ -179,5 +208,15 @@ public class ConstantSwaptionVolatility extends SwaptionVolatilityStructure {
     @Override
     public Date maxDate() {
         return Date.maxDate();
+    }
+
+    @Override
+    public VolatilityType volatilityType() {
+        return volatilityType_;
+    }
+
+    @Override
+    public double shift() {
+        return shift_;
     }
 }

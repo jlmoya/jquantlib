@@ -3,6 +3,7 @@
     {
       "expected": {
         "atm_rate": 0.05059858531885231,
+        "bachelier_swaption_npv": 2.9965819975514725,
         "swap0_npv": 3.559262722997847,
         "swaption_npv": 3.007360493961572
       },
@@ -17,6 +18,7 @@
         "float_tenor_months": 3,
         "index": "Euribor3M",
         "nominal": 100.0,
+        "normal_vol": 0.01,
         "swap_years": 5,
         "vol": 0.2,
         "yts_day_counter": "Actual/365 Fixed"
@@ -26,7 +28,7 @@
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-26T21:30:16Z",
+  "generated_at": "2026-04-27T02:05:09Z",
   "generated_by": "blackswaptionengine_probe",
   "test_group": "pricingengines/swaption/blackswaptionengine"
 }

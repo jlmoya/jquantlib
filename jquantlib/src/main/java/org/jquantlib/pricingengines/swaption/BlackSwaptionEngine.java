@@ -38,6 +38,7 @@ import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.Settlement;
 import org.jquantlib.instruments.Swaption;
 import org.jquantlib.instruments.VanillaSwap;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
@@ -59,14 +60,17 @@ import org.jquantlib.time.calendars.NullCalendar;
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
  * <li>The C++ class is a templated {@code BlackStyleSwaptionEngine<Spec>} with
- *     {@code Black76Spec} (this engine) and {@code BachelierSpec} (the
- *     separate {@code BachelierSwaptionEngine}). Only the Black76 path is
- *     ported in this commit; Bachelier is deferred to a later phase.
- * <li>The {@code volatilityType()} / {@code shift()} machinery is not yet on
- *     the Java {@link SwaptionVolatilityStructure} base class, so the engine
- *     assumes shifted-lognormal with shift = 0 (i.e. plain Black76). When the
- *     base class gains those methods the displacement read should be wired
- *     through here.
+ *     {@code Black76Spec} (this engine, {@link VolatilityType#ShiftedLognormal})
+ *     and {@code BachelierSpec} ({@link VolatilityType#Normal}). Java collapses
+ *     both into a single class that branches at runtime on
+ *     {@code vol_.volatilityType()} (Phase 2f WI-2): shifted-lognormal uses
+ *     {@link BlackFormula#blackFormula(Option.Type, double, double, double, double, double)};
+ *     normal uses {@link BlackFormula#bachelierBlackFormula(Option.Type, double, double, double, double)}
+ *     (which discards the displacement, mirroring C++ {@code BachelierSpec::value}).
+ * <li>The {@link SwaptionVolatilityStructure#shift()} accessor was added in
+ *     this WI (see {@code align(termstructures): SwaptionVolatilityStructure
+ *     ...}); the engine reads it for shifted-lognormal volatilities and falls
+ *     back to the constructor-supplied {@code displacement_} otherwise.
  * <li>The C++ engine populates several additional results
  *     ({@code spreadCorrection}, {@code strike}, {@code atmForward},
  *     {@code annuity}, {@code stdDev}, {@code vega}, {@code delta},
@@ -263,8 +267,26 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
         final Option.Type w = (swap.type() == VanillaSwap.Type.Payer)
                 ? Option.Type.Call : Option.Type.Put;
 
-        results.value = BlackFormula.blackFormula(
-                w, strike, atmForward, stdDev, annuity, displacement_);
+        // Volatility-type dispatch (mirrors C++ Spec::value):
+        //  - ShiftedLognormal -> blackFormula with displacement (engine ctor
+        //    or vol_->shift(); Java port prefers the volatility surface's
+        //    shift when the surface overrides the default 0.0).
+        //  - Normal           -> bachelierBlackFormula (no displacement).
+        final VolatilityType volType = vol_.currentLink().volatilityType();
+        if (volType == VolatilityType.Normal) {
+            results.value = BlackFormula.bachelierBlackFormula(
+                    w, strike, atmForward, stdDev, annuity);
+        } else {
+            // ShiftedLognormal. C++ pulls displacement from vol_->shift(...);
+            // Java mirrors via the same accessor with a graceful fallback to
+            // the constructor-supplied displacement_ when vol_ exposes only
+            // the legacy default.
+            final double volShift = vol_.currentLink().shift();
+            final double effectiveDisplacement =
+                    (volShift != 0.0) ? volShift : displacement_;
+            results.value = BlackFormula.blackFormula(
+                    w, strike, atmForward, stdDev, annuity, effectiveDisplacement);
+        }
     }
 
     //
