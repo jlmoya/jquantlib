@@ -1,0 +1,43 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "integrals": [
+          {
+            "name": "poly_0_2",
+            "value": 2.666666666666666
+          },
+          {
+            "name": "sin_0_pi",
+            "value": 1.9999999999999998
+          },
+          {
+            "name": "exp_neg_xsq_-2_2",
+            "value": 1.7641627815248433
+          },
+          {
+            "name": "runge_-1_1",
+            "value": 0.5493603067780064
+          },
+          {
+            "name": "sqrt_0_1",
+            "value": 0.6666666666666444
+          },
+          {
+            "name": "heston_runge_eps1e-4",
+            "value": 0.5493603066758606
+          }
+        ]
+      },
+      "inputs": {
+        "count": 6
+      },
+      "name": "reference_integrals"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-27T02:07:36Z",
+  "generated_by": "gauss_lobatto_integral_probe",
+  "test_group": "math/integrals/gauss_lobatto_integral"
+}
