@@ -48,6 +48,7 @@ import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.InterestRateIndex;
+import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.BusinessDayConvention;
@@ -90,7 +91,14 @@ public class FloatingRateCoupon extends Coupon implements Observer {
 
         this.index_ = index;
         this.dayCounter_ = dayCounter;
-        this.fixingDays_ = fixingDays == 0 ? index.fixingDays() : fixingDays;
+        // Phase 2g WI-1: align with C++ v1.42.1 floatingratecoupon.cpp
+        // line 49: fixingDays_(fixingDays == Null<Natural>() ? (index ? index->fixingDays() : 0) : fixingDays).
+        // C++ uses Null<Natural> as the "use index default" sentinel,
+        // which corresponds to Constants.NULL_NATURAL (Integer.MAX_VALUE)
+        // in the Java port — NOT 0. Honor 0 literally to match C++.
+        this.fixingDays_ = fixingDays == Constants.NULL_NATURAL
+                ? (index != null ? index.fixingDays() : 0)
+                : fixingDays;
         this.gearing_ = gearing;
         this.spread_ = spread;
         this.isInArrears_ = isInArrears;
