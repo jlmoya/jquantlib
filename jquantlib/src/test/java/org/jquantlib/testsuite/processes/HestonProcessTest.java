@@ -204,10 +204,12 @@ public class HestonProcessTest {
 
     /**
      * NCCV evolve uses an inverse-CDF Brent solver on the non-central
-     * chi-squared distribution. The solver's convergence noise floor is
-     * around 1e-9 relative — well outside the tight tier — so we cross-
-     * validate at the {@code loose} tier (abs 1e-8 + rel 1e-8). Same
-     * precedent as Phase 2c WI-1 CIR calibration.
+     * chi-squared distribution. Phase 2f WI-3 C.8 attempted to promote
+     * these to TIGHT post-NCCS tightening (C.1), but A13 firing on C.1
+     * meant NCCS still drifts ~3 ULPs from C++; the inverse-CDF Brent
+     * adds another decade of noise, leaving the empirical floor at
+     * ~1e-8 absolute / ~1e-10 relative — squarely inside LOOSE but
+     * outside TIGHT. C.8 stays at LOOSE.
      */
     private static void runNccvCase(final String name) {
         runFromGroup("processes/hestonprocess_nccv", name,
