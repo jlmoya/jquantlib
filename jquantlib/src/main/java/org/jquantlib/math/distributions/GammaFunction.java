@@ -56,6 +56,28 @@ public class GammaFunction {
 
 
     /**
+     * The Gamma function value itself. Mirrors C++ v1.42.1
+     * {@code QuantLib::GammaFunction::value(Real)}: uses
+     * {@link #logValue} for {@code x >= 1}, the recurrence
+     * {@code Γ(x) = Γ(x+1)/x} for {@code x ∈ (-20, 1)}, and the
+     * reflection formula {@code Γ(-x) = -π / (Γ(x)·x·sin(πx))}
+     * for very negative arguments.
+     *
+     * <p>Phase 2f WI-3 alignment: dependency of the
+     * {@link org.jquantlib.math.ModifiedBesselFunction} port used by
+     * the Heston BroadieKaya Fourier-inversion harness.
+     */
+    public double value(final double x) {
+        if (x >= 1.0) {
+            return Math.exp(logValue(x));
+        } else if (x > -20.0) {
+            return value(x + 1.0) / x;
+        } else {
+            return -Math.PI / (value(-x) * x * Math.sin(Math.PI * x));
+        }
+    }
+
+    /**
      * Computes the log of the Gamma.
      * @param x
      * @return <code>-temp+Math.log(2.5066282746310005*ser/x)</code>
