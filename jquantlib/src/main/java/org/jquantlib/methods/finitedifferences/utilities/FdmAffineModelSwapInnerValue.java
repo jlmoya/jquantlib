@@ -178,8 +178,19 @@ public class FdmAffineModelSwapInnerValue<M extends AffineModel>
      * {@code FdmAffineModelSwapInnerValue<HullWhite>::getState} and
      * {@code <G2>::getState}. The Java port uses a runtime check on
      * the model class.
+     * <p>
+     * <strong>Visibility note (Phase 2h WI-2 align).</strong> This
+     * method is {@code protected} so concrete swaption engines that
+     * know their model type can override and inject a
+     * {@code dynamics()-&gt;shortRate(t, x)}-based state vector
+     * (HullWhite/Vasicek) without losing the rest of the swap-NPV
+     * machinery. The baseline implementation falls back to the bare
+     * mesh location, which under-prices HullWhite swaptions because
+     * the deterministic phi(t) shift is missing from the discount-bond
+     * formula {@code A(t,T) * exp(-B(t,T) * r)} (it must take the true
+     * short rate, not the OU state).
      */
-    private Array getState(final double t, final FdmLinearOpIterator iter) {
+    protected Array getState(final double t, final FdmLinearOpIterator iter) {
         // Detect 2-factor models (G2) by class name, to avoid a direct
         // dependency on the G2 type from this utility class. HullWhite,
         // Vasicek, and other 1-factor models fall through to the
@@ -191,20 +202,23 @@ public class FdmAffineModelSwapInnerValue<M extends AffineModel>
             state.set(1, mesher_.location(iter, direction_ + 1));
             return state;
         }
-        // 1-factor model: use the model dynamics' shortRate(t, x) when
-        // available, else fall back to the mesh location directly. The
-        // C++ specialization for HullWhite uses
-        // model->dynamics()->shortRate(t, x). To avoid a hard
-        // dependency on ShortRateModel here, the swaption engines
-        // (which know their model type) are expected to subclass and
-        // override getState if they need the dynamics-based state. The
-        // baseline implementation uses the bare mesh location, which
-        // matches HullWhite/Vasicek where the affine factor is the
-        // short rate itself (their {@code dynamics()->shortRate(t, x) =
-        // x + phi(t)} contributes only a deterministic shift, absorbed
-        // by the {@code discountBond} affine formula).
+        // 1-factor model fallback: use the bare mesh location. Concrete
+        // engines that know their model is HullWhite/Vasicek should
+        // subclass and override to use {@code dynamics().shortRate(t, x)}
+        // (which adds the deterministic phi(t) shift); see the C++
+        // template specialization {@code <HullWhite>::getState}.
         final Array state = new Array(1);
         state.set(0, mesher_.location(iter, direction_));
         return state;
+    }
+
+    /** @return the mesher this calculator was built against. */
+    protected final FdmMesher mesher() {
+        return mesher_;
+    }
+
+    /** @return the direction the mesher state lives on. */
+    protected final int direction() {
+        return direction_;
     }
 }
