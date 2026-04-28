@@ -32,7 +32,10 @@ Living document — updated by the controller after every implementer subagent r
 
 ## Pivots and major findings
 
-- **2026-04-28 — msun ≠ libc++ pivot.** WI-1.1 dispatch surfaced that FreeBSD msun `e_exp.c` has the same 1-ULP slack as JVM `Math.exp`; Apple libm (which `<cmath>` `std::exp` resolves to on macOS) is correctly-rounded. Original "port msun" thesis was algorithmically equivalent to "do nothing" against the WI-2 promotion goal. User chose **Option D**: pivot to CORE-MATH correctly-rounded `exp` only; defer log/sin/cos/pow; drop WI-2 B-2/B-3 from scope. Design addendum at commit `9739bc7`. Memory: `project_phase2i_correctly_rounded_pivot.md`.
+- **2026-04-28 — msun ≠ libc++ pivot.** WI-1.1 first dispatch surfaced that FreeBSD msun `e_exp.c` has the same 1-ULP slack as JVM `Math.exp`. Originally believed Apple libm was correctly-rounded, so user chose **Option D**: pivot to CORE-MATH correctly-rounded `exp` only; defer log/sin/cos/pow; drop WI-2 B-2/B-3. Design addendum at commit `9739bc7`. Memory: `project_phase2i_correctly_rounded_pivot.md`.
+- **2026-04-28 — A3: Apple libm is NOT always correctly-rounded.** Discovered during DB-coverage testing of the CORE-MATH port: 8 of 51 hard-case DB entries had `std::exp` (Apple libm on macOS arm64) returning 1-ULP-off values vs. the mathematically correct result (verified via 300-bit mpmath). Apple libm is *almost* correctly-rounded but not provably so. **Resolution:** probe oracle switched from `std::exp` to CORE-MATH `cr_exp` directly (commit `a61b920`). Java port is bit-exactly correctly-rounded across all 508 probe cases. Future transcendental ports must use CORE-MATH `cr_*` functions as oracles, not platform libm.
+
+## Test count tracking
 
 ## Layer / WI progress
 
@@ -47,8 +50,14 @@ Living document — updated by the controller after every implementer subagent r
 
 - Commit `2ab7ecf` on main — adds `MathTestSupport.java` (assertBitsEqual w/ NaN-payload canonicalisation, parseHexBits) and `MathTestSupportTest.java` (4 self-tests). Tests `677 → 681`. Spec-compliant; code-review APPROVED (0 findings).
 
-#### Sub-layer 1.1 — exp ⚠️ PIVOTED
-_(Initial msun-based attempt BLOCKED — msun has same 1-ULP slack as JVM Math.exp; Apple libm is correctly-rounded. User chose Option D pivot: CORE-MATH `exp` only. WIP retained: probe + reference + facade + test. ExpKernel.java discarded as wrong algorithm. See `phase2i-design.md` Addendum.)_
+#### Sub-layer 1.1 — exp ✅ (Option D, CORE-MATH oracle)
+
+- `d1c3eda`: CORE-MATH correctly-rounded `exp` ported (`ExpKernel.java` ~430 LOC + `JQuantMath.java` facade + probe + reference + EXACT test). 681 → 682.
+- `807ad6c`: facade Javadoc fix — attribution to CORE-MATH/Sibidanov/MIT (was stale msun reference).
+- `6a6be46`: test diagnostics — `MathTestSupport.bitsEqual` + collect-all-failures in `JQuantMathExpTest`. 682 → 684.
+- `d94aea7`: hard-cases DB probe coverage — 43/51 DB entries added (8 omitted as workaround for then-unknown Apple-libm bug). Surfaced A3 trigger.
+- `a61b920`: **A3 resolved**. Apple libm shown not-always-correctly-rounded at 8 DB hard cases (verified via 300-bit mpmath). Switched probe oracle from `std::exp` to CORE-MATH `cr_exp` directly. All 51/51 DB entries restored and pass EXACT.
+- Final: tests `684/0/0/22`; scanner `0`. Java port is bit-exactly correctly-rounded across the 508-case probe set.
 
 #### Sub-layer 1.2/1.3/1.4 — log/sin/cos/pow ❌ DEFERRED
 _(Out of scope per Option D pivot. Each becomes a separate Phase 2i.5 / 2j decision after WI-2 B-1 outcome.)_
@@ -73,3 +82,9 @@ _(Not yet started)_
 |-------|-------|----------|--------|---------|-------|
 | Phase 2i start (`14fbd49`) | 677 | 0 | 0 | 22 | baseline (post-progress-doc) |
 | Task 1.0 land (`2ab7ecf`) | 681 | 0 | 0 | 22 | +4 MathTestSupportTest |
+| WI-1.1 CORE-MATH `exp` (`d1c3eda`) | 682 | 0 | 0 | 22 | +1 JQuantMathExpTest (459 cases) |
+| WI-1.1 test diagnostics (`6a6be46`) | 684 | 0 | 0 | 22 | +2 MathTestSupport.bitsEqual tests |
+| WI-1.1 final (`a61b920`) | 684 | 0 | 0 | 22 | unchanged; probe oracle = CORE-MATH cr_exp; 508 cases incl 51/51 DB |
+
+| WI-1 land tip | `a61b920` | tests `684/0/0/22`, scanner `0`, EXACT-tier `JQuantMath.exp` correctly-rounded across 508 probe cases |
+|---------------|-----------|---|
