@@ -4124,6 +4124,33 @@
     },
     {
       "expected": {
+        "y_bits": "0x3ff0006e83736f8d"
+      },
+      "inputs": {
+        "x": 0.00010538831410138832
+      },
+      "name": "db_01"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff016b4df3299d7"
+      },
+      "inputs": {
+        "x": 0.005528277479060492
+      },
+      "name": "db_02"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff05789640bc8ad"
+      },
+      "inputs": {
+        "x": 0.021146097432816237
+      },
+      "name": "db_03"
+    },
+    {
+      "expected": {
         "y_bits": "0x3ff0a4ae9718080c"
       },
       "inputs": {
@@ -4184,6 +4211,24 @@
         "x": 0.4342466565055342
       },
       "name": "db_10"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa65d89abf3d1f"
+      },
+      "inputs": {
+        "x": 0.5006933289508785
+      },
+      "name": "db_11"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40593295a96ec6eb"
+      },
+      "inputs": {
+        "x": 4.613042960553475
+      },
+      "name": "db_12"
     },
     {
       "expected": {
@@ -4256,6 +4301,15 @@
         "x": 470.2797657541442
       },
       "name": "db_20"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fefff4cde6a0bfb"
+      },
+      "inputs": {
+        "x": -8.542005785074093e-05
+      },
+      "name": "db_21"
     },
     {
       "expected": {
@@ -4349,6 +4403,15 @@
     },
     {
       "expected": {
+        "y_bits": "0x3fef309f46111221"
+      },
+      "inputs": {
+        "x": -0.025640606111311446
+      },
+      "name": "db_32"
+    },
+    {
+      "expected": {
         "y_bits": "0x3fecd8abd4de5c33"
       },
       "inputs": {
@@ -4418,6 +4481,15 @@
         "x": -0.5681328666204585
       },
       "name": "db_40"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fddefa8f4a8af21"
+      },
+      "inputs": {
+        "x": -0.7598155746217106
+      },
+      "name": "db_41"
     },
     {
       "expected": {
@@ -4503,7 +4575,7 @@
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-28T23:15:53Z",
+  "generated_at": "2026-04-28T23:44:52Z",
   "generated_by": "exp_probe",
   "test_group": "math/transcendental/exp"
 }

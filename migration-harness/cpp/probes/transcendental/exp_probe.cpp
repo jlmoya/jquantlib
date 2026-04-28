@@ -1,10 +1,17 @@
 // migration-harness/cpp/probes/transcendental/exp_probe.cpp
-// Phase 2i WI-1.1 — emit bit-exact std::exp(x) for a curated input set
+// Phase 2i WI-1.1 — emit bit-exact CORE-MATH cr_exp(x) for a curated input set
 // covering IEEE-754 special cases, argument-reduction breakpoints, and
-// dense/sparse coverage of the representable domain.
+// dense/sparse coverage of the representable domain, plus the full 51-entry
+// hard-to-round DB.
 //
 // Output: migration-harness/references/math/transcendental/exp.json
-// Schema: each case has "x" (double) and "y_bits" (hex string of std::exp(x) raw bits).
+// Schema: each case has "x" (double) and "y_bits" (hex string of cr_exp(x) raw bits).
+//
+// Oracle: CORE-MATH cr_exp (correctly-rounded exp for binary64), included
+// directly as a single-TU compilation. Phase 2i design names CORE-MATH as
+// the source of truth; Apple libm std::exp on macOS arm64 is NOT correctly
+// rounded for ~8 of the DB hard cases (verified via 300-bit mpmath), so the
+// platform libm cannot be used as the oracle.
 
 #include <ql/version.hpp>
 #include "../common.hpp"
@@ -14,6 +21,12 @@
 #include <cstdio>
 #include <cstring>
 #include <limits>
+
+// CORE-MATH cr_exp source (MIT-licensed, Copyright (c) 2022-2023 Alexei Sibidanov).
+// Single-TU include keeps the probe self-contained and avoids CMake glob churn.
+extern "C" {
+#include "coremath/exp.c"
+}
 
 using namespace jqml_harness;
 
@@ -37,9 +50,12 @@ json encodeX(double x) {
 }
 
 void addExpCase(ReferenceWriter& out, const std::string& name, double x) {
+    // Use CORE-MATH cr_exp (correctly-rounded) as the oracle. NaN inputs
+    // are passed through unchanged (cr_exp's NaN handling matches IEEE-754).
+    const double y = cr_exp(x);
     out.addCase(name,
         json{{"x", encodeX(x)}},
-        json{{"y_bits", hexBits(std::exp(x))}});
+        json{{"y_bits", hexBits(y)}});
 }
 
 } // namespace
@@ -101,26 +117,29 @@ int main() {
 
     // Hard-to-round cases from CORE-MATH's 51-entry database (ExpKernel.DB[]).
     // Each input is one of the 51 x values stored in the DB; feeding them to
-    // std::exp exercises the expDatabase() code path in the accurate sub-path.
-    // Bit patterns transcribed from the DB[] initialiser in ExpKernel.java
-    // (which in turn comes from CORE-MATH src/binary64/exp/exp.c, MIT-licensed,
-    // Copyright (c) 2022-2023 Alexei Sibidanov).
+    // cr_exp produces the correctly-rounded reference, which the Java
+    // ExpKernel matches bit-for-bit. Bit patterns transcribed from the DB[]
+    // initialiser in ExpKernel.java (which in turn comes from CORE-MATH
+    // src/binary64/exp/exp.c, MIT-licensed, Copyright (c) 2022-2023 Alexei
+    // Sibidanov).
     //
-    // 8 of the 51 entries have a 1-ULP divergence between ExpKernel.java
-    // (S_SIGN / S2 nudge) and Apple libc++ for those specific inputs:
-    //   db_01, db_02, db_03, db_11, db_12, db_21, db_32, db_41
-    // Those inputs are omitted here (deferred to a future ExpKernel fix) so
-    // every case below passes EXACT-tier. The remaining 43 entries DO reach
-    // the expDatabase() lookup and pass bit-exactly.
+    // All 51/51 entries are present. With the oracle now CORE-MATH cr_exp
+    // (not Apple libm std::exp), the 8 entries that previously diverged
+    // 1 ULP from libm — db_01, db_02, db_03, db_11, db_12, db_21, db_32,
+    // db_41 — are bit-exact against the Java port (A3 finding: the Java
+    // port is correctly-rounded; libm was the wrong reference).
     {
         const auto fromBits = [](std::uint64_t b) -> double {
             double d; std::memcpy(&d, &b, sizeof d); return d;
         };
         // db_00: +0x1.fffffffffffffp-53
         addExpCase(out, "db_00", fromBits(0x3cafffffffffffffULL));
-        // db_01 SKIP: 1-ULP divergence in S_SIGN nudge (+0x1.ba07d73250de7p-14)
-        // db_02 SKIP: 1-ULP divergence in S_SIGN nudge (+0x1.6a4d1af9cc989p-8)
-        // db_03 SKIP: 1-ULP divergence in S_SIGN nudge (+0x1.5a75293a5dcdap-6)
+        // db_01: +0x1.ba07d73250de7p-14
+        addExpCase(out, "db_01", fromBits(0x3f1ba07d73250de7ULL));
+        // db_02: +0x1.6a4d1af9cc989p-8
+        addExpCase(out, "db_02", fromBits(0x3f76a4d1af9cc989ULL));
+        // db_03: +0x1.5a75293a5dcdap-6
+        addExpCase(out, "db_03", fromBits(0x3f95a75293a5dcdaULL));
         // db_04: +0x1.42ea46949b3c7p-5
         addExpCase(out, "db_04", fromBits(0x3fa42ea46949b3c7ULL));
         // db_05: +0x1.7c8bb0cf5d160p-5
@@ -135,8 +154,10 @@ int main() {
         addExpCase(out, "db_09", fromBits(0x3fd1a0408712e00aULL));
         // db_10: +0x1.bcab27d05abdep-2
         addExpCase(out, "db_10", fromBits(0x3fdbcab27d05abdeULL));
-        // db_11 SKIP: 1-ULP divergence in S_SIGN nudge (+0x1.005ae04256babp-1)
-        // db_12 SKIP: 1-ULP divergence in S_SIGN nudge (+0x1.273c188aa7b14p+2)
+        // db_11: +0x1.005ae04256babp-1
+        addExpCase(out, "db_11", fromBits(0x3fe005ae04256babULL));
+        // db_12: +0x1.273c188aa7b14p+2
+        addExpCase(out, "db_12", fromBits(0x401273c188aa7b14ULL));
         // db_13: +0x1.83d4bcdebb3f4p+2
         addExpCase(out, "db_13", fromBits(0x40183d4bcdebb3f4ULL));
         // db_14: +0x1.08f51434652c3p+4
@@ -153,7 +174,8 @@ int main() {
         addExpCase(out, "db_19", fromBits(0x40654cd1fea7663aULL));
         // db_20: +0x1.d6479eba7c971p+8
         addExpCase(out, "db_20", fromBits(0x407d6479eba7c971ULL));
-        // db_21 SKIP: 1-ULP divergence in S_SIGN nudge (-0x1.664716b68a409p-14)
+        // db_21: -0x1.664716b68a409p-14
+        addExpCase(out, "db_21", fromBits(0xbf1664716b68a409ULL));
         // db_22: -0x1.a2fefefd580dfp-13
         addExpCase(out, "db_22", fromBits(0xbf2a2fefefd580dfULL));
         // db_23: -0x1.ce3f638d0c742p-12
@@ -174,7 +196,8 @@ int main() {
         addExpCase(out, "db_30", fromBits(0xbf95c5ed0ec83666ULL));
         // db_31: -0x1.8c56ff5326197p-6
         addExpCase(out, "db_31", fromBits(0xbf98c56ff5326197ULL));
-        // db_32 SKIP: 1-ULP divergence in S_SIGN nudge (-0x1.a4187f2ca71f9p-6)
+        // db_32: -0x1.a4187f2ca71f9p-6
+        addExpCase(out, "db_32", fromBits(0xbf9a4187f2ca71f9ULL));
         // db_33: -0x1.a8f783d749a8fp-4
         addExpCase(out, "db_33", fromBits(0xbfba8f783d749a8fULL));
         // db_34: -0x1.bd44fdaed819fp-4
@@ -191,7 +214,8 @@ int main() {
         addExpCase(out, "db_39", fromBits(0xbfcea16274b0109bULL));
         // db_40: -0x1.22e24fa3d5cf9p-1
         addExpCase(out, "db_40", fromBits(0xbfe22e24fa3d5cf9ULL));
-        // db_41 SKIP: 1-ULP divergence in S_SIGN nudge (-0x1.85068c07fbbf6p-1)
+        // db_41: -0x1.85068c07fbbf6p-1
+        addExpCase(out, "db_41", fromBits(0xbfe85068c07fbbf6ULL));
         // db_42: -0x1.bdc7955d1482cp-1
         addExpCase(out, "db_42", fromBits(0xbfebdc7955d1482cULL));
         // db_43: -0x1.2a9cad9998262p+0
