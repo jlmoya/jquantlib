@@ -244,3 +244,59 @@ All msun files BSD-licensed (FreeBSD origin). Transcription is at the algorithm/
 | Net tier promotions across suite (WI-3) | n/a | ≥3 (the 3 named sites) | ≥6 (named sites + sweep finds) |
 
 If A19 fires for all three named sites, Phase 2i is still successful as WI-1 — `JQuantMath` lands and is correct — but the integration thesis (transcendentals as the dominant floor) is wrong, and follow-up phases would need to investigate other structural sources. This outcome would be surfaced in completion doc and seed list for Phase 2j.
+
+---
+
+## Addendum (2026-04-28) — Option D pivot: msun is NOT correctly rounded
+
+During WI-1.1 dispatch, the implementer transcribed FreeBSD msun `e_exp.c` to Java verbatim and discovered **the algorithm choice was wrong**. Evidence at `x = 1.0`:
+
+| Source | Bit pattern | Decimal |
+|--------|-------------|---------|
+| Apple libc++ `std::exp(1.0)` (probe ground-truth on macOS) | `0x4005bf0a8b145769` | 2.71828182845904509... ← correctly rounded |
+| JVM `Math.exp(1.0)` | `0x4005bf0a8b14576a` | 2.71828182845904553... ← 1 ULP up |
+| FreeBSD msun `e_exp.c` (verbatim, traced in C) | `0x4005bf0a8b14576a` | same as JVM |
+| Java port of msun (WI-1.1 attempt) | `0x4005bf0a8b14576a` | algorithmically faithful to msun |
+
+**The Phase 2f A13 finding was real but the prescription was wrong.** msun (FreeBSD libm) and JVM `Math.exp` are both members of the *non-correctly-rounded ~1-ULP family*. Apple libm (which is what `<cmath>` `std::exp` resolves to on macOS) is *correctly-rounded*. Porting msun to Java reproduces JVM's existing 1-ULP slack — does NOT close the gap to libc++.
+
+### Revised scope (Option D)
+
+| Item | Original (msun, all 5 primitives) | Revised (CORE-MATH, exp only) |
+|------|-----------------------------------|-------------------------------|
+| **WI-1** | Port `exp`, `log`, `sin`, `cos`, `pow` from msun (~5K LOC total) | Port `exp` ONLY from CORE-MATH (correctly-rounded; `~250-400 LOC` per primitive in CORE-MATH due to double-double arithmetic + lookup tables; ~2-3× the LOC of msun's exp) |
+| **WI-2** | 3 sites: B-1 FdHullWhite + B-2 BroadieKaya + B-3 NCCS | 1 site: B-1 FdHullWhite only. B-2/B-3 deferred — they need log/sin/cos which are no longer in scope. |
+| **WI-3** | Suite-wide tier-promotion sweep | Lighter audit — confirm B-1 outcome, classify remaining transcendental-floored tests as candidates for future Phase 2i.5 (log/sin/cos/pow) or Phase 2j. |
+
+### Why Option D over alternatives
+
+- **A — All 5 correctly-rounded primitives:** ~10-15K LOC port. Multi-month effort. Premature given exp alone hasn't been proven to flip B-1 yet.
+- **B — Pin probes to musl libm (msun-derived):** Solves WI-1 cosmetically but breaks all existing TIGHT-tier alignments built against Apple libm.
+- **C — Abandon Phase 2i:** Throws away the FdHullWhite TIGHT promotion goal entirely.
+- **D (chosen) — Correctly-rounded `exp` only:** Lowest-risk path that preserves the highest-leverage promotion (FdHullWhite). Each subsequent primitive becomes a separate decision after seeing whether `exp` alone is sufficient.
+
+### Updated decision log
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| **P2I-13** | Pivot to Option D (correctly-rounded `exp` only via CORE-MATH) after WI-1.1 surfaced msun ≠ libc++ | msun has same 1-ULP slack as JVM; Apple libm is correctly-rounded. Original thesis required a different algorithm family. |
+| **P2I-14** | Algorithm source = CORE-MATH `src/binary64/exp/exp.c` (BSD-licensed, correctly-rounded by design) | Modern (2021+), specifically targets bit-exact correctness across all rounding modes. Repository: `https://gitlab.inria.fr/core-math/core-math` |
+| **P2I-15** | Drop WI-2 B-2 (BroadieKaya) and B-3 (NCCS) from this phase scope | Both rely on log/sin/cos paths beyond `exp`. Not addressable with exp-only port. |
+| **P2I-16** | Keep WI-1.1 WIP artifacts (probe + reference + facade + test); only `ExpKernel.java` discarded as wrong-algorithm | Probe and reference are correct (Apple libm = correctly-rounded ground truth). Java algorithm just needs replacement, not the surrounding scaffolding. |
+
+### Revised exit criteria
+
+1. **WI-1**: 1 EXACT-tier parameterized test (exp) passes against Apple-libm probe via CORE-MATH algorithm transcription.
+2. **WI-2 B-1 only**: FdHullWhite LOOSE 2e-12 → TIGHT, OR A19 fired and documented.
+3. **WI-3 lighter**: Audit-only report classifying remaining transcendental-floored tests.
+4. Test suite green; scanner WIP unchanged at 0.
+5. Tag `jquantlib-phase2i-complete` and completion doc.
+
+### Revised test count target
+
+| Metric | Phase 2h tip | Revised Phase 2i target |
+|--------|--------------|--------------------------|
+| Tests | 677/0/0/22 | 682/0/0/22 (+1 exp + +4 helper = +5) |
+| Scanner WIP | 0 | 0 |
+| FdHullWhite tier | LOOSE 2e-12 | TIGHT (success) or LOOSE-with-A19 (other floor) |
+| Other transcendental-floored sites | TIGHT/per-test | unchanged this phase; deferred |
