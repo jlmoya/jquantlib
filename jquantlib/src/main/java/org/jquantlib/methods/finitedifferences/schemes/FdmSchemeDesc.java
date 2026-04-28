@@ -85,4 +85,13 @@ public final class FdmSchemeDesc {
     public static FdmSchemeDesc Douglas() {
         return new FdmSchemeDesc(FdmSchemeType.DouglasType, 0.5, 0.0);
     }
+
+    /**
+     * Implicit-Euler scheme defaults: {@code theta = 0.0, mu = 0.0}.
+     * Mirrors C++ {@code FdmSchemeDesc::ImplicitEuler()}. Used by
+     * {@code FdmBackwardSolver} for the optional damping prefix steps.
+     */
+    public static FdmSchemeDesc ImplicitEuler() {
+        return new FdmSchemeDesc(FdmSchemeType.ImplicitEulerType, 0.0, 0.0);
+    }
 }

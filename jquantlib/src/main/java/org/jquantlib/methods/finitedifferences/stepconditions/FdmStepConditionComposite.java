@@ -125,6 +125,33 @@ public class FdmStepConditionComposite implements StepCondition<Array> {
     }
 
     /**
+     * Build a composite that overlays a snapshot-only condition {@code c1}
+     * onto an existing composite {@code c2}. Mirrors C++ v1.42.1
+     * {@code FdmStepConditionComposite::joinConditions}: the resulting
+     * composite's stopping times are {@code c2.stoppingTimes() ∪ {c1.getTime()}}
+     * and its applied conditions are {@code [c2, c1]} (in that order).
+     *
+     * <p>This helper is used by {@code Fdm1DimSolver} / {@code Fdm2DimSolver}
+     * to inject a finite-difference theta snapshot just before the first
+     * stopping time of the user-supplied composite.
+     */
+    public static FdmStepConditionComposite joinConditions(
+            final FdmSnapshotCondition c1,
+            final FdmStepConditionComposite c2) {
+        final List<List<Double>> stoppingTimes = new ArrayList<>();
+        stoppingTimes.add(new ArrayList<>(c2.stoppingTimes()));
+        final List<Double> single = new ArrayList<>(1);
+        single.add(c1.getTime());
+        stoppingTimes.add(single);
+
+        final Conditions conditions = new Conditions();
+        conditions.add(c2);
+        conditions.add(c1);
+
+        return new FdmStepConditionComposite(stoppingTimes, conditions);
+    }
+
+    /**
      * Build a vanilla-payoff composite covering dividends and the
      * three exercise types (European, American, Bermudan). See the
      * class-level scope note for what's currently implemented.
