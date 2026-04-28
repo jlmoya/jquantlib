@@ -64,6 +64,18 @@ public final class MathTestSupport {
     }
 
     /**
+     * Non-throwing variant: returns {@code true} iff {@code actual} has the
+     * same IEEE-754 bit pattern as {@code expectedBits} after NaN-payload
+     * normalisation.  Use this instead of {@link #assertBitsEqual(long,double)}
+     * when you want to collect failures rather than throw on the first one.
+     */
+    public static boolean bitsEqual(long expectedBits, double actual) {
+        final long e = canonicalise(expectedBits);
+        final long a = canonicalise(Double.doubleToRawLongBits(actual));
+        return e == a;
+    }
+
+    /**
      * Parse a probe-JSON hex bit string ({@code "0x..."}) into a {@code long}.
      */
     public static long parseHexBits(String hex) {
