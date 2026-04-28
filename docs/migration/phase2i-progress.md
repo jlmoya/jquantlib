@@ -5,7 +5,7 @@ Living document — updated by the controller after every implementer subagent r
 **Plan:** `docs/migration/phase2i-plan.md` (commit `4dcbe8f`)
 **Design:** `docs/migration/phase2i-design.md` (commit `ad39ee9`)
 **Predecessor:** `jquantlib-phase2h-complete` @ `f0256c8`
-**Phase 2i start tip on main:** `4dcbe8f`
+**Phase 2i start tip on main:** `14fbd49`
 **Baseline:** Tests `677/0/0/22`, scanner `0 stubs`
 
 ## Worktrees
@@ -39,8 +39,9 @@ Living document — updated by the controller after every implementer subagent r
 
 ### L1 — WI-1 sequential (4 sub-layer commits + 1 prep commit on main)
 
-#### Task 1.0 — MathTestSupport bit-pattern helper (lands on main first)
-_(Pending — first implementer dispatched)_
+#### Task 1.0 — MathTestSupport bit-pattern helper (lands on main first) ✅
+
+- Commit `2ab7ecf` on main — adds `MathTestSupport.java` (assertBitsEqual w/ NaN-payload canonicalisation, parseHexBits) and `MathTestSupportTest.java` (4 self-tests). Tests `677 → 681`. Spec-compliant; code-review APPROVED (0 findings).
 
 #### Sub-layer 1.1 — exp
 _(Pending — dispatch after Task 1.0 lands)_
@@ -75,4 +76,5 @@ _(Not yet started)_
 
 | Event | Tests | Failures | Errors | Skipped | Notes |
 |-------|-------|----------|--------|---------|-------|
-| Phase 2i start (`4dcbe8f`) | 677 | 0 | 0 | 22 | baseline |
+| Phase 2i start (`14fbd49`) | 677 | 0 | 0 | 22 | baseline (post-progress-doc) |
+| Task 1.0 land (`2ab7ecf`) | 681 | 0 | 0 | 22 | +4 MathTestSupportTest |
