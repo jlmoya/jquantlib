@@ -91,8 +91,19 @@ public class BicubicSplineInterpolation extends AbstractInterpolation2D {
         public void calculate() {
             splines_ = new Interpolation[mz.rows()];
             for (int i=0; i<mz.rows(); i++) {
+                // Materialise the row into a dense Array. CubicInterpolation
+                // accesses {@code Array.$} directly (raw underlying double[]),
+                // which is broken for view-style Arrays returned by
+                // {@link Matrix#rangeRow(int)} — those share the parent matrix
+                // backing storage. Without this copy, a non-zeroth row reads
+                // the matrix's first row by accident.
+                final Array row = mz.rangeRow(i);
+                final double[] rowData = new double[row.size()];
+                for (int k = 0; k < row.size(); ++k) {
+                    rowData[k] = row.get(k);
+                }
                 splines_[i] = new CubicInterpolation(
-                                vx, mz.rangeRow(i),
+                                vx, new Array(rowData),
                                 DerivativeApprox.Spline, false,
                                 BoundaryCondition.SecondDerivative, 0.0,
                                 BoundaryCondition.SecondDerivative, 0.0);
