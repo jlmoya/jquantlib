@@ -30,6 +30,10 @@ Living document — updated by the controller after every implementer subagent r
 - A18 NEW (NaN payload divergence): not fired
 - A19 NEW (WI-2 promotion fails after correct swap-in): not fired
 
+## Pivots and major findings
+
+- **2026-04-28 — msun ≠ libc++ pivot.** WI-1.1 dispatch surfaced that FreeBSD msun `e_exp.c` has the same 1-ULP slack as JVM `Math.exp`; Apple libm (which `<cmath>` `std::exp` resolves to on macOS) is correctly-rounded. Original "port msun" thesis was algorithmically equivalent to "do nothing" against the WI-2 promotion goal. User chose **Option D**: pivot to CORE-MATH correctly-rounded `exp` only; defer log/sin/cos/pow; drop WI-2 B-2/B-3 from scope. Design addendum at commit `9739bc7`. Memory: `project_phase2i_correctly_rounded_pivot.md`.
+
 ## Layer / WI progress
 
 ### L0 — pre-flight + worktree setup ✅
@@ -43,28 +47,19 @@ Living document — updated by the controller after every implementer subagent r
 
 - Commit `2ab7ecf` on main — adds `MathTestSupport.java` (assertBitsEqual w/ NaN-payload canonicalisation, parseHexBits) and `MathTestSupportTest.java` (4 self-tests). Tests `677 → 681`. Spec-compliant; code-review APPROVED (0 findings).
 
-#### Sub-layer 1.1 — exp
-_(Pending — dispatch after Task 1.0 lands)_
+#### Sub-layer 1.1 — exp ⚠️ PIVOTED
+_(Initial msun-based attempt BLOCKED — msun has same 1-ULP slack as JVM Math.exp; Apple libm is correctly-rounded. User chose Option D pivot: CORE-MATH `exp` only. WIP retained: probe + reference + facade + test. ExpKernel.java discarded as wrong algorithm. See `phase2i-design.md` Addendum.)_
 
-#### Sub-layer 1.2 — log
-_(Pending — dispatch after 1.1 lands)_
+#### Sub-layer 1.2/1.3/1.4 — log/sin/cos/pow ❌ DEFERRED
+_(Out of scope per Option D pivot. Each becomes a separate Phase 2i.5 / 2j decision after WI-2 B-1 outcome.)_
 
-#### Sub-layer 1.3 — sin + cos
-_(Pending — dispatch after 1.2 lands)_
-
-#### Sub-layer 1.4 — pow
-_(Pending — dispatch after 1.3 lands)_
-
-### L2 — WI-2 sequential (3 sub-tasks)
+### L2 — WI-2 (Option D: B-1 only)
 
 #### B-1 FdHullWhiteSwaptionEngine LOOSE → TIGHT
-_(Pending — dispatches after WI-1 lands)_
+_(Pending — dispatches after WI-1.1 CORE-MATH exp lands)_
 
-#### B-2 Heston BroadieKaya 5e-3 → LOOSE
-_(Pending — dispatches after B-1 lands)_
-
-#### B-3 NCCS TIGHT → EXACT attempt
-_(Pending — dispatches after B-2 lands)_
+#### B-2/B-3 ❌ DEFERRED
+_(Out of scope per Option D pivot — depend on log/sin/cos paths.)_
 
 ### L3 — WI-3 audit + tier-flip sweep
 _(Pending — dispatches after WI-2 lands)_
