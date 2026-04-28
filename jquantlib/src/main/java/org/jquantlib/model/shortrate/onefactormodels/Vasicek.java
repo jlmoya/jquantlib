@@ -82,11 +82,15 @@ public class Vasicek extends OneFactorAffineModel {
     protected Parameter sigmaParam()  { return arguments_.get(2); }
     protected Parameter lambdaParam() { return arguments_.get(3); }
 
-    protected double a() /* @ReadOnly */ {
+    // Aligned to v1.42.1 vasicek.hpp lines 54-57: a(), b(), sigma() are
+    // declared {@code public} in C++. Elevated from {@code protected} to
+    // {@code public} in Phase 2h WI-1 so the modern Fdm framework operators
+    // (FdmHullWhiteOp) can read HW model parameters from a different package.
+    public double a() /* @ReadOnly */ {
         return aParam().get(0.0);
     }
 
-    protected double b() /* @ReadOnly */ {
+    public double b() /* @ReadOnly */ {
         return bParam().get(0.0);
     }
 
@@ -94,7 +98,7 @@ public class Vasicek extends OneFactorAffineModel {
         return lambdaParam().get(0.0);
     }
 
-    protected double sigma() /* @ReadOnly */ {
+    public double sigma() /* @ReadOnly */ {
         return sigmaParam().get(0.0);
     }
 

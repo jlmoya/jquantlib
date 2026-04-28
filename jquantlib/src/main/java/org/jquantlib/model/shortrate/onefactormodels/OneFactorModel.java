@@ -89,8 +89,15 @@ public abstract class OneFactorModel extends ShortRateModel {
 
     /**
      * <p>Base class describing the short-rate dynamics. </p>
+     * <p>
+     * Aligned to v1.42.1 onefactormodel.hpp lines 54-55: {@code class
+     * OneFactorModel::ShortRateDynamics} is declared {@code public} in C++.
+     * Elevated from {@code protected} to {@code public} in Phase 2h WI-1
+     * so the modern Fdm framework operators (FdmHullWhiteOp) can refer to
+     * the dynamics return type from outside the {@code onefactormodels}
+     * package.
      */
-    protected abstract class ShortRateDynamics {
+    public abstract class ShortRateDynamics {
 
         //
         // private fields
