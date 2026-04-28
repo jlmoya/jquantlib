@@ -4112,11 +4112,398 @@
         "x": 700.0
       },
       "name": "sparse_0028"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0000000000001"
+      },
+      "inputs": {
+        "x": 2.2204460492503128e-16
+      },
+      "name": "db_00"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0a4ae9718080c"
+      },
+      "inputs": {
+        "x": 0.03941835198643378
+      },
+      "name": "db_04"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0c2c2efbe6960"
+      },
+      "inputs": {
+        "x": 0.04645332844930539
+      },
+      "name": "db_05"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff23677186be250"
+      },
+      "inputs": {
+        "x": 0.12953343691349475
+      },
+      "name": "db_06"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff39b8021bc065d"
+      },
+      "inputs": {
+        "x": 0.20331954196172794
+      },
+      "name": "db_07"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff47408cb9583ce"
+      },
+      "inputs": {
+        "x": 0.24555352187141782
+      },
+      "name": "db_08"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff512b3126454f3"
+      },
+      "inputs": {
+        "x": 0.2754060095862775
+      },
+      "name": "db_09"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8b367381d82f5"
+      },
+      "inputs": {
+        "x": 0.4342466565055342
+      },
+      "name": "db_10"
+    },
+    {
+      "expected": {
+        "y_bits": "0x407ac50b409c8aee"
+      },
+      "inputs": {
+        "x": 6.0598594832526835
+      },
+      "name": "db_13"
+    },
+    {
+      "expected": {
+        "y_bits": "0x416daac459b157e5"
+      },
+      "inputs": {
+        "x": 16.55983372179868
+      },
+      "name": "db_14"
+    },
+    {
+      "expected": {
+        "y_bits": "0x418a8c02e974c315"
+      },
+      "inputs": {
+        "x": 17.83500450381271
+      },
+      "name": "db_15"
+    },
+    {
+      "expected": {
+        "y_bits": "0x427b890ca8637ae2"
+      },
+      "inputs": {
+        "x": 28.26876911181362
+      },
+      "name": "db_16"
+    },
+    {
+      "expected": {
+        "y_bits": "0x45591ec4412c344f"
+      },
+      "inputs": {
+        "x": 60.06174039698168
+      },
+      "name": "db_17"
+    },
+    {
+      "expected": {
+        "y_bits": "0x459a97e7be23e65a"
+      },
+      "inputs": {
+        "x": 62.89131983565637
+      },
+      "name": "db_18"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4f4c90810d354618"
+      },
+      "inputs": {
+        "x": 170.40063412375622
+      },
+      "name": "db_19"
+    },
+    {
+      "expected": {
+        "y_bits": "0x6a562a88613629b6"
+      },
+      "inputs": {
+        "x": 470.2797657541442
+      },
+      "name": "db_20"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feffe5d0bb7eabf"
+      },
+      "inputs": {
+        "x": -0.0001997928992905134
+      },
+      "name": "db_22"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feffc63b5617d47"
+      },
+      "inputs": {
+        "x": -0.0004408336761257855
+      },
+      "name": "db_23"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feffc6235eee28d"
+      },
+      "inputs": {
+        "x": -0.0004415482182547442
+      },
+      "name": "db_24"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feffb31a941b9b1"
+      },
+      "inputs": {
+        "x": -0.0005868434354333441
+      },
+      "name": "db_25"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feff8a28e429f33"
+      },
+      "inputs": {
+        "x": -0.0008994542877780334
+      },
+      "name": "db_26"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fefd02d98c24bbb"
+      },
+      "inputs": {
+        "x": -0.005854738373659552
+      },
+      "name": "db_27"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fefb85251a3f26f"
+      },
+      "inputs": {
+        "x": -0.008788314139931305
+      },
+      "name": "db_28"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fefab5c6e464e0d"
+      },
+      "inputs": {
+        "x": -0.010385646752244758
+      },
+      "name": "db_29"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fef53a751d7db49"
+      },
+      "inputs": {
+        "x": -0.02126284029696137
+      },
+      "name": "db_30"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fef3c35328f1d5d"
+      },
+      "inputs": {
+        "x": -0.024190663662552927
+      },
+      "name": "db_31"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fecd8abd4de5c33"
+      },
+      "inputs": {
+        "x": -0.1037516737020303
+      },
+      "name": "db_33"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fecb4287f11060a"
+      },
+      "inputs": {
+        "x": -0.10870837302127832
+      },
+      "name": "db_34"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fec7f14af0a08eb"
+      },
+      "inputs": {
+        "x": -0.11595781086814885
+      },
+      "name": "db_35"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3febaded30cbf1c4"
+      },
+      "inputs": {
+        "x": -0.14504743082833096
+      },
+      "name": "db_36"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fea634ae87df6ae"
+      },
+      "inputs": {
+        "x": -0.19283178027363737
+      },
+      "name": "db_37"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe976a4c9985f5b"
+      },
+      "inputs": {
+        "x": -0.22849173530190173
+      },
+      "name": "db_38"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe9309142b73ea6"
+      },
+      "inputs": {
+        "x": -0.23930006692547043
+      },
+      "name": "db_39"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe2217147b85eaa"
+      },
+      "inputs": {
+        "x": -0.5681328666204585
+      },
+      "name": "db_40"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdacb8cf13bc769"
+      },
+      "inputs": {
+        "x": -0.8706633258937067
+      },
+      "name": "db_42"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd3ef1e9b3a81c8"
+      },
+      "inputs": {
+        "x": -1.1664532184587633
+      },
+      "name": "db_43"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc534d4de870713"
+      },
+      "inputs": {
+        "x": -1.797728508222747
+      },
+      "name": "db_44"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc1064b2c103ddb"
+      },
+      "inputs": {
+        "x": -2.0173718153791254
+      },
+      "name": "db_45"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3faf78a60182b74d"
+      },
+      "inputs": {
+        "x": -2.78924914425016
+      },
+      "name": "db_46"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3e8f3e558cf4de54"
+      },
+      "inputs": {
+        "x": -15.273162747858944
+      },
+      "name": "db_47"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3daf80aafa92b498"
+      },
+      "inputs": {
+        "x": -24.96896403739838
+      },
+      "name": "db_48"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3822c0fa76a0e15f"
+      },
+      "inputs": {
+        "x": -86.48458873295607
+      },
+      "name": "db_49"
+    },
+    {
+      "expected": {
+        "y_bits": "0x2d88c0d4140c77b7"
+      },
+      "inputs": {
+        "x": -204.0420507571266
+      },
+      "name": "db_50"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-28T19:37:32Z",
+  "generated_at": "2026-04-28T23:15:53Z",
   "generated_by": "exp_probe",
   "test_group": "math/transcendental/exp"
 }
