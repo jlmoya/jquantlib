@@ -1,0 +1,39 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "atm_rate": 0.05059858531885231,
+        "swaption_npv_fd_g2": 1.6963227951279267
+      },
+      "inputs": {
+        "calendar": "TARGET",
+        "damping_steps": 0,
+        "dummy_fixed_rate": 0.04,
+        "eval_date": "2026-01-15",
+        "exercise_years": 5,
+        "fixed_day_counter": "30/360 European",
+        "fixed_freq": "Annual",
+        "flat_rate": 0.05,
+        "float_tenor_months": 3,
+        "g2_a": 0.1,
+        "g2_b": 0.1,
+        "g2_eta": 0.005,
+        "g2_rho": -0.5,
+        "g2_sigma": 0.01,
+        "index": "Euribor3M",
+        "nominal": 100.0,
+        "swap_years": 5,
+        "t_grid": 50,
+        "x_grid": 50,
+        "y_grid": 50,
+        "yts_day_counter": "Actual/365 Fixed"
+      },
+      "name": "atm_payer_5y5y_fd_g2"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-28T12:57:50Z",
+  "generated_by": "fdg2swaptionengine_probe",
+  "test_group": "pricingengines/swaption/fdg2swaptionengine"
+}
