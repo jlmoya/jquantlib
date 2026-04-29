@@ -841,6 +841,76 @@
     },
     {
       "expected": {
+        "ex": 1025,
+        "hi": "0xfffffffffffff800",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.7976931348623157e+308,
+        "b": 1.7976931348623157e+308,
+        "op": "add"
+      },
+      "name": "add_max_normal_pos"
+    },
+    {
+      "expected": {
+        "ex": 1025,
+        "hi": "0xfffffffffffff800",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -1.7976931348623157e+308,
+        "b": -1.7976931348623157e+308,
+        "op": "add"
+      },
+      "name": "add_max_normal_neg"
+    },
+    {
+      "expected": {
+        "ex": 1025,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 8.98846567431158e+307,
+        "b": 8.98846567431158e+307,
+        "op": "add"
+      },
+      "name": "add_just_under_max_pos"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0xc000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.9999999999999998,
+        "b": 1.0000000000000002,
+        "op": "add"
+      },
+      "name": "add_carry_chain_a"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0xc000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.5,
+        "b": 1.5,
+        "op": "add"
+      },
+      "name": "add_carry_chain_b"
+    },
+    {
+      "expected": {
         "ex": 1,
         "hi": "0x8000000000000000",
         "lo": "0x0000000000000000",
@@ -1085,6 +1155,76 @@
         "sgn": 0
       },
       "inputs": {
+        "a": -1.0,
+        "b": -1.0,
+        "op": "mul21"
+      },
+      "name": "mul21_neg_one_neg_one"
+    },
+    {
+      "expected": {
+        "ex": 6,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": 1024.0,
+        "b": -0.03125,
+        "op": "mul21"
+      },
+      "name": "mul21_pow2_pos_neg"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0x80000000000004ec",
+        "lo": "0xfbefd7888a400000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.4142135623730951,
+        "b": 1.4142135623730951,
+        "op": "mul21"
+      },
+      "name": "mul21_sqrt2_sqrt2"
+    },
+    {
+      "expected": {
+        "ex": 1025,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.3407807929942597e+154,
+        "b": 1.3407807929942597e+154,
+        "op": "mul21"
+      },
+      "name": "mul21_overflow_borderline"
+    },
+    {
+      "expected": {
+        "ex": -1023,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 7.458340731200207e-155,
+        "b": 7.458340731200207e-155,
+        "op": "mul21"
+      },
+      "name": "mul21_underflow_borderline"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
         "a": 1.0,
         "op": "copy"
       },
@@ -1196,7 +1336,7 @@
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-04-29T02:04:04Z",
+  "generated_at": "2026-04-29T02:14:45Z",
   "generated_by": "dint64_probe",
   "test_group": "math/transcendental/dint64"
 }

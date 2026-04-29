@@ -216,10 +216,10 @@ final class Dint64 {
      * {@code this = a + b}, matching CORE-MATH {@code add_dint}. Error bounded
      * by 2 ulps of the 128-bit mantissa (1 ulp when same-sign).
      *
-     * <p>NB: must not alias {@code this} with {@code a} or {@code b}; the C
-     * reference allows it but only at carefully chosen call sites. Caller-side
-     * convention is to use a distinct receiver and {@link #copyFrom} the
-     * result if needed.
+     * <p><b>Aliasing:</b> behaviour is undefined if {@code this == a} or
+     * {@code this == b}. Callers must use a separate destination instance.
+     * (CORE-MATH callers also pass a fresh out-parameter; this constraint
+     * matches the C reference's call sites.)
      */
     void addAssign(Dint64 a, Dint64 b) {
         // CORE-MATH special-case: if a is the additive identity (hi|lo = 0),
@@ -352,6 +352,11 @@ final class Dint64 {
     /**
      * {@code this = a * b}, matching CORE-MATH {@code mul_dint}. Error bounded
      * by 6 ulps of the 128-bit mantissa.
+     *
+     * <p><b>Aliasing:</b> behaviour is undefined if {@code this == a} or
+     * {@code this == b}. Callers must use a separate destination instance.
+     * (CORE-MATH callers also pass a fresh out-parameter; this constraint
+     * matches the C reference's call sites.)
      */
     void mulAssign(Dint64 a, Dint64 b) {
         final long aHi = a.hi, aLo = a.lo;
@@ -398,6 +403,11 @@ final class Dint64 {
      * {@code mul_dint_21}. Error bounded by 2 ulps. Faster than
      * {@link #mulAssign} when {@code b} comes directly from {@link #fromDouble}
      * (which always sets {@code lo=0}).
+     *
+     * <p><b>Aliasing:</b> behaviour is undefined if {@code this == a} or
+     * {@code this == b}. Callers must use a separate destination instance.
+     * (CORE-MATH callers also pass a fresh out-parameter; this constraint
+     * matches the C reference's call sites.)
      */
     void mul21Assign(Dint64 a, Dint64 b) {
         final long aHi = a.hi, aLo = a.lo;

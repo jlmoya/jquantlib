@@ -251,6 +251,15 @@ int main() {
     addAdd(out, "add_equal_mag_same_sign",   0x1.5p+10, 0x1.5p+10);          // exponent bump
     addAdd(out, "add_close_diff_sign_loss",  1.0, -0x1.fffffffffffffp-1);    // major cancellation
     addAdd(out, "add_pi_half_minus",         1.5707963267948966, -1.5707963267948965);
+    // 128-bit-overflow boundary: probe cases that exercise the
+    // ((carry == 1L) && (sumHi == aHi)) branch in addAssign overflow detection.
+    // Same-sign large-mantissa inputs — sumLo likely wraps, and the high-word
+    // comparison selects the carry-only path or the unsignedLessThan path.
+    addAdd(out, "add_max_normal_pos",       0x1.fffffffffffffp+1023, 0x1.fffffffffffffp+1023);  // → +Inf
+    addAdd(out, "add_max_normal_neg",      -0x1.fffffffffffffp+1023, -0x1.fffffffffffffp+1023); // → -Inf
+    addAdd(out, "add_just_under_max_pos",   0x1p+1023, 0x1p+1023);             // finite, max-exponent
+    addAdd(out, "add_carry_chain_a",        0x1.fffffffffffffp+0, 0x1.0000000000001p+0);        // adjacent mantissas
+    addAdd(out, "add_carry_chain_b",        0x1.8p+0, 0x1.8p+0);              // identical large mantissas
 
     // --- mul cases ---
     addMul(out, "mul_one_one",          1.0, 1.0);
@@ -272,6 +281,12 @@ int main() {
     addMul21(out, "mul21_pi_e",          3.141592653589793, 2.718281828459045);
     addMul21(out, "mul21_pow2",          0x1p+10, 0x1p+10);
     addMul21(out, "mul21_neg_pos",      -2.5, 4.0);
+    // Additional coverage mirroring mul's sign/magnitude sweep:
+    addMul21(out, "mul21_neg_one_neg_one",   -1.0, -1.0);                     // both negative → positive
+    addMul21(out, "mul21_pow2_pos_neg",       0x1p+10, -0x1p-5);              // sign mismatch, magnitude differ
+    addMul21(out, "mul21_sqrt2_sqrt2",        1.4142135623730951, 1.4142135623730951); // equal magnitude, near 2
+    addMul21(out, "mul21_overflow_borderline", 0x1p+512, 0x1p+512);            // large exponent
+    addMul21(out, "mul21_underflow_borderline", 0x1p-512, 0x1p-512);          // small exponent
 
     // --- copy cases (sanity) ---
     addCopy(out, "copy_one",  1.0);
