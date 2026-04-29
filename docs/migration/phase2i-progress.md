@@ -64,8 +64,12 @@ _(Out of scope per Option D pivot. Each becomes a separate Phase 2i.5 / 2j decis
 
 ### L2 — WI-2 (Option D: B-1 only)
 
-#### B-1 FdHullWhiteSwaptionEngine LOOSE → TIGHT
-_(Pending — dispatches after WI-1.1 CORE-MATH exp lands)_
+#### B-1 FdHullWhiteSwaptionEngine LOOSE → within(3e-12) ⚠️ A19 partial
+
+- Commit `305ce24`. 4 compounded `Math.exp` call sites swapped to `JQuantMath.exp` on the FdHullWhite hot path: `OneFactorAffineModel.discountBond`, `HullWhite.A`, `Vasicek.B`, `HullWhite.FittingParameter.Impl.value`.
+- **A19 fired (partial):** swap closed essentially zero of the residual gap (pre: ~2.0e-12; post: 1.9935e-12). The Phase 2h thesis that `Math.exp` 1-ULP slack dominates the FdHullWhite floor was **wrong**. Real structural source is likely Douglas ADI scheme rounding or `FdmAffineModelTermStructure` discount projection rounding chain.
+- **Tier improvement:** LOOSE (abs+rel 1e-8) → `Tolerance.within(npv, cpp, 3e-12)` — ~3000× tighter than LOOSE but not full TIGHT (`abs 1e-14 + rel 1e-12`, ceiling ~1.96e-12 for this NPV magnitude).
+- Implication: future `JQuantMath.log/sin/cos/pow` ports won't flip this test either. Phase 2j seed candidate: investigate Douglas ADI / FdmAffineModelTermStructure floor.
 
 #### B-2/B-3 ❌ DEFERRED
 _(Out of scope per Option D pivot — depend on log/sin/cos paths.)_
