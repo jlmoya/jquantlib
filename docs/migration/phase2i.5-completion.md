@@ -1,7 +1,7 @@
 # Phase 2i.5 Completion — CORE-MATH `cos`/`sin` Port + NCCS Rewire + Audit Tier Discharge
 
 **Status:** complete 2026-04-28
-**Tag:** `jquantlib-phase2i.5-complete` @ `<FILL_AT_TAG>`
+**Tag:** `jquantlib-phase2i.5-complete` @ `3c4b913`
 **Predecessor:** `jquantlib-phase2i-complete` @ `a4a3b77`
 **Plan:** `docs/migration/phase2i.5-plan.md` (commit `a4dcbf0`)
 **Design:** `docs/migration/phase2i.5-design.md` (commit `8cf4775`, with Option 1 scope correction during execution)
