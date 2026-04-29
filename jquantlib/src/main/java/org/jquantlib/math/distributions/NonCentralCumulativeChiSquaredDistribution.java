@@ -19,6 +19,7 @@ package org.jquantlib.math.distributions;
 
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Non-central chi-squared cumulative distribution.
@@ -62,7 +63,7 @@ public class NonCentralCumulativeChiSquaredDistribution implements Ops.DoubleOp 
         final int itrmax = 10000;
         final double lam = 0.5 * ncp_;
 
-        double u = Math.exp(-lam);
+        double u = JQuantMath.exp(-lam);
         double v = u;
         final double x2 = 0.5 * x;
         final double f2 = 0.5 * df_;
@@ -79,10 +80,10 @@ public class NonCentralCumulativeChiSquaredDistribution implements Ops.DoubleOp 
             // We inline the constant 0.0 directly to keep the formula
             // transparent; numerically identical to the C++ expression
             // `(1 - t) * (2 - t/(f2+1))` evaluated at t == 0.0.
-            t = Math.exp((1.0 - 0.0) * (2.0 - 0.0 / (f2 + 1.0)))
+            t = JQuantMath.exp((1.0 - 0.0) * (2.0 - 0.0 / (f2 + 1.0)))
                     / Math.sqrt(2.0 * Math.PI * (f2 + 1.0));
         } else {
-            t = Math.exp(f2 * Math.log(x2) - x2 - gammaFunction_.logValue(f2 + 1.0));
+            t = JQuantMath.exp(f2 * Math.log(x2) - x2 - gammaFunction_.logValue(f2 + 1.0));
         }
 
         double ans = v * t;

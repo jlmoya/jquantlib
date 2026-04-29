@@ -31,24 +31,15 @@ public class NonCentralCumulativeChiSquaredDistributionTest {
 
     @Test
     public void cdfMatchesCpp() {
-        // Phase 2f WI-3 C.1 — Phase 1 design called for an EXACT-tier
-        // promotion here, but the bit-faithful match is structurally
-        // unattainable: the very first Math.exp(...) call before the
-        // Patnaik series even begins differs from C++ libc++ std::exp
-        // by 1 ULP (Math.exp's IEEE-754 1-ULP tolerance band vs
-        // libc++ macOS's correctly-rounded result), and that 1-ULP
-        // seed propagates into a 1-3 ULP drift on the final CDF sum.
-        // Diagnosed via /tmp/full2.{cpp,Full2.java} traces (n=2 step
-        // diverges by 1 ULP, accumulates to 3 ULPs at convergence on
-        // df=2.5,ncp=1.5,x=3.0). This is the design's category (d)
-        // "Bessel/log/exp approximation differs", but the underlying
-        // Math.exp is not part of JQuantLib — it ships with the JVM.
-        // Per phase2f-design A13, the deliberate tier compromise is
-        // to keep the existing TIGHT tier (abs 1e-14 + rel 1e-12),
-        // which the drift comfortably fits inside (max observed
-        // ~1.7e-16 absolute, well under 1e-14 + rel 1e-12).
-        // Extended C.1 regression grid (14 tuples) is still useful
-        // as a tighter-tier check than the original Phase 2c grid.
+        // Phase 2i.5 WI-2 attempted EXACT after JQuantMath.exp swap (3 call
+        // sites). A19 fired: sample (df=10, ncp=50, x=65) shows 27-ULP
+        // residual — structural source is Math.log(x2) at line 86
+        // (out of Phase 2i.5 scope) whose slack propagates through the
+        // Patnaik series into a multi-ULP accumulated drift. JQuantMath.exp
+        // is correctly-rounded and is not the floor; EXACT requires
+        // Math.log port (Phase 2j candidate). Staying TIGHT.
+        // TIGHT tier (abs 1e-14 + rel 1e-12) comfortably covers the
+        // 2.99e-15 absolute diff observed on the failing sample.
         runFingerprint("cdf");
     }
 
