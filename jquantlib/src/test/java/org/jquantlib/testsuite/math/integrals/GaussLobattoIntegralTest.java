@@ -12,6 +12,7 @@ import static org.junit.Assert.fail;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.integrals.GaussLobattoIntegral;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.testsuite.util.ReferenceReader;
 import org.jquantlib.testsuite.util.ReferenceReader.Case;
 import org.jquantlib.testsuite.util.Tolerance;
@@ -57,9 +58,11 @@ public class GaussLobattoIntegralTest {
             // C++ and Java provided the dist == acc test is deterministic
             // (it is — Java disallows wider intermediate precision per
             // strictfp semantics). Smooth-integrand integrals usually
-            // come back bit-exact, but transcendental integrands drift
-            // a few ULPs through Math.{exp,sin,cos} (A13 phenomenon).
-            // Tight tier is sufficient.
+            // come back bit-exact; transcendental integrands previously
+            // drifted a few ULPs through Math.{exp,sin} (A13 phenomenon).
+            // Phase 2i.5 WI-3: sin integrand now uses JQuantMath.sin
+            // (correctly-rounded, CORE-MATH cr_sin). TIGHT tier is still
+            // used across the board (Gauss-Lobatto accumulation may remain).
             if (!Tolerance.tight(got, expected)) {
                 fail(name + ": expected=" + expected + " got=" + got
                         + " diff=" + Math.abs(got - expected));
@@ -84,7 +87,8 @@ public class GaussLobattoIntegralTest {
     }
 
     private static Ops.DoubleOp poly()      { return new Ops.DoubleOp() { public double op(double x){ return x*x*x - 2.0*x*x + x + 1.0; } }; }
-    private static Ops.DoubleOp sin()       { return new Ops.DoubleOp() { public double op(double x){ return Math.sin(x); } }; }
+    // Phase 2i.5 WI-3: JQuantMath.sin (CORE-MATH cr_sin, correctly-rounded).
+    private static Ops.DoubleOp sin()       { return new Ops.DoubleOp() { public double op(double x){ return JQuantMath.sin(x); } }; }
     private static Ops.DoubleOp expNegXsq() { return new Ops.DoubleOp() { public double op(double x){ return Math.exp(-x*x); } }; }
     private static Ops.DoubleOp runge()     { return new Ops.DoubleOp() { public double op(double x){ return 1.0 / (1.0 + 25.0 * x * x); } }; }
     private static Ops.DoubleOp sqrtFn()    { return new Ops.DoubleOp() { public double op(double x){ return Math.sqrt(x); } }; }

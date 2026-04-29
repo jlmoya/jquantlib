@@ -11,6 +11,7 @@ import static org.junit.Assert.fail;
 
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.integrals.GaussLaguerreIntegration;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.testsuite.util.ReferenceReader;
 import org.jquantlib.testsuite.util.ReferenceReader.Case;
 import org.jquantlib.testsuite.util.Tolerance;
@@ -49,11 +50,12 @@ public class GaussLaguerreIntegrationTest {
     /**
      * Reference integrals at n=128 must match C++ bit-exactly when the
      * integrand is computed with arithmetic identical to C++ (constants,
-     * polynomials). For transcendental integrands (cos) the result drifts
-     * by a few ULPs because Math.cos vs std::cos differ by 1 ULP per
-     * call (same A13 phenomenon as NCCS). Assert TIGHT tier across the
-     * board to absorb the trig drift; polynomials still come through bit
-     * exact in practice but TIGHT is plenty.
+     * polynomials). For transcendental integrands (cos) the result was
+     * previously subject to Math.cos vs std::cos 1-ULP drift (A13).
+     * Phase 2i.5 WI-3: cos integrand now uses JQuantMath.cos (correctly-
+     * rounded against CORE-MATH cr_cos); tier stays TIGHT, which is
+     * sufficient whether or not the cos swap eliminates all residual
+     * (Gauss quadrature node accumulation may still contribute).
      */
     @Test
     public void referenceIntegralsMatchCpp() {
@@ -84,5 +86,6 @@ public class GaussLaguerreIntegrationTest {
     private static Ops.DoubleOp constOne() { return new Ops.DoubleOp() { public double op(double x){ return 1.0; } }; }
     private static Ops.DoubleOp identity() { return new Ops.DoubleOp() { public double op(double x){ return x; } }; }
     private static Ops.DoubleOp squared()  { return new Ops.DoubleOp() { public double op(double x){ return x * x; } }; }
-    private static Ops.DoubleOp cos()      { return new Ops.DoubleOp() { public double op(double x){ return Math.cos(x); } }; }
+    // Phase 2i.5 WI-3: JQuantMath.cos (CORE-MATH cr_cos, correctly-rounded).
+    private static Ops.DoubleOp cos()      { return new Ops.DoubleOp() { public double op(double x){ return JQuantMath.cos(x); } }; }
 }
