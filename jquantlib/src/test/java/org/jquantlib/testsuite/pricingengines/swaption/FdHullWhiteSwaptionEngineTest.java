@@ -51,19 +51,23 @@ import org.junit.Test;
  * the finite-difference engine against a C++ v1.42.1 probe (see
  * {@code migration-harness/cpp/probes/pricingengines/swaption/fdhullwhiteswaptionengine_probe.cpp}).
  *
- * <p><strong>Tolerance tier</strong> — loose
- * (abs 1e-8 + rel 1e-8). Observed |Java − C++| ≈ 2.0e-12, just over the
- * tight threshold ({@code 1e-14 + 1e-12 * 1.96 ≈ 1.96e-12}); the
- * residual is dominated by accumulated 1-ULP {@code Math.exp}/{@code log}
- * drift across ~100 ADI rollback steps × ~100 mesh points × ~20
- * {@code A(t,T) * exp(-B(t,T) * r)} discount-bond evaluations per node.
- * The Java port uses the same Douglas ADI rollback shape as C++ and a
- * HullWhite-specific inner-value calculator that mirrors the C++
- * {@code FdmAffineModelSwapInnerValue<HullWhite>} template specialisation
- * (clones the swap with {@code iborIndex.clone(fwdTs)}, rebinds a
- * {@link org.jquantlib.methods.finitedifferences.utilities.FdmAffineModelTermStructure}
- * per exercise date, and re-prices the legs). Phase 2g A13-style
- * structural slack — Math.exp 1-ULP — is the documented reason.
+ * <p><strong>Tolerance tier</strong> — per-test {@code within} at
+ * 3e-12 (3000× tighter than {@link Tolerance#loose}). Phase 2h
+ * pinned this at {@link Tolerance#loose} citing accumulated 1-ULP
+ * {@code Math.exp} drift across ~100 ADI rollback steps × ~100 mesh
+ * points × ~20 {@code A(t,T) * exp(-B(t,T) * r)} discount-bond
+ * evaluations per node. Phase 2i WI-2 B-1 swapped {@code Math.exp}
+ * for {@code JQuantMath.exp} (CORE-MATH correctly-rounded) on the
+ * {@code OneFactorAffineModel.discountBond} / {@code Vasicek.B} /
+ * {@code HullWhite.A} / Hull-White fitting hot path; the resulting
+ * |Java − C++| diff is ~1.99e-12 — essentially identical to the
+ * pre-swap value. Conclusion: A19 fires — the residual is NOT
+ * dominated by {@code Math.exp} 1-ULP slack but by another
+ * structural source (likely Douglas/Hundsdorfer scheme rounding or
+ * the cashflow re-projection through {@link
+ * org.jquantlib.methods.finitedifferences.utilities.FdmAffineModelTermStructure}).
+ * Tier is therefore pinned tighter than {@code loose} but cannot
+ * reach {@code tight} ({@code 1e-14 + 1e-12*|cpp| ≈ 1.96e-12}).
  */
 public class FdHullWhiteSwaptionEngineTest {
 
@@ -156,8 +160,15 @@ public class FdHullWhiteSwaptionEngineTest {
         if (!Tolerance.tight(atmRate, expAtmRate)) {
             fail("atmRate: exp=" + expAtmRate + " got=" + atmRate);
         }
-        // FD NPV — loose tier (see class-level note).
-        if (!Tolerance.loose(npv, expSwaptionNPV)) {
+        // FD NPV — Phase 2i WI-2 B-1 attempted a tier flip from LOOSE to
+        // TIGHT after the Math.exp -> JQuantMath.exp swap on the
+        // FdHullWhite hot path. The swap left the diff essentially
+        // unchanged (~1.99e-12), confirming A19: the residual is NOT
+        // dominated by Math.exp 1-ULP slack. Pinning at within(3e-12)
+        // — ~3000x tighter than {@link Tolerance#loose} but a hair above
+        // the observed diff so we lock the floor in place.
+        if (!Tolerance.within(npv, expSwaptionNPV, 3.0e-12,
+                "Phase 2i WI-2 B-1 A19: FdHullWhite floor is non-Math.exp")) {
             fail("FdHullWhite.NPV(): exp=" + expSwaptionNPV + " got=" + npv
                  + " diff=" + Math.abs(npv - expSwaptionNPV));
         }

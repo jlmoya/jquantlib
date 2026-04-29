@@ -27,6 +27,7 @@ import org.jquantlib.instruments.Option;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.optimization.NoConstraint;
 import org.jquantlib.math.optimization.PositiveConstraint;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.model.ConstantParameter;
 import org.jquantlib.model.Parameter;
 import org.jquantlib.processes.OrnsteinUhlenbeckProcess;
@@ -158,7 +159,8 @@ public class Vasicek extends OneFactorAffineModel {
         if (_a < Math.sqrt(Constants.QL_EPSILON))
             return (T - t);
         else
-            return (1.0 - Math.exp(-_a * (T - t))) / _a;
+            // Phase 2i WI-2 B-1: JQuantMath.exp on FdHullWhite hot path.
+            return (1.0 - JQuantMath.exp(-_a * (T - t))) / _a;
     }
 
 

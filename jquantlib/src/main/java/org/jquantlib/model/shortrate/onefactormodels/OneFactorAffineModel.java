@@ -22,6 +22,7 @@ When applicable, the original copyright notice follows this notice.
 package org.jquantlib.model.shortrate.onefactormodels;
 
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.model.AffineModel;
 
 /**
@@ -47,7 +48,11 @@ public abstract class OneFactorAffineModel extends OneFactorModel implements Aff
 
 
     public double discountBond(/* @Time */ final double now, /* @Time */ final double maturity, /* @Rate */ final double rate) /* @ReadOnly */ {
-        return A(now, maturity) * Math.exp(-B(now, maturity) * rate);
+        // Phase 2i WI-2 B-1: JQuantMath.exp (CORE-MATH cr_exp) instead
+        // of JVM Math.exp to remove the 1-ULP slack accumulated across
+        // ~100 ADI rollback steps × ~100 mesh nodes × ~20 coupons in
+        // FdHullWhite/FdG2 swaption pricing (Phase 2h LOOSE 2e-12 floor).
+        return A(now, maturity) * JQuantMath.exp(-B(now, maturity) * rate);
     }
 
 

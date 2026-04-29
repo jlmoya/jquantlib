@@ -30,6 +30,7 @@ import org.jquantlib.QL;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.methods.lattices.Lattice;
 import org.jquantlib.methods.lattices.TrinomialTree;
 import org.jquantlib.model.NullParameter;
@@ -262,7 +263,8 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
                 Compounding.Continuous, Frequency.NoFrequency).rate();
         final double /* @Real */temp = sigma() * B(t, T);
         final double /* @Real */value = B(t, T) * forward - 0.25 * temp * temp * B(0.0, 2.0 * t);
-        return Math.exp(value) * discount2 / discount1;
+        // Phase 2i WI-2 B-1: JQuantMath.exp on FdHullWhite hot path.
+        return JQuantMath.exp(value) * discount2 / discount1;
     }
 
 
@@ -324,7 +326,8 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
             public double value(final Array params, final double t) {
                 final double forwardRate = termStructure.currentLink().forwardRate(
                         t, t, Compounding.Continuous, Frequency.NoFrequency).rate();
-                final double temp = sigma*(1.0 - Math.exp(-a*t))/a;
+                // Phase 2i WI-2 B-1: JQuantMath.exp on FdHullWhite hot path.
+                final double temp = sigma*(1.0 - JQuantMath.exp(-a*t))/a;
                 return (forwardRate + 0.5*temp*temp);
             }
         }
