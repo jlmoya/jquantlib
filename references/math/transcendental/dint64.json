@@ -1,0 +1,1202 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "op": "fromDouble"
+      },
+      "name": "from_one"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -1.0,
+        "op": "fromDouble"
+      },
+      "name": "from_neg_one"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 2.0,
+        "op": "fromDouble"
+      },
+      "name": "from_two"
+    },
+    {
+      "expected": {
+        "ex": 0,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 0.5,
+        "op": "fromDouble"
+      },
+      "name": "from_half"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0xc90fdaa22168c000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 3.141592653589793,
+        "op": "fromDouble"
+      },
+      "name": "from_pi"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0xc90fdaa22168c000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -3.141592653589793,
+        "op": "fromDouble"
+      },
+      "name": "from_neg_pi"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0xadf85458a2bb4800",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 2.718281828459045,
+        "op": "fromDouble"
+      },
+      "name": "from_e"
+    },
+    {
+      "expected": {
+        "ex": 3,
+        "hi": "0xc90fdaa22168c000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 6.283185307179586,
+        "op": "fromDouble"
+      },
+      "name": "from_two_pi"
+    },
+    {
+      "expected": {
+        "ex": -2,
+        "hi": "0xa2f9836e4e441800",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 0.15915494309189535,
+        "op": "fromDouble"
+      },
+      "name": "from_inv_two_pi"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0xb504f333f9de6800",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.4142135623730951,
+        "op": "fromDouble"
+      },
+      "name": "from_sqrt2"
+    },
+    {
+      "expected": {
+        "ex": -1021,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 2.2250738585072014e-308,
+        "op": "fromDouble"
+      },
+      "name": "from_min_normal"
+    },
+    {
+      "expected": {
+        "ex": -1021,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -2.2250738585072014e-308,
+        "op": "fromDouble"
+      },
+      "name": "from_neg_min_normal"
+    },
+    {
+      "expected": {
+        "ex": 1024,
+        "hi": "0xfffffffffffff800",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.7976931348623157e+308,
+        "op": "fromDouble"
+      },
+      "name": "from_max"
+    },
+    {
+      "expected": {
+        "ex": 1024,
+        "hi": "0xfffffffffffff800",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -1.7976931348623157e+308,
+        "op": "fromDouble"
+      },
+      "name": "from_neg_max"
+    },
+    {
+      "expected": {
+        "ex": -1073,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 5e-324,
+        "op": "fromDouble"
+      },
+      "name": "from_smallest_subnormal"
+    },
+    {
+      "expected": {
+        "ex": -1073,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -5e-324,
+        "op": "fromDouble"
+      },
+      "name": "from_neg_smallest_subnormal"
+    },
+    {
+      "expected": {
+        "ex": 21,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1048576.0,
+        "op": "fromDouble"
+      },
+      "name": "from_pow2_pos20"
+    },
+    {
+      "expected": {
+        "ex": -19,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 9.5367431640625e-07,
+        "op": "fromDouble"
+      },
+      "name": "from_pow2_neg20"
+    },
+    {
+      "expected": {
+        "ex": 1024,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 8.98846567431158e+307,
+        "op": "fromDouble"
+      },
+      "name": "from_pow2_pos1023"
+    },
+    {
+      "expected": {
+        "ex": -1021,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 2.2250738585072014e-308,
+        "op": "fromDouble"
+      },
+      "name": "from_pow2_neg1022"
+    },
+    {
+      "expected": {
+        "ex": 1024,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -8.98846567431158e+307,
+        "op": "fromDouble"
+      },
+      "name": "from_neg_pow2_pos1023"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000800",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0000000000000002,
+        "op": "fromDouble"
+      },
+      "name": "from_just_above_one"
+    },
+    {
+      "expected": {
+        "ex": 0,
+        "hi": "0xfffffffffffff800",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 0.9999999999999999,
+        "op": "fromDouble"
+      },
+      "name": "from_just_below_one"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0000000000000"
+      },
+      "inputs": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_one"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff0000000000000"
+      },
+      "inputs": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 1
+      },
+      "name": "tod_neg_one"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400921fb54442d18"
+      },
+      "inputs": {
+        "ex": 2,
+        "hi": "0xc90fdaa22168c000",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_pi"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc00921fb54442d18"
+      },
+      "inputs": {
+        "ex": 2,
+        "hi": "0xc90fdaa22168c000",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 1
+      },
+      "name": "tod_neg_pi"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4005bf0a8b145769"
+      },
+      "inputs": {
+        "ex": 2,
+        "hi": "0xadf85458a2bb4800",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_e"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc45f306dc9c883"
+      },
+      "inputs": {
+        "ex": -2,
+        "hi": "0xa2f9836e4e441800",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_inv_two_pi"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7fefffffffffffff"
+      },
+      "inputs": {
+        "ex": 1024,
+        "hi": "0xfffffffffffff800",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_max"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0010000000000000"
+      },
+      "inputs": {
+        "ex": -1021,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_min_normal"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000000000001"
+      },
+      "inputs": {
+        "ex": -1073,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_subnormal"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4130000000000000"
+      },
+      "inputs": {
+        "ex": 21,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_pow2_pos20"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3eb0000000000000"
+      },
+      "inputs": {
+        "ex": -19,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_pow2_neg20"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000000000000"
+      },
+      "inputs": {
+        "ex": -1076,
+        "hi": "0x0000000000000000",
+        "lo": "0x0000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_zero"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7ff0000000000000"
+      },
+      "inputs": {
+        "ex": 1025,
+        "hi": "0x0000000000000000",
+        "lo": "0x8000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_overflow_just"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7ff0000000000000"
+      },
+      "inputs": {
+        "ex": 1100,
+        "hi": "0x0000000000000000",
+        "lo": "0x8000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_overflow_far"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000000000001"
+      },
+      "inputs": {
+        "ex": -1074,
+        "hi": "0x0000000000000000",
+        "lo": "0x8000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_underflow_neg1074"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000000000000"
+      },
+      "inputs": {
+        "ex": -1100,
+        "hi": "0x0000000000000000",
+        "lo": "0x8000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_underflow_far"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff0000000000000"
+      },
+      "inputs": {
+        "ex": 1,
+        "hi": "0x0000000000000000",
+        "lo": "0x8000000000000000",
+        "op": "toDouble",
+        "sgn": 1
+      },
+      "name": "tod_neg_one_synth"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0008000000000000"
+      },
+      "inputs": {
+        "ex": -1023,
+        "hi": "0x0000000000000000",
+        "lo": "0x8000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_subnormal_ex_-1023"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000001000000"
+      },
+      "inputs": {
+        "ex": -1050,
+        "hi": "0x0000000000000000",
+        "lo": "0x8000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_subnormal_ex_-1050"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000000000002"
+      },
+      "inputs": {
+        "ex": -1073,
+        "hi": "0x0000000000000000",
+        "lo": "0x8000000000000000",
+        "op": "toDouble",
+        "sgn": 0
+      },
+      "name": "tod_subnormal_ex_-1073"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 1.0,
+        "op": "add"
+      },
+      "name": "add_one_one"
+    },
+    {
+      "expected": {
+        "ex": -1076,
+        "hi": "0x0000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": -1.0,
+        "op": "add"
+      },
+      "name": "add_one_neg_one"
+    },
+    {
+      "expected": {
+        "ex": -1076,
+        "hi": "0x0000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": -1.0,
+        "b": 1.0,
+        "op": "add"
+      },
+      "name": "add_neg_one_one"
+    },
+    {
+      "expected": {
+        "ex": 3,
+        "hi": "0xbb84177d62120400",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 3.141592653589793,
+        "b": 2.718281828459045,
+        "op": "add"
+      },
+      "name": "add_pi_e"
+    },
+    {
+      "expected": {
+        "ex": -1,
+        "hi": "0xd8bc324bf56bc000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 3.141592653589793,
+        "b": -2.718281828459045,
+        "op": "add"
+      },
+      "name": "add_pi_neg_e"
+    },
+    {
+      "expected": {
+        "ex": -1,
+        "hi": "0xd8bc324bf56bc000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -3.141592653589793,
+        "b": 2.718281828459045,
+        "op": "add"
+      },
+      "name": "add_neg_pi_e"
+    },
+    {
+      "expected": {
+        "ex": 3,
+        "hi": "0xbb84177d62120400",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -3.141592653589793,
+        "b": -2.718281828459045,
+        "op": "add"
+      },
+      "name": "add_neg_pi_neg_e"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000002000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 8.881784197001252e-16,
+        "op": "add"
+      },
+      "name": "add_one_tiny"
+    },
+    {
+      "expected": {
+        "ex": 0,
+        "hi": "0xffffffffffffc000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": -8.881784197001252e-16,
+        "op": "add"
+      },
+      "name": "add_one_neg_tiny"
+    },
+    {
+      "expected": {
+        "ex": 51,
+        "hi": "0x8000000000002000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 1.125899906842624e+15,
+        "op": "add"
+      },
+      "name": "add_one_huge"
+    },
+    {
+      "expected": {
+        "ex": 11,
+        "hi": "0x8000080000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 0.0009765625,
+        "b": 1024.0,
+        "op": "add"
+      },
+      "name": "add_a_lt_b"
+    },
+    {
+      "expected": {
+        "ex": 11,
+        "hi": "0x8000080000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1024.0,
+        "b": 0.0009765625,
+        "op": "add"
+      },
+      "name": "add_a_gt_b"
+    },
+    {
+      "expected": {
+        "ex": 0,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.5,
+        "b": -1.0,
+        "op": "add"
+      },
+      "name": "add_sterbenz"
+    },
+    {
+      "expected": {
+        "ex": 0,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -1.5,
+        "b": 1.0,
+        "op": "add"
+      },
+      "name": "add_sterbenz_neg"
+    },
+    {
+      "expected": {
+        "ex": 101,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.2676506002282294e+30,
+        "b": 7.888609052210118e-31,
+        "op": "add"
+      },
+      "name": "add_far_separation_pos"
+    },
+    {
+      "expected": {
+        "ex": 101,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -1.2676506002282294e+30,
+        "b": 7.888609052210118e-31,
+        "op": "add"
+      },
+      "name": "add_far_separation_neg"
+    },
+    {
+      "expected": {
+        "ex": -1076,
+        "hi": "0x0000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1344.0,
+        "b": -1344.0,
+        "op": "add"
+      },
+      "name": "add_equal_mag_diff_sign"
+    },
+    {
+      "expected": {
+        "ex": 12,
+        "hi": "0xa800000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1344.0,
+        "b": 1344.0,
+        "op": "add"
+      },
+      "name": "add_equal_mag_same_sign"
+    },
+    {
+      "expected": {
+        "ex": -52,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": -0.9999999999999999,
+        "op": "add"
+      },
+      "name": "add_close_diff_sign_loss"
+    },
+    {
+      "expected": {
+        "ex": -1076,
+        "hi": "0x0000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.5707963267948966,
+        "b": -1.5707963267948966,
+        "op": "add"
+      },
+      "name": "add_pi_half_minus"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 1.0,
+        "op": "mul"
+      },
+      "name": "mul_one_one"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": -1.0,
+        "op": "mul"
+      },
+      "name": "mul_one_neg_one"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": -1.0,
+        "b": -1.0,
+        "op": "mul"
+      },
+      "name": "mul_neg_one_neg_one"
+    },
+    {
+      "expected": {
+        "ex": 4,
+        "hi": "0x88a2c05a2ea3a167",
+        "lo": "0x9e124a69b6000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 3.141592653589793,
+        "b": 2.718281828459045,
+        "op": "mul"
+      },
+      "name": "mul_pi_e"
+    },
+    {
+      "expected": {
+        "ex": 0,
+        "hi": "0x80000000000000d2",
+        "lo": "0xab007d74d2000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 3.141592653589793,
+        "b": 0.15915494309189535,
+        "op": "mul"
+      },
+      "name": "mul_pi_inv_two_pi"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x80000000000000d2",
+        "lo": "0xab007d74d2000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 6.283185307179586,
+        "b": 0.15915494309189535,
+        "op": "mul"
+      },
+      "name": "mul_two_pi_inv"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 2.0,
+        "b": 0.5,
+        "op": "mul"
+      },
+      "name": "mul_two_half"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.125899906842624e+15,
+        "b": 8.881784197001252e-16,
+        "op": "mul"
+      },
+      "name": "mul_pow2_pos_neg"
+    },
+    {
+      "expected": {
+        "ex": 1025,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.3407807929942597e+154,
+        "b": 1.3407807929942597e+154,
+        "op": "mul"
+      },
+      "name": "mul_overflow_borderline"
+    },
+    {
+      "expected": {
+        "ex": -1023,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 7.458340731200207e-155,
+        "b": 7.458340731200207e-155,
+        "op": "mul"
+      },
+      "name": "mul_underflow_borderline"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 7.888609052210118e-31,
+        "b": 1.2676506002282294e+30,
+        "op": "mul"
+      },
+      "name": "mul_small_huge"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -7.888609052210118e-31,
+        "b": 1.2676506002282294e+30,
+        "op": "mul"
+      },
+      "name": "mul_neg_small_huge"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0x80000000000004ec",
+        "lo": "0xfbefd7888a400000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.4142135623730951,
+        "b": 1.4142135623730951,
+        "op": "mul"
+      },
+      "name": "mul_sqrt2_sqrt2"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 1.0,
+        "op": "mul21"
+      },
+      "name": "mul21_one_one"
+    },
+    {
+      "expected": {
+        "ex": 4,
+        "hi": "0x88a2c05a2ea3a167",
+        "lo": "0x9e124a69b6000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 3.141592653589793,
+        "b": 2.718281828459045,
+        "op": "mul21"
+      },
+      "name": "mul21_pi_e"
+    },
+    {
+      "expected": {
+        "ex": 21,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1024.0,
+        "b": 1024.0,
+        "op": "mul21"
+      },
+      "name": "mul21_pow2"
+    },
+    {
+      "expected": {
+        "ex": 4,
+        "hi": "0xa000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 1
+      },
+      "inputs": {
+        "a": -2.5,
+        "b": 4.0,
+        "op": "mul21"
+      },
+      "name": "mul21_neg_pos"
+    },
+    {
+      "expected": {
+        "ex": 1,
+        "hi": "0x8000000000000000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "op": "copy"
+      },
+      "name": "copy_one"
+    },
+    {
+      "expected": {
+        "ex": 2,
+        "hi": "0xc90fdaa22168c000",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 3.141592653589793,
+        "op": "copy"
+      },
+      "name": "copy_pi"
+    },
+    {
+      "expected": {
+        "ex": 1024,
+        "hi": "0xfffffffffffff800",
+        "lo": "0x0000000000000000",
+        "sgn": 0
+      },
+      "inputs": {
+        "a": 1.7976931348623157e+308,
+        "op": "copy"
+      },
+      "name": "copy_max"
+    },
+    {
+      "expected": {
+        "result": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 1.0,
+        "op": "cmpAbs"
+      },
+      "name": "cmpabs_eq"
+    },
+    {
+      "expected": {
+        "result": 0
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": -1.0,
+        "op": "cmpAbs"
+      },
+      "name": "cmpabs_pos_neg_eq"
+    },
+    {
+      "expected": {
+        "result": -1
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 2.0,
+        "op": "cmpAbs"
+      },
+      "name": "cmpabs_lt"
+    },
+    {
+      "expected": {
+        "result": 1
+      },
+      "inputs": {
+        "a": 2.0,
+        "b": 1.0,
+        "op": "cmpAbs"
+      },
+      "name": "cmpabs_gt"
+    },
+    {
+      "expected": {
+        "result": -1
+      },
+      "inputs": {
+        "a": -1.0,
+        "b": 2.0,
+        "op": "cmpAbs"
+      },
+      "name": "cmpabs_neg_lt"
+    },
+    {
+      "expected": {
+        "result": 1
+      },
+      "inputs": {
+        "a": -2.0,
+        "b": 1.0,
+        "op": "cmpAbs"
+      },
+      "name": "cmpabs_neg_gt"
+    },
+    {
+      "expected": {
+        "result": -1
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 1.0000000000000002,
+        "op": "cmpAbs"
+      },
+      "name": "cmpabs_close"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-29T02:03:46Z",
+  "generated_by": "dint64_probe",
+  "test_group": "math/transcendental/dint64"
+}
