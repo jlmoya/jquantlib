@@ -43,10 +43,9 @@ Living document — updated by the controller after every implementer subagent r
 First dispatch BLOCKED on scope-decision regression: design's "~1500 LOC paired" estimate based on Phase 2i exp's mockingbirdnest C++/MSVC mirror. Canonical CORE-MATH (Inria) `sin.c` + `cos.c` is **~4159 LOC combined** with `unsigned __int128` extended-precision type and ~2000 longs of table data per primitive. Java has no native u128; requires ~500 LOC `dint64_t` emulation layer.
 
 User chose Option 1: full port at corrected scope. Sub-layered into:
-- **1.0:** `dint64_t` u128-emulation infrastructure (foundation for all CORE-MATH ports beyond exp; reusable for future log/pow/etc.)
-- **1.1:** `SinCosKernel` cos/sin paired port using dint64_t (Payne-Hanek reduction + algorithm bodies + table data + hard-cases DB)
-
-_(Pending sub-layer 1.0 dispatch.)_
+- **1.0:** `dint64_t` u128-emulation infrastructure (`73b0a23` + `042468c` followup) — `Dint64.java` 553 LOC; 100 probe cases all bit-exact; 9 ops ported (`fromDouble`, `toDouble`, `copyFrom`, `addAssign`, `mulAssign`, `mul21Assign`, `subnormalize`, `cmpAbs`, `isZero`); aliasing contract locked via tightened Javadoc.
+- **1.1:** `SinCosKernel` (`07337e8`) — 1672 LOC; first-compile bit-exact on 2,757 probe cases (1,376 sin + 1,381 cos) including IEEE-754 specials, exact-result inputs, Payne-Hanek stress through 2^50·π, dense [-2π, 2π] @ 0.01, the `sin_accurate` huge-x worst case `0x1.6ac5b262ca1ffp+849`, and 7 hard-rounding exceptions (sin 2 + cos 5; CORE-MATH uses small exception tables triggered when accurate-path 41-ulp confidence band straddles rounding boundary, not a "hard-cases DB" like exp).
+- **Insight for future ports:** Python table-extractor (~150 LOC) converted all C tables (T[20], S[256], C[256], PSfast[5], PCfast[5], PS[6], PC[6], SC[256][3]) into Java `static {}` initializers via `Double.longBitsToDouble` — zero hand-transcription error opportunity. Reusable pattern for log/pow.
 
 ### L1b — WI-2 NCCS CDF rewire + EXACT attempt (worktree B, parallel with L1a) ✅ A19 partial
 
@@ -69,6 +68,9 @@ _(Not yet started)_
 | Phase 2i.5 start (`a4dcbf0`) | 684 | 0 | 0 | 22 | baseline |
 | Progress doc init (`1f2ee97`) | 684 | 0 | 0 | 22 | unchanged |
 | WI-2 NCCS rewire (`8f30182`) | 684 | 0 | 0 | 22 | A19 partial — TIGHT pinned (Math.log floor); Phase 2j seed |
+| WI-1.0 Dint64 (`73b0a23`) | 685 | 0 | 0 | 22 | +1 Dint64Test (90 cases first commit) |
+| WI-1.0 followup (`042468c`) | 685 | 0 | 0 | 22 | unchanged; +10 probe cases (mul21 parity + add 128-bit overflow) |
+| WI-1.1 SinCosKernel (`07337e8`) | 687 | 0 | 0 | 22 | +2 EXACT tests (cos 1,381 cases + sin 1,376 cases) |
 
 ## Pivots and major findings
 
