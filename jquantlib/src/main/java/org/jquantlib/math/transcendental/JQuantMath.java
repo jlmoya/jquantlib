@@ -32,4 +32,22 @@ public final class JQuantMath {
     public static double exp(double x) {
         return ExpKernel.exp(x);
     }
+
+    /**
+     * Bit-exact correctly-rounded {@code cos(x)} matching CORE-MATH
+     * {@code cr_cos} across all IEEE-754 binary64 inputs in
+     * round-to-nearest-even mode.
+     */
+    public static double cos(double x) {
+        return SinCosKernel.cos(x);
+    }
+
+    /**
+     * Bit-exact correctly-rounded {@code sin(x)} matching CORE-MATH
+     * {@code cr_sin} across all IEEE-754 binary64 inputs in
+     * round-to-nearest-even mode.
+     */
+    public static double sin(double x) {
+        return SinCosKernel.sin(x);
+    }
 }
