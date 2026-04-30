@@ -31,15 +31,13 @@ public class NonCentralCumulativeChiSquaredDistributionTest {
 
     @Test
     public void cdfMatchesCpp() {
-        // Phase 2i.5 WI-2 attempted EXACT after JQuantMath.exp swap (3 call
-        // sites). A19 fired: sample (df=10, ncp=50, x=65) shows 27-ULP
-        // residual — structural source is Math.log(x2) at line 86
-        // (out of Phase 2i.5 scope) whose slack propagates through the
-        // Patnaik series into a multi-ULP accumulated drift. JQuantMath.exp
-        // is correctly-rounded and is not the floor; EXACT requires
-        // Math.log port (Phase 2j candidate). Staying TIGHT.
-        // TIGHT tier (abs 1e-14 + rel 1e-12) comfortably covers the
-        // 2.99e-15 absolute diff observed on the failing sample.
+        // Phase 2i.6 WI-2 attempted EXACT after JQuantMath.log swap at line 86.
+        // A19 fired: 27-ULP residual survives at sample (df=10, ncp=50, x=65)
+        // even with both Math.exp and Math.log now correctly-rounded.
+        // Structural source is gammaFunction_.logValue(f2+1.0) — the Lanczos
+        // logGamma approximation uses Math.log internally and its accumulated
+        // rounding is the dominant floor. Phase 2j+ candidate:
+        // JQuantMath.lgamma CORE-MATH port. Staying TIGHT.
         runFingerprint("cdf");
     }
 

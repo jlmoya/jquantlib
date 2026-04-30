@@ -83,7 +83,7 @@ public class NonCentralCumulativeChiSquaredDistribution implements Ops.DoubleOp 
             t = JQuantMath.exp((1.0 - 0.0) * (2.0 - 0.0 / (f2 + 1.0)))
                     / Math.sqrt(2.0 * Math.PI * (f2 + 1.0));
         } else {
-            t = JQuantMath.exp(f2 * Math.log(x2) - x2 - gammaFunction_.logValue(f2 + 1.0));
+            t = JQuantMath.exp(f2 * JQuantMath.log(x2) - x2 - gammaFunction_.logValue(f2 + 1.0));
         }
 
         double ans = v * t;
