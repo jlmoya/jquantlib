@@ -1,0 +1,10836 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "y_bits": "0xfff0000000000000"
+      },
+      "inputs": {
+        "x": 0.0
+      },
+      "name": "pos_zero"
+    },
+    {
+      "expected": {
+        "y_bits": "0xfff0000000000000"
+      },
+      "inputs": {
+        "x": -0.0
+      },
+      "name": "neg_zero"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7ff0000000000000"
+      },
+      "inputs": {
+        "x": "Infinity"
+      },
+      "name": "pos_inf"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7ff8000000000000"
+      },
+      "inputs": {
+        "x": "-Infinity"
+      },
+      "name": "neg_inf"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7ff8000000000000"
+      },
+      "inputs": {
+        "x": "NaN"
+      },
+      "name": "qnan"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc0874385446d71c3"
+      },
+      "inputs": {
+        "x": 5e-324
+      },
+      "name": "min_subnormal"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc086232bdd7abcd2"
+      },
+      "inputs": {
+        "x": 2.2250738585072014e-308
+      },
+      "name": "min_normal"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40862e42fefa39ef"
+      },
+      "inputs": {
+        "x": 1.7976931348623157e+308
+      },
+      "name": "max_normal"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7ff8000000000000"
+      },
+      "inputs": {
+        "x": -1.0
+      },
+      "name": "neg_one"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7ff8000000000000"
+      },
+      "inputs": {
+        "x": -3.141592653589793
+      },
+      "name": "neg_pi"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7ff8000000000000"
+      },
+      "inputs": {
+        "x": -0.5
+      },
+      "name": "neg_half"
+    },
+    {
+      "expected": {
+        "y_bits": "0x7ff8000000000000"
+      },
+      "inputs": {
+        "x": -5e-324
+      },
+      "name": "neg_min_subnormal"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000000000000"
+      },
+      "inputs": {
+        "x": 1.0
+      },
+      "name": "one"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0000000000000"
+      },
+      "inputs": {
+        "x": 2.718281828459045
+      },
+      "name": "e"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc0874385446d71c3"
+      },
+      "inputs": {
+        "x": 5e-324
+      },
+      "name": "pow2_00000"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc085a92d6d005c94"
+      },
+      "inputs": {
+        "x": 9.332636185032189e-302
+      },
+      "name": "pow2_00001"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc051542457337d43"
+      },
+      "inputs": {
+        "x": 7.888609052210118e-31
+      },
+      "name": "pow2_00002"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc041542457337d43"
+      },
+      "inputs": {
+        "x": 8.881784197001252e-16
+      },
+      "name": "pow2_00003"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc01bb9d3beb8c86b"
+      },
+      "inputs": {
+        "x": 0.0009765625
+      },
+      "name": "pow2_00004"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff62e42fefa39ef"
+      },
+      "inputs": {
+        "x": 0.25
+      },
+      "name": "pow2_00005"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe62e42fefa39ef"
+      },
+      "inputs": {
+        "x": 0.5
+      },
+      "name": "pow2_00006"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000000000000"
+      },
+      "inputs": {
+        "x": 1.0
+      },
+      "name": "pow2_00007"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe62e42fefa39ef"
+      },
+      "inputs": {
+        "x": 2.0
+      },
+      "name": "pow2_00008"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff62e42fefa39ef"
+      },
+      "inputs": {
+        "x": 4.0
+      },
+      "name": "pow2_00009"
+    },
+    {
+      "expected": {
+        "y_bits": "0x401bb9d3beb8c86b"
+      },
+      "inputs": {
+        "x": 1024.0
+      },
+      "name": "pow2_00010"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4041542457337d43"
+      },
+      "inputs": {
+        "x": 1.125899906842624e+15
+      },
+      "name": "pow2_00011"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4051542457337d43"
+      },
+      "inputs": {
+        "x": 1.2676506002282294e+30
+      },
+      "name": "pow2_00012"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4085a92d6d005c94"
+      },
+      "inputs": {
+        "x": 1.0715086071862673e+301
+      },
+      "name": "pow2_00013"
+    },
+    {
+      "expected": {
+        "y_bits": "0x408628b76e3a7b61"
+      },
+      "inputs": {
+        "x": 8.98846567431158e+307
+      },
+      "name": "pow2_00014"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc0126bb1bbb55515"
+      },
+      "inputs": {
+        "x": 0.01
+      },
+      "name": "dense_0000"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc00f4bd2b7ac1baf"
+      },
+      "inputs": {
+        "x": 0.02
+      },
+      "name": "dense_0001"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc00c0d6e3a1428a6"
+      },
+      "inputs": {
+        "x": 0.03
+      },
+      "name": "dense_0002"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc009c041f7ed8d33"
+      },
+      "inputs": {
+        "x": 0.04
+      },
+      "name": "dense_0003"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc007f7427b73e391"
+      },
+      "inputs": {
+        "x": 0.05
+      },
+      "name": "dense_0004"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc00681dd7a559a2a"
+      },
+      "inputs": {
+        "x": 0.06
+      },
+      "name": "dense_0005"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc005462a20517cff"
+      },
+      "inputs": {
+        "x": 0.07
+      },
+      "name": "dense_0006"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc00434b1382efeb8"
+      },
+      "inputs": {
+        "x": 0.08
+      },
+      "name": "dense_0007"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc0034378fcbda721"
+      },
+      "inputs": {
+        "x": 0.09
+      },
+      "name": "dense_0008"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc0026bb1bbb55515"
+      },
+      "inputs": {
+        "x": 0.1
+      },
+      "name": "dense_0009"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc001a87fbfeb72df"
+      },
+      "inputs": {
+        "x": 0.11
+      },
+      "name": "dense_0010"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc000f64cba970bae"
+      },
+      "inputs": {
+        "x": 0.12
+      },
+      "name": "dense_0011"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc000525f4c391dda"
+      },
+      "inputs": {
+        "x": 0.13
+      },
+      "name": "dense_0012"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfff7532c125dd07"
+      },
+      "inputs": {
+        "x": 0.14
+      },
+      "name": "dense_0013"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbffe5a9a7c3ac418"
+      },
+      "inputs": {
+        "x": 0.15
+      },
+      "name": "dense_0014"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbffd5240f0e0e078"
+      },
+      "inputs": {
+        "x": 0.16
+      },
+      "name": "dense_0015"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbffc59ef6ae05562"
+      },
+      "inputs": {
+        "x": 0.17
+      },
+      "name": "dense_0016"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbffb6fd079fe3149"
+      },
+      "inputs": {
+        "x": 0.18
+      },
+      "name": "dense_0017"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbffa925ae2cbedfd"
+      },
+      "inputs": {
+        "x": 0.19
+      },
+      "name": "dense_0018"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff9c041f7ed8d33"
+      },
+      "inputs": {
+        "x": 0.2
+      },
+      "name": "dense_0019"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff8f869c5f5f6f4"
+      },
+      "inputs": {
+        "x": 0.21
+      },
+      "name": "dense_0020"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff839de0059c8c7"
+      },
+      "inputs": {
+        "x": 0.22
+      },
+      "name": "dense_0021"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff783caf331ec76"
+      },
+      "inputs": {
+        "x": 0.23
+      },
+      "name": "dense_0022"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff6d577f5b0fa65"
+      },
+      "inputs": {
+        "x": 0.24
+      },
+      "name": "dense_0023"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff62e42fefa39ef"
+      },
+      "inputs": {
+        "x": 0.25
+      },
+      "name": "dense_0024"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff58d9d18f51ebc"
+      },
+      "inputs": {
+        "x": 0.26
+      },
+      "name": "dense_0025"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff4f3077ece4b36"
+      },
+      "inputs": {
+        "x": 0.27
+      },
+      "name": "dense_0026"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff45e1141a8c00f"
+      },
+      "inputs": {
+        "x": 0.28
+      },
+      "name": "dense_0027"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff3ce5557395819"
+      },
+      "inputs": {
+        "x": 0.29
+      },
+      "name": "dense_0028"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff34378fcbda721"
+      },
+      "inputs": {
+        "x": 0.3
+      },
+      "name": "dense_0029"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff2bd2a5db2fda2"
+      },
+      "inputs": {
+        "x": 0.31
+      },
+      "name": "dense_0030"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff23b1f7163c380"
+      },
+      "inputs": {
+        "x": 0.32
+      },
+      "name": "dense_0031"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff1bd150529e2b4"
+      },
+      "inputs": {
+        "x": 0.33
+      },
+      "name": "dense_0032"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff142cdeb63386a"
+      },
+      "inputs": {
+        "x": 0.34
+      },
+      "name": "dense_0033"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff0cc1248b56ccb"
+      },
+      "inputs": {
+        "x": 0.35000000000000003
+      },
+      "name": "dense_0034"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbff058aefa811452"
+      },
+      "inputs": {
+        "x": 0.36
+      },
+      "name": "dense_0035"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfefd0ea24bf89b7"
+      },
+      "inputs": {
+        "x": 0.37
+      },
+      "name": "dense_0036"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfeef672c69da20b"
+      },
+      "inputs": {
+        "x": 0.38
+      },
+      "name": "dense_0037"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfee21a83b8a7153"
+      },
+      "inputs": {
+        "x": 0.39
+      },
+      "name": "dense_0038"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfed5240f0e0e077"
+      },
+      "inputs": {
+        "x": 0.4
+      },
+      "name": "dense_0039"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfec87f8c76ff775"
+      },
+      "inputs": {
+        "x": 0.41000000000000003
+      },
+      "name": "dense_0040"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfebc2908cf1b3f9"
+      },
+      "inputs": {
+        "x": 0.42
+      },
+      "name": "dense_0041"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfeb01cd8556f868"
+      },
+      "inputs": {
+        "x": 0.43
+      },
+      "name": "dense_0042"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfea457901b9579f"
+      },
+      "inputs": {
+        "x": 0.44
+      },
+      "name": "dense_0043"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe98d60031b821b"
+      },
+      "inputs": {
+        "x": 0.45
+      },
+      "name": "dense_0044"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe8d952e7699efc"
+      },
+      "inputs": {
+        "x": 0.46
+      },
+      "name": "dense_0045"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe829251f66e5d2"
+      },
+      "inputs": {
+        "x": 0.47000000000000003
+      },
+      "name": "dense_0046"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe77cacec67bada"
+      },
+      "inputs": {
+        "x": 0.48
+      },
+      "name": "dense_0047"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe6d3c324e13f4f"
+      },
+      "inputs": {
+        "x": 0.49
+      },
+      "name": "dense_0048"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe62e42fefa39ef"
+      },
+      "inputs": {
+        "x": 0.5
+      },
+      "name": "dense_0049"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe58c09e066a4b0"
+      },
+      "inputs": {
+        "x": 0.51
+      },
+      "name": "dense_0050"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe4ecf732f00389"
+      },
+      "inputs": {
+        "x": 0.52
+      },
+      "name": "dense_0051"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe450ec3d21b601"
+      },
+      "inputs": {
+        "x": 0.53
+      },
+      "name": "dense_0052"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe3b7cbfea25c7d"
+      },
+      "inputs": {
+        "x": 0.54
+      },
+      "name": "dense_0053"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe3217b0fd2b116"
+      },
+      "inputs": {
+        "x": 0.55
+      },
+      "name": "dense_0054"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe28ddf8457462f"
+      },
+      "inputs": {
+        "x": 0.56
+      },
+      "name": "dense_0055"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe1fce0d03dd5e4"
+      },
+      "inputs": {
+        "x": 0.5700000000000001
+      },
+      "name": "dense_0056"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe16e67af787643"
+      },
+      "inputs": {
+        "x": 0.58
+      },
+      "name": "dense_0057"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe0e25e0f715ce7"
+      },
+      "inputs": {
+        "x": 0.59
+      },
+      "name": "dense_0058"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfe058aefa811452"
+      },
+      "inputs": {
+        "x": 0.6
+      },
+      "name": "dense_0059"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfdfa28d0a2e908a"
+      },
+      "inputs": {
+        "x": 0.61
+      },
+      "name": "dense_0060"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfde982378d782aa"
+      },
+      "inputs": {
+        "x": 0.62
+      },
+      "name": "dense_0061"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfdd91fd2d23cfa6"
+      },
+      "inputs": {
+        "x": 0.63
+      },
+      "name": "dense_0062"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfdc8ff7c79a9a21"
+      },
+      "inputs": {
+        "x": 0.64
+      },
+      "name": "dense_0063"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfdb91f28212ba02"
+      },
+      "inputs": {
+        "x": 0.65
+      },
+      "name": "dense_0064"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfda97ce16b316f1"
+      },
+      "inputs": {
+        "x": 0.66
+      },
+      "name": "dense_0065"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd9a16ca8d43e81"
+      },
+      "inputs": {
+        "x": 0.67
+      },
+      "name": "dense_0066"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd8aeb1af986dcc"
+      },
+      "inputs": {
+        "x": 0.68
+      },
+      "name": "dense_0067"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd7bf81e213a5ac"
+      },
+      "inputs": {
+        "x": 0.6900000000000001
+      },
+      "name": "dense_0068"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd6d3c324e13f4d"
+      },
+      "inputs": {
+        "x": 0.7000000000000001
+      },
+      "name": "dense_0069"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd5eb5c7907e4ca"
+      },
+      "inputs": {
+        "x": 0.71
+      },
+      "name": "dense_0070"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd50635ec0fdd69"
+      },
+      "inputs": {
+        "x": 0.72
+      },
+      "name": "dense_0071"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd42438893252f5"
+      },
+      "inputs": {
+        "x": 0.73
+      },
+      "name": "dense_0072"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd3454e4b8a9f90"
+      },
+      "inputs": {
+        "x": 0.74
+      },
+      "name": "dense_0073"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd269621134db92"
+      },
+      "inputs": {
+        "x": 0.75
+      },
+      "name": "dense_0074"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd1905f8f46d038"
+      },
+      "inputs": {
+        "x": 0.76
+      },
+      "name": "dense_0075"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfd0ba3346922d9d"
+      },
+      "inputs": {
+        "x": 0.77
+      },
+      "name": "dense_0076"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfcfcd94f240dd8e"
+      },
+      "inputs": {
+        "x": 0.78
+      },
+      "name": "dense_0077"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfce2c2640b4744f"
+      },
+      "inputs": {
+        "x": 0.79
+      },
+      "name": "dense_0078"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfcc8ff7c79a9a20"
+      },
+      "inputs": {
+        "x": 0.8
+      },
+      "name": "dense_0079"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfcaf8e8210a415b"
+      },
+      "inputs": {
+        "x": 0.81
+      },
+      "name": "dense_0080"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfc966d721d6f616"
+      },
+      "inputs": {
+        "x": 0.8200000000000001
+      },
+      "name": "dense_0081"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfc7d9a5ca4e127a"
+      },
+      "inputs": {
+        "x": 0.8300000000000001
+      },
+      "name": "dense_0082"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfc6513637dde829"
+      },
+      "inputs": {
+        "x": 0.84
+      },
+      "name": "dense_0083"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfc4cd6b97964179"
+      },
+      "inputs": {
+        "x": 0.85
+      },
+      "name": "dense_0084"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfc34e2a1972f9e3"
+      },
+      "inputs": {
+        "x": 0.86
+      },
+      "name": "dense_0085"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfc1d356e462a870"
+      },
+      "inputs": {
+        "x": 0.87
+      },
+      "name": "dense_0086"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfc05cd80afc76be"
+      },
+      "inputs": {
+        "x": 0.88
+      },
+      "name": "dense_0087"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfbdd52901b287d1"
+      },
+      "inputs": {
+        "x": 0.89
+      },
+      "name": "dense_0088"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfbaf8e8210a415c"
+      },
+      "inputs": {
+        "x": 0.9
+      },
+      "name": "dense_0089"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfb824bea3fe15c9"
+      },
+      "inputs": {
+        "x": 0.91
+      },
+      "name": "dense_0090"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfb5587f437b2869"
+      },
+      "inputs": {
+        "x": 0.92
+      },
+      "name": "dense_0091"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfb293fe305fa975"
+      },
+      "inputs": {
+        "x": 0.93
+      },
+      "name": "dense_0092"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfafae2206cabe2f"
+      },
+      "inputs": {
+        "x": 0.9400000000000001
+      },
+      "name": "dense_0093"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfaa431d5bcc192d"
+      },
+      "inputs": {
+        "x": 0.9500000000000001
+      },
+      "name": "dense_0094"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfa4e69ed6d80eb3"
+      },
+      "inputs": {
+        "x": 0.96
+      },
+      "name": "dense_0095"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf9f30b2d0091d8a"
+      },
+      "inputs": {
+        "x": 0.97
+      },
+      "name": "dense_0096"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf94b004bce0abf7"
+      },
+      "inputs": {
+        "x": 0.98
+      },
+      "name": "dense_0097"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf8495453e6fd4bc"
+      },
+      "inputs": {
+        "x": 0.99
+      },
+      "name": "dense_0098"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000000000000"
+      },
+      "inputs": {
+        "x": 1.0
+      },
+      "name": "dense_0099"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f8460d6ccca367c"
+      },
+      "inputs": {
+        "x": 1.01
+      },
+      "name": "dense_0100"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f944723d272a7f6"
+      },
+      "inputs": {
+        "x": 1.02
+      },
+      "name": "dense_0101"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f9e44a9a3bed66b"
+      },
+      "inputs": {
+        "x": 1.03
+      },
+      "name": "dense_0102"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fa414bcc0a3665d"
+      },
+      "inputs": {
+        "x": 1.04
+      },
+      "name": "dense_0103"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fa8fb063ef2c7f0"
+      },
+      "inputs": {
+        "x": 1.05
+      },
+      "name": "dense_0104"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fadd56c1d883ee6"
+      },
+      "inputs": {
+        "x": 1.06
+      },
+      "name": "dense_0105"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fb15213c27c9180"
+      },
+      "inputs": {
+        "x": 1.07
+      },
+      "name": "dense_0106"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fb3b3b802beeb94"
+      },
+      "inputs": {
+        "x": 1.08
+      },
+      "name": "dense_0107"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fb60fbdd2fffc37"
+      },
+      "inputs": {
+        "x": 1.09
+      },
+      "name": "dense_0108"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fb8663f793c46cc"
+      },
+      "inputs": {
+        "x": 1.1
+      },
+      "name": "dense_0109"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fbab75684d3e2f6"
+      },
+      "inputs": {
+        "x": 1.11
+      },
+      "name": "dense_0110"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fbd031bd5179e02"
+      },
+      "inputs": {
+        "x": 1.12
+      },
+      "name": "dense_0111"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fbf49a79f8b9195"
+      },
+      "inputs": {
+        "x": 1.1300000000000001
+      },
+      "name": "dense_0112"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc0c588baf1902c"
+      },
+      "inputs": {
+        "x": 1.1400000000000001
+      },
+      "name": "dense_0113"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc1e3b825dd05f0"
+      },
+      "inputs": {
+        "x": 1.1500000000000001
+      },
+      "name": "dense_0114"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc2ff6d3e070eb3"
+      },
+      "inputs": {
+        "x": 1.16
+      },
+      "name": "dense_0115"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc418b2e73e5307"
+      },
+      "inputs": {
+        "x": 1.17
+      },
+      "name": "dense_0116"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc52f93be237421"
+      },
+      "inputs": {
+        "x": 1.18
+      },
+      "name": "dense_0117"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc6441a1a9027a6"
+      },
+      "inputs": {
+        "x": 1.19
+      },
+      "name": "dense_0118"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc7565011e49675"
+      },
+      "inputs": {
+        "x": 1.2
+      },
+      "name": "dense_0119"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc8663f793c46c6"
+      },
+      "inputs": {
+        "x": 1.21
+      },
+      "name": "dense_0120"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fc973f1e78bc6a8"
+      },
+      "inputs": {
+        "x": 1.22
+      },
+      "name": "dense_0121"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fca7f70b7a83a7f"
+      },
+      "inputs": {
+        "x": 1.23
+      },
+      "name": "dense_0122"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fcb88c50a39e268"
+      },
+      "inputs": {
+        "x": 1.24
+      },
+      "name": "dense_0123"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fcc8ff7c79a9a22"
+      },
+      "inputs": {
+        "x": 1.25
+      },
+      "name": "dense_0124"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fcd9511a1a14871"
+      },
+      "inputs": {
+        "x": 1.26
+      },
+      "name": "dense_0125"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fce981b155b2593"
+      },
+      "inputs": {
+        "x": 1.27
+      },
+      "name": "dense_0126"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fcf991c6cb3b37a"
+      },
+      "inputs": {
+        "x": 1.28
+      },
+      "name": "dense_0127"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd04c0ee0061b5b"
+      },
+      "inputs": {
+        "x": 1.29
+      },
+      "name": "dense_0128"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd0ca937be1b9dc"
+      },
+      "inputs": {
+        "x": 1.3
+      },
+      "name": "dense_0129"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd1481fe6d734cf"
+      },
+      "inputs": {
+        "x": 1.31
+      },
+      "name": "dense_0130"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd1c4b7e7415cee"
+      },
+      "inputs": {
+        "x": 1.32
+      },
+      "name": "dense_0131"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd2405f2d99b16a"
+      },
+      "inputs": {
+        "x": 1.33
+      },
+      "name": "dense_0132"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd2bb195520355d"
+      },
+      "inputs": {
+        "x": 1.34
+      },
+      "name": "dense_0133"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd334e9e47d07f6"
+      },
+      "inputs": {
+        "x": 1.35
+      },
+      "name": "dense_0134"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd3add44e5c0613"
+      },
+      "inputs": {
+        "x": 1.36
+      },
+      "name": "dense_0135"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd425dbf202b876"
+      },
+      "inputs": {
+        "x": 1.37
+      },
+      "name": "dense_0136"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd49d041be0ce32"
+      },
+      "inputs": {
+        "x": 1.3800000000000001
+      },
+      "name": "dense_0137"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd51350061b5fce"
+      },
+      "inputs": {
+        "x": 1.3900000000000001
+      },
+      "name": "dense_0138"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd588c2d9133491"
+      },
+      "inputs": {
+        "x": 1.4000000000000001
+      },
+      "name": "dense_0139"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd5fd5fabe64084"
+      },
+      "inputs": {
+        "x": 1.41
+      },
+      "name": "dense_0140"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd6712984ec8f15"
+      },
+      "inputs": {
+        "x": 1.42
+      },
+      "name": "dense_0141"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd6e4235a30cb8d"
+      },
+      "inputs": {
+        "x": 1.43
+      },
+      "name": "dense_0142"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd7565011e49676"
+      },
+      "inputs": {
+        "x": 1.44
+      },
+      "name": "dense_0143"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd7c7b282d0d46b"
+      },
+      "inputs": {
+        "x": 1.45
+      },
+      "name": "dense_0144"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd8384d74c220e9"
+      },
+      "inputs": {
+        "x": 1.46
+      },
+      "name": "dense_0145"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd8a823a0f18d8c"
+      },
+      "inputs": {
+        "x": 1.47
+      },
+      "name": "dense_0146"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd91737b269d44e"
+      },
+      "inputs": {
+        "x": 1.48
+      },
+      "name": "dense_0147"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd9858c46692177"
+      },
+      "inputs": {
+        "x": 1.49
+      },
+      "name": "dense_0148"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd9f323ecbf984c"
+      },
+      "inputs": {
+        "x": 1.5
+      },
+      "name": "dense_0149"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fda6001282ab3d9"
+      },
+      "inputs": {
+        "x": 1.51
+      },
+      "name": "dense_0150"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdacc266eada3a7"
+      },
+      "inputs": {
+        "x": 1.52
+      },
+      "name": "dense_0151"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdb379629e6c2cb"
+      },
+      "inputs": {
+        "x": 1.53
+      },
+      "name": "dense_0152"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdba252b7624642"
+      },
+      "inputs": {
+        "x": 1.54
+      },
+      "name": "dense_0153"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdc0c5e68ea3e46"
+      },
+      "inputs": {
+        "x": 1.55
+      },
+      "name": "dense_0154"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdc75bb84d40518"
+      },
+      "inputs": {
+        "x": 1.56
+      },
+      "name": "dense_0155"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdcde6c464b346f"
+      },
+      "inputs": {
+        "x": 1.57
+      },
+      "name": "dense_0156"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdd4672dd9a39b7"
+      },
+      "inputs": {
+        "x": 1.58
+      },
+      "name": "dense_0157"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fddadd17070a029"
+      },
+      "inputs": {
+        "x": 1.59
+      },
+      "name": "dense_0158"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fde148a1a2726cf"
+      },
+      "inputs": {
+        "x": 1.6
+      },
+      "name": "dense_0159"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fde7a9eec01b787"
+      },
+      "inputs": {
+        "x": 1.61
+      },
+      "name": "dense_0160"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdee011ed6f5331"
+      },
+      "inputs": {
+        "x": 1.62
+      },
+      "name": "dense_0161"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdf44e51c480659"
+      },
+      "inputs": {
+        "x": 1.6300000000000001
+      },
+      "name": "dense_0162"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fdfa91a6d08f8d3"
+      },
+      "inputs": {
+        "x": 1.6400000000000001
+      },
+      "name": "dense_0163"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe00659e5875500"
+      },
+      "inputs": {
+        "x": 1.6500000000000001
+      },
+      "name": "dense_0164"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe037d98c66b551"
+      },
+      "inputs": {
+        "x": 1.6600000000000001
+      },
+      "name": "dense_0165"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe0690d18041249"
+      },
+      "inputs": {
+        "x": 1.67
+      },
+      "name": "dense_0166"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe099f57102bfe5"
+      },
+      "inputs": {
+        "x": 1.68
+      },
+      "name": "dense_0167"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe0ca937be1b9dc"
+      },
+      "inputs": {
+        "x": 1.69
+      },
+      "name": "dense_0168"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe0fae81914a991"
+      },
+      "inputs": {
+        "x": 1.7
+      },
+      "name": "dense_0169"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe12af4251c3030"
+      },
+      "inputs": {
+        "x": 1.71
+      },
+      "name": "dense_0170"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe15ab8789d7b77"
+      },
+      "inputs": {
+        "x": 1.72
+      },
+      "name": "dense_0171"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe18a35e8792b89"
+      },
+      "inputs": {
+        "x": 1.73
+      },
+      "name": "dense_0172"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe1b96d45e18fd3"
+      },
+      "inputs": {
+        "x": 1.74
+      },
+      "name": "dense_0173"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe1e85f5e7040d0"
+      },
+      "inputs": {
+        "x": 1.75
+      },
+      "name": "dense_0174"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe2170cfc3b1c40"
+      },
+      "inputs": {
+        "x": 1.76
+      },
+      "name": "dense_0175"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe24576e5e8a92f"
+      },
+      "inputs": {
+        "x": 1.77
+      },
+      "name": "dense_0176"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe2739ddec3e8f5"
+      },
+      "inputs": {
+        "x": 1.78
+      },
+      "name": "dense_0177"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe2a182a6cf9a15"
+      },
+      "inputs": {
+        "x": 1.79
+      },
+      "name": "dense_0178"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe2cf25fad8f1c4"
+      },
+      "inputs": {
+        "x": 1.8
+      },
+      "name": "dense_0179"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe2fc889489d0a9"
+      },
+      "inputs": {
+        "x": 1.81
+      },
+      "name": "dense_0180"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe329ab2a7a7736"
+      },
+      "inputs": {
+        "x": 1.82
+      },
+      "name": "dense_0181"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe3568e7042bdd0"
+      },
+      "inputs": {
+        "x": 1.83
+      },
+      "name": "dense_0182"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe38333168ad4e2"
+      },
+      "inputs": {
+        "x": 1.84
+      },
+      "name": "dense_0183"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe3af99cb1b90b0"
+      },
+      "inputs": {
+        "x": 1.85
+      },
+      "name": "dense_0184"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe3dbc338ee44c1"
+      },
+      "inputs": {
+        "x": 1.86
+      },
+      "name": "dense_0185"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe407b0083c326b"
+      },
+      "inputs": {
+        "x": 1.87
+      },
+      "name": "dense_0186"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe43360de8d8e0c"
+      },
+      "inputs": {
+        "x": 1.8800000000000001
+      },
+      "name": "dense_0187"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe45ed65ec81e43"
+      },
+      "inputs": {
+        "x": 1.8900000000000001
+      },
+      "name": "dense_0188"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe48a11293d785c"
+      },
+      "inputs": {
+        "x": 1.9000000000000001
+      },
+      "name": "dense_0189"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe4b511dbb8dd24"
+      },
+      "inputs": {
+        "x": 1.9100000000000001
+      },
+      "name": "dense_0190"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe4dfd9118cb904"
+      },
+      "inputs": {
+        "x": 1.92
+      },
+      "name": "dense_0191"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe50a67639fca63"
+      },
+      "inputs": {
+        "x": 1.93
+      },
+      "name": "dense_0192"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe534bd6879f103"
+      },
+      "inputs": {
+        "x": 1.94
+      },
+      "name": "dense_0193"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe55edbb450a914"
+      },
+      "inputs": {
+        "x": 1.95
+      },
+      "name": "dense_0194"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe588c2d913348f"
+      },
+      "inputs": {
+        "x": 1.96
+      },
+      "name": "dense_0195"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe5b2736676755c"
+      },
+      "inputs": {
+        "x": 1.97
+      },
+      "name": "dense_0196"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe5dbedea007a9c"
+      },
+      "inputs": {
+        "x": 1.98
+      },
+      "name": "dense_0197"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe60532ef13c385"
+      },
+      "inputs": {
+        "x": 1.99
+      },
+      "name": "dense_0198"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe62e42fefa39ef"
+      },
+      "inputs": {
+        "x": 2.0
+      },
+      "name": "dense_0199"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe6571ea0efe6d5"
+      },
+      "inputs": {
+        "x": 2.0100000000000002
+      },
+      "name": "dense_0200"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe67fc65a2d62c9"
+      },
+      "inputs": {
+        "x": 2.02
+      },
+      "name": "dense_0201"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe6a83aadf2047f"
+      },
+      "inputs": {
+        "x": 2.0300000000000002
+      },
+      "name": "dense_0202"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe6d07c1d8dcf2f"
+      },
+      "inputs": {
+        "x": 2.04
+      },
+      "name": "dense_0203"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe6f88b286b22f1"
+      },
+      "inputs": {
+        "x": 2.05
+      },
+      "name": "dense_0204"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe720684c1830a3"
+      },
+      "inputs": {
+        "x": 2.06
+      },
+      "name": "dense_0205"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe748140450333e"
+      },
+      "inputs": {
+        "x": 2.07
+      },
+      "name": "dense_0206"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe76f8ecb047055"
+      },
+      "inputs": {
+        "x": 2.08
+      },
+      "name": "dense_0207"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe796d918650134"
+      },
+      "inputs": {
+        "x": 2.09
+      },
+      "name": "dense_0208"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe7bdf362e9666e"
+      },
+      "inputs": {
+        "x": 2.1
+      },
+      "name": "dense_0209"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe7e4de1f58e72a"
+      },
+      "inputs": {
+        "x": 2.11
+      },
+      "name": "dense_0210"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe80b99c0d2bdde"
+      },
+      "inputs": {
+        "x": 2.12
+      },
+      "name": "dense_0211"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe83226b8d613b0"
+      },
+      "inputs": {
+        "x": 2.13
+      },
+      "name": "dense_0212"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe858857749cc1f"
+      },
+      "inputs": {
+        "x": 2.14
+      },
+      "name": "dense_0213"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe87eb66a8421ff"
+      },
+      "inputs": {
+        "x": 2.15
+      },
+      "name": "dense_0214"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe8a4b9ff521762"
+      },
+      "inputs": {
+        "x": 2.16
+      },
+      "name": "dense_0215"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe8ca90a0feb96a"
+      },
+      "inputs": {
+        "x": 2.17
+      },
+      "name": "dense_0216"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe8f03ab95a3976"
+      },
+      "inputs": {
+        "x": 2.18
+      },
+      "name": "dense_0217"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe915b8b0c0dc9a"
+      },
+      "inputs": {
+        "x": 2.19
+      },
+      "name": "dense_0218"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe93b0aee21c2c9"
+      },
+      "inputs": {
+        "x": 2.2
+      },
+      "name": "dense_0219"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe96031d705867f"
+      },
+      "inputs": {
+        "x": 2.21
+      },
+      "name": "dense_0220"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe9852dcf94b64e"
+      },
+      "inputs": {
+        "x": 2.22
+      },
+      "name": "dense_0221"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe9a9ff3a9e2903"
+      },
+      "inputs": {
+        "x": 2.23
+      },
+      "name": "dense_0222"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe9cea6799d2daf"
+      },
+      "inputs": {
+        "x": 2.24
+      },
+      "name": "dense_0223"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fe9f323ecbf984c"
+      },
+      "inputs": {
+        "x": 2.25
+      },
+      "name": "dense_0224"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fea1777f2ebac22"
+      },
+      "inputs": {
+        "x": 2.2600000000000002
+      },
+      "name": "dense_0225"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fea3ba2e9c5e4aa"
+      },
+      "inputs": {
+        "x": 2.27
+      },
+      "name": "dense_0226"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fea5fa52db69dfa"
+      },
+      "inputs": {
+        "x": 2.2800000000000002
+      },
+      "name": "dense_0227"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fea837f19ef9d69"
+      },
+      "inputs": {
+        "x": 2.29
+      },
+      "name": "dense_0228"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feaa73108717b6b"
+      },
+      "inputs": {
+        "x": 2.3000000000000003
+      },
+      "name": "dense_0229"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feacabb5210ef47"
+      },
+      "inputs": {
+        "x": 2.31
+      },
+      "name": "dense_0230"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feaee1e4e7bfd9c"
+      },
+      "inputs": {
+        "x": 2.32
+      },
+      "name": "dense_0231"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feb115a543f0a50"
+      },
+      "inputs": {
+        "x": 2.33
+      },
+      "name": "dense_0232"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feb346fb8c9ceb1"
+      },
+      "inputs": {
+        "x": 2.34
+      },
+      "name": "dense_0233"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feb575ed0743494"
+      },
+      "inputs": {
+        "x": 2.35
+      },
+      "name": "dense_0234"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feb7a27ee8316f8"
+      },
+      "inputs": {
+        "x": 2.36
+      },
+      "name": "dense_0235"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feb9ccb652ce901"
+      },
+      "inputs": {
+        "x": 2.37
+      },
+      "name": "dense_0236"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3febbf49859e43d9"
+      },
+      "inputs": {
+        "x": 2.38
+      },
+      "name": "dense_0237"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3febe1a29ffe5c21"
+      },
+      "inputs": {
+        "x": 2.39
+      },
+      "name": "dense_0238"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fec03d703735f8c"
+      },
+      "inputs": {
+        "x": 2.4
+      },
+      "name": "dense_0239"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fec25e6fe26bb46"
+      },
+      "inputs": {
+        "x": 2.41
+      },
+      "name": "dense_0240"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fec47d2dd494ba1"
+      },
+      "inputs": {
+        "x": 2.42
+      },
+      "name": "dense_0241"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fec699aed1775be"
+      },
+      "inputs": {
+        "x": 2.43
+      },
+      "name": "dense_0242"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fec8b3f78dd2b99"
+      },
+      "inputs": {
+        "x": 2.44
+      },
+      "name": "dense_0243"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fecacc0caf9db19"
+      },
+      "inputs": {
+        "x": 2.45
+      },
+      "name": "dense_0244"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fecce1f2ce4488f"
+      },
+      "inputs": {
+        "x": 2.46
+      },
+      "name": "dense_0245"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fecef5ae72e554a"
+      },
+      "inputs": {
+        "x": 2.47
+      },
+      "name": "dense_0246"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fed10744188b289"
+      },
+      "inputs": {
+        "x": 2.48
+      },
+      "name": "dense_0247"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fed316b82c68177"
+      },
+      "inputs": {
+        "x": 2.49
+      },
+      "name": "dense_0248"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fed5240f0e0e078"
+      },
+      "inputs": {
+        "x": 2.5
+      },
+      "name": "dense_0249"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fed72f4d0fa6668"
+      },
+      "inputs": {
+        "x": 2.5100000000000002
+      },
+      "name": "dense_0250"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fed938767628c0b"
+      },
+      "inputs": {
+        "x": 2.52
+      },
+      "name": "dense_0251"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fedb3f8f7990444"
+      },
+      "inputs": {
+        "x": 2.5300000000000002
+      },
+      "name": "dense_0252"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fedd449c4510354"
+      },
+      "inputs": {
+        "x": 2.54
+      },
+      "name": "dense_0253"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fedf47a0f7475b8"
+      },
+      "inputs": {
+        "x": 2.5500000000000003
+      },
+      "name": "dense_0254"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fee148a1a2726ce"
+      },
+      "inputs": {
+        "x": 2.56
+      },
+      "name": "dense_0255"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fee347a24c9d7d9"
+      },
+      "inputs": {
+        "x": 2.57
+      },
+      "name": "dense_0256"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fee544a6efd479d"
+      },
+      "inputs": {
+        "x": 2.58
+      },
+      "name": "dense_0257"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fee73fb37a52af7"
+      },
+      "inputs": {
+        "x": 2.59
+      },
+      "name": "dense_0258"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fee938cbceb16dd"
+      },
+      "inputs": {
+        "x": 2.6
+      },
+      "name": "dense_0259"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feeb2ff3c415bf9"
+      },
+      "inputs": {
+        "x": 2.61
+      },
+      "name": "dense_0260"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feed252f265d457"
+      },
+      "inputs": {
+        "x": 2.62
+      },
+      "name": "dense_0261"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3feef1881b64a35a"
+      },
+      "inputs": {
+        "x": 2.63
+      },
+      "name": "dense_0262"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fef109ef29ae866"
+      },
+      "inputs": {
+        "x": 2.64
+      },
+      "name": "dense_0263"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fef2f97b2b96465"
+      },
+      "inputs": {
+        "x": 2.65
+      },
+      "name": "dense_0264"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fef4e7295c712a4"
+      },
+      "inputs": {
+        "x": 2.66
+      },
+      "name": "dense_0265"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fef6d2fd523b51b"
+      },
+      "inputs": {
+        "x": 2.67
+      },
+      "name": "dense_0266"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fef8bcfa98a549e"
+      },
+      "inputs": {
+        "x": 2.68
+      },
+      "name": "dense_0267"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fefaa524b13b50c"
+      },
+      "inputs": {
+        "x": 2.69
+      },
+      "name": "dense_0268"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fefc8b7f138bdea"
+      },
+      "inputs": {
+        "x": 2.7
+      },
+      "name": "dense_0269"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fefe700d2d4d783"
+      },
+      "inputs": {
+        "x": 2.71
+      },
+      "name": "dense_0270"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0029693141e7c"
+      },
+      "inputs": {
+        "x": 2.72
+      },
+      "name": "dense_0271"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0119e906d21ae"
+      },
+      "inputs": {
+        "x": 2.73
+      },
+      "name": "dense_0272"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff020987bfdcb15"
+      },
+      "inputs": {
+        "x": 2.74
+      },
+      "name": "dense_0273"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff02f84700434a8"
+      },
+      "inputs": {
+        "x": 2.75
+      },
+      "name": "dense_0274"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff03e6286755084"
+      },
+      "inputs": {
+        "x": 2.7600000000000002
+      },
+      "name": "dense_0275"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff04d32d8fdf7d6"
+      },
+      "inputs": {
+        "x": 2.77
+      },
+      "name": "dense_0276"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff05bf58103f4eb"
+      },
+      "inputs": {
+        "x": 2.7800000000000002
+      },
+      "name": "dense_0277"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff06aaa97a70873"
+      },
+      "inputs": {
+        "x": 2.79
+      },
+      "name": "dense_0278"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0795235c1ea1c"
+      },
+      "inputs": {
+        "x": 2.8000000000000003
+      },
+      "name": "dense_0279"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff087ec73eb4494"
+      },
+      "inputs": {
+        "x": 2.81
+      },
+      "name": "dense_0280"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff096796a76ad19"
+      },
+      "inputs": {
+        "x": 2.82
+      },
+      "name": "dense_0281"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0a4f9317596a2"
+      },
+      "inputs": {
+        "x": 2.83
+      },
+      "name": "dense_0282"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0b36be0b840bd"
+      },
+      "inputs": {
+        "x": 2.84
+      },
+      "name": "dense_0283"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0c1d18fcea241"
+      },
+      "inputs": {
+        "x": 2.85
+      },
+      "name": "dense_0284"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0d02a56094fdb"
+      },
+      "inputs": {
+        "x": 2.86
+      },
+      "name": "dense_0285"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0de764a7a5e9d"
+      },
+      "inputs": {
+        "x": 2.87
+      },
+      "name": "dense_0286"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0ecb583f64295"
+      },
+      "inputs": {
+        "x": 2.88
+      },
+      "name": "dense_0287"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff0fae81914a991"
+      },
+      "inputs": {
+        "x": 2.89
+      },
+      "name": "dense_0288"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1090e20315212"
+      },
+      "inputs": {
+        "x": 2.9
+      },
+      "name": "dense_0289"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff11727af6cde95"
+      },
+      "inputs": {
+        "x": 2.91
+      },
+      "name": "dense_0290"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff12534dcada532"
+      },
+      "inputs": {
+        "x": 2.92
+      },
+      "name": "dense_0291"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff13335bda07bbd"
+      },
+      "inputs": {
+        "x": 2.93
+      },
+      "name": "dense_0292"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1412a67b9805b"
+      },
+      "inputs": {
+        "x": 2.94
+      },
+      "name": "dense_0293"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff14f12f034dec0"
+      },
+      "inputs": {
+        "x": 2.95
+      },
+      "name": "dense_0294"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff15cef6c17920b"
+      },
+      "inputs": {
+        "x": 2.96
+      },
+      "name": "dense_0295"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff16abff0302361"
+      },
+      "inputs": {
+        "x": 2.97
+      },
+      "name": "dense_0296"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1788491176555"
+      },
+      "inputs": {
+        "x": 2.98
+      },
+      "name": "dense_0297"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1863d63312c2c"
+      },
+      "inputs": {
+        "x": 2.99
+      },
+      "name": "dense_0298"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff193ea7aad030b"
+      },
+      "inputs": {
+        "x": 3.0
+      },
+      "name": "dense_0299"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1a18beb86de24"
+      },
+      "inputs": {
+        "x": 3.0100000000000002
+      },
+      "name": "dense_0300"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1af21c987c9ee"
+      },
+      "inputs": {
+        "x": 3.02
+      },
+      "name": "dense_0301"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1bcac28469778"
+      },
+      "inputs": {
+        "x": 3.0300000000000002
+      },
+      "name": "dense_0302"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1ca2b1b2885e1"
+      },
+      "inputs": {
+        "x": 3.04
+      },
+      "name": "dense_0303"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1d79eb561e911"
+      },
+      "inputs": {
+        "x": 3.0500000000000003
+      },
+      "name": "dense_0304"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1e50709f6cdaa"
+      },
+      "inputs": {
+        "x": 3.06
+      },
+      "name": "dense_0305"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1f2642bbb9a5c"
+      },
+      "inputs": {
+        "x": 3.0700000000000003
+      },
+      "name": "dense_0306"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff1ffb62d55ae88"
+      },
+      "inputs": {
+        "x": 3.08
+      },
+      "name": "dense_0307"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff20cfd213bfe64"
+      },
+      "inputs": {
+        "x": 3.09
+      },
+      "name": "dense_0308"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff21a3919b7ac89"
+      },
+      "inputs": {
+        "x": 3.1
+      },
+      "name": "dense_0309"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff2276a28e4a10f"
+      },
+      "inputs": {
+        "x": 3.11
+      },
+      "name": "dense_0310"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff2349060b21e3e"
+      },
+      "inputs": {
+        "x": 3.12
+      },
+      "name": "dense_0311"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff241abd2e352d7"
+      },
+      "inputs": {
+        "x": 3.13
+      },
+      "name": "dense_0312"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff24ebc910fea13"
+      },
+      "inputs": {
+        "x": 3.14
+      },
+      "name": "dense_0313"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff25bc2aca4994a"
+      },
+      "inputs": {
+        "x": 3.15
+      },
+      "name": "dense_0314"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff268be36e3ab65"
+      },
+      "inputs": {
+        "x": 3.16
+      },
+      "name": "dense_0315"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff275af40e58a1b"
+      },
+      "inputs": {
+        "x": 3.17
+      },
+      "name": "dense_0316"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff28295db994502"
+      },
+      "inputs": {
+        "x": 3.18
+      },
+      "name": "dense_0317"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff28f7217c5167f"
+      },
+      "inputs": {
+        "x": 3.19
+      },
+      "name": "dense_0318"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff29c440606e6ab"
+      },
+      "inputs": {
+        "x": 3.2
+      },
+      "name": "dense_0319"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff2a90bb6d4cc22"
+      },
+      "inputs": {
+        "x": 3.21
+      },
+      "name": "dense_0320"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff2b5c93a7d8ad9"
+      },
+      "inputs": {
+        "x": 3.22
+      },
+      "name": "dense_0321"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff2c27ca12910f6"
+      },
+      "inputs": {
+        "x": 3.23
+      },
+      "name": "dense_0322"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff2cf25fad8f1c4"
+      },
+      "inputs": {
+        "x": 3.24
+      },
+      "name": "dense_0323"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff2dbc55768deb3"
+      },
+      "inputs": {
+        "x": 3.25
+      },
+      "name": "dense_0324"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff2e85ac68f1e8e"
+      },
+      "inputs": {
+        "x": 3.2600000000000002
+      },
+      "name": "dense_0325"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff2f4e657dd02ce"
+      },
+      "inputs": {
+        "x": 3.27
+      },
+      "name": "dense_0326"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff301681abf5b2c"
+      },
+      "inputs": {
+        "x": 3.2800000000000002
+      },
+      "name": "dense_0327"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff30de01e7ee76e"
+      },
+      "inputs": {
+        "x": 3.29
+      },
+      "name": "dense_0328"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff31a4e7240c777"
+      },
+      "inputs": {
+        "x": 3.3000000000000003
+      },
+      "name": "dense_0329"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff326b32506e9aa"
+      },
+      "inputs": {
+        "x": 3.31
+      },
+      "name": "dense_0330"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3330e45b077a0"
+      },
+      "inputs": {
+        "x": 3.3200000000000003
+      },
+      "name": "dense_0331"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff33f5fe2fa413a"
+      },
+      "inputs": {
+        "x": 3.33
+      },
+      "name": "dense_0332"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff34ba80b7f261c"
+      },
+      "inputs": {
+        "x": 3.34
+      },
+      "name": "dense_0333"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff357e6cdb87d93"
+      },
+      "inputs": {
+        "x": 3.35
+      },
+      "name": "dense_0334"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3641c37fe7cea"
+      },
+      "inputs": {
+        "x": 3.36
+      },
+      "name": "dense_0335"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3704858889c43"
+      },
+      "inputs": {
+        "x": 3.37
+      },
+      "name": "dense_0336"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff37c6b3d6df9e5"
+      },
+      "inputs": {
+        "x": 3.38
+      },
+      "name": "dense_0337"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff38884f4a5bc24"
+      },
+      "inputs": {
+        "x": 3.39
+      },
+      "name": "dense_0338"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff394958c0771c0"
+      },
+      "inputs": {
+        "x": 3.4
+      },
+      "name": "dense_0339"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3a09d114b70f5"
+      },
+      "inputs": {
+        "x": 3.41
+      },
+      "name": "dense_0340"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3ac9b920b3510"
+      },
+      "inputs": {
+        "x": 3.42
+      },
+      "name": "dense_0341"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3b8911bc1bab0"
+      },
+      "inputs": {
+        "x": 3.43
+      },
+      "name": "dense_0342"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3c47dbbcbdab3"
+      },
+      "inputs": {
+        "x": 3.44
+      },
+      "name": "dense_0343"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3d0617f68a3c8"
+      },
+      "inputs": {
+        "x": 3.45
+      },
+      "name": "dense_0344"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3dc3c73b9b2bc"
+      },
+      "inputs": {
+        "x": 3.46
+      },
+      "name": "dense_0345"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3e80ea5c3897e"
+      },
+      "inputs": {
+        "x": 3.47
+      },
+      "name": "dense_0346"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3f3d8226de4e1"
+      },
+      "inputs": {
+        "x": 3.48
+      },
+      "name": "dense_0347"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff3ff98f684112b"
+      },
+      "inputs": {
+        "x": 3.49
+      },
+      "name": "dense_0348"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff40b512eb53d60"
+      },
+      "inputs": {
+        "x": 3.5
+      },
+      "name": "dense_0349"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff41700d794cd6c"
+      },
+      "inputs": {
+        "x": 3.5100000000000002
+      },
+      "name": "dense_0350"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff422a7fd9aab17"
+      },
+      "inputs": {
+        "x": 3.52
+      },
+      "name": "dense_0351"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff42e46ad2395db"
+      },
+      "inputs": {
+        "x": 3.5300000000000002
+      },
+      "name": "dense_0352"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff439dcf271718f"
+      },
+      "inputs": {
+        "x": 3.54
+      },
+      "name": "dense_0353"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4456ad9ab9402"
+      },
+      "inputs": {
+        "x": 3.5500000000000003
+      },
+      "name": "dense_0354"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff450f06edf1172"
+      },
+      "inputs": {
+        "x": 3.56
+      },
+      "name": "dense_0355"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff45c6dbdff0800"
+      },
+      "inputs": {
+        "x": 3.5700000000000003
+      },
+      "name": "dense_0356"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff467e2d2e4ea02"
+      },
+      "inputs": {
+        "x": 3.58
+      },
+      "name": "dense_0357"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4734fb950c75f"
+      },
+      "inputs": {
+        "x": 3.59
+      },
+      "name": "dense_0358"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff47eb47ce995d9"
+      },
+      "inputs": {
+        "x": 3.6
+      },
+      "name": "dense_0359"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff48a11293d785c"
+      },
+      "inputs": {
+        "x": 3.61
+      },
+      "name": "dense_0360"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff49565c9c2054c"
+      },
+      "inputs": {
+        "x": 3.62
+      },
+      "name": "dense_0361"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4a0b269d48be3"
+      },
+      "inputs": {
+        "x": 3.63
+      },
+      "name": "dense_0362"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4abf714ba5893"
+      },
+      "inputs": {
+        "x": 3.64
+      },
+      "name": "dense_0363"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4b733d5a0f876"
+      },
+      "inputs": {
+        "x": 3.65
+      },
+      "name": "dense_0364"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4c268b79e7be0"
+      },
+      "inputs": {
+        "x": 3.66
+      },
+      "name": "dense_0365"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4cd95c5b1b7f4"
+      },
+      "inputs": {
+        "x": 3.67
+      },
+      "name": "dense_0366"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4d8bb0ac28769"
+      },
+      "inputs": {
+        "x": 3.68
+      },
+      "name": "dense_0367"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4e3d891a20a5a"
+      },
+      "inputs": {
+        "x": 3.69
+      },
+      "name": "dense_0368"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4eeee650ae550"
+      },
+      "inputs": {
+        "x": 3.7
+      },
+      "name": "dense_0369"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff4f9fc8fa17f57"
+      },
+      "inputs": {
+        "x": 3.71
+      },
+      "name": "dense_0370"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff505031bf43f58"
+      },
+      "inputs": {
+        "x": 3.72
+      },
+      "name": "dense_0371"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff51002147bc88c"
+      },
+      "inputs": {
+        "x": 3.73
+      },
+      "name": "dense_0372"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff51af9839b362d"
+      },
+      "inputs": {
+        "x": 3.74
+      },
+      "name": "dense_0373"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff525e973a0564f"
+      },
+      "inputs": {
+        "x": 3.75
+      },
+      "name": "dense_0374"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff530d1eec3e3fe"
+      },
+      "inputs": {
+        "x": 3.7600000000000002
+      },
+      "name": "dense_0375"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff53bb2ff29c089"
+      },
+      "inputs": {
+        "x": 3.77
+      },
+      "name": "dense_0376"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5468caee12c19"
+      },
+      "inputs": {
+        "x": 3.7800000000000002
+      },
+      "name": "dense_0377"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5515f07e4fd76"
+      },
+      "inputs": {
+        "x": 3.79
+      },
+      "name": "dense_0378"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff55c2a141bd926"
+      },
+      "inputs": {
+        "x": 3.8000000000000003
+      },
+      "name": "dense_0379"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff566eddd5867bd"
+      },
+      "inputs": {
+        "x": 3.81
+      },
+      "name": "dense_0380"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff571aa6d598b8a"
+      },
+      "inputs": {
+        "x": 3.8200000000000003
+      },
+      "name": "dense_0381"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff57c5fcdca9580"
+      },
+      "inputs": {
+        "x": 3.83
+      },
+      "name": "dense_0382"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5870e0843797a"
+      },
+      "inputs": {
+        "x": 3.84
+      },
+      "name": "dense_0383"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff591b5264901cc"
+      },
+      "inputs": {
+        "x": 3.85
+      },
+      "name": "dense_0384"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff59c55314d0229"
+      },
+      "inputs": {
+        "x": 3.86
+      },
+      "name": "dense_0385"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5a6ee32ae89e1"
+      },
+      "inputs": {
+        "x": 3.87
+      },
+      "name": "dense_0386"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5b18033ba1579"
+      },
+      "inputs": {
+        "x": 3.88
+      },
+      "name": "dense_0387"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5bc0b3da9bfa0"
+      },
+      "inputs": {
+        "x": 3.89
+      },
+      "name": "dense_0388"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5c68f59a57181"
+      },
+      "inputs": {
+        "x": 3.9
+      },
+      "name": "dense_0389"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5d10c90c3127e"
+      },
+      "inputs": {
+        "x": 3.91
+      },
+      "name": "dense_0390"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5db82ec06b73f"
+      },
+      "inputs": {
+        "x": 3.92
+      },
+      "name": "dense_0391"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5e5f27462d03e"
+      },
+      "inputs": {
+        "x": 3.93
+      },
+      "name": "dense_0392"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5f05b32b857a6"
+      },
+      "inputs": {
+        "x": 3.94
+      },
+      "name": "dense_0393"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff5fabd2fd6feaa"
+      },
+      "inputs": {
+        "x": 3.95
+      },
+      "name": "dense_0394"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff60518747d5a46"
+      },
+      "inputs": {
+        "x": 3.96
+      },
+      "name": "dense_0395"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff60f6d09590f71"
+      },
+      "inputs": {
+        "x": 3.97
+      },
+      "name": "dense_0396"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff619baf706feba"
+      },
+      "inputs": {
+        "x": 3.98
+      },
+      "name": "dense_0397"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6240246136f65"
+      },
+      "inputs": {
+        "x": 3.99
+      },
+      "name": "dense_0398"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff62e42fefa39ef"
+      },
+      "inputs": {
+        "x": 4.0
+      },
+      "name": "dense_0399"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6387d2a26f219"
+      },
+      "inputs": {
+        "x": 4.01
+      },
+      "name": "dense_0400"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff642b0cff51062"
+      },
+      "inputs": {
+        "x": 4.0200000000000005
+      },
+      "name": "dense_0401"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff64cddf8b01b00"
+      },
+      "inputs": {
+        "x": 4.03
+      },
+      "name": "dense_0402"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff65704ac93ce5c"
+      },
+      "inputs": {
+        "x": 4.04
+      },
+      "name": "dense_0403"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff66124f3cc4508"
+      },
+      "inputs": {
+        "x": 4.05
+      },
+      "name": "dense_0404"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff66b3ed6761f37"
+      },
+      "inputs": {
+        "x": 4.0600000000000005
+      },
+      "name": "dense_0405"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff675525c9ea9bc"
+      },
+      "inputs": {
+        "x": 4.07
+      },
+      "name": "dense_0406"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff67f5f8e44048f"
+      },
+      "inputs": {
+        "x": 4.08
+      },
+      "name": "dense_0407"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff68966735548d4"
+      },
+      "inputs": {
+        "x": 4.09
+      },
+      "name": "dense_0408"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6936713b2ae70"
+      },
+      "inputs": {
+        "x": 4.1
+      },
+      "name": "dense_0409"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff69d61772db128"
+      },
+      "inputs": {
+        "x": 4.11
+      },
+      "name": "dense_0410"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6a755a5893549"
+      },
+      "inputs": {
+        "x": 4.12
+      },
+      "name": "dense_0411"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6b143a679abe4"
+      },
+      "inputs": {
+        "x": 4.13
+      },
+      "name": "dense_0412"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6bb2b81a53696"
+      },
+      "inputs": {
+        "x": 4.14
+      },
+      "name": "dense_0413"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6c50d3ea3cae4"
+      },
+      "inputs": {
+        "x": 4.15
+      },
+      "name": "dense_0414"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6cee8e4ff5522"
+      },
+      "inputs": {
+        "x": 4.16
+      },
+      "name": "dense_0415"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6d8be7c33dafe"
+      },
+      "inputs": {
+        "x": 4.17
+      },
+      "name": "dense_0416"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6e28e0baf9d92"
+      },
+      "inputs": {
+        "x": 4.18
+      },
+      "name": "dense_0417"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6ec579ad33b18"
+      },
+      "inputs": {
+        "x": 4.19
+      },
+      "name": "dense_0418"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6f61b30f1d02f"
+      },
+      "inputs": {
+        "x": 4.2
+      },
+      "name": "dense_0419"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff6ffd8d55118c3"
+      },
+      "inputs": {
+        "x": 4.21
+      },
+      "name": "dense_0420"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff709908f29908d"
+      },
+      "inputs": {
+        "x": 4.22
+      },
+      "name": "dense_0421"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7134265a6932c"
+      },
+      "inputs": {
+        "x": 4.23
+      },
+      "name": "dense_0422"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff71cee5fe67be6"
+      },
+      "inputs": {
+        "x": 4.24
+      },
+      "name": "dense_0423"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7269484fac504"
+      },
+      "inputs": {
+        "x": 4.25
+      },
+      "name": "dense_0424"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff73034dbe826d0"
+      },
+      "inputs": {
+        "x": 4.26
+      },
+      "name": "dense_0425"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff739cf6ba6b635"
+      },
+      "inputs": {
+        "x": 4.2700000000000005
+      },
+      "name": "dense_0426"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff743643b220307"
+      },
+      "inputs": {
+        "x": 4.28
+      },
+      "name": "dense_0427"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff74cf3513935ee"
+      },
+      "inputs": {
+        "x": 4.29
+      },
+      "name": "dense_0428"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7567cb4bf2df7"
+      },
+      "inputs": {
+        "x": 4.3
+      },
+      "name": "dense_0429"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff760006c7a9dd0"
+      },
+      "inputs": {
+        "x": 4.3100000000000005
+      },
+      "name": "dense_0430"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7697e7f2628a8"
+      },
+      "inputs": {
+        "x": 4.32
+      },
+      "name": "dense_0431"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff772f6f3707ec3"
+      },
+      "inputs": {
+        "x": 4.33
+      },
+      "name": "dense_0432"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff77c69cffc79ad"
+      },
+      "inputs": {
+        "x": 4.34
+      },
+      "name": "dense_0433"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff785d71b613826"
+      },
+      "inputs": {
+        "x": 4.3500000000000005
+      },
+      "name": "dense_0434"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff78f3edc2a39b3"
+      },
+      "inputs": {
+        "x": 4.36
+      },
+      "name": "dense_0435"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff798a118d779e3"
+      },
+      "inputs": {
+        "x": 4.37
+      },
+      "name": "dense_0436"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7a1fdd7dd8b45"
+      },
+      "inputs": {
+        "x": 4.38
+      },
+      "name": "dense_0437"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7ab551fa5b209"
+      },
+      "inputs": {
+        "x": 4.39
+      },
+      "name": "dense_0438"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7b4a6f68dfe5c"
+      },
+      "inputs": {
+        "x": 4.4
+      },
+      "name": "dense_0439"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7bdf362e9666e"
+      },
+      "inputs": {
+        "x": 4.41
+      },
+      "name": "dense_0440"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7c73a6affe037"
+      },
+      "inputs": {
+        "x": 4.42
+      },
+      "name": "dense_0441"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7d07c150e7aea"
+      },
+      "inputs": {
+        "x": 4.43
+      },
+      "name": "dense_0442"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7d9b86747781f"
+      },
+      "inputs": {
+        "x": 4.44
+      },
+      "name": "dense_0443"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7e2ef67d264b6"
+      },
+      "inputs": {
+        "x": 4.45
+      },
+      "name": "dense_0444"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7ec211ccc3179"
+      },
+      "inputs": {
+        "x": 4.46
+      },
+      "name": "dense_0445"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7f54d8c474b68"
+      },
+      "inputs": {
+        "x": 4.47
+      },
+      "name": "dense_0446"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff7fe74bc4bb3cf"
+      },
+      "inputs": {
+        "x": 4.48
+      },
+      "name": "dense_0447"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff80796b2d7180d"
+      },
+      "inputs": {
+        "x": 4.49
+      },
+      "name": "dense_0448"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff810b375dce91e"
+      },
+      "inputs": {
+        "x": 4.5
+      },
+      "name": "dense_0449"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff819cb0b4672dd"
+      },
+      "inputs": {
+        "x": 4.51
+      },
+      "name": "dense_0450"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff822dd78f2f309"
+      },
+      "inputs": {
+        "x": 4.5200000000000005
+      },
+      "name": "dense_0451"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff82beac4b7b001"
+      },
+      "inputs": {
+        "x": 4.53
+      },
+      "name": "dense_0452"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff834f2f4600f4c"
+      },
+      "inputs": {
+        "x": 4.54
+      },
+      "name": "dense_0453"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff83df60dadabd7"
+      },
+      "inputs": {
+        "x": 4.55
+      },
+      "name": "dense_0454"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff846f416586bf5"
+      },
+      "inputs": {
+        "x": 4.5600000000000005
+      },
+      "name": "dense_0455"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff84fed140e9728"
+      },
+      "inputs": {
+        "x": 4.57
+      },
+      "name": "dense_0456"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff858e10c74ebac"
+      },
+      "inputs": {
+        "x": 4.58
+      },
+      "name": "dense_0457"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff861d00526b3bd"
+      },
+      "inputs": {
+        "x": 4.59
+      },
+      "name": "dense_0458"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff86aba03b5daad"
+      },
+      "inputs": {
+        "x": 4.6000000000000005
+      },
+      "name": "dense_0459"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8739f0dab01b6"
+      },
+      "inputs": {
+        "x": 4.61
+      },
+      "name": "dense_0460"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff87c7f2885949b"
+      },
+      "inputs": {
+        "x": 4.62
+      },
+      "name": "dense_0461"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8855a59bbde0a"
+      },
+      "inputs": {
+        "x": 4.63
+      },
+      "name": "dense_0462"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff88e30a6bb1bc6"
+      },
+      "inputs": {
+        "x": 4.64
+      },
+      "name": "dense_0463"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8970214e7929c"
+      },
+      "inputs": {
+        "x": 4.65
+      },
+      "name": "dense_0464"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff89fcea99ca220"
+      },
+      "inputs": {
+        "x": 4.66
+      },
+      "name": "dense_0465"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8a8966a2cd831"
+      },
+      "inputs": {
+        "x": 4.67
+      },
+      "name": "dense_0466"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8b1595be20450"
+      },
+      "inputs": {
+        "x": 4.68
+      },
+      "name": "dense_0467"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8ba1783fd4ab7"
+      },
+      "inputs": {
+        "x": 4.69
+      },
+      "name": "dense_0468"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8c2d0e7b73742"
+      },
+      "inputs": {
+        "x": 4.7
+      },
+      "name": "dense_0469"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8cb858c3fd026"
+      },
+      "inputs": {
+        "x": 4.71
+      },
+      "name": "dense_0470"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8d43576bea873"
+      },
+      "inputs": {
+        "x": 4.72
+      },
+      "name": "dense_0471"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8dce0ac52f264"
+      },
+      "inputs": {
+        "x": 4.73
+      },
+      "name": "dense_0472"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8e58732139178"
+      },
+      "inputs": {
+        "x": 4.74
+      },
+      "name": "dense_0473"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8ee290d0f2c6a"
+      },
+      "inputs": {
+        "x": 4.75
+      },
+      "name": "dense_0474"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8f6c6424c3ee4"
+      },
+      "inputs": {
+        "x": 4.76
+      },
+      "name": "dense_0475"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff8ff5ed6c92b15"
+      },
+      "inputs": {
+        "x": 4.7700000000000005
+      },
+      "name": "dense_0476"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff907f2cf7c4b08"
+      },
+      "inputs": {
+        "x": 4.78
+      },
+      "name": "dense_0477"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff91082315401db"
+      },
+      "inputs": {
+        "x": 4.79
+      },
+      "name": "dense_0478"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9190d0136ccbe"
+      },
+      "inputs": {
+        "x": 4.8
+      },
+      "name": "dense_0479"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff92193440353c7"
+      },
+      "inputs": {
+        "x": 4.8100000000000005
+      },
+      "name": "dense_0480"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff92a14fe907a9b"
+      },
+      "inputs": {
+        "x": 4.82
+      },
+      "name": "dense_0481"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9329235ad70ec"
+      },
+      "inputs": {
+        "x": 4.83
+      },
+      "name": "dense_0482"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff93b0aee21c2c8"
+      },
+      "inputs": {
+        "x": 4.84
+      },
+      "name": "dense_0483"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9437f2cad68be"
+      },
+      "inputs": {
+        "x": 4.8500000000000005
+      },
+      "name": "dense_0484"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff94beef608d7d7"
+      },
+      "inputs": {
+        "x": 4.86
+      },
+      "name": "dense_0485"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9545a4ee5116b"
+      },
+      "inputs": {
+        "x": 4.87
+      },
+      "name": "dense_0486"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff95cc13bebb2c4"
+      },
+      "inputs": {
+        "x": 4.88
+      },
+      "name": "dense_0487"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff96523c1bf04a0"
+      },
+      "inputs": {
+        "x": 4.89
+      },
+      "name": "dense_0488"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff96d81e4fa0a84"
+      },
+      "inputs": {
+        "x": 4.9
+      },
+      "name": "dense_0489"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff975dbaa3091e7"
+      },
+      "inputs": {
+        "x": 4.91
+      },
+      "name": "dense_0490"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff97e3115ef413f"
+      },
+      "inputs": {
+        "x": 4.92
+      },
+      "name": "dense_0491"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff986822cbba6db"
+      },
+      "inputs": {
+        "x": 4.93
+      },
+      "name": "dense_0492"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff98ecef314479d"
+      },
+      "inputs": {
+        "x": 4.94
+      },
+      "name": "dense_0493"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff997176d70ad8a"
+      },
+      "inputs": {
+        "x": 4.95
+      },
+      "name": "dense_0494"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff99f5ba041763c"
+      },
+      "inputs": {
+        "x": 4.96
+      },
+      "name": "dense_0495"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9a79b8ff06125"
+      },
+      "inputs": {
+        "x": 4.97
+      },
+      "name": "dense_0496"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9afd740e05db3"
+      },
+      "inputs": {
+        "x": 4.98
+      },
+      "name": "dense_0497"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9b80eb76d994e"
+      },
+      "inputs": {
+        "x": 4.99
+      },
+      "name": "dense_0498"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9c041f7ed8d33"
+      },
+      "inputs": {
+        "x": 5.0
+      },
+      "name": "dense_0499"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9c87106af0c2f"
+      },
+      "inputs": {
+        "x": 5.01
+      },
+      "name": "dense_0500"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9d09be7fa502c"
+      },
+      "inputs": {
+        "x": 5.0200000000000005
+      },
+      "name": "dense_0501"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9d8c2a01107a6"
+      },
+      "inputs": {
+        "x": 5.03
+      },
+      "name": "dense_0502"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9e0e5332e62fd"
+      },
+      "inputs": {
+        "x": 5.04
+      },
+      "name": "dense_0503"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9e903a58721a0"
+      },
+      "inputs": {
+        "x": 5.05
+      },
+      "name": "dense_0504"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9f11dfb499f1a"
+      },
+      "inputs": {
+        "x": 5.0600000000000005
+      },
+      "name": "dense_0505"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ff9f934389ddff9"
+      },
+      "inputs": {
+        "x": 5.07
+      },
+      "name": "dense_0506"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa014661a59ea2"
+      },
+      "inputs": {
+        "x": 5.08
+      },
+      "name": "dense_0507"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa09547a7c57f3"
+      },
+      "inputs": {
+        "x": 5.09
+      },
+      "name": "dense_0508"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa115e873757d4"
+      },
+      "inputs": {
+        "x": 5.1000000000000005
+      },
+      "name": "dense_0509"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa19648be5c59a"
+      },
+      "inputs": {
+        "x": 5.11
+      },
+      "name": "dense_0510"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa21668c90b05e"
+      },
+      "inputs": {
+        "x": 5.12
+      },
+      "name": "dense_0511"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa29648d3b1b23"
+      },
+      "inputs": {
+        "x": 5.13
+      },
+      "name": "dense_0512"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa315e91e208e4"
+      },
+      "inputs": {
+        "x": 5.14
+      },
+      "name": "dense_0513"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa39549e7c888d"
+      },
+      "inputs": {
+        "x": 5.15
+      },
+      "name": "dense_0514"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa4146b6fbc0c6"
+      },
+      "inputs": {
+        "x": 5.16
+      },
+      "name": "dense_0515"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa4934df4afbae"
+      },
+      "inputs": {
+        "x": 5.17
+      },
+      "name": "dense_0516"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa511f1b4fb273"
+      },
+      "inputs": {
+        "x": 5.18
+      },
+      "name": "dense_0517"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa59056ee998cf"
+      },
+      "inputs": {
+        "x": 5.19
+      },
+      "name": "dense_0518"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa60e7ddf2a866"
+      },
+      "inputs": {
+        "x": 5.2
+      },
+      "name": "dense_0519"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa68c66c3f2c0e"
+      },
+      "inputs": {
+        "x": 5.21
+      },
+      "name": "dense_0520"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa70a11d9dcaf4"
+      },
+      "inputs": {
+        "x": 5.22
+      },
+      "name": "dense_0521"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa7877f5d793ad"
+      },
+      "inputs": {
+        "x": 5.23
+      },
+      "name": "dense_0522"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa804af8b00723"
+      },
+      "inputs": {
+        "x": 5.24
+      },
+      "name": "dense_0523"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa881a29e52373"
+      },
+      "inputs": {
+        "x": 5.25
+      },
+      "name": "dense_0524"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa8fe58d2f6ea5"
+      },
+      "inputs": {
+        "x": 5.26
+      },
+      "name": "dense_0525"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa97ad26420152"
+      },
+      "inputs": {
+        "x": 5.2700000000000005
+      },
+      "name": "dense_0526"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffa9f70f8ca912b"
+      },
+      "inputs": {
+        "x": 5.28
+      },
+      "name": "dense_0527"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffaa73108717b6a"
+      },
+      "inputs": {
+        "x": 5.29
+      },
+      "name": "dense_0528"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffaaeed58d9cf2a"
+      },
+      "inputs": {
+        "x": 5.3
+      },
+      "name": "dense_0529"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffab6a5eda157a2"
+      },
+      "inputs": {
+        "x": 5.3100000000000005
+      },
+      "name": "dense_0530"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffabe5aca60a64a"
+      },
+      "inputs": {
+        "x": 5.32
+      },
+      "name": "dense_0531"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffac60bf2ab1ce7"
+      },
+      "inputs": {
+        "x": 5.33
+      },
+      "name": "dense_0532"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffacdb96a0ef785"
+      },
+      "inputs": {
+        "x": 5.34
+      },
+      "name": "dense_0533"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffad5633415564c"
+      },
+      "inputs": {
+        "x": 5.3500000000000005
+      },
+      "name": "dense_0534"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffadd0954424747"
+      },
+      "inputs": {
+        "x": 5.36
+      },
+      "name": "dense_0535"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffae4abce14d015"
+      },
+      "inputs": {
+        "x": 5.37
+      },
+      "name": "dense_0536"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffaec4aa506f77e"
+      },
+      "inputs": {
+        "x": 5.38
+      },
+      "name": "dense_0537"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffaf3e5dc8dcef0"
+      },
+      "inputs": {
+        "x": 5.39
+      },
+      "name": "dense_0538"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffafb7d78197bed"
+      },
+      "inputs": {
+        "x": 5.4
+      },
+      "name": "dense_0539"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb03117b154158"
+      },
+      "inputs": {
+        "x": 5.41
+      },
+      "name": "dense_0540"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb0aa1e8e788b9"
+      },
+      "inputs": {
+        "x": 5.42
+      },
+      "name": "dense_0541"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb122ec4f1eb5f"
+      },
+      "inputs": {
+        "x": 5.43
+      },
+      "name": "dense_0542"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb19b812913b74"
+      },
+      "inputs": {
+        "x": 5.44
+      },
+      "name": "dense_0543"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb213dd51d8cf7"
+      },
+      "inputs": {
+        "x": 5.45
+      },
+      "name": "dense_0544"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb28c00fea3ea5"
+      },
+      "inputs": {
+        "x": 5.46
+      },
+      "name": "dense_0545"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb303ec64602ce"
+      },
+      "inputs": {
+        "x": 5.47
+      },
+      "name": "dense_0546"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb37b9fb7ae80d"
+      },
+      "inputs": {
+        "x": 5.48
+      },
+      "name": "dense_0547"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb3f31b2ce61f3"
+      },
+      "inputs": {
+        "x": 5.49
+      },
+      "name": "dense_0548"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb46a5ef8151a0"
+      },
+      "inputs": {
+        "x": 5.5
+      },
+      "name": "dense_0549"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb4e16b4d00e40"
+      },
+      "inputs": {
+        "x": 5.51
+      },
+      "name": "dense_0550"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb558405f26d7c"
+      },
+      "inputs": {
+        "x": 5.5200000000000005
+      },
+      "name": "dense_0551"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb5cede61bcbcd"
+      },
+      "inputs": {
+        "x": 5.53
+      },
+      "name": "dense_0552"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb6454587b14cd"
+      },
+      "inputs": {
+        "x": 5.54
+      },
+      "name": "dense_0553"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb6bb7603acb62"
+      },
+      "inputs": {
+        "x": 5.55
+      },
+      "name": "dense_0554"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb7317008111e3"
+      },
+      "inputs": {
+        "x": 5.5600000000000005
+      },
+      "name": "dense_0555"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb7a733c6fb221"
+      },
+      "inputs": {
+        "x": 5.57
+      },
+      "name": "dense_0556"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb81cc1724256b"
+      },
+      "inputs": {
+        "x": 5.58
+      },
+      "name": "dense_0557"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb892193b79c6e"
+      },
+      "inputs": {
+        "x": 5.59
+      },
+      "name": "dense_0558"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb9073b53f0714"
+      },
+      "inputs": {
+        "x": 5.6000000000000005
+      },
+      "name": "dense_0559"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb97c27ecb1c40"
+      },
+      "inputs": {
+        "x": 5.61
+      },
+      "name": "dense_0560"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffb9f0df368618b"
+      },
+      "inputs": {
+        "x": 5.62
+      },
+      "name": "dense_0561"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffba656161f32e1"
+      },
+      "inputs": {
+        "x": 5.63
+      },
+      "name": "dense_0562"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbad9ae9f3ca10"
+      },
+      "inputs": {
+        "x": 5.64
+      },
+      "name": "dense_0563"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbb4dc71e6464d"
+      },
+      "inputs": {
+        "x": 5.65
+      },
+      "name": "dense_0564"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbbc1ab0f2b399"
+      },
+      "inputs": {
+        "x": 5.66
+      },
+      "name": "dense_0565"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbc355aa11122c"
+      },
+      "inputs": {
+        "x": 5.67
+      },
+      "name": "dense_0566"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbca8d60355db4"
+      },
+      "inputs": {
+        "x": 5.68
+      },
+      "name": "dense_0567"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbd1c1d64f949f"
+      },
+      "inputs": {
+        "x": 5.69
+      },
+      "name": "dense_0568"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbd8f30f4bbf39"
+      },
+      "inputs": {
+        "x": 5.7
+      },
+      "name": "dense_0569"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbe0210e11f6d5"
+      },
+      "inputs": {
+        "x": 5.71
+      },
+      "name": "dense_0570"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbe74bd5866cd2"
+      },
+      "inputs": {
+        "x": 5.72
+      },
+      "name": "dense_0571"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbee736889719d"
+      },
+      "inputs": {
+        "x": 5.73
+      },
+      "name": "dense_0572"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbf597c9f77b94"
+      },
+      "inputs": {
+        "x": 5.74
+      },
+      "name": "dense_0573"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffbfcb8fca92df1"
+      },
+      "inputs": {
+        "x": 5.75
+      },
+      "name": "dense_0574"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc03d703735f8d"
+      },
+      "inputs": {
+        "x": 5.76
+      },
+      "name": "dense_0575"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc0af1e12721a5"
+      },
+      "inputs": {
+        "x": 5.7700000000000005
+      },
+      "name": "dense_0576"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc12099891c689"
+      },
+      "inputs": {
+        "x": 5.78
+      },
+      "name": "dense_0577"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc191e2c7ce83c"
+      },
+      "inputs": {
+        "x": 5.79
+      },
+      "name": "dense_0578"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc202f9fae6f0a"
+      },
+      "inputs": {
+        "x": 5.8
+      },
+      "name": "dense_0579"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc273df4e89808"
+      },
+      "inputs": {
+        "x": 5.8100000000000005
+      },
+      "name": "dense_0580"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc2e492ee9fb8c"
+      },
+      "inputs": {
+        "x": 5.82
+      },
+      "name": "dense_0581"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc3551506d9397"
+      },
+      "inputs": {
+        "x": 5.83
+      },
+      "name": "dense_0582"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc3c565c2ac229"
+      },
+      "inputs": {
+        "x": 5.84
+      },
+      "name": "dense_0583"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc435854d55795"
+      },
+      "inputs": {
+        "x": 5.8500000000000005
+      },
+      "name": "dense_0584"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc4a573d1d98b4"
+      },
+      "inputs": {
+        "x": 5.86
+      },
+      "name": "dense_0585"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc515317b04521"
+      },
+      "inputs": {
+        "x": 5.87
+      },
+      "name": "dense_0586"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc584be7369d52"
+      },
+      "inputs": {
+        "x": 5.88
+      },
+      "name": "dense_0587"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc5f41ae5668b6"
+      },
+      "inputs": {
+        "x": 5.89
+      },
+      "name": "dense_0588"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc66346fb1fbb8"
+      },
+      "inputs": {
+        "x": 5.9
+      },
+      "name": "dense_0589"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc6d242de83db9"
+      },
+      "inputs": {
+        "x": 5.91
+      },
+      "name": "dense_0590"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc7410eb94af03"
+      },
+      "inputs": {
+        "x": 5.92
+      },
+      "name": "dense_0591"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc7afaab4f6ea8"
+      },
+      "inputs": {
+        "x": 5.93
+      },
+      "name": "dense_0592"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc81e16fad4059"
+      },
+      "inputs": {
+        "x": 5.94
+      },
+      "name": "dense_0593"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc88c53b3f9228"
+      },
+      "inputs": {
+        "x": 5.95
+      },
+      "name": "dense_0594"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc8fa61094824d"
+      },
+      "inputs": {
+        "x": 5.96
+      },
+      "name": "dense_0595"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc9683f236e4cd"
+      },
+      "inputs": {
+        "x": 5.97
+      },
+      "name": "dense_0596"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffc9d5ee2ae4924"
+      },
+      "inputs": {
+        "x": 5.98
+      },
+      "name": "dense_0597"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffca436e47effd7"
+      },
+      "inputs": {
+        "x": 5.99
+      },
+      "name": "dense_0598"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffcab0bfa2a2002"
+      },
+      "inputs": {
+        "x": 6.0
+      },
+      "name": "dense_0599"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffcb1de262d8cda"
+      },
+      "inputs": {
+        "x": 6.01
+      },
+      "name": "dense_0600"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffcb8ad6b03fb1b"
+      },
+      "inputs": {
+        "x": 6.0200000000000005
+      },
+      "name": "dense_0601"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffcbf79cb24f675"
+      },
+      "inputs": {
+        "x": 6.03
+      },
+      "name": "dense_0602"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffcc6434904e6e5"
+      },
+      "inputs": {
+        "x": 6.04
+      },
+      "name": "dense_0603"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffccd09e715160c"
+      },
+      "inputs": {
+        "x": 6.05
+      },
+      "name": "dense_0604"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffcd3cda7c3b46f"
+      },
+      "inputs": {
+        "x": 6.0600000000000005
+      },
+      "name": "dense_0605"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffcda8e8d7bdeb6"
+      },
+      "inputs": {
+        "x": 6.07
+      },
+      "name": "dense_0606"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffce14c9aa5a2d9"
+      },
+      "inputs": {
+        "x": 6.08
+      },
+      "name": "dense_0607"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffce807d1a60549"
+      },
+      "inputs": {
+        "x": 6.09
+      },
+      "name": "dense_0608"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffceec034df0609"
+      },
+      "inputs": {
+        "x": 6.1000000000000005
+      },
+      "name": "dense_0609"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffcf575c6afa5b9"
+      },
+      "inputs": {
+        "x": 6.11
+      },
+      "name": "dense_0610"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffcfc288973eaa2"
+      },
+      "inputs": {
+        "x": 6.12
+      },
+      "name": "dense_0611"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd02d87f84e5ad"
+      },
+      "inputs": {
+        "x": 6.13
+      },
+      "name": "dense_0612"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd0985ab38b753"
+      },
+      "inputs": {
+        "x": 6.140000000000001
+      },
+      "name": "dense_0613"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd10300ee29484"
+      },
+      "inputs": {
+        "x": 6.15
+      },
+      "name": "dense_0614"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd16d7acd2cb80"
+      },
+      "inputs": {
+        "x": 6.16
+      },
+      "name": "dense_0615"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd1d7c8756c8ad"
+      },
+      "inputs": {
+        "x": 6.17
+      },
+      "name": "dense_0616"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd241ea0b91b5c"
+      },
+      "inputs": {
+        "x": 6.18
+      },
+      "name": "dense_0617"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd2abdfb417a86"
+      },
+      "inputs": {
+        "x": 6.19
+      },
+      "name": "dense_0618"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd315a9934c981"
+      },
+      "inputs": {
+        "x": 6.2
+      },
+      "name": "dense_0619"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd37f47cd51caa"
+      },
+      "inputs": {
+        "x": 6.21
+      },
+      "name": "dense_0620"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd3e8ba861be06"
+      },
+      "inputs": {
+        "x": 6.22
+      },
+      "name": "dense_0621"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd45201e1731da"
+      },
+      "inputs": {
+        "x": 6.23
+      },
+      "name": "dense_0622"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd4bb1e02f3b35"
+      },
+      "inputs": {
+        "x": 6.24
+      },
+      "name": "dense_0623"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd5240f0e0e078"
+      },
+      "inputs": {
+        "x": 6.25
+      },
+      "name": "dense_0624"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd58cd52606fcf"
+      },
+      "inputs": {
+        "x": 6.26
+      },
+      "name": "dense_0625"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd5f5706df83a5"
+      },
+      "inputs": {
+        "x": 6.2700000000000005
+      },
+      "name": "dense_0626"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd65de108d070b"
+      },
+      "inputs": {
+        "x": 6.28
+      },
+      "name": "dense_0627"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd6c6271953a18"
+      },
+      "inputs": {
+        "x": 6.29
+      },
+      "name": "dense_0628"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd72e42c21b641"
+      },
+      "inputs": {
+        "x": 6.3
+      },
+      "name": "dense_0629"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd7963425972a8"
+      },
+      "inputs": {
+        "x": 6.3100000000000005
+      },
+      "name": "dense_0630"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd7fdfb660c85d"
+      },
+      "inputs": {
+        "x": 6.32
+      },
+      "name": "dense_0631"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd86598a5976a0"
+      },
+      "inputs": {
+        "x": 6.33
+      },
+      "name": "dense_0632"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd8cd0c062a713"
+      },
+      "inputs": {
+        "x": 6.34
+      },
+      "name": "dense_0633"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd93455a98f1e6"
+      },
+      "inputs": {
+        "x": 6.3500000000000005
+      },
+      "name": "dense_0634"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffd99b75b1661f9"
+      },
+      "inputs": {
+        "x": 6.36
+      },
+      "name": "dense_0635"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffda026c3f278fb"
+      },
+      "inputs": {
+        "x": 6.37
+      },
+      "name": "dense_0636"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffda69397423376"
+      },
+      "inputs": {
+        "x": 6.38
+      },
+      "name": "dense_0637"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdacfdd7180ce3"
+      },
+      "inputs": {
+        "x": 6.390000000000001
+      },
+      "name": "dense_0638"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdb365858403a3"
+      },
+      "inputs": {
+        "x": 6.4
+      },
+      "name": "dense_0639"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdb9caa4939cff"
+      },
+      "inputs": {
+        "x": 6.41
+      },
+      "name": "dense_0640"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdc02d3651e91a"
+      },
+      "inputs": {
+        "x": 6.42
+      },
+      "name": "dense_0641"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdc68d3cc786db"
+      },
+      "inputs": {
+        "x": 6.43
+      },
+      "name": "dense_0642"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdcceab9faa7d1"
+      },
+      "inputs": {
+        "x": 6.44
+      },
+      "name": "dense_0643"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdd345afef140a"
+      },
+      "inputs": {
+        "x": 6.45
+      },
+      "name": "dense_0644"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdd99e20a62dee"
+      },
+      "inputs": {
+        "x": 6.46
+      },
+      "name": "dense_0645"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffddff40e1ef604"
+      },
+      "inputs": {
+        "x": 6.47
+      },
+      "name": "dense_0646"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffde6477a560ebb"
+      },
+      "inputs": {
+        "x": 6.48
+      },
+      "name": "dense_0647"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdec986745c024"
+      },
+      "inputs": {
+        "x": 6.49
+      },
+      "name": "dense_0648"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdf2e6d6e5fbaa"
+      },
+      "inputs": {
+        "x": 6.5
+      },
+      "name": "dense_0649"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdf932cb2c5fc0"
+      },
+      "inputs": {
+        "x": 6.51
+      },
+      "name": "dense_0650"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffdff7c460c3b86"
+      },
+      "inputs": {
+        "x": 6.5200000000000005
+      },
+      "name": "dense_0651"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe05c34976926a"
+      },
+      "inputs": {
+        "x": 6.53
+      },
+      "name": "dense_0652"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe0c07d75a1fc5"
+      },
+      "inputs": {
+        "x": 6.54
+      },
+      "name": "dense_0653"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe1249f1a35a67"
+      },
+      "inputs": {
+        "x": 6.55
+      },
+      "name": "dense_0654"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe18899a3c7824"
+      },
+      "inputs": {
+        "x": 6.5600000000000005
+      },
+      "name": "dense_0655"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe1ec6d30d7158"
+      },
+      "inputs": {
+        "x": 6.57
+      },
+      "name": "dense_0656"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe25019dfc0466"
+      },
+      "inputs": {
+        "x": 6.58
+      },
+      "name": "dense_0657"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe2b39fcebb92a"
+      },
+      "inputs": {
+        "x": 6.59
+      },
+      "name": "dense_0658"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe316ff1bde46f"
+      },
+      "inputs": {
+        "x": 6.6000000000000005
+      },
+      "name": "dense_0659"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe37a37e51ab50"
+      },
+      "inputs": {
+        "x": 6.61
+      },
+      "name": "dense_0660"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe3dd4a48406a2"
+      },
+      "inputs": {
+        "x": 6.62
+      },
+      "name": "dense_0661"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe4403662fc64a"
+      },
+      "inputs": {
+        "x": 6.63
+      },
+      "name": "dense_0662"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe4a2fc52d9498"
+      },
+      "inputs": {
+        "x": 6.640000000000001
+      },
+      "name": "dense_0663"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe5059c353f98e"
+      },
+      "inputs": {
+        "x": 6.65
+      },
+      "name": "dense_0664"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe568162775e31"
+      },
+      "inputs": {
+        "x": 6.66
+      },
+      "name": "dense_0665"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe5ca6a46a0fc7"
+      },
+      "inputs": {
+        "x": 6.67
+      },
+      "name": "dense_0666"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe62c98afc4313"
+      },
+      "inputs": {
+        "x": 6.68
+      },
+      "name": "dense_0667"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe68ea17fc178c"
+      },
+      "inputs": {
+        "x": 6.69
+      },
+      "name": "dense_0668"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe6f084d359a8b"
+      },
+      "inputs": {
+        "x": 6.7
+      },
+      "name": "dense_0669"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe75242c72ca75"
+      },
+      "inputs": {
+        "x": 6.71
+      },
+      "name": "dense_0670"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe7b3db77b99e2"
+      },
+      "inputs": {
+        "x": 6.72
+      },
+      "name": "dense_0671"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe8154f015f2b6"
+      },
+      "inputs": {
+        "x": 6.73
+      },
+      "name": "dense_0672"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe8769d805b93a"
+      },
+      "inputs": {
+        "x": 6.74
+      },
+      "name": "dense_0673"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe8d7c710ccf31"
+      },
+      "inputs": {
+        "x": 6.75
+      },
+      "name": "dense_0674"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe938cbceb16dd"
+      },
+      "inputs": {
+        "x": 6.76
+      },
+      "name": "dense_0675"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe999abd5e760e"
+      },
+      "inputs": {
+        "x": 6.7700000000000005
+      },
+      "name": "dense_0676"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffe9fa67422d91b"
+      },
+      "inputs": {
+        "x": 6.78
+      },
+      "name": "dense_0677"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffea5afe2f235e1"
+      },
+      "inputs": {
+        "x": 6.79
+      },
+      "name": "dense_0678"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffeabb70b848eb8"
+      },
+      "inputs": {
+        "x": 6.8
+      },
+      "name": "dense_0679"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffeb1bbef8ff560"
+      },
+      "inputs": {
+        "x": 6.8100000000000005
+      },
+      "name": "dense_0680"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffeb7be90c88ded"
+      },
+      "inputs": {
+        "x": 6.82
+      },
+      "name": "dense_0681"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffebdbef0e091ae"
+      },
+      "inputs": {
+        "x": 6.83
+      },
+      "name": "dense_0682"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffec3bd11885207"
+      },
+      "inputs": {
+        "x": 6.84
+      },
+      "name": "dense_0683"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffec9b8f46e3b51"
+      },
+      "inputs": {
+        "x": 6.8500000000000005
+      },
+      "name": "dense_0684"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffecfb29b3ed7a8"
+      },
+      "inputs": {
+        "x": 6.86
+      },
+      "name": "dense_0685"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffed5aa07a4d1bf"
+      },
+      "inputs": {
+        "x": 6.87
+      },
+      "name": "dense_0686"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffedb9f3b48f7aa"
+      },
+      "inputs": {
+        "x": 6.88
+      },
+      "name": "dense_0687"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffee19237d23da2"
+      },
+      "inputs": {
+        "x": 6.890000000000001
+      },
+      "name": "dense_0688"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffee782fee5c0c0"
+      },
+      "inputs": {
+        "x": 6.9
+      },
+      "name": "dense_0689"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffeed719226c9c1"
+      },
+      "inputs": {
+        "x": 6.91
+      },
+      "name": "dense_0690"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffef35df336cfb4"
+      },
+      "inputs": {
+        "x": 6.92
+      },
+      "name": "dense_0691"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffef94823b57aae"
+      },
+      "inputs": {
+        "x": 6.93
+      },
+      "name": "dense_0692"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffeff302540a675"
+      },
+      "inputs": {
+        "x": 6.94
+      },
+      "name": "dense_0693"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff0515f9746527"
+      },
+      "inputs": {
+        "x": 6.95
+      },
+      "name": "dense_0694"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff0af9a1eb01d9"
+      },
+      "inputs": {
+        "x": 6.96
+      },
+      "name": "dense_0695"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff10db203d0339"
+      },
+      "inputs": {
+        "x": 6.97
+      },
+      "name": "dense_0696"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff16ba76012e23"
+      },
+      "inputs": {
+        "x": 6.98
+      },
+      "name": "dense_0697"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff1c97a4cc8833"
+      },
+      "inputs": {
+        "x": 6.99
+      },
+      "name": "dense_0698"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff2272ae325a57"
+      },
+      "inputs": {
+        "x": 7.0
+      },
+      "name": "dense_0699"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff284b93c4335a"
+      },
+      "inputs": {
+        "x": 7.01
+      },
+      "name": "dense_0700"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff2e225711ea64"
+      },
+      "inputs": {
+        "x": 7.0200000000000005
+      },
+      "name": "dense_0701"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff33f6f9a9a17d"
+      },
+      "inputs": {
+        "x": 7.03
+      },
+      "name": "dense_0702"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff39c97d17c80f"
+      },
+      "inputs": {
+        "x": 7.04
+      },
+      "name": "dense_0703"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff3f99e2e71d55"
+      },
+      "inputs": {
+        "x": 7.05
+      },
+      "name": "dense_0704"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff45682ca0b2d3"
+      },
+      "inputs": {
+        "x": 7.0600000000000005
+      },
+      "name": "dense_0705"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff4b345bcbeec4"
+      },
+      "inputs": {
+        "x": 7.07
+      },
+      "name": "dense_0706"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff50fe71ee8e87"
+      },
+      "inputs": {
+        "x": 7.08
+      },
+      "name": "dense_0707"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff56c6708ca8fe"
+      },
+      "inputs": {
+        "x": 7.09
+      },
+      "name": "dense_0708"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff5c8c5928b0f9"
+      },
+      "inputs": {
+        "x": 7.1000000000000005
+      },
+      "name": "dense_0709"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff62502d43778b"
+      },
+      "inputs": {
+        "x": 7.11
+      },
+      "name": "dense_0710"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff6811ee5c2e6a"
+      },
+      "inputs": {
+        "x": 7.12
+      },
+      "name": "dense_0711"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff6dd19df06a3e"
+      },
+      "inputs": {
+        "x": 7.13
+      },
+      "name": "dense_0712"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff738f3d7c24f7"
+      },
+      "inputs": {
+        "x": 7.140000000000001
+      },
+      "name": "dense_0713"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff794ace79c017"
+      },
+      "inputs": {
+        "x": 7.15
+      },
+      "name": "dense_0714"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff7f04526206fa"
+      },
+      "inputs": {
+        "x": 7.16
+      },
+      "name": "dense_0715"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff84bbcaac311b"
+      },
+      "inputs": {
+        "x": 7.17
+      },
+      "name": "dense_0716"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff8a7138cde457"
+      },
+      "inputs": {
+        "x": 7.18
+      },
+      "name": "dense_0717"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff90249e3b3725"
+      },
+      "inputs": {
+        "x": 7.19
+      },
+      "name": "dense_0718"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff95d5fc66b2d1"
+      },
+      "inputs": {
+        "x": 7.2
+      },
+      "name": "dense_0719"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fff9b8554c155b1"
+      },
+      "inputs": {
+        "x": 7.21
+      },
+      "name": "dense_0720"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffa132a8ba9553"
+      },
+      "inputs": {
+        "x": 7.22
+      },
+      "name": "dense_0721"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffa6ddf9c060ae"
+      },
+      "inputs": {
+        "x": 7.23
+      },
+      "name": "dense_0722"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffac87493f2244"
+      },
+      "inputs": {
+        "x": 7.24
+      },
+      "name": "dense_0723"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffb22e98a1c24e"
+      },
+      "inputs": {
+        "x": 7.25
+      },
+      "name": "dense_0724"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffb7d3e951a8db"
+      },
+      "inputs": {
+        "x": 7.26
+      },
+      "name": "dense_0725"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffbd773cb6bfeb"
+      },
+      "inputs": {
+        "x": 7.2700000000000005
+      },
+      "name": "dense_0726"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffc3189437758a"
+      },
+      "inputs": {
+        "x": 7.28
+      },
+      "name": "dense_0727"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffc8b7f138bdea"
+      },
+      "inputs": {
+        "x": 7.29
+      },
+      "name": "dense_0728"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffce55551e156e"
+      },
+      "inputs": {
+        "x": 7.3
+      },
+      "name": "dense_0729"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffd3f0c14982c0"
+      },
+      "inputs": {
+        "x": 7.3100000000000005
+      },
+      "name": "dense_0730"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffd98a371b98d7"
+      },
+      "inputs": {
+        "x": 7.32
+      },
+      "name": "dense_0731"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffdf21b7f37903"
+      },
+      "inputs": {
+        "x": 7.33
+      },
+      "name": "dense_0732"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffe4b7452ed4ec"
+      },
+      "inputs": {
+        "x": 7.34
+      },
+      "name": "dense_0733"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffea4ae029f097"
+      },
+      "inputs": {
+        "x": 7.3500000000000005
+      },
+      "name": "dense_0734"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fffefdc8a3fa460"
+      },
+      "inputs": {
+        "x": 7.36
+      },
+      "name": "dense_0735"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffff56c44c95ef7"
+      },
+      "inputs": {
+        "x": 7.37
+      },
+      "name": "dense_0736"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3ffffafa111f2752"
+      },
+      "inputs": {
+        "x": 7.38
+      },
+      "name": "dense_0737"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40000042f84bcf52"
+      },
+      "inputs": {
+        "x": 7.390000000000001
+      },
+      "name": "dense_0738"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40000307f2440124"
+      },
+      "inputs": {
+        "x": 7.4
+      },
+      "name": "dense_0739"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400005cbf72216d8"
+      },
+      "inputs": {
+        "x": 7.41
+      },
+      "name": "dense_0740"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000088f078f4e27"
+      },
+      "inputs": {
+        "x": 7.42
+      },
+      "name": "dense_0741"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40000b51243435bd"
+      },
+      "inputs": {
+        "x": 7.43
+      },
+      "name": "dense_0742"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40000e124db8ae28"
+      },
+      "inputs": {
+        "x": 7.44
+      },
+      "name": "dense_0743"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400010d284c3eac9"
+      },
+      "inputs": {
+        "x": 7.45
+      },
+      "name": "dense_0744"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40001391c9fc72c2"
+      },
+      "inputs": {
+        "x": 7.46
+      },
+      "name": "dense_0745"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400016501e0821e3"
+      },
+      "inputs": {
+        "x": 7.47
+      },
+      "name": "dense_0746"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000190d818c2992"
+      },
+      "inputs": {
+        "x": 7.48
+      },
+      "name": "dense_0747"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40001bc9f52d11b8"
+      },
+      "inputs": {
+        "x": 7.49
+      },
+      "name": "dense_0748"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40001e85798eb9a3"
+      },
+      "inputs": {
+        "x": 7.5
+      },
+      "name": "dense_0749"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400021400f5458f4"
+      },
+      "inputs": {
+        "x": 7.51
+      },
+      "name": "dense_0750"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400023f9b720807b"
+      },
+      "inputs": {
+        "x": 7.5200000000000005
+      },
+      "name": "dense_0751"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400026b271951b1f"
+      },
+      "inputs": {
+        "x": 7.53
+      },
+      "name": "dense_0752"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000296a3f536ec1"
+      },
+      "inputs": {
+        "x": 7.54
+      },
+      "name": "dense_0753"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40002c2120fc1d15"
+      },
+      "inputs": {
+        "x": 7.55
+      },
+      "name": "dense_0754"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40002ed7172f2488"
+      },
+      "inputs": {
+        "x": 7.5600000000000005
+      },
+      "name": "dense_0755"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000318c228be11a"
+      },
+      "inputs": {
+        "x": 7.57
+      },
+      "name": "dense_0756"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000344043b10d37"
+      },
+      "inputs": {
+        "x": 7.58
+      },
+      "name": "dense_0757"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400036f37b3cc296"
+      },
+      "inputs": {
+        "x": 7.59
+      },
+      "name": "dense_0758"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400039a5c9cc7b0f"
+      },
+      "inputs": {
+        "x": 7.6000000000000005
+      },
+      "name": "dense_0759"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40003c572ffd1171"
+      },
+      "inputs": {
+        "x": 7.61
+      },
+      "name": "dense_0760"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40003f07ae6ac25a"
+      },
+      "inputs": {
+        "x": 7.62
+      },
+      "name": "dense_0761"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400041b745b12d0d"
+      },
+      "inputs": {
+        "x": 7.63
+      },
+      "name": "dense_0762"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40004465f66b5441"
+      },
+      "inputs": {
+        "x": 7.640000000000001
+      },
+      "name": "dense_0763"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40004713c1339ef3"
+      },
+      "inputs": {
+        "x": 7.65
+      },
+      "name": "dense_0764"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400049c0a6a3d93c"
+      },
+      "inputs": {
+        "x": 7.66
+      },
+      "name": "dense_0765"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40004c6ca7553517"
+      },
+      "inputs": {
+        "x": 7.67
+      },
+      "name": "dense_0766"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40004f17c3e04b39"
+      },
+      "inputs": {
+        "x": 7.68
+      },
+      "name": "dense_0767"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400051c1fcdd1bd2"
+      },
+      "inputs": {
+        "x": 7.69
+      },
+      "name": "dense_0768"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000546b52e30f62"
+      },
+      "inputs": {
+        "x": 7.7
+      },
+      "name": "dense_0769"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40005713c688f77c"
+      },
+      "inputs": {
+        "x": 7.71
+      },
+      "name": "dense_0770"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400059bb58650f90"
+      },
+      "inputs": {
+        "x": 7.72
+      },
+      "name": "dense_0771"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40005c62090cfdb6"
+      },
+      "inputs": {
+        "x": 7.73
+      },
+      "name": "dense_0772"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40005f07d915d36d"
+      },
+      "inputs": {
+        "x": 7.74
+      },
+      "name": "dense_0773"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400061acc9140e62"
+      },
+      "inputs": {
+        "x": 7.75
+      },
+      "name": "dense_0774"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40006450d99b9938"
+      },
+      "inputs": {
+        "x": 7.76
+      },
+      "name": "dense_0775"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400066f40b3fcc43"
+      },
+      "inputs": {
+        "x": 7.7700000000000005
+      },
+      "name": "dense_0776"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400069965e936e4c"
+      },
+      "inputs": {
+        "x": 7.78
+      },
+      "name": "dense_0777"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40006c37d428b54f"
+      },
+      "inputs": {
+        "x": 7.79
+      },
+      "name": "dense_0778"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40006ed86c91473d"
+      },
+      "inputs": {
+        "x": 7.8
+      },
+      "name": "dense_0779"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40007178285e3ab3"
+      },
+      "inputs": {
+        "x": 7.8100000000000005
+      },
+      "name": "dense_0780"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40007417082017bb"
+      },
+      "inputs": {
+        "x": 7.82
+      },
+      "name": "dense_0781"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400076b50c66d884"
+      },
+      "inputs": {
+        "x": 7.83
+      },
+      "name": "dense_0782"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000795235c1ea1b"
+      },
+      "inputs": {
+        "x": 7.84
+      },
+      "name": "dense_0783"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40007bee84c02d28"
+      },
+      "inputs": {
+        "x": 7.8500000000000005
+      },
+      "name": "dense_0784"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40007e89f9eff69b"
+      },
+      "inputs": {
+        "x": 7.86
+      },
+      "name": "dense_0785"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000812495df106d"
+      },
+      "inputs": {
+        "x": 7.87
+      },
+      "name": "dense_0786"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400083be591aba4f"
+      },
+      "inputs": {
+        "x": 7.88
+      },
+      "name": "dense_0787"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40008657442faa5c"
+      },
+      "inputs": {
+        "x": 7.890000000000001
+      },
+      "name": "dense_0788"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400088ef57aa0dd1"
+      },
+      "inputs": {
+        "x": 7.9
+      },
+      "name": "dense_0789"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40008b86941589b8"
+      },
+      "inputs": {
+        "x": 7.91
+      },
+      "name": "dense_0790"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40008e1cf9fd3b9f"
+      },
+      "inputs": {
+        "x": 7.92
+      },
+      "name": "dense_0791"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400090b289ebba40"
+      },
+      "inputs": {
+        "x": 7.930000000000001
+      },
+      "name": "dense_0792"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40009347446b1634"
+      },
+      "inputs": {
+        "x": 7.94
+      },
+      "name": "dense_0793"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400095db2a04da9f"
+      },
+      "inputs": {
+        "x": 7.95
+      },
+      "name": "dense_0794"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000986e3b420dd9"
+      },
+      "inputs": {
+        "x": 7.96
+      },
+      "name": "dense_0795"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40009b0078ab321d"
+      },
+      "inputs": {
+        "x": 7.97
+      },
+      "name": "dense_0796"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40009d91e2c8462e"
+      },
+      "inputs": {
+        "x": 7.98
+      },
+      "name": "dense_0797"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000a0227a20c605"
+      },
+      "inputs": {
+        "x": 7.99
+      },
+      "name": "dense_0798"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000a2b23f3bab73"
+      },
+      "inputs": {
+        "x": 8.0
+      },
+      "name": "dense_0799"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000a541329f6ecc"
+      },
+      "inputs": {
+        "x": 8.01
+      },
+      "name": "dense_0800"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000a7cf54d20788"
+      },
+      "inputs": {
+        "x": 8.02
+      },
+      "name": "dense_0801"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000aa5ca658eced"
+      },
+      "inputs": {
+        "x": 8.03
+      },
+      "name": "dense_0802"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000ace927b916ad"
+      },
+      "inputs": {
+        "x": 8.040000000000001
+      },
+      "name": "dense_0803"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000af74d976fd8b"
+      },
+      "inputs": {
+        "x": 8.05
+      },
+      "name": "dense_0804"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000b1ffbc169bfc"
+      },
+      "inputs": {
+        "x": 8.06
+      },
+      "name": "dense_0805"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000b489d01b6ec8"
+      },
+      "inputs": {
+        "x": 8.07
+      },
+      "name": "dense_0806"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000b713160875aa"
+      },
+      "inputs": {
+        "x": 8.08
+      },
+      "name": "dense_0807"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000b99b8e6033ea"
+      },
+      "inputs": {
+        "x": 8.09
+      },
+      "name": "dense_0808"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000bc2339a4b100"
+      },
+      "inputs": {
+        "x": 8.1
+      },
+      "name": "dense_0809"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000beaa1857792c"
+      },
+      "inputs": {
+        "x": 8.11
+      },
+      "name": "dense_0810"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000c1302af99e17"
+      },
+      "inputs": {
+        "x": 8.120000000000001
+      },
+      "name": "dense_0811"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000c3b5720bb766"
+      },
+      "inputs": {
+        "x": 8.13
+      },
+      "name": "dense_0812"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000c639ee0de35a"
+      },
+      "inputs": {
+        "x": 8.14
+      },
+      "name": "dense_0813"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000c8bd9f7fc765"
+      },
+      "inputs": {
+        "x": 8.15
+      },
+      "name": "dense_0814"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000cb4086e090c3"
+      },
+      "inputs": {
+        "x": 8.16
+      },
+      "name": "dense_0815"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000cdc2a4aef512"
+      },
+      "inputs": {
+        "x": 8.17
+      },
+      "name": "dense_0816"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000d043f96932e6"
+      },
+      "inputs": {
+        "x": 8.18
+      },
+      "name": "dense_0817"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000d2c4858d125c"
+      },
+      "inputs": {
+        "x": 8.19
+      },
+      "name": "dense_0818"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000d5444997e5b4"
+      },
+      "inputs": {
+        "x": 8.2
+      },
+      "name": "dense_0819"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000d7c3460689de"
+      },
+      "inputs": {
+        "x": 8.21
+      },
+      "name": "dense_0820"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000da417b556710"
+      },
+      "inputs": {
+        "x": 8.22
+      },
+      "name": "dense_0821"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000dcbeea007155"
+      },
+      "inputs": {
+        "x": 8.23
+      },
+      "name": "dense_0822"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000df3b92832920"
+      },
+      "inputs": {
+        "x": 8.24
+      },
+      "name": "dense_0823"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000e1b775589bd9"
+      },
+      "inputs": {
+        "x": 8.25
+      },
+      "name": "dense_0824"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000e43292fb646e"
+      },
+      "inputs": {
+        "x": 8.26
+      },
+      "name": "dense_0825"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000e6acebe5abdd"
+      },
+      "inputs": {
+        "x": 8.27
+      },
+      "name": "dense_0826"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000e926809129c7"
+      },
+      "inputs": {
+        "x": 8.28
+      },
+      "name": "dense_0827"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000eb9f517724f7"
+      },
+      "inputs": {
+        "x": 8.290000000000001
+      },
+      "name": "dense_0828"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000ee175f1073ee"
+      },
+      "inputs": {
+        "x": 8.3
+      },
+      "name": "dense_0829"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000f08ea9d57d70"
+      },
+      "inputs": {
+        "x": 8.31
+      },
+      "name": "dense_0830"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000f305323e390d"
+      },
+      "inputs": {
+        "x": 8.32
+      },
+      "name": "dense_0831"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000f57af8c22fa6"
+      },
+      "inputs": {
+        "x": 8.33
+      },
+      "name": "dense_0832"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000f7effdd87bfb"
+      },
+      "inputs": {
+        "x": 8.34
+      },
+      "name": "dense_0833"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000fa6441f7cb2c"
+      },
+      "inputs": {
+        "x": 8.35
+      },
+      "name": "dense_0834"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000fcd7c5965d45"
+      },
+      "inputs": {
+        "x": 8.36
+      },
+      "name": "dense_0835"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4000ff4a892a05bf"
+      },
+      "inputs": {
+        "x": 8.370000000000001
+      },
+      "name": "dense_0836"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400101bc8d282c08"
+      },
+      "inputs": {
+        "x": 8.38
+      },
+      "name": "dense_0837"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001042dd205cc04"
+      },
+      "inputs": {
+        "x": 8.39
+      },
+      "name": "dense_0838"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001069e58377693"
+      },
+      "inputs": {
+        "x": 8.4
+      },
+      "name": "dense_0839"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001090e20315212"
+      },
+      "inputs": {
+        "x": 8.41
+      },
+      "name": "dense_0840"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40010b7d2a671add"
+      },
+      "inputs": {
+        "x": 8.42
+      },
+      "name": "dense_0841"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40010deb774c23cf"
+      },
+      "inputs": {
+        "x": 8.43
+      },
+      "name": "dense_0842"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40011059075356c2"
+      },
+      "inputs": {
+        "x": 8.44
+      },
+      "name": "dense_0843"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400112c5daef3510"
+      },
+      "inputs": {
+        "x": 8.45
+      },
+      "name": "dense_0844"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40011531f291d812"
+      },
+      "inputs": {
+        "x": 8.46
+      },
+      "name": "dense_0845"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001179d4eacf198"
+      },
+      "inputs": {
+        "x": 8.47
+      },
+      "name": "dense_0846"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40011a07efb1cc6f"
+      },
+      "inputs": {
+        "x": 8.48
+      },
+      "name": "dense_0847"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40011c71d6114cd6"
+      },
+      "inputs": {
+        "x": 8.49
+      },
+      "name": "dense_0848"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40011edb023bf0fe"
+      },
+      "inputs": {
+        "x": 8.5
+      },
+      "name": "dense_0849"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001214374a1d182"
+      },
+      "inputs": {
+        "x": 8.51
+      },
+      "name": "dense_0850"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400123ab2db2a1e4"
+      },
+      "inputs": {
+        "x": 8.52
+      },
+      "name": "dense_0851"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400126122dddb102"
+      },
+      "inputs": {
+        "x": 8.53
+      },
+      "name": "dense_0852"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400128787591e996"
+      },
+      "inputs": {
+        "x": 8.540000000000001
+      },
+      "name": "dense_0853"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40012ade053dd2a6"
+      },
+      "inputs": {
+        "x": 8.55
+      },
+      "name": "dense_0854"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40012d42dd4f8fff"
+      },
+      "inputs": {
+        "x": 8.56
+      },
+      "name": "dense_0855"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40012fa6fe34e2af"
+      },
+      "inputs": {
+        "x": 8.57
+      },
+      "name": "dense_0856"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001320a685b2973"
+      },
+      "inputs": {
+        "x": 8.58
+      },
+      "name": "dense_0857"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001346d1c2f6134"
+      },
+      "inputs": {
+        "x": 8.59
+      },
+      "name": "dense_0858"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400136cf1a1e2577"
+      },
+      "inputs": {
+        "x": 8.6
+      },
+      "name": "dense_0859"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400139306293b0d3"
+      },
+      "inputs": {
+        "x": 8.61
+      },
+      "name": "dense_0860"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40013b90f5fbdd64"
+      },
+      "inputs": {
+        "x": 8.620000000000001
+      },
+      "name": "dense_0861"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40013df0d4c2253a"
+      },
+      "inputs": {
+        "x": 8.63
+      },
+      "name": "dense_0862"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001404fff51a2d0"
+      },
+      "inputs": {
+        "x": 8.64
+      },
+      "name": "dense_0863"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400142ae7615117c"
+      },
+      "inputs": {
+        "x": 8.65
+      },
+      "name": "dense_0864"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001450c3976cddd"
+      },
+      "inputs": {
+        "x": 8.66
+      },
+      "name": "dense_0865"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001476949e0d64e"
+      },
+      "inputs": {
+        "x": 8.67
+      },
+      "name": "dense_0866"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400149c5a7bccb52"
+      },
+      "inputs": {
+        "x": 8.68
+      },
+      "name": "dense_0867"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40014c215373f007"
+      },
+      "inputs": {
+        "x": 8.69
+      },
+      "name": "dense_0868"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40014e7c4d6f2a8f"
+      },
+      "inputs": {
+        "x": 8.700000000000001
+      },
+      "name": "dense_0869"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400150d696170481"
+      },
+      "inputs": {
+        "x": 8.71
+      },
+      "name": "dense_0870"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400153302dd3ab55"
+      },
+      "inputs": {
+        "x": 8.72
+      },
+      "name": "dense_0871"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40015589150cf0d0"
+      },
+      "inputs": {
+        "x": 8.73
+      },
+      "name": "dense_0872"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400157e14c2a4b6d"
+      },
+      "inputs": {
+        "x": 8.74
+      },
+      "name": "dense_0873"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40015a38d392d6ce"
+      },
+      "inputs": {
+        "x": 8.75
+      },
+      "name": "dense_0874"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40015c8fabad541e"
+      },
+      "inputs": {
+        "x": 8.76
+      },
+      "name": "dense_0875"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40015ee5d4e02a83"
+      },
+      "inputs": {
+        "x": 8.77
+      },
+      "name": "dense_0876"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001613b4f916780"
+      },
+      "inputs": {
+        "x": 8.78
+      },
+      "name": "dense_0877"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400163901c26bf64"
+      },
+      "inputs": {
+        "x": 8.790000000000001
+      },
+      "name": "dense_0878"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400165e43b058daa"
+      },
+      "inputs": {
+        "x": 8.8
+      },
+      "name": "dense_0879"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40016837ac92d568"
+      },
+      "inputs": {
+        "x": 8.81
+      },
+      "name": "dense_0880"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40016a8a713341b3"
+      },
+      "inputs": {
+        "x": 8.82
+      },
+      "name": "dense_0881"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40016cdc894b2602"
+      },
+      "inputs": {
+        "x": 8.83
+      },
+      "name": "dense_0882"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40016f2df53e7e97"
+      },
+      "inputs": {
+        "x": 8.84
+      },
+      "name": "dense_0883"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001717eb570f0e5"
+      },
+      "inputs": {
+        "x": 8.85
+      },
+      "name": "dense_0884"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400173ceca45cbf1"
+      },
+      "inputs": {
+        "x": 8.86
+      },
+      "name": "dense_0885"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001761e342008b6"
+      },
+      "inputs": {
+        "x": 8.870000000000001
+      },
+      "name": "dense_0886"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001786cf3624a8b"
+      },
+      "inputs": {
+        "x": 8.88
+      },
+      "name": "dense_0887"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40017abb086edf85"
+      },
+      "inputs": {
+        "x": 8.89
+      },
+      "name": "dense_0888"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40017d0873a7c0d7"
+      },
+      "inputs": {
+        "x": 8.9
+      },
+      "name": "dense_0889"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40017f55356e9336"
+      },
+      "inputs": {
+        "x": 8.91
+      },
+      "name": "dense_0890"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400181a14e24a738"
+      },
+      "inputs": {
+        "x": 8.92
+      },
+      "name": "dense_0891"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400183ecbe2af9b8"
+      },
+      "inputs": {
+        "x": 8.93
+      },
+      "name": "dense_0892"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001863785e23430"
+      },
+      "inputs": {
+        "x": 8.94
+      },
+      "name": "dense_0893"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40018881a5aaad1f"
+      },
+      "inputs": {
+        "x": 8.950000000000001
+      },
+      "name": "dense_0894"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40018acb1de46863"
+      },
+      "inputs": {
+        "x": 8.96
+      },
+      "name": "dense_0895"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40018d13eeef179b"
+      },
+      "inputs": {
+        "x": 8.97
+      },
+      "name": "dense_0896"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40018f5c192a1a82"
+      },
+      "inputs": {
+        "x": 8.98
+      },
+      "name": "dense_0897"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400191a39cf47f4e"
+      },
+      "inputs": {
+        "x": 8.99
+      },
+      "name": "dense_0898"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400193ea7aad030b"
+      },
+      "inputs": {
+        "x": 9.0
+      },
+      "name": "dense_0899"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40019630b2b211f9"
+      },
+      "inputs": {
+        "x": 9.01
+      },
+      "name": "dense_0900"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400198764561c7ea"
+      },
+      "inputs": {
+        "x": 9.02
+      },
+      "name": "dense_0901"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40019abb3319f097"
+      },
+      "inputs": {
+        "x": 9.03
+      },
+      "name": "dense_0902"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40019cff7c380800"
+      },
+      "inputs": {
+        "x": 9.040000000000001
+      },
+      "name": "dense_0903"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40019f4321193ac4"
+      },
+      "inputs": {
+        "x": 9.05
+      },
+      "name": "dense_0904"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001a186221a667c"
+      },
+      "inputs": {
+        "x": 9.06
+      },
+      "name": "dense_0905"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001a3c87f981a14"
+      },
+      "inputs": {
+        "x": 9.07
+      },
+      "name": "dense_0906"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001a60a39ee9622"
+      },
+      "inputs": {
+        "x": 9.08
+      },
+      "name": "dense_0907"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001a84b5179cd41"
+      },
+      "inputs": {
+        "x": 9.09
+      },
+      "name": "dense_0908"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001aa8bc6956467"
+      },
+      "inputs": {
+        "x": 9.1
+      },
+      "name": "dense_0909"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001accb999cb33d"
+      },
+      "inputs": {
+        "x": 9.11
+      },
+      "name": "dense_0910"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001af0acaeac476"
+      },
+      "inputs": {
+        "x": 9.120000000000001
+      },
+      "name": "dense_0911"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001b1495ada5624"
+      },
+      "inputs": {
+        "x": 9.13
+      },
+      "name": "dense_0912"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001b38749c5da10"
+      },
+      "inputs": {
+        "x": 9.14
+      },
+      "name": "dense_0913"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001b5c49807760e"
+      },
+      "inputs": {
+        "x": 9.15
+      },
+      "name": "dense_0914"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001b80145f90452"
+      },
+      "inputs": {
+        "x": 9.16
+      },
+      "name": "dense_0915"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001ba3d53f413c5"
+      },
+      "inputs": {
+        "x": 9.17
+      },
+      "name": "dense_0916"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001bc78c251e85a"
+      },
+      "inputs": {
+        "x": 9.18
+      },
+      "name": "dense_0917"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001beb3916b7b5f"
+      },
+      "inputs": {
+        "x": 9.19
+      },
+      "name": "dense_0918"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001c0edc1997bd2"
+      },
+      "inputs": {
+        "x": 9.200000000000001
+      },
+      "name": "dense_0919"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001c32753344eb3"
+      },
+      "inputs": {
+        "x": 9.21
+      },
+      "name": "dense_0920"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001c56046940f57"
+      },
+      "inputs": {
+        "x": 9.22
+      },
+      "name": "dense_0921"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001c7989c108fb8"
+      },
+      "inputs": {
+        "x": 9.23
+      },
+      "name": "dense_0922"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001c9d0540158c9"
+      },
+      "inputs": {
+        "x": 9.24
+      },
+      "name": "dense_0923"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001cc076ebdaac6"
+      },
+      "inputs": {
+        "x": 9.25
+      },
+      "name": "dense_0924"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001ce3dec9c7d81"
+      },
+      "inputs": {
+        "x": 9.26
+      },
+      "name": "dense_0925"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001d073cdf480b7"
+      },
+      "inputs": {
+        "x": 9.27
+      },
+      "name": "dense_0926"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001d2a9131c1c5f"
+      },
+      "inputs": {
+        "x": 9.28
+      },
+      "name": "dense_0927"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001d4ddbc6970f4"
+      },
+      "inputs": {
+        "x": 9.290000000000001
+      },
+      "name": "dense_0928"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001d711ca3257ca"
+      },
+      "inputs": {
+        "x": 9.3
+      },
+      "name": "dense_0929"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001d9453ccc6359"
+      },
+      "inputs": {
+        "x": 9.31
+      },
+      "name": "dense_0930"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001db78148cdf8c"
+      },
+      "inputs": {
+        "x": 9.32
+      },
+      "name": "dense_0931"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001ddaa51c8d20d"
+      },
+      "inputs": {
+        "x": 9.33
+      },
+      "name": "dense_0932"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001dfdbf4d4fa94"
+      },
+      "inputs": {
+        "x": 9.34
+      },
+      "name": "dense_0933"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001e20cfe05d334"
+      },
+      "inputs": {
+        "x": 9.35
+      },
+      "name": "dense_0934"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001e43d6daf90a4"
+      },
+      "inputs": {
+        "x": 9.36
+      },
+      "name": "dense_0935"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001e66d4426228e"
+      },
+      "inputs": {
+        "x": 9.370000000000001
+      },
+      "name": "dense_0936"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001e89c81bd33d7"
+      },
+      "inputs": {
+        "x": 9.38
+      },
+      "name": "dense_0937"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001eacb26c82af1"
+      },
+      "inputs": {
+        "x": 9.39
+      },
+      "name": "dense_0938"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001ecf9339a2a1d"
+      },
+      "inputs": {
+        "x": 9.4
+      },
+      "name": "dense_0939"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001ef26a8860fba"
+      },
+      "inputs": {
+        "x": 9.41
+      },
+      "name": "dense_0940"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001f15385de768f"
+      },
+      "inputs": {
+        "x": 9.42
+      },
+      "name": "dense_0941"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001f37fcbf5b613"
+      },
+      "inputs": {
+        "x": 9.43
+      },
+      "name": "dense_0942"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001f5ab7b1de2b5"
+      },
+      "inputs": {
+        "x": 9.44
+      },
+      "name": "dense_0943"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001f7d693a8ce2a"
+      },
+      "inputs": {
+        "x": 9.450000000000001
+      },
+      "name": "dense_0944"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001fa0115e807ae"
+      },
+      "inputs": {
+        "x": 9.46
+      },
+      "name": "dense_0945"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001fc2b022cdc4f"
+      },
+      "inputs": {
+        "x": 9.47
+      },
+      "name": "dense_0946"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4001fe5458c85738"
+      },
+      "inputs": {
+        "x": 9.48
+      },
+      "name": "dense_0947"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002007d1a0b41f2"
+      },
+      "inputs": {
+        "x": 9.49
+      },
+      "name": "dense_0948"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400202a5464624b1"
+      },
+      "inputs": {
+        "x": 9.5
+      },
+      "name": "dense_0949"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400204ccddc94693"
+      },
+      "inputs": {
+        "x": 9.51
+      },
+      "name": "dense_0950"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400206f3e0e4adee"
+      },
+      "inputs": {
+        "x": 9.52
+      },
+      "name": "dense_0951"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002091a4fe82090"
+      },
+      "inputs": {
+        "x": 9.53
+      },
+      "name": "dense_0952"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40020b402b232406"
+      },
+      "inputs": {
+        "x": 9.540000000000001
+      },
+      "name": "dense_0953"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40020d6572e4fde3"
+      },
+      "inputs": {
+        "x": 9.55
+      },
+      "name": "dense_0954"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40020f8a277cb400"
+      },
+      "inputs": {
+        "x": 9.56
+      },
+      "name": "dense_0955"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400211ae49390cc5"
+      },
+      "inputs": {
+        "x": 9.57
+      },
+      "name": "dense_0956"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400213d1d8688f69"
+      },
+      "inputs": {
+        "x": 9.58
+      },
+      "name": "dense_0957"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400215f4d559843a"
+      },
+      "inputs": {
+        "x": 9.59
+      },
+      "name": "dense_0958"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400218174059f4db"
+      },
+      "inputs": {
+        "x": 9.6
+      },
+      "name": "dense_0959"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40021a3919b7ac89"
+      },
+      "inputs": {
+        "x": 9.61
+      },
+      "name": "dense_0960"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40021c5a61c0385f"
+      },
+      "inputs": {
+        "x": 9.620000000000001
+      },
+      "name": "dense_0961"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40021e7b18c0e797"
+      },
+      "inputs": {
+        "x": 9.63
+      },
+      "name": "dense_0962"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002209b3f06cbc9"
+      },
+      "inputs": {
+        "x": 9.64
+      },
+      "name": "dense_0963"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400222bad4deb933"
+      },
+      "inputs": {
+        "x": 9.65
+      },
+      "name": "dense_0964"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400224d9da9546f2"
+      },
+      "inputs": {
+        "x": 9.66
+      },
+      "name": "dense_0965"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400226f85076cf49"
+      },
+      "inputs": {
+        "x": 9.67
+      },
+      "name": "dense_0966"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002291636cf6fe0"
+      },
+      "inputs": {
+        "x": 9.68
+      },
+      "name": "dense_0967"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40022b338deb0a00"
+      },
+      "inputs": {
+        "x": 9.69
+      },
+      "name": "dense_0968"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40022d50561542db"
+      },
+      "inputs": {
+        "x": 9.700000000000001
+      },
+      "name": "dense_0969"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40022f6c8f9983c0"
+      },
+      "inputs": {
+        "x": 9.71
+      },
+      "name": "dense_0970"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400231883ac2fa67"
+      },
+      "inputs": {
+        "x": 9.72
+      },
+      "name": "dense_0971"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400233a357dc9925"
+      },
+      "inputs": {
+        "x": 9.73
+      },
+      "name": "dense_0972"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400235bde7311731"
+      },
+      "inputs": {
+        "x": 9.74
+      },
+      "name": "dense_0973"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400237d7e90af0df"
+      },
+      "inputs": {
+        "x": 9.75
+      },
+      "name": "dense_0974"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400239f15db467de"
+      },
+      "inputs": {
+        "x": 9.76
+      },
+      "name": "dense_0975"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40023c0a45778378"
+      },
+      "inputs": {
+        "x": 9.77
+      },
+      "name": "dense_0976"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40023e22a09e10cc"
+      },
+      "inputs": {
+        "x": 9.78
+      },
+      "name": "dense_0977"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002403a6f71a30d"
+      },
+      "inputs": {
+        "x": 9.790000000000001
+      },
+      "name": "dense_0978"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40024251b23b93be"
+      },
+      "inputs": {
+        "x": 9.8
+      },
+      "name": "dense_0979"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40024468694502ec"
+      },
+      "inputs": {
+        "x": 9.81
+      },
+      "name": "dense_0980"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002467e94d6d76f"
+      },
+      "inputs": {
+        "x": 9.82
+      },
+      "name": "dense_0981"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400248943539bf21"
+      },
+      "inputs": {
+        "x": 9.83
+      },
+      "name": "dense_0982"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40024aa94ab62f1b"
+      },
+      "inputs": {
+        "x": 9.84
+      },
+      "name": "dense_0983"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40024cbdd59463f1"
+      },
+      "inputs": {
+        "x": 9.85
+      },
+      "name": "dense_0984"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40024ed1d61c61e9"
+      },
+      "inputs": {
+        "x": 9.86
+      },
+      "name": "dense_0985"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400250e54c95f53d"
+      },
+      "inputs": {
+        "x": 9.870000000000001
+      },
+      "name": "dense_0986"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400252f83948b24a"
+      },
+      "inputs": {
+        "x": 9.88
+      },
+      "name": "dense_0987"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002550a9c7bf5d6"
+      },
+      "inputs": {
+        "x": 9.89
+      },
+      "name": "dense_0988"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002571c7676e541"
+      },
+      "inputs": {
+        "x": 9.9
+      },
+      "name": "dense_0989"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002592dc7806ec0"
+      },
+      "inputs": {
+        "x": 9.91
+      },
+      "name": "dense_0990"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40025b3e8fdf499a"
+      },
+      "inputs": {
+        "x": 9.92
+      },
+      "name": "dense_0991"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40025d4ecfd9f65a"
+      },
+      "inputs": {
+        "x": 9.93
+      },
+      "name": "dense_0992"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40025f5e87b6bf0e"
+      },
+      "inputs": {
+        "x": 9.94
+      },
+      "name": "dense_0993"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002616db7bbb77b"
+      },
+      "inputs": {
+        "x": 9.950000000000001
+      },
+      "name": "dense_0994"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002637c602ebd55"
+      },
+      "inputs": {
+        "x": 9.96
+      },
+      "name": "dense_0995"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4002658a81557879"
+      },
+      "inputs": {
+        "x": 9.97
+      },
+      "name": "dense_0996"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400267981b755b23"
+      },
+      "inputs": {
+        "x": 9.98
+      },
+      "name": "dense_0997"
+    },
+    {
+      "expected": {
+        "y_bits": "0x400269a52ed3a222"
+      },
+      "inputs": {
+        "x": 9.99
+      },
+      "name": "dense_0998"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40026bb1bbb55516"
+      },
+      "inputs": {
+        "x": 10.0
+      },
+      "name": "dense_0999"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc085963447f87fb5"
+      },
+      "inputs": {
+        "x": 1e-300
+      },
+      "name": "log10_00000"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc084ddff56a36a62"
+      },
+      "inputs": {
+        "x": 1e-290
+      },
+      "name": "log10_00001"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc08425ca654e5510"
+      },
+      "inputs": {
+        "x": 1e-280
+      },
+      "name": "log10_00002"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc0836d9573f93fbd"
+      },
+      "inputs": {
+        "x": 1e-270
+      },
+      "name": "log10_00003"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc082b56082a42a6a"
+      },
+      "inputs": {
+        "x": 1e-260
+      },
+      "name": "log10_00004"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc081fd2b914f1517"
+      },
+      "inputs": {
+        "x": 1e-250
+      },
+      "name": "log10_00005"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc08144f69ff9ffc4"
+      },
+      "inputs": {
+        "x": 1e-240
+      },
+      "name": "log10_00006"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc0808cc1aea4ea71"
+      },
+      "inputs": {
+        "x": 1e-230
+      },
+      "name": "log10_00007"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc07fa9197a9faa3d"
+      },
+      "inputs": {
+        "x": 1e-220
+      },
+      "name": "log10_00008"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc07e38af97f57f97"
+      },
+      "inputs": {
+        "x": 1e-210
+      },
+      "name": "log10_00009"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc07cc845b54b54f2"
+      },
+      "inputs": {
+        "x": 1e-200
+      },
+      "name": "log10_00010"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc07b57dbd2a12a4c"
+      },
+      "inputs": {
+        "x": 1e-190
+      },
+      "name": "log10_00011"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc079e771eff6ffa6"
+      },
+      "inputs": {
+        "x": 1e-180
+      },
+      "name": "log10_00012"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc07877080d4cd501"
+      },
+      "inputs": {
+        "x": 1e-170
+      },
+      "name": "log10_00013"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc077069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 1e-160
+      },
+      "name": "log10_00014"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc075963447f87fb5"
+      },
+      "inputs": {
+        "x": 1e-150
+      },
+      "name": "log10_00015"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc07425ca654e5510"
+      },
+      "inputs": {
+        "x": 1e-140
+      },
+      "name": "log10_00016"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc072b56082a42a6a"
+      },
+      "inputs": {
+        "x": 1e-130
+      },
+      "name": "log10_00017"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc07144f69ff9ffc4"
+      },
+      "inputs": {
+        "x": 1e-120
+      },
+      "name": "log10_00018"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc06fa9197a9faa3d"
+      },
+      "inputs": {
+        "x": 1e-110
+      },
+      "name": "log10_00019"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc06cc845b54b54f2"
+      },
+      "inputs": {
+        "x": 1e-100
+      },
+      "name": "log10_00020"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc069e771eff6ffa6"
+      },
+      "inputs": {
+        "x": 1e-90
+      },
+      "name": "log10_00021"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc067069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 1e-80
+      },
+      "name": "log10_00022"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc06425ca654e5510"
+      },
+      "inputs": {
+        "x": 1e-70
+      },
+      "name": "log10_00023"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc06144f69ff9ffc4"
+      },
+      "inputs": {
+        "x": 1e-60
+      },
+      "name": "log10_00024"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc05cc845b54b54f2"
+      },
+      "inputs": {
+        "x": 1e-50
+      },
+      "name": "log10_00025"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc057069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 1e-40
+      },
+      "name": "log10_00026"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc05144f69ff9ffc4"
+      },
+      "inputs": {
+        "x": 1e-30
+      },
+      "name": "log10_00027"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc047069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 1e-20
+      },
+      "name": "log10_00028"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc037069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 1e-10
+      },
+      "name": "log10_00029"
+    },
+    {
+      "expected": {
+        "y_bits": "0x0000000000000000"
+      },
+      "inputs": {
+        "x": 1.0
+      },
+      "name": "log10_00030"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4037069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 10000000000.0
+      },
+      "name": "log10_00031"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4047069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 1e+20
+      },
+      "name": "log10_00032"
+    },
+    {
+      "expected": {
+        "y_bits": "0x405144f69ff9ffc4"
+      },
+      "inputs": {
+        "x": 1e+30
+      },
+      "name": "log10_00033"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4057069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 1e+40
+      },
+      "name": "log10_00034"
+    },
+    {
+      "expected": {
+        "y_bits": "0x405cc845b54b54f2"
+      },
+      "inputs": {
+        "x": 1e+50
+      },
+      "name": "log10_00035"
+    },
+    {
+      "expected": {
+        "y_bits": "0x406144f69ff9ffc4"
+      },
+      "inputs": {
+        "x": 1e+60
+      },
+      "name": "log10_00036"
+    },
+    {
+      "expected": {
+        "y_bits": "0x406425ca654e5510"
+      },
+      "inputs": {
+        "x": 1e+70
+      },
+      "name": "log10_00037"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4067069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 1e+80
+      },
+      "name": "log10_00038"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4069e771eff6ffa6"
+      },
+      "inputs": {
+        "x": 1e+90
+      },
+      "name": "log10_00039"
+    },
+    {
+      "expected": {
+        "y_bits": "0x406cc845b54b54f2"
+      },
+      "inputs": {
+        "x": 1e+100
+      },
+      "name": "log10_00040"
+    },
+    {
+      "expected": {
+        "y_bits": "0x406fa9197a9faa3d"
+      },
+      "inputs": {
+        "x": 1e+110
+      },
+      "name": "log10_00041"
+    },
+    {
+      "expected": {
+        "y_bits": "0x407144f69ff9ffc4"
+      },
+      "inputs": {
+        "x": 1e+120
+      },
+      "name": "log10_00042"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4072b56082a42a6a"
+      },
+      "inputs": {
+        "x": 1e+130
+      },
+      "name": "log10_00043"
+    },
+    {
+      "expected": {
+        "y_bits": "0x407425ca654e5510"
+      },
+      "inputs": {
+        "x": 1e+140
+      },
+      "name": "log10_00044"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4075963447f87fb5"
+      },
+      "inputs": {
+        "x": 1e+150
+      },
+      "name": "log10_00045"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4077069e2aa2aa5b"
+      },
+      "inputs": {
+        "x": 1e+160
+      },
+      "name": "log10_00046"
+    },
+    {
+      "expected": {
+        "y_bits": "0x407877080d4cd501"
+      },
+      "inputs": {
+        "x": 1e+170
+      },
+      "name": "log10_00047"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4079e771eff6ffa6"
+      },
+      "inputs": {
+        "x": 1e+180
+      },
+      "name": "log10_00048"
+    },
+    {
+      "expected": {
+        "y_bits": "0x407b57dbd2a12a4c"
+      },
+      "inputs": {
+        "x": 1e+190
+      },
+      "name": "log10_00049"
+    },
+    {
+      "expected": {
+        "y_bits": "0x407cc845b54b54f2"
+      },
+      "inputs": {
+        "x": 1e+200
+      },
+      "name": "log10_00050"
+    },
+    {
+      "expected": {
+        "y_bits": "0x407e38af97f57f97"
+      },
+      "inputs": {
+        "x": 1e+210
+      },
+      "name": "log10_00051"
+    },
+    {
+      "expected": {
+        "y_bits": "0x407fa9197a9faa3d"
+      },
+      "inputs": {
+        "x": 1e+220
+      },
+      "name": "log10_00052"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40808cc1aea4ea71"
+      },
+      "inputs": {
+        "x": 1e+230
+      },
+      "name": "log10_00053"
+    },
+    {
+      "expected": {
+        "y_bits": "0x408144f69ff9ffc4"
+      },
+      "inputs": {
+        "x": 1e+240
+      },
+      "name": "log10_00054"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4081fd2b914f1517"
+      },
+      "inputs": {
+        "x": 1e+250
+      },
+      "name": "log10_00055"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4082b56082a42a6a"
+      },
+      "inputs": {
+        "x": 1e+260
+      },
+      "name": "log10_00056"
+    },
+    {
+      "expected": {
+        "y_bits": "0x40836d9573f93fbd"
+      },
+      "inputs": {
+        "x": 1e+270
+      },
+      "name": "log10_00057"
+    },
+    {
+      "expected": {
+        "y_bits": "0x408425ca654e5510"
+      },
+      "inputs": {
+        "x": 1e+280
+      },
+      "name": "log10_00058"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4084ddff56a36a62"
+      },
+      "inputs": {
+        "x": 1e+290
+      },
+      "name": "log10_00059"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4085963447f87fb5"
+      },
+      "inputs": {
+        "x": 1e+300
+      },
+      "name": "log10_00060"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3cafffffffffffff"
+      },
+      "inputs": {
+        "x": 1.0000000000000002
+      },
+      "name": "near1_pos_2pm52"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbcb0000000000001"
+      },
+      "inputs": {
+        "x": 0.9999999999999998
+      },
+      "name": "near1_neg_2pm52"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3e0fffffffc00000"
+      },
+      "inputs": {
+        "x": 1.0000000009313226
+      },
+      "name": "near1_pos_2pm30"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbe10000000200000"
+      },
+      "inputs": {
+        "x": 0.9999999990686774
+      },
+      "name": "near1_neg_2pm30"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f9f829b0e783300"
+      },
+      "inputs": {
+        "x": 1.03125
+      },
+      "name": "near1_pos_2pm5"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbfa0415d89e74444"
+      },
+      "inputs": {
+        "x": 0.96875
+      },
+      "name": "near1_neg_2pm5"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd62e42fefa39ee"
+      },
+      "inputs": {
+        "x": 1.414213562373095
+      },
+      "name": "near_sqrt2_lo"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd62e42fefa39f0"
+      },
+      "inputs": {
+        "x": 1.4142135623730951
+      },
+      "name": "near_sqrt2"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3fd62e42fefa39f3"
+      },
+      "inputs": {
+        "x": 1.4142135623730954
+      },
+      "name": "near_sqrt2_hi"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc0872d57016e7789"
+      },
+      "inputs": {
+        "x": 8e-323
+      },
+      "name": "subnormal_small"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc08628b76e3a7b61"
+      },
+      "inputs": {
+        "x": 1.1125369292536007e-308
+      },
+      "name": "subnormal_mid"
+    },
+    {
+      "expected": {
+        "y_bits": "0xc086232bdd7abcd2"
+      },
+      "inputs": {
+        "x": 2.225073858507201e-308
+      },
+      "name": "subnormal_large"
+    },
+    {
+      "expected": {
+        "y_bits": "0x4055c0bea6036ab8"
+      },
+      "inputs": {
+        "x": 6.147145449878887e+37
+      },
+      "name": "ph_worst_125"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf748807f33b3513"
+      },
+      "inputs": {
+        "x": 0.995
+      },
+      "name": "near1_band_0000"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf741ea6de317fe8"
+      },
+      "inputs": {
+        "x": 0.9951
+      },
+      "name": "near1_band_0001"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf73b5487f227145"
+      },
+      "inputs": {
+        "x": 0.9952
+      },
+      "name": "near1_band_0002"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf734becd5ea55a1"
+      },
+      "inputs": {
+        "x": 0.9953
+      },
+      "name": "near1_band_0003"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf72e293e2657c36"
+      },
+      "inputs": {
+        "x": 0.9954
+      },
+      "name": "near1_band_0004"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf72793da470367a"
+      },
+      "inputs": {
+        "x": 0.9955
+      },
+      "name": "near1_band_0005"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf720fea1be6da29"
+      },
+      "inputs": {
+        "x": 0.9956
+      },
+      "name": "near1_band_0006"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf71a69948a5be3c"
+      },
+      "inputs": {
+        "x": 0.9957
+      },
+      "name": "near1_band_0007"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf713d4b2a893ced"
+      },
+      "inputs": {
+        "x": 0.9958
+      },
+      "name": "near1_band_0008"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf70d3ffc16db336"
+      },
+      "inputs": {
+        "x": 0.9959
+      },
+      "name": "near1_band_0009"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf706ab70d2f80d0"
+      },
+      "inputs": {
+        "x": 0.996
+      },
+      "name": "near1_band_0010"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf7001710dab0834"
+      },
+      "inputs": {
+        "x": 0.9961
+      },
+      "name": "near1_band_0011"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6f305b85795d32"
+      },
+      "inputs": {
+        "x": 0.9962
+      },
+      "name": "near1_band_0012"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6e5dda5881b7ea"
+      },
+      "inputs": {
+        "x": 0.9963
+      },
+      "name": "near1_band_0013"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6d8b5e9427f5f9"
+      },
+      "inputs": {
+        "x": 0.9964
+      },
+      "name": "near1_band_0014"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6cb8e83824f143"
+      },
+      "inputs": {
+        "x": 0.9965
+      },
+      "name": "near1_band_0015"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6be67744318c2c"
+      },
+      "inputs": {
+        "x": 0.9966
+      },
+      "name": "near1_band_0016"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6b140bb806ab8d"
+      },
+      "inputs": {
+        "x": 0.9967
+      },
+      "name": "near1_band_0017"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6a41a5935d3abd"
+      },
+      "inputs": {
+        "x": 0.9968
+      },
+      "name": "near1_band_0018"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf696f44d5ee2a8b"
+      },
+      "inputs": {
+        "x": 0.9969
+      },
+      "name": "near1_band_0019"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf689ce97f727142"
+      },
+      "inputs": {
+        "x": 0.997
+      },
+      "name": "near1_band_0020"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf67ca938fa30aa4"
+      },
+      "inputs": {
+        "x": 0.9971
+      },
+      "name": "near1_band_0021"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf66f8430638f7eb"
+      },
+      "inputs": {
+        "x": 0.9972
+      },
+      "name": "near1_band_0022"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6625f7e2ed3fc9"
+      },
+      "inputs": {
+        "x": 0.9973
+      },
+      "name": "near1_band_0023"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6553b22578ee68"
+      },
+      "inputs": {
+        "x": 0.9974
+      },
+      "name": "near1_band_0024"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf648171cd951467"
+      },
+      "inputs": {
+        "x": 0.9975
+      },
+      "name": "near1_band_0025"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf63af36dafacadd"
+      },
+      "inputs": {
+        "x": 0.9976
+      },
+      "name": "near1_band_0026"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf62dd014d632d54"
+      },
+      "inputs": {
+        "x": 0.9977
+      },
+      "name": "near1_band_0027"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf620ad124875dcd"
+      },
+      "inputs": {
+        "x": 0.9978
+      },
+      "name": "near1_band_0028"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf6138a6602083bc"
+      },
+      "inputs": {
+        "x": 0.9979
+      },
+      "name": "near1_band_0029"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf606680ffe7cc09"
+      },
+      "inputs": {
+        "x": 0.998
+      },
+      "name": "near1_band_0030"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf5f28c2072cd21f"
+      },
+      "inputs": {
+        "x": 0.9981
+      },
+      "name": "near1_band_0031"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf5d848cd5cb253c"
+      },
+      "inputs": {
+        "x": 0.9982
+      },
+      "name": "near1_band_0032"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf5be0626b1d0be8"
+      },
+      "inputs": {
+        "x": 0.9983
+      },
+      "name": "near1_band_0033"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf5a3c42c6950b86"
+      },
+      "inputs": {
+        "x": 0.9984
+      },
+      "name": "near1_band_0034"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf58982de7a5b25b"
+      },
+      "inputs": {
+        "x": 0.9985
+      },
+      "name": "near1_band_0035"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf56f423cdc19f8e"
+      },
+      "inputs": {
+        "x": 0.9986
+      },
+      "name": "near1_band_0036"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf555024785b7725"
+      },
+      "inputs": {
+        "x": 0.9987
+      },
+      "name": "near1_band_0037"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf53ac2fe6e5ea02"
+      },
+      "inputs": {
+        "x": 0.9988
+      },
+      "name": "near1_band_0038"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf52084618d3b3e7"
+      },
+      "inputs": {
+        "x": 0.9989
+      },
+      "name": "near1_band_0039"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf5064670d979b73"
+      },
+      "inputs": {
+        "x": 0.999
+      },
+      "name": "near1_band_0040"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf4d81258948e43d"
+      },
+      "inputs": {
+        "x": 0.9991
+      },
+      "name": "near1_band_0041"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf4a39927ada2879"
+      },
+      "inputs": {
+        "x": 0.9992
+      },
+      "name": "near1_band_0042"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf46f214eec8d1f2"
+      },
+      "inputs": {
+        "x": 0.9993
+      },
+      "name": "near1_band_0043"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf43aaace3fac4b2"
+      },
+      "inputs": {
+        "x": 0.9994
+      },
+      "name": "near1_band_0044"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf40635a5955f66c"
+      },
+      "inputs": {
+        "x": 0.9995
+      },
+      "name": "near1_band_0045"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf3a383a9b80fd06"
+      },
+      "inputs": {
+        "x": 0.9996
+      },
+      "name": "near1_band_0046"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf33a9eb8040fc01"
+      },
+      "inputs": {
+        "x": 0.9997
+      },
+      "name": "near1_band_0047"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf2a378ebd70be57"
+      },
+      "inputs": {
+        "x": 0.9998
+      },
+      "name": "near1_band_0048"
+    },
+    {
+      "expected": {
+        "y_bits": "0xbf1a3738d2cf1cc2"
+      },
+      "inputs": {
+        "x": 0.9999
+      },
+      "name": "near1_band_0049"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f1a368d0657fcd4"
+      },
+      "inputs": {
+        "x": 1.0001
+      },
+      "name": "near1_band_0050"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f2a363724822804"
+      },
+      "inputs": {
+        "x": 1.0002
+      },
+      "name": "near1_band_0051"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f33a868f433f0c2"
+      },
+      "inputs": {
+        "x": 1.0003
+      },
+      "name": "near1_band_0052"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f3a358b69a11c9e"
+      },
+      "inputs": {
+        "x": 1.0004
+      },
+      "name": "near1_band_0053"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f4061417a5d79c8"
+      },
+      "inputs": {
+        "x": 1.0005
+      },
+      "name": "near1_band_0054"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f43a7a7cbd9d333"
+      },
+      "inputs": {
+        "x": 1.0006
+      },
+      "name": "near1_band_0055"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f46edf8aa5e9d66"
+      },
+      "inputs": {
+        "x": 1.0007
+      },
+      "name": "near1_band_0056"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f4a34341704c5a3"
+      },
+      "inputs": {
+        "x": 1.0008
+      },
+      "name": "near1_band_0057"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f4d7a5a12e523a0"
+      },
+      "inputs": {
+        "x": 1.0009
+      },
+      "name": "near1_band_0058"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f5060354f8c3cc4"
+      },
+      "inputs": {
+        "x": 1.001
+      },
+      "name": "near1_band_0059"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f520332de5bbdfa"
+      },
+      "inputs": {
+        "x": 1.0011
+      },
+      "name": "near1_band_0060"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f53a625b66d5901"
+      },
+      "inputs": {
+        "x": 1.0012
+      },
+      "name": "near1_band_0061"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f55490dd84d52a0"
+      },
+      "inputs": {
+        "x": 1.0013
+      },
+      "name": "near1_band_0062"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f56ebeb4487e0de"
+      },
+      "inputs": {
+        "x": 1.0014
+      },
+      "name": "near1_band_0063"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f588ebdfba92f02"
+      },
+      "inputs": {
+        "x": 1.0015
+      },
+      "name": "near1_band_0064"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f5a3185fe3d5d91"
+      },
+      "inputs": {
+        "x": 1.0016
+      },
+      "name": "near1_band_0065"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f5bd4434cd08253"
+      },
+      "inputs": {
+        "x": 1.0017
+      },
+      "name": "near1_band_0066"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f5d76f5e7eea855"
+      },
+      "inputs": {
+        "x": 1.0018
+      },
+      "name": "near1_band_0067"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f5f199dd023cfe3"
+      },
+      "inputs": {
+        "x": 1.0019
+      },
+      "name": "near1_band_0068"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f605e1d82fdf749"
+      },
+      "inputs": {
+        "x": 1.002
+      },
+      "name": "near1_band_0069"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f612f66c501779d"
+      },
+      "inputs": {
+        "x": 1.0021
+      },
+      "name": "near1_band_0070"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6200aaae6258fd"
+      },
+      "inputs": {
+        "x": 1.0022
+      },
+      "name": "near1_band_0071"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f62d1e93f66861f"
+      },
+      "inputs": {
+        "x": 1.0023
+      },
+      "name": "near1_band_0072"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f63a3227853e45b"
+      },
+      "inputs": {
+        "x": 1.0024
+      },
+      "name": "near1_band_0073"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f647456597053ae"
+      },
+      "inputs": {
+        "x": 1.0025
+      },
+      "name": "near1_band_0074"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f654584e301aebd"
+      },
+      "inputs": {
+        "x": 1.0026
+      },
+      "name": "near1_band_0075"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6616ae154dcad0"
+      },
+      "inputs": {
+        "x": 1.0027
+      },
+      "name": "near1_band_0076"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f66e7d1f09a77da"
+      },
+      "inputs": {
+        "x": 1.0028
+      },
+      "name": "near1_band_0077"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f67b8f0752d8071"
+      },
+      "inputs": {
+        "x": 1.0029
+      },
+      "name": "near1_band_0078"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f688a09a34ca9d6"
+      },
+      "inputs": {
+        "x": 1.003
+      },
+      "name": "near1_band_0079"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f695b1d7b3db5ef"
+      },
+      "inputs": {
+        "x": 1.0031
+      },
+      "name": "near1_band_0080"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6a2c2bfd465b51"
+      },
+      "inputs": {
+        "x": 1.0032
+      },
+      "name": "near1_band_0081"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6afd3529ac5134"
+      },
+      "inputs": {
+        "x": 1.0033
+      },
+      "name": "near1_band_0082"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6bce3900b5477f"
+      },
+      "inputs": {
+        "x": 1.0034
+      },
+      "name": "near1_band_0083"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6c9f3782a6e8bf"
+      },
+      "inputs": {
+        "x": 1.0035
+      },
+      "name": "near1_band_0084"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6d7030afc6da31"
+      },
+      "inputs": {
+        "x": 1.0036
+      },
+      "name": "near1_band_0085"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6e4124885abbba"
+      },
+      "inputs": {
+        "x": 1.0037
+      },
+      "name": "near1_band_0086"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6f12130ca827ec"
+      },
+      "inputs": {
+        "x": 1.0038
+      },
+      "name": "near1_band_0087"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f6fe2fc3cf4b407"
+      },
+      "inputs": {
+        "x": 1.0039
+      },
+      "name": "near1_band_0088"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f7059f00cc2f7fc"
+      },
+      "inputs": {
+        "x": 1.004
+      },
+      "name": "near1_band_0089"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f70c25f5150b32c"
+      },
+      "inputs": {
+        "x": 1.0041
+      },
+      "name": "near1_band_0090"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f712acbec464e39"
+      },
+      "inputs": {
+        "x": 1.0042
+      },
+      "name": "near1_band_0091"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f719335ddc6891e"
+      },
+      "inputs": {
+        "x": 1.0043
+      },
+      "name": "near1_band_0092"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f71fb9d25f42130"
+      },
+      "inputs": {
+        "x": 1.0044
+      },
+      "name": "near1_band_0093"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f726401c4f1d119"
+      },
+      "inputs": {
+        "x": 1.0045
+      },
+      "name": "near1_band_0094"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f72cc63bae250de"
+      },
+      "inputs": {
+        "x": 1.0046
+      },
+      "name": "near1_band_0095"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f7334c307e855dc"
+      },
+      "inputs": {
+        "x": 1.0047
+      },
+      "name": "near1_band_0096"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f739d1fac2692c7"
+      },
+      "inputs": {
+        "x": 1.0048
+      },
+      "name": "near1_band_0097"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f740579a7bfb7ae"
+      },
+      "inputs": {
+        "x": 1.0049
+      },
+      "name": "near1_band_0098"
+    },
+    {
+      "expected": {
+        "y_bits": "0x3f746dd0fad671fa"
+      },
+      "inputs": {
+        "x": 1.005
+      },
+      "name": "near1_band_0099"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-04-30T18:53:56Z",
+  "generated_by": "log_probe",
+  "test_group": "math/transcendental/log"
+}

@@ -50,4 +50,13 @@ public final class JQuantMath {
     public static double sin(double x) {
         return SinCosKernel.sin(x);
     }
+
+    /**
+     * Bit-exact correctly-rounded {@code log(x)} matching CORE-MATH
+     * {@code cr_log} across all IEEE-754 binary64 inputs in
+     * round-to-nearest-even mode.
+     */
+    public static double log(double x) {
+        return LogKernel.log(x);
+    }
 }
