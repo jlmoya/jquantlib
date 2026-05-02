@@ -50,6 +50,7 @@ import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.CashFlows;
 import org.jquantlib.cashflow.FloatingRateCoupon;
 import org.jquantlib.cashflow.Leg;
+import org.jquantlib.indexes.InterestRateIndex;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
 import org.jquantlib.pricingengines.GenericEngine;
@@ -255,6 +256,7 @@ public class CapFloor extends Instrument {
         arguments.capRates = new double[n];
         arguments.floorRates = new double[n];
         arguments.spreads = new double[n];
+        arguments.indexes = new InterestRateIndex[n];
 
         arguments.type = type_;
 
@@ -279,6 +281,7 @@ public class CapFloor extends Instrument {
             }
 
             arguments.nominals[i] = coupon.nominal();
+            arguments.indexes[i] = coupon.index();
             final double spread = coupon.spread();
             final double gearing = coupon.gearing();
             arguments.gearings[i] = gearing;
@@ -321,10 +324,10 @@ public class CapFloor extends Instrument {
     /**
      * Concrete arguments DTO populated by {@link CapFloor#setupArguments}
      * and consumed by {@link Engine#calculate}. Mirrors C++
-     * CapFloor::arguments fields verbatim (capfloor.hpp:138-154); the
-     * v1.42.1 {@code indexes} and {@code spreads} fields are present;
-     * {@code spreads} is populated by setupArguments (Java had previously
-     * dropped the field).
+     * CapFloor::arguments fields verbatim (capfloor.hpp:138-154); all
+     * v1.42.1 fields including {@code indexes} and {@code spreads} are present
+     * and populated by setupArguments. Phase 2j WI-2.2 align: {@code indexes}
+     * array added (was declared in Javadoc but not present as a field).
      */
     static public class ArgumentsImpl implements CapFloor.Arguments {
         public CapFloor.Type type;
@@ -338,6 +341,12 @@ public class CapFloor extends Instrument {
         public double[] gearings;
         public double[] spreads;
         public double[] nominals;
+        /** Mirrors C++ {@code CapFloor::arguments::indexes}. Each element is the
+         *  {@code InterestRateIndex} (typically {@code IborIndex}) of the
+         *  corresponding floating-rate coupon; populated by
+         *  {@link CapFloor#setupArguments}. May be {@code null} if the coupon
+         *  carries no index. */
+        public InterestRateIndex[] indexes;
 
         @Override
         public void validate() {
