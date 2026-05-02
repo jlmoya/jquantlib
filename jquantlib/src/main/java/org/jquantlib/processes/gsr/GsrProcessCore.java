@@ -41,15 +41,22 @@ public class GsrProcessCore {
     private double T_;
     private boolean[] revZero_;
 
-    // Caches — keyed by (w, t) pairs encoded as a long bit-concatenation.
-    // We use a simple approach: key = Double.doubleToRawLongBits(w) * 31 ^ Double.doubleToRawLongBits(t)
-    // but use a Map<Long, Double> with a proper pairing function to be safe.
-    private final Map<Long, Double> cache1_  = new HashMap<>();  // expectation_x0dep_part A(w,t)
-    private final Map<Long, Double> cache2a_ = new HashMap<>();  // expectation_rn_part
-    private final Map<Long, Double> cache2b_ = new HashMap<>();  // expectation_tf_part
-    private final Map<Long, Double> cache3_  = new HashMap<>();  // variance
-    private final Map<Long, Double> cache4_  = new HashMap<>();  // y(t)
-    private final Map<Long, Double> cache5_  = new HashMap<>();  // G(t,w)
+    // Caches — keyed by (w, t) pairs.
+    //
+    // ALIGNMENT (Phase 2j WI-1.3): the original WI-1.2 implementation packed
+    // (w, t) into a single `long` via `la * 1000003L ^ lb`. That's not
+    // collision-free across the whole 128-bit space — e.g. with the standard
+    // probe grid (3.0, 2.0) and (1.5, 1.0) collide. The collision was masked
+    // by the WI-1.2 GsrProcessTest fixture but trips the Gsr-level zerobond
+    // tests (Gaussian1dModelTest fm_073 etc.), so we now key on a real
+    // {@link DoublePair} object whose equals/hashCode honours both members.
+    // y(t) (cache4_) uses a single double and stays on Long.
+    private final Map<DoublePair, Double> cache1_  = new HashMap<>();  // expectation_x0dep_part A(w,t)
+    private final Map<DoublePair, Double> cache2a_ = new HashMap<>();  // expectation_rn_part
+    private final Map<DoublePair, Double> cache2b_ = new HashMap<>();  // expectation_tf_part
+    private final Map<DoublePair, Double> cache3_  = new HashMap<>();  // variance
+    private final Map<Long,       Double> cache4_  = new HashMap<>();  // y(t) — single arg
+    private final Map<DoublePair, Double> cache5_  = new HashMap<>();  // G(t,w)
 
     /**
      * Creates the core with piecewise-constant parameters.
@@ -114,7 +121,7 @@ public class GsrProcessCore {
      */
     public double expectation_x0dep_part(final double w, final double xw, final double dt) {
         final double t = w + dt;
-        final long key = pairKey(w, t);
+        final DoublePair key = new DoublePair(w, t);
         final Double cached = cache1_.get(key);
         if (cached != null) {
             return xw * cached;
@@ -137,7 +144,7 @@ public class GsrProcessCore {
      */
     public double expectation_rn_part(final double w, final double dt) {
         final double t = w + dt;
-        final long key = pairKey(w, t);
+        final DoublePair key = new DoublePair(w, t);
         final Double cached = cache2a_.get(key);
         if (cached != null) {
             return cached;
@@ -217,7 +224,7 @@ public class GsrProcessCore {
      */
     public double expectation_tf_part(final double w, final double dt) {
         final double t = w + dt;
-        final long key = pairKey(w, t);
+        final DoublePair key = new DoublePair(w, t);
         final Double cached = cache2b_.get(key);
         if (cached != null) {
             return cached;
@@ -297,7 +304,7 @@ public class GsrProcessCore {
      */
     public double variance(final double w, final double dt) {
         final double t = w + dt;
-        final long key = pairKey(w, t);
+        final DoublePair key = new DoublePair(w, t);
         final Double cached = cache3_.get(key);
         if (cached != null) {
             return cached;
@@ -365,7 +372,7 @@ public class GsrProcessCore {
      * @return G(t, w)
      */
     public double G(final double t, final double w) {
-        final long key = pairKey(w, t); // note: cache5_ uses (w,t) as in C++ cache5_ key
+        final DoublePair key = new DoublePair(w, t); // note: cache5_ uses (w,t) as in C++ cache5_ key
         final Double cached = cache5_.get(key);
         if (cached != null) {
             return cached;
@@ -504,13 +511,32 @@ public class GsrProcessCore {
     }
 
     /**
-     * Encodes a (w, t) double pair into a long cache key.
-     * Uses the canonical Cantor-pairing-style encoding on the raw bits.
+     * Hash key holding a 128-bit (a, b) double pair without collisions.
+     * <p>
+     * The previous {@code pairKey(a, b) = la * 1000003L ^ lb} encoding was
+     * not collision-free over 128 bits — e.g. (3.0, 2.0) and (1.5, 1.0)
+     * collided, which silently corrupted G(t, w) cache lookups across
+     * Gsr-driven test grids.
      */
-    private static long pairKey(final double a, final double b) {
-        final long la = Double.doubleToRawLongBits(a);
-        final long lb = Double.doubleToRawLongBits(b);
-        // Combine with a bijective mix; collision-free for distinct float pairs.
-        return la * 1000003L ^ lb;
+    private static final class DoublePair {
+        private final long la;
+        private final long lb;
+        DoublePair(final double a, final double b) {
+            this.la = Double.doubleToRawLongBits(a);
+            this.lb = Double.doubleToRawLongBits(b);
+        }
+        @Override public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (!(o instanceof DoublePair)) return false;
+            final DoublePair p = (DoublePair) o;
+            return la == p.la && lb == p.lb;
+        }
+        @Override public int hashCode() {
+            // 32-bit fold of the 128-bit pair — collisions in hashCode are
+            // OK (HashMap chains via equals); collisions in equals are the
+            // bug we're fixing.
+            final long mixed = la * 0x9E3779B97F4A7C15L + lb;
+            return (int) (mixed ^ (mixed >>> 32));
+        }
     }
 }

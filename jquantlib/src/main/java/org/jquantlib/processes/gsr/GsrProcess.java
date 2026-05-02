@@ -204,18 +204,23 @@ public class GsrProcess extends ForwardMeasureProcess1D {
     }
 
     // -----------------------------------------------------------------------
-    // Package-private setters (used by Gsr model — friend pattern in C++)
+    // Setters used by the Gsr model (friend pattern in C++).
+    // C++ keeps these private with `friend class Gsr`. Java has no friend
+    // mechanism, and Gsr lives in a different package
+    // (org.jquantlib.model.shortrate.onefactormodels.gaussian1d), so these
+    // are surfaced as public. Callers must call flushCache() before reuse;
+    // Gsr does so in updateVolatility/updateReversion/generateArguments.
     // -----------------------------------------------------------------------
 
-    void setTimes(final double[] times) {
+    public void setTimes(final double[] times) {
         core_.setTimes(times);
     }
 
-    void setVols(final double[] vols) {
+    public void setVols(final double[] vols) {
         core_.setVols(vols);
     }
 
-    void setReversions(final double[] reversions) {
+    public void setReversions(final double[] reversions) {
         core_.setReversions(reversions);
     }
 
