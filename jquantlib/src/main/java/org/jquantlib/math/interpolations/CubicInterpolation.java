@@ -42,6 +42,7 @@ package org.jquantlib.math.interpolations;
 
 import java.util.Arrays;
 
+import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Closeness;
 import org.jquantlib.math.interpolations.factories.Cubic;
@@ -321,9 +322,20 @@ public class CubicInterpolation extends AbstractInterpolation {
                     tmp[0] = 3.0*S[0] - leftValue*dx[0]/2.0;
                     break;
                   case Periodic:
-                  case Lagrange:
                     // ignoring end condition value
                     throw new LibraryException("this end condition is not implemented yet");
+                  case Lagrange:
+                    // Lagrange boundary condition: first derivative estimated from
+                    // a 4-point cubic Lagrange interpolating polynomial.
+                    // Mirrors C++ CubicInterpolation::Lagrange case (cubicinterpolation.hpp).
+                    // Requires at least 4 points.
+                    QL.require(n >= 4, "Lagrange boundary condition requires at least 4 data points");
+                    L.setFirstRow(1.0, 0.0);
+                    tmp[0] = cubicInterpolatingPolynomialDerivative(
+                            vx_[0], vx_[1], vx_[2], vx_[3],
+                            vy_[0], vy_[1], vy_[2], vy_[3],
+                            vx_[0]);
+                    break;
                   default:
                     throw new LibraryException("unknown end condition");
                 }
@@ -346,9 +358,19 @@ public class CubicInterpolation extends AbstractInterpolation {
                     tmp[n-1] = 3.0*S[n-2] + rightValue*dx[n-2]/2.0;
                     break;
                   case Periodic:
-                  case Lagrange:
                     // ignoring end condition value
                     throw new LibraryException("this end condition is not implemented yet");
+                  case Lagrange:
+                    // Lagrange boundary condition: first derivative estimated from
+                    // the last 4 points via a 4-point cubic Lagrange polynomial.
+                    // Mirrors C++ CubicInterpolation::Lagrange case (cubicinterpolation.hpp).
+                    QL.require(n >= 4, "Lagrange boundary condition requires at least 4 data points");
+                    L.setLastRow(0.0, 1.0);
+                    tmp[n-1] = cubicInterpolatingPolynomialDerivative(
+                            vx_[n-4], vx_[n-3], vx_[n-2], vx_[n-1],
+                            vy_[n-4], vy_[n-3], vy_[n-2], vy_[n-1],
+                            vx_[n-1]);
+                    break;
                   default:
                     throw new LibraryException("unknown end condition");
                 }
@@ -496,6 +518,29 @@ public class CubicInterpolation extends AbstractInterpolation {
             final int j = locate(val);
             final double dx = val - vx_[j];
             return 2.0*vb_[j] + 6.0*vc_[j]*dx;
+        }
+
+
+        /**
+         * First derivative of the unique cubic polynomial through
+         * (a, u), (b, v), (c, w), (d, z) evaluated at {@code x}.
+         * <p>
+         * Mirrors C++ {@code cubicInterpolatingPolynomialDerivative} in
+         * {@code cubicinterpolation.hpp} lines 807–815. Used by the
+         * {@code Lagrange} boundary condition.
+         */
+        private double cubicInterpolatingPolynomialDerivative(
+                final double a, final double b, final double c, final double d,
+                final double u, final double v, final double w, final double z,
+                final double x) {
+            return -(((((a - c) * (b - c) * (c - x) * z - (a - d) * (b - d) * (d - x) * w)
+                        * (a - x + b - x)
+                        + ((a - c) * (b - c) * z - (a - d) * (b - d) * w) * (a - x) * (b - x))
+                       * (a - b)
+                       + ((a - c) * (a - d) * v - (b - c) * (b - d) * u) * (c - d) * (c - x) * (d - x)
+                       + ((a - c) * (a - d) * (a - x) * v - (b - c) * (b - d) * (b - x) * u)
+                         * (c - x + d - x) * (c - d)))
+                    / ((a - b) * (a - c) * (a - d) * (b - c) * (b - d) * (c - d));
         }
 
     }

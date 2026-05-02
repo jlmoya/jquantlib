@@ -1,0 +1,149 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 0.023042043040892534
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 5,
+        "gsr_reversion": 0.02,
+        "rate_delta": 0.0,
+        "swap_years": 5,
+        "type": "payer"
+      },
+      "name": "atm_payer_5y5y"
+    },
+    {
+      "expected": {
+        "npv": 0.020681754072778624
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 5,
+        "gsr_reversion": 0.02,
+        "rate_delta": 0.0,
+        "swap_years": 5,
+        "type": "receiver"
+      },
+      "name": "atm_receiver_5y5y"
+    },
+    {
+      "expected": {
+        "npv": 0.012861964306406877
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 1,
+        "gsr_reversion": 0.02,
+        "rate_delta": 0.0,
+        "swap_years": 5,
+        "type": "payer"
+      },
+      "name": "atm_payer_1y5y"
+    },
+    {
+      "expected": {
+        "npv": 0.02832794722199394
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 2,
+        "gsr_reversion": 0.02,
+        "rate_delta": 0.0,
+        "swap_years": 10,
+        "type": "payer"
+      },
+      "name": "atm_payer_2y10y"
+    },
+    {
+      "expected": {
+        "npv": 0.04427386627629816
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 5,
+        "gsr_reversion": 0.02,
+        "rate_delta": -0.01,
+        "swap_years": 5,
+        "type": "payer"
+      },
+      "name": "itm_payer_5y5y"
+    },
+    {
+      "expected": {
+        "npv": 0.009782314621591426
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 5,
+        "gsr_reversion": 0.02,
+        "rate_delta": 0.01,
+        "swap_years": 5,
+        "type": "payer"
+      },
+      "name": "otm_payer_5y5y"
+    },
+    {
+      "expected": {
+        "npv": 0.009979751839164802
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 1,
+        "gsr_reversion": 0.02,
+        "rate_delta": 0.0,
+        "swap_years": 5,
+        "type": "receiver"
+      },
+      "name": "atm_receiver_1y5y"
+    },
+    {
+      "expected": {
+        "npv": 0.023450090592778965
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 2,
+        "gsr_reversion": 0.02,
+        "rate_delta": 0.0,
+        "swap_years": 10,
+        "type": "receiver"
+      },
+      "name": "atm_receiver_2y10y"
+    },
+    {
+      "expected": {
+        "npv": 0.04100411238695175
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 5,
+        "gsr_reversion": 0.02,
+        "rate_delta": 0.01,
+        "swap_years": 5,
+        "type": "receiver"
+      },
+      "name": "itm_receiver_5y5y"
+    },
+    {
+      "expected": {
+        "npv": 0.00833147464768561
+      },
+      "inputs": {
+        "eval_date": "2026-01-15",
+        "exercise_years": 5,
+        "gsr_reversion": 0.02,
+        "rate_delta": -0.01,
+        "swap_years": 5,
+        "type": "receiver"
+      },
+      "name": "otm_receiver_5y5y"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-02T13:56:22Z",
+  "generated_by": "gaussian1djamshidianswaptionengine_probe",
+  "test_group": "pricingengines/swaption/gaussian1djamshidianswaptionengine"
+}
