@@ -1,0 +1,1357 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 5
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_coreLeft"
+    },
+    {
+      "expected": {
+        "value": 20
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_coreRight"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.0
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.04
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.19999957225978932
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.030000003120048285
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.020013381155897163
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.010598186532956182
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.003993644134108619
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.0010815103287287883
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.00022814942347550748
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 4.067369343125688e-05
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 9.81592259732823e-07
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_vol_k0.15"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 6.39279101877223e-11
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "A_i0_e0_call_k0.15"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 5
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_coreLeft"
+    },
+    {
+      "expected": {
+        "value": 20
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_coreRight"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.0
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.04
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.19999957225978932
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.030000003120048285
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.020013381155897163
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.010598186532956182
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.003993644134108619
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.0010815103287287883
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.00022814942347550748
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 4.067369343125688e-05
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 9.81592259732823e-07
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_vol_k0.15"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 6.39279101877223e-11
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "default",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "C_i0_e1_call_k0.15"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_coreLeft"
+    },
+    {
+      "expected": {
+        "value": 6
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_coreRight"
+    },
+    {
+      "expected": {
+        "strike": 0.025,
+        "value": 0.1369354692330626
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_vol_k0.025"
+    },
+    {
+      "expected": {
+        "strike": 0.025,
+        "value": 0.02500000019995646
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_call_k0.025"
+    },
+    {
+      "expected": {
+        "strike": 0.0375,
+        "value": 0.19999960272719583
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_vol_k0.0375"
+    },
+    {
+      "expected": {
+        "strike": 0.0375,
+        "value": 0.012793945048266038
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_call_k0.0375"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.19999999999999987
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_vol_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.003993644134108619
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_call_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.0625,
+        "value": 0.20000000000052062
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_vol_k0.0625"
+    },
+    {
+      "expected": {
+        "strike": 0.0625,
+        "value": 0.0007477331661952219
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_call_k0.0625"
+    },
+    {
+      "expected": {
+        "strike": 0.075,
+        "value": 0.1999999999998242
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_vol_k0.075"
+    },
+    {
+      "expected": {
+        "strike": 0.075,
+        "value": 9.795100088726312e-05
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_call_k0.075"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.20000000000002727
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_vol_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 9.815922597327202e-07
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "B_i1_e0_call_k0.10"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 2
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_coreLeft"
+    },
+    {
+      "expected": {
+        "value": 6
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_coreRight"
+    },
+    {
+      "expected": {
+        "strike": 0.025,
+        "value": 0.1369354692330626
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_vol_k0.025"
+    },
+    {
+      "expected": {
+        "strike": 0.025,
+        "value": 0.02500000019995646
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_call_k0.025"
+    },
+    {
+      "expected": {
+        "strike": 0.0375,
+        "value": 0.19999960272719583
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_vol_k0.0375"
+    },
+    {
+      "expected": {
+        "strike": 0.0375,
+        "value": 0.012793945048266038
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_call_k0.0375"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.19999999999999987
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_vol_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.003993644134108619
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_call_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.0625,
+        "value": 0.20000000000052062
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_vol_k0.0625"
+    },
+    {
+      "expected": {
+        "strike": 0.0625,
+        "value": 0.0007477331661952219
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_call_k0.0625"
+    },
+    {
+      "expected": {
+        "strike": 0.075,
+        "value": 0.1999999999998242
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_vol_k0.075"
+    },
+    {
+      "expected": {
+        "strike": 0.075,
+        "value": 9.795100088726312e-05
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_call_k0.075"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.20000000000001816
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_vol_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 9.815922597328313e-07
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.05,
+        "grid": "compact",
+        "shift": 0.0,
+        "vol": 0.2
+      },
+      "name": "D_i1_e1_call_k0.10"
+    },
+    {
+      "expected": {
+        "value": 0.04
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 7
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_coreLeft"
+    },
+    {
+      "expected": {
+        "value": 20
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_coreRight"
+    },
+    {
+      "expected": {
+        "strike": -0.01,
+        "value": 0.0
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_km0.01"
+    },
+    {
+      "expected": {
+        "strike": -0.01,
+        "value": 0.03
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_km0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.0,
+        "value": 0.0
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_k0.00"
+    },
+    {
+      "expected": {
+        "strike": 0.0,
+        "value": 0.02000000167060039
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_k0.00"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.01005560973533636
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.0023979420770809242
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.00020422162131529038
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 7.902439204556821e-06
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 1.8885641523358453e-07
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 3.4473040400051555e-09
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 8.271054425590863e-13
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.12,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_vol_k0.12"
+    },
+    {
+      "expected": {
+        "strike": 0.12,
+        "value": 5.3471931539433826e-20
+      },
+      "inputs": {
+        "T": 1.0,
+        "atm": 0.02,
+        "shift": 0.02,
+        "vol": 0.15
+      },
+      "name": "E_shift002_i0_e0_call_k0.12"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-02T14:09:59Z",
+  "generated_by": "kahale_smile_section_probe",
+  "test_group": "termstructures/volatility/kahale_smile_section"
+}
