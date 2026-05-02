@@ -56,6 +56,7 @@ import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
+import org.jquantlib.model.shortrate.onefactormodels.TermStructureConsistentModel;
 import org.jquantlib.util.LazyObject;
 
 /**
@@ -81,7 +82,7 @@ import org.jquantlib.util.LazyObject;
  * @author Peter Caspers (C++ original)
  * @author JQuantLib contributors (Java port)
  */
-public abstract class Gaussian1dModel extends LazyObject {
+public abstract class Gaussian1dModel extends LazyObject implements TermStructureConsistentModel {
 
     //
     // ──────────────────────────────────────────────────────────────────────
@@ -118,11 +119,10 @@ public abstract class Gaussian1dModel extends LazyObject {
     protected Gaussian1dModel(final Handle<YieldTermStructure> yieldTermStructure) {
         super();
         this.termStructure_ = yieldTermStructure;
-        // C++: registerWith(Settings::instance().evaluationDate());
-        // Java Settings.evaluationDate() is the Date value; the analogous
-        // mechanism is to leave registration to subclasses (HullWhite et al.
-        // do the same — see TermStructureConsistentModelClass usage). The
-        // performCalculations() refresh of evaluationDate_ keeps state fresh.
+        // Note: registers as observer of the term structure handle (matches HullWhite
+        // and BlackKarasinski). Settings.evaluationDate() observable registration is
+        // the responsibility of concrete subclasses — see Gsr constructor (WI-1.3).
+        termStructure_.addObserver(this);
     }
 
     //
@@ -563,16 +563,4 @@ public abstract class Gaussian1dModel extends LazyObject {
         return cached;
     }
 
-    //
-    // ──────────────────────────────────────────────────────────────────────
-    //   Suppress unused-warning helpers (keep BusinessDayConvention import live
-    //   even while paymentConvention() is the only consumer; future overloads
-    //   will need the type directly).
-    // ──────────────────────────────────────────────────────────────────────
-    //
-
-    @SuppressWarnings("unused")
-    private static BusinessDayConvention __keepBdcImport() {
-        return BusinessDayConvention.Following;
-    }
 }
