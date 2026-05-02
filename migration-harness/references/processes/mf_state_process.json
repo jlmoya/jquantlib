@@ -1,0 +1,1808 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": [
+        null
+      ],
+      "name": "x0"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.0,
+        "x": -0.05
+      },
+      "name": "drift_000"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.0,
+        "x": -0.01
+      },
+      "name": "drift_001"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.0,
+        "x": 0.0
+      },
+      "name": "drift_002"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.0,
+        "x": 0.01
+      },
+      "name": "drift_003"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.0,
+        "x": 0.05
+      },
+      "name": "drift_004"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.5,
+        "x": -0.05
+      },
+      "name": "drift_005"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.5,
+        "x": -0.01
+      },
+      "name": "drift_006"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "drift_007"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.5,
+        "x": 0.01
+      },
+      "name": "drift_008"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 0.5,
+        "x": 0.05
+      },
+      "name": "drift_009"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.0,
+        "x": -0.05
+      },
+      "name": "drift_010"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.0,
+        "x": -0.01
+      },
+      "name": "drift_011"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "drift_012"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.0,
+        "x": 0.01
+      },
+      "name": "drift_013"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.0,
+        "x": 0.05
+      },
+      "name": "drift_014"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.5,
+        "x": -0.05
+      },
+      "name": "drift_015"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.5,
+        "x": -0.01
+      },
+      "name": "drift_016"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.5,
+        "x": 0.0
+      },
+      "name": "drift_017"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.5,
+        "x": 0.01
+      },
+      "name": "drift_018"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 1.5,
+        "x": 0.05
+      },
+      "name": "drift_019"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.0,
+        "x": -0.05
+      },
+      "name": "drift_020"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.0,
+        "x": -0.01
+      },
+      "name": "drift_021"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "drift_022"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.0,
+        "x": 0.01
+      },
+      "name": "drift_023"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.0,
+        "x": 0.05
+      },
+      "name": "drift_024"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.5,
+        "x": -0.05
+      },
+      "name": "drift_025"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.5,
+        "x": -0.01
+      },
+      "name": "drift_026"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.5,
+        "x": 0.0
+      },
+      "name": "drift_027"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.5,
+        "x": 0.01
+      },
+      "name": "drift_028"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 2.5,
+        "x": 0.05
+      },
+      "name": "drift_029"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 3.0,
+        "x": -0.05
+      },
+      "name": "drift_030"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 3.0,
+        "x": -0.01
+      },
+      "name": "drift_031"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "drift_032"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 3.0,
+        "x": 0.01
+      },
+      "name": "drift_033"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 3.0,
+        "x": 0.05
+      },
+      "name": "drift_034"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 4.0,
+        "x": -0.05
+      },
+      "name": "drift_035"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 4.0,
+        "x": -0.01
+      },
+      "name": "drift_036"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 4.0,
+        "x": 0.0
+      },
+      "name": "drift_037"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 4.0,
+        "x": 0.01
+      },
+      "name": "drift_038"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "t": 4.0,
+        "x": 0.05
+      },
+      "name": "drift_039"
+    },
+    {
+      "expected": {
+        "value": 0.01
+      },
+      "inputs": {
+        "t": 0.0,
+        "x": 0.0
+      },
+      "name": "diff_000"
+    },
+    {
+      "expected": {
+        "value": 0.01
+      },
+      "inputs": {
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "diff_001"
+    },
+    {
+      "expected": {
+        "value": 0.012
+      },
+      "inputs": {
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "diff_002"
+    },
+    {
+      "expected": {
+        "value": 0.012
+      },
+      "inputs": {
+        "t": 1.5,
+        "x": 0.0
+      },
+      "name": "diff_003"
+    },
+    {
+      "expected": {
+        "value": 0.015
+      },
+      "inputs": {
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "diff_004"
+    },
+    {
+      "expected": {
+        "value": 0.015
+      },
+      "inputs": {
+        "t": 2.5,
+        "x": 0.0
+      },
+      "name": "diff_005"
+    },
+    {
+      "expected": {
+        "value": 0.018
+      },
+      "inputs": {
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "diff_006"
+    },
+    {
+      "expected": {
+        "value": 0.018
+      },
+      "inputs": {
+        "t": 4.0,
+        "x": 0.0
+      },
+      "name": "diff_007"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 0.0,
+        "x": -0.05
+      },
+      "name": "exp_000"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 0.0,
+        "x": 0.0
+      },
+      "name": "exp_001"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 0.0,
+        "x": 0.05
+      },
+      "name": "exp_002"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.0,
+        "x": -0.05
+      },
+      "name": "exp_003"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.0,
+        "x": 0.0
+      },
+      "name": "exp_004"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.0,
+        "x": 0.05
+      },
+      "name": "exp_005"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.0,
+        "x": -0.05
+      },
+      "name": "exp_006"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.0,
+        "x": 0.0
+      },
+      "name": "exp_007"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.0,
+        "x": 0.05
+      },
+      "name": "exp_008"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.0,
+        "x": -0.05
+      },
+      "name": "exp_009"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.0,
+        "x": 0.0
+      },
+      "name": "exp_010"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.0,
+        "x": 0.05
+      },
+      "name": "exp_011"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 0.5,
+        "x": -0.05
+      },
+      "name": "exp_012"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "exp_013"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 0.5,
+        "x": 0.05
+      },
+      "name": "exp_014"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.5,
+        "x": -0.05
+      },
+      "name": "exp_015"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "exp_016"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.5,
+        "x": 0.05
+      },
+      "name": "exp_017"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.5,
+        "x": -0.05
+      },
+      "name": "exp_018"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "exp_019"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.5,
+        "x": 0.05
+      },
+      "name": "exp_020"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.5,
+        "x": -0.05
+      },
+      "name": "exp_021"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "exp_022"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.5,
+        "x": 0.05
+      },
+      "name": "exp_023"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 1.0,
+        "x": -0.05
+      },
+      "name": "exp_024"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "exp_025"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 1.0,
+        "x": 0.05
+      },
+      "name": "exp_026"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 1.0,
+        "x": -0.05
+      },
+      "name": "exp_027"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "exp_028"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 1.0,
+        "x": 0.05
+      },
+      "name": "exp_029"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.0,
+        "x": -0.05
+      },
+      "name": "exp_030"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "exp_031"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.0,
+        "x": 0.05
+      },
+      "name": "exp_032"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.0,
+        "x": -0.05
+      },
+      "name": "exp_033"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "exp_034"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.0,
+        "x": 0.05
+      },
+      "name": "exp_035"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 2.0,
+        "x": -0.05
+      },
+      "name": "exp_036"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "exp_037"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 2.0,
+        "x": 0.05
+      },
+      "name": "exp_038"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 2.0,
+        "x": -0.05
+      },
+      "name": "exp_039"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "exp_040"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 2.0,
+        "x": 0.05
+      },
+      "name": "exp_041"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 2.0,
+        "x": -0.05
+      },
+      "name": "exp_042"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "exp_043"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 2.0,
+        "x": 0.05
+      },
+      "name": "exp_044"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 2.0,
+        "x": -0.05
+      },
+      "name": "exp_045"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "exp_046"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 2.0,
+        "x": 0.05
+      },
+      "name": "exp_047"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 3.0,
+        "x": -0.05
+      },
+      "name": "exp_048"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "exp_049"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.1,
+        "t": 3.0,
+        "x": 0.05
+      },
+      "name": "exp_050"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 3.0,
+        "x": -0.05
+      },
+      "name": "exp_051"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "exp_052"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 3.0,
+        "x": 0.05
+      },
+      "name": "exp_053"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 3.0,
+        "x": -0.05
+      },
+      "name": "exp_054"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "exp_055"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 3.0,
+        "x": 0.05
+      },
+      "name": "exp_056"
+    },
+    {
+      "expected": {
+        "value": -0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 3.0,
+        "x": -0.05
+      },
+      "name": "exp_057"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "exp_058"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 3.0,
+        "x": 0.05
+      },
+      "name": "exp_059"
+    },
+    {
+      "expected": {
+        "value": 5.075755658919491e-05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.0
+      },
+      "name": "var_000"
+    },
+    {
+      "expected": {
+        "value": 0.00010306091090893275
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.0
+      },
+      "name": "var_001"
+    },
+    {
+      "expected": {
+        "value": 0.00026064564299057137
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.0
+      },
+      "name": "var_002"
+    },
+    {
+      "expected": {
+        "value": 0.0005220975612747004
+      },
+      "inputs": {
+        "dt": 3.0,
+        "t": 0.0
+      },
+      "name": "var_003"
+    },
+    {
+      "expected": {
+        "value": 5.230335431973785e-05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.5
+      },
+      "name": "var_004"
+    },
+    {
+      "expected": {
+        "value": 0.00012991392350337973
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.5
+      },
+      "name": "var_005"
+    },
+    {
+      "expected": {
+        "value": 0.00033865330320977897
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.5
+      },
+      "name": "var_006"
+    },
+    {
+      "expected": {
+        "value": 0.0006682277675941439
+      },
+      "inputs": {
+        "dt": 3.0,
+        "t": 0.5
+      },
+      "name": "var_007"
+    },
+    {
+      "expected": {
+        "value": 7.761056918364187e-05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 1.0
+      },
+      "name": "var_008"
+    },
+    {
+      "expected": {
+        "value": 0.00015758473208163864
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.0
+      },
+      "name": "var_009"
+    },
+    {
+      "expected": {
+        "value": 0.0004190366503657677
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.0
+      },
+      "name": "var_010"
+    },
+    {
+      "expected": {
+        "value": 0.0008188083012435784
+      },
+      "inputs": {
+        "dt": 3.0,
+        "t": 1.0
+      },
+      "name": "var_011"
+    },
+    {
+      "expected": {
+        "value": 7.997416289799677e-05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 1.5
+      },
+      "name": "var_012"
+    },
+    {
+      "expected": {
+        "value": 0.00020873937970639924
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.5
+      },
+      "name": "var_013"
+    },
+    {
+      "expected": {
+        "value": 0.0005383138440907642
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.5
+      },
+      "name": "var_014"
+    },
+    {
+      "expected": {
+        "value": 0.0009502603542838864
+      },
+      "inputs": {
+        "dt": 3.0,
+        "t": 1.5
+      },
+      "name": "var_015"
+    },
+    {
+      "expected": {
+        "value": 0.00012876521680840248
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 2.0
+      },
+      "name": "var_016"
+    },
+    {
+      "expected": {
+        "value": 0.0002614519182841291
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 2.0
+      },
+      "name": "var_017"
+    },
+    {
+      "expected": {
+        "value": 0.0006612235691619398
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 2.0
+      },
+      "name": "var_018"
+    },
+    {
+      "expected": {
+        "value": 0.0010857157183367713
+      },
+      "inputs": {
+        "dt": 3.0,
+        "t": 2.0
+      },
+      "name": "var_019"
+    },
+    {
+      "expected": {
+        "value": 0.00013268670147572657
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 2.5
+      },
+      "name": "var_020"
+    },
+    {
+      "expected": {
+        "value": 0.0003295744643843649
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 2.5
+      },
+      "name": "var_021"
+    },
+    {
+      "expected": {
+        "value": 0.0007415209745774871
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 2.5
+      },
+      "name": "var_022"
+    },
+    {
+      "expected": {
+        "value": 0.001178940834322365
+      },
+      "inputs": {
+        "dt": 3.0,
+        "t": 2.5
+      },
+      "name": "var_023"
+    },
+    {
+      "expected": {
+        "value": 0.0001968877629086383
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 3.0
+      },
+      "name": "var_024"
+    },
+    {
+      "expected": {
+        "value": 0.0003997716508778107
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 3.0
+      },
+      "name": "var_025"
+    },
+    {
+      "expected": {
+        "value": 0.0008242638000526423
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 3.0
+      },
+      "name": "var_026"
+    },
+    {
+      "expected": {
+        "value": 0.0012750050777680618
+      },
+      "inputs": {
+        "dt": 3.0,
+        "t": 3.0
+      },
+      "name": "var_027"
+    },
+    {
+      "expected": {
+        "value": 5e-05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.0
+      },
+      "name": "var_rev0_000"
+    },
+    {
+      "expected": {
+        "value": 0.0001
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.0
+      },
+      "name": "var_rev0_001"
+    },
+    {
+      "expected": {
+        "value": 0.00024400000000000002
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.0
+      },
+      "name": "var_rev0_002"
+    },
+    {
+      "expected": {
+        "value": 5e-05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.5
+      },
+      "name": "var_rev0_003"
+    },
+    {
+      "expected": {
+        "value": 0.00012200000000000001
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.5
+      },
+      "name": "var_rev0_004"
+    },
+    {
+      "expected": {
+        "value": 0.0003065
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.5
+      },
+      "name": "var_rev0_005"
+    },
+    {
+      "expected": {
+        "value": 7.2e-05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 1.0
+      },
+      "name": "var_rev0_006"
+    },
+    {
+      "expected": {
+        "value": 0.000144
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.0
+      },
+      "name": "var_rev0_007"
+    },
+    {
+      "expected": {
+        "value": 0.00036899999999999997
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.0
+      },
+      "name": "var_rev0_008"
+    },
+    {
+      "expected": {
+        "value": 7.2e-05
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 1.5
+      },
+      "name": "var_rev0_009"
+    },
+    {
+      "expected": {
+        "value": 0.00018449999999999999
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.5
+      },
+      "name": "var_rev0_010"
+    },
+    {
+      "expected": {
+        "value": 0.000459
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.5
+      },
+      "name": "var_rev0_011"
+    },
+    {
+      "expected": {
+        "value": 0.0001125
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 2.0
+      },
+      "name": "var_rev0_012"
+    },
+    {
+      "expected": {
+        "value": 0.000225
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 2.0
+      },
+      "name": "var_rev0_013"
+    },
+    {
+      "expected": {
+        "value": 0.000549
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 2.0
+      },
+      "name": "var_rev0_014"
+    },
+    {
+      "expected": {
+        "value": 0.507575565891949
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.0
+      },
+      "name": "var_single_000"
+    },
+    {
+      "expected": {
+        "value": 1.0306091090893275
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.0
+      },
+      "name": "var_single_001"
+    },
+    {
+      "expected": {
+        "value": 2.124947526322929
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.0
+      },
+      "name": "var_single_002"
+    },
+    {
+      "expected": {
+        "value": 0.538962285997513
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 1.0
+      },
+      "name": "var_single_003"
+    },
+    {
+      "expected": {
+        "value": 1.0943384172336017
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.0
+      },
+      "name": "var_single_004"
+    },
+    {
+      "expected": {
+        "value": 2.256346942940842
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.0
+      },
+      "name": "var_single_005"
+    },
+    {
+      "expected": {
+        "value": 0.5722898524817888
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 2.0
+      },
+      "name": "var_single_006"
+    },
+    {
+      "expected": {
+        "value": 1.1620085257072403
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 2.0
+      },
+      "name": "var_single_007"
+    },
+    {
+      "expected": {
+        "value": 2.3958716457004834
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 2.0
+      },
+      "name": "var_single_008"
+    },
+    {
+      "expected": {
+        "value": 0.5
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 0.0
+      },
+      "name": "var_single_rev0_000"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.0
+      },
+      "name": "var_single_rev0_001"
+    },
+    {
+      "expected": {
+        "value": 2.0
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.0
+      },
+      "name": "var_single_rev0_002"
+    },
+    {
+      "expected": {
+        "value": 0.5
+      },
+      "inputs": {
+        "dt": 0.5,
+        "t": 1.0
+      },
+      "name": "var_single_rev0_003"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.0
+      },
+      "name": "var_single_rev0_004"
+    },
+    {
+      "expected": {
+        "value": 2.0
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.0
+      },
+      "name": "var_single_rev0_005"
+    },
+    {
+      "expected": {
+        "value": 0.01015189198666597
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 0.0
+      },
+      "name": "std_000"
+    },
+    {
+      "expected": {
+        "value": 0.01614452362228664
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 0.0
+      },
+      "name": "std_001"
+    },
+    {
+      "expected": {
+        "value": 0.012553275751039593
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 1.0
+      },
+      "name": "std_002"
+    },
+    {
+      "expected": {
+        "value": 0.02047038471464979
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 1.0
+      },
+      "name": "std_003"
+    },
+    {
+      "expected": {
+        "value": 0.016169474892034345
+      },
+      "inputs": {
+        "dt": 1.0,
+        "t": 2.0
+      },
+      "name": "std_004"
+    },
+    {
+      "expected": {
+        "value": 0.025714267813063234
+      },
+      "inputs": {
+        "dt": 2.0,
+        "t": 2.0
+      },
+      "name": "std_005"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "dt": 0.0,
+        "t": 0.5
+      },
+      "name": "var_dt_zero"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-02T13:01:52Z",
+  "generated_by": "mf_state_process_probe",
+  "test_group": "processes/mf_state_process"
+}
