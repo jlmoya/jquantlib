@@ -1,0 +1,927 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 2.119554724084514
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 2,
+        "type": "Cap"
+      },
+      "name": "e0_2y_cap_k200_000"
+    },
+    {
+      "expected": {
+        "npv": 0.22145975777969495
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 2,
+        "type": "Floor"
+      },
+      "name": "e0_2y_floor_k200_001"
+    },
+    {
+      "expected": {
+        "npv": 0.7876282912614148
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 2,
+        "type": "Cap"
+      },
+      "name": "e0_2y_cap_k300_002"
+    },
+    {
+      "expected": {
+        "npv": 0.8461364607849902
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 2,
+        "type": "Floor"
+      },
+      "name": "e0_2y_floor_k300_003"
+    },
+    {
+      "expected": {
+        "npv": 0.20438402339538764
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 2,
+        "type": "Cap"
+      },
+      "name": "e0_2y_cap_k400_004"
+    },
+    {
+      "expected": {
+        "npv": 2.2195140745989748
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 2,
+        "type": "Floor"
+      },
+      "name": "e0_2y_floor_k400_005"
+    },
+    {
+      "expected": {
+        "npv": 4.685649595210028
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 4,
+        "type": "Cap"
+      },
+      "name": "e0_4y_cap_k200_006"
+    },
+    {
+      "expected": {
+        "npv": 1.0170168439143148
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 4,
+        "type": "Floor"
+      },
+      "name": "e0_4y_floor_k200_007"
+    },
+    {
+      "expected": {
+        "npv": 2.2795047788288474
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 4,
+        "type": "Cap"
+      },
+      "name": "e0_4y_cap_k300_008"
+    },
+    {
+      "expected": {
+        "npv": 2.392545741612631
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 4,
+        "type": "Floor"
+      },
+      "name": "e0_4y_floor_k300_009"
+    },
+    {
+      "expected": {
+        "npv": 0.969354073068466
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 4,
+        "type": "Cap"
+      },
+      "name": "e0_4y_cap_k400_010"
+    },
+    {
+      "expected": {
+        "npv": 4.8640982006015205
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 4,
+        "type": "Floor"
+      },
+      "name": "e0_4y_floor_k400_011"
+    },
+    {
+      "expected": {
+        "npv": 7.60415760001339
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 6,
+        "type": "Cap"
+      },
+      "name": "e0_6y_cap_k200_012"
+    },
+    {
+      "expected": {
+        "npv": 2.2588773371913633
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 6,
+        "type": "Floor"
+      },
+      "name": "e0_6y_floor_k200_013"
+    },
+    {
+      "expected": {
+        "npv": 4.222951783750296
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 6,
+        "type": "Cap"
+      },
+      "name": "e0_6y_cap_k300_014"
+    },
+    {
+      "expected": {
+        "npv": 4.38768324070506
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 6,
+        "type": "Floor"
+      },
+      "name": "e0_6y_floor_k300_015"
+    },
+    {
+      "expected": {
+        "npv": 2.1781610725489626
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 6,
+        "type": "Cap"
+      },
+      "name": "e0_6y_cap_k400_016"
+    },
+    {
+      "expected": {
+        "npv": 7.852956677994192
+      },
+      "inputs": {
+        "engine_tag": "e0",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 6,
+        "type": "Floor"
+      },
+      "name": "e0_6y_floor_k400_017"
+    },
+    {
+      "expected": {
+        "npv": 2.119554723929184
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 2,
+        "type": "Cap"
+      },
+      "name": "e1_2y_cap_k200_018"
+    },
+    {
+      "expected": {
+        "npv": 0.22145975777971344
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 2,
+        "type": "Floor"
+      },
+      "name": "e1_2y_floor_k200_019"
+    },
+    {
+      "expected": {
+        "npv": 0.7876282911187624
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 2,
+        "type": "Cap"
+      },
+      "name": "e1_2y_cap_k300_020"
+    },
+    {
+      "expected": {
+        "npv": 0.8461364607850151
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 2,
+        "type": "Floor"
+      },
+      "name": "e1_2y_floor_k300_021"
+    },
+    {
+      "expected": {
+        "npv": 0.20438402326557847
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 2,
+        "type": "Cap"
+      },
+      "name": "e1_2y_cap_k400_022"
+    },
+    {
+      "expected": {
+        "npv": 2.2195140745990063
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 2,
+        "type": "Floor"
+      },
+      "name": "e1_2y_floor_k400_023"
+    },
+    {
+      "expected": {
+        "npv": 4.685649590478183
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 4,
+        "type": "Cap"
+      },
+      "name": "e1_4y_cap_k200_024"
+    },
+    {
+      "expected": {
+        "npv": 1.017016843914338
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 4,
+        "type": "Floor"
+      },
+      "name": "e1_4y_floor_k200_025"
+    },
+    {
+      "expected": {
+        "npv": 2.2795047743669885
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 4,
+        "type": "Cap"
+      },
+      "name": "e1_4y_cap_k300_026"
+    },
+    {
+      "expected": {
+        "npv": 2.392545741612661
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 4,
+        "type": "Floor"
+      },
+      "name": "e1_4y_floor_k300_027"
+    },
+    {
+      "expected": {
+        "npv": 0.9693540688971949
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 4,
+        "type": "Cap"
+      },
+      "name": "e1_4y_cap_k400_028"
+    },
+    {
+      "expected": {
+        "npv": 4.864098200601558
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 4,
+        "type": "Floor"
+      },
+      "name": "e1_4y_floor_k400_029"
+    },
+    {
+      "expected": {
+        "npv": 7.604157556667581
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 6,
+        "type": "Cap"
+      },
+      "name": "e1_6y_cap_k200_030"
+    },
+    {
+      "expected": {
+        "npv": 2.258877337191387
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.02,
+        "tenor_years": 6,
+        "type": "Floor"
+      },
+      "name": "e1_6y_floor_k200_031"
+    },
+    {
+      "expected": {
+        "npv": 4.222951742524341
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 6,
+        "type": "Cap"
+      },
+      "name": "e1_6y_cap_k300_032"
+    },
+    {
+      "expected": {
+        "npv": 4.387683240705091
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.03,
+        "tenor_years": 6,
+        "type": "Floor"
+      },
+      "name": "e1_6y_floor_k300_033"
+    },
+    {
+      "expected": {
+        "npv": 2.178161033403093
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 6,
+        "type": "Cap"
+      },
+      "name": "e1_6y_cap_k400_034"
+    },
+    {
+      "expected": {
+        "npv": 7.852956677994232
+      },
+      "inputs": {
+        "engine_tag": "e1",
+        "extrapolate_payoff": true,
+        "flat_payoff_extrapolation": true,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 7.0,
+        "strike": 0.04,
+        "tenor_years": 6,
+        "type": "Floor"
+      },
+      "name": "e1_6y_floor_k400_035"
+    },
+    {
+      "expected": {
+        "npv": 2.1195431115206382
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.02,
+        "tenor_years": 2,
+        "type": "Cap"
+      },
+      "name": "e2_2y_cap_k200_036"
+    },
+    {
+      "expected": {
+        "npv": 0.22148985723317283
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.02,
+        "tenor_years": 2,
+        "type": "Floor"
+      },
+      "name": "e2_2y_floor_k200_037"
+    },
+    {
+      "expected": {
+        "npv": 0.7875446917661958
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.03,
+        "tenor_years": 2,
+        "type": "Cap"
+      },
+      "name": "e2_2y_cap_k300_038"
+    },
+    {
+      "expected": {
+        "npv": 0.8461027279507236
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.03,
+        "tenor_years": 2,
+        "type": "Floor"
+      },
+      "name": "e2_2y_floor_k300_039"
+    },
+    {
+      "expected": {
+        "npv": 0.20418227251712218
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.04,
+        "tenor_years": 2,
+        "type": "Cap"
+      },
+      "name": "e2_2y_cap_k400_040"
+    },
+    {
+      "expected": {
+        "npv": 2.2193561272309816
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.04,
+        "tenor_years": 2,
+        "type": "Floor"
+      },
+      "name": "e2_2y_floor_k400_041"
+    },
+    {
+      "expected": {
+        "npv": 4.685276136626248
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.02,
+        "tenor_years": 4,
+        "type": "Cap"
+      },
+      "name": "e2_4y_cap_k200_042"
+    },
+    {
+      "expected": {
+        "npv": 1.0171413424316063
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.02,
+        "tenor_years": 4,
+        "type": "Floor"
+      },
+      "name": "e2_4y_floor_k200_043"
+    },
+    {
+      "expected": {
+        "npv": 2.279069809495652
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.03,
+        "tenor_years": 4,
+        "type": "Cap"
+      },
+      "name": "e2_4y_cap_k300_044"
+    },
+    {
+      "expected": {
+        "npv": 2.3925903372120416
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.03,
+        "tenor_years": 4,
+        "type": "Floor"
+      },
+      "name": "e2_4y_floor_k300_045"
+    },
+    {
+      "expected": {
+        "npv": 0.9686567766394363
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.04,
+        "tenor_years": 4,
+        "type": "Cap"
+      },
+      "name": "e2_4y_cap_k400_046"
+    },
+    {
+      "expected": {
+        "npv": 4.863836305771192
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.04,
+        "tenor_years": 4,
+        "type": "Floor"
+      },
+      "name": "e2_4y_floor_k400_047"
+    },
+    {
+      "expected": {
+        "npv": 7.601964293046733
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.02,
+        "tenor_years": 6,
+        "type": "Cap"
+      },
+      "name": "e2_6y_cap_k200_048"
+    },
+    {
+      "expected": {
+        "npv": 2.258949155273539
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.02,
+        "tenor_years": 6,
+        "type": "Floor"
+      },
+      "name": "e2_6y_floor_k200_049"
+    },
+    {
+      "expected": {
+        "npv": 4.221050581125288
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.03,
+        "tenor_years": 6,
+        "type": "Cap"
+      },
+      "name": "e2_6y_cap_k300_050"
+    },
+    {
+      "expected": {
+        "npv": 4.387919981630602
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.03,
+        "tenor_years": 6,
+        "type": "Floor"
+      },
+      "name": "e2_6y_floor_k300_051"
+    },
+    {
+      "expected": {
+        "npv": 2.1761519206503817
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.04,
+        "tenor_years": 6,
+        "type": "Cap"
+      },
+      "name": "e2_6y_cap_k400_052"
+    },
+    {
+      "expected": {
+        "npv": 7.85291280014551
+      },
+      "inputs": {
+        "engine_tag": "e2",
+        "extrapolate_payoff": false,
+        "flat_payoff_extrapolation": false,
+        "integration_points": 64,
+        "nominal": 100.0,
+        "stddevs": 5.0,
+        "strike": 0.04,
+        "tenor_years": 6,
+        "type": "Floor"
+      },
+      "name": "e2_6y_floor_k400_053"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-02T19:18:22Z",
+  "generated_by": "gaussian1d_capfloor_engine_probe",
+  "test_group": "pricingengines/capfloor/gaussian1d_capfloor_engine"
+}
