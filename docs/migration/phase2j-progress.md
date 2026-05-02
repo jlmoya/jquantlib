@@ -83,8 +83,13 @@ Key fixes: CFunction.eval N(d1) saturation for d1>8.2; Halley-refined invNormal;
 blackFormulaImpliedStdDevKahale with maxStdDev=24.0 matching C++ (Java BlackFormula uses 3.0
 causing 1e-6 bisection path divergence). All 5 scenarios A-E pass at TIGHT tier, 790 tests.
 
-#### Sub-commit 4.0d — MarkovFunctional (~1710 LOC C++)
-_(Pending — dispatch after 4.0c lands; WI-4.0c now complete on main)_
+#### Sub-commit 4.0d — MarkovFunctional (~1710 LOC C++) ❌ DEFERRED to Phase 2j.5
+
+**A16 fired second time (after 3 prereqs landed):** MF needs `GaussHermiteIntegration` family (~600 LOC, needs `GaussianOrthogonalPolynomial` + `GaussHermitePolynomial` + `GaussianQuadrature` Golub-Welsch in `org.jquantlib.math.integrals` subpackage NOT in Phase 2j's planned 5) + `AtmSmileSection` (~80 LOC). Per P2J-10 trim discipline, MarkovFunctional is the named first-trim target. User chose Option B: defer MF to Phase 2j.5.
+
+The 3 already-landed prereqs (4.0a MfStateProcess + 4.0b SmileSectionUtils + 4.0c KahaleSmileSection) stay in Phase 2j scope — they're broadly useful infrastructure beyond MF.
+
+Phase 2j.5 scope: GaussHermite family + AtmSmileSection + MarkovFunctional port + MF probe/test.
 
 ### L4 — completion doc + tag
 _(Not yet started)_
