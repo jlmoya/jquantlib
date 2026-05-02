@@ -64,7 +64,20 @@ _(Pending — dispatches after WI-1.4 lands)_
 _(Pending — dispatches after WI-1.4 lands; parallel with WI-2)_
 
 ### L3 — WI-4 MarkovFunctional (parallel after WI-1.1 lands)
-_(Pending — dispatches after WI-1.1 lands; runs concurrent with WI-1.2/1.3/1.4 + WI-2/WI-3)_
+
+**Per Option A scope expansion (P2J-11):** WI-4 expanded to 4 sub-commits after first dispatch hit A16 — MarkovFunctional has 3 missing Java dependencies (MfStateProcess + KahaleSmileSection + SmileSectionUtils, ~907 LOC C++). Sub-commit order:
+
+#### Sub-commit 4.0a — MfStateProcess prereq (~179 LOC C++)
+_(Pending — dispatch in worktree D)_
+
+#### Sub-commit 4.0b — SmileSectionUtils prereq (~278 LOC C++)
+_(Pending — dispatch after 4.0a)_
+
+#### Sub-commit 4.0c — KahaleSmileSection prereq (~450 LOC C++)
+_(Pending — dispatch after 4.0b)_
+
+#### Sub-commit 4.0d — MarkovFunctional (~1710 LOC C++)
+_(Pending — dispatch after 4.0c)_
 
 ### L4 — completion doc + tag
 _(Not yet started)_
