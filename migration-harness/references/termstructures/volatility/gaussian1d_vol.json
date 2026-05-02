@@ -1,0 +1,722 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "annuity": 0.9405880633643421,
+        "atm": 0.03096989004878085
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "expiry_serial": 46524,
+        "tenor_years": 1
+      },
+      "name": "atm_00"
+    },
+    {
+      "expected": {
+        "annuity": 1.8579133385461812,
+        "atm": 0.030927595672491943
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "expiry_serial": 46524,
+        "tenor_years": 2
+      },
+      "name": "atm_01"
+    },
+    {
+      "expected": {
+        "annuity": 4.429398022779409,
+        "atm": 0.030918381194586304
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "expiry_serial": 46524,
+        "tenor_years": 5
+      },
+      "name": "atm_02"
+    },
+    {
+      "expected": {
+        "annuity": 0.9125613161520112,
+        "atm": 0.030883979470934027
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "expiry_serial": 46888,
+        "tenor_years": 1
+      },
+      "name": "atm_03"
+    },
+    {
+      "expected": {
+        "annuity": 1.7977834500921972,
+        "atm": 0.030883979470934
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "expiry_serial": 46888,
+        "tenor_years": 2
+      },
+      "name": "atm_04"
+    },
+    {
+      "expected": {
+        "annuity": 4.2973459402132415,
+        "atm": 0.030900634837992613
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "expiry_serial": 46888,
+        "tenor_years": 5
+      },
+      "name": "atm_05"
+    },
+    {
+      "expected": {
+        "annuity": 0.8852221339401861,
+        "atm": 0.030883979470933985
+      },
+      "inputs": {
+        "expiry_period_years": 3,
+        "expiry_serial": 47253,
+        "tenor_years": 1
+      },
+      "name": "atm_06"
+    },
+    {
+      "expected": {
+        "annuity": 1.7485507995296719,
+        "atm": 0.030884102543742006
+      },
+      "inputs": {
+        "expiry_period_years": 3,
+        "expiry_serial": 47253,
+        "tenor_years": 2
+      },
+      "name": "atm_07"
+    },
+    {
+      "expected": {
+        "annuity": 4.168533464400776,
+        "atm": 0.03090114950798015
+      },
+      "inputs": {
+        "expiry_period_years": 3,
+        "expiry_serial": 47253,
+        "tenor_years": 5
+      },
+      "name": "atm_08"
+    },
+    {
+      "expected": {
+        "option_call": 0.026235132937846378,
+        "option_put": 0.0003497880342655089,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.005
+      },
+      "name": "smile_00"
+    },
+    {
+      "expected": {
+        "option_call": 0.02160073703506789,
+        "option_put": 0.0007154037944703657,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.01
+      },
+      "name": "smile_01"
+    },
+    {
+      "expected": {
+        "option_call": 0.017237299471082965,
+        "option_put": 0.0013519825987568918,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.015
+      },
+      "name": "smile_02"
+    },
+    {
+      "expected": {
+        "option_call": 0.013262020063787882,
+        "option_put": 0.002376633130108493,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.02
+      },
+      "name": "smile_03"
+    },
+    {
+      "expected": {
+        "option_call": 0.009787095585693666,
+        "option_put": 0.0039016591881996937,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.025
+      },
+      "name": "smile_04"
+    },
+    {
+      "expected": {
+        "option_call": 0.006890478871244878,
+        "option_put": 0.006004993288797957,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.03
+      },
+      "name": "smile_05"
+    },
+    {
+      "expected": {
+        "option_call": 0.0046047527371052025,
+        "option_put": 0.008719218516275534,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.035
+      },
+      "name": "smile_06"
+    },
+    {
+      "expected": {
+        "option_call": 0.0029069007477318734,
+        "option_put": 0.012021335578919217,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.04
+      },
+      "name": "smile_07"
+    },
+    {
+      "expected": {
+        "option_call": 0.0009638696559169514,
+        "option_put": 0.020078236283672543,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.05
+      },
+      "name": "smile_08"
+    },
+    {
+      "expected": {
+        "option_call": 0.00024696500622286264,
+        "option_put": 0.02936149215909413,
+        "vol": 0.0
+      },
+      "inputs": {
+        "strike": 0.06
+      },
+      "name": "smile_09"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.01,
+        "tenor_years": 2
+      },
+      "name": "swvol_00"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.02,
+        "tenor_years": 2
+      },
+      "name": "swvol_01"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.03,
+        "tenor_years": 2
+      },
+      "name": "swvol_02"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.04,
+        "tenor_years": 2
+      },
+      "name": "swvol_03"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.05,
+        "tenor_years": 2
+      },
+      "name": "swvol_04"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.01,
+        "tenor_years": 5
+      },
+      "name": "swvol_05"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.02,
+        "tenor_years": 5
+      },
+      "name": "swvol_06"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.03,
+        "tenor_years": 5
+      },
+      "name": "swvol_07"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.04,
+        "tenor_years": 5
+      },
+      "name": "swvol_08"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.05,
+        "tenor_years": 5
+      },
+      "name": "swvol_09"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.01,
+        "tenor_years": 10
+      },
+      "name": "swvol_10"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.02,
+        "tenor_years": 10
+      },
+      "name": "swvol_11"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.03,
+        "tenor_years": 10
+      },
+      "name": "swvol_12"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.04,
+        "tenor_years": 10
+      },
+      "name": "swvol_13"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 1,
+        "strike": 0.05,
+        "tenor_years": 10
+      },
+      "name": "swvol_14"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.01,
+        "tenor_years": 2
+      },
+      "name": "swvol_15"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.02,
+        "tenor_years": 2
+      },
+      "name": "swvol_16"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.03,
+        "tenor_years": 2
+      },
+      "name": "swvol_17"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.04,
+        "tenor_years": 2
+      },
+      "name": "swvol_18"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.05,
+        "tenor_years": 2
+      },
+      "name": "swvol_19"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.01,
+        "tenor_years": 5
+      },
+      "name": "swvol_20"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.02,
+        "tenor_years": 5
+      },
+      "name": "swvol_21"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.03,
+        "tenor_years": 5
+      },
+      "name": "swvol_22"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.04,
+        "tenor_years": 5
+      },
+      "name": "swvol_23"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.05,
+        "tenor_years": 5
+      },
+      "name": "swvol_24"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.01,
+        "tenor_years": 10
+      },
+      "name": "swvol_25"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.02,
+        "tenor_years": 10
+      },
+      "name": "swvol_26"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.03,
+        "tenor_years": 10
+      },
+      "name": "swvol_27"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.04,
+        "tenor_years": 10
+      },
+      "name": "swvol_28"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 2,
+        "strike": 0.05,
+        "tenor_years": 10
+      },
+      "name": "swvol_29"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.01,
+        "tenor_years": 2
+      },
+      "name": "swvol_30"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.02,
+        "tenor_years": 2
+      },
+      "name": "swvol_31"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.03,
+        "tenor_years": 2
+      },
+      "name": "swvol_32"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.04,
+        "tenor_years": 2
+      },
+      "name": "swvol_33"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.05,
+        "tenor_years": 2
+      },
+      "name": "swvol_34"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.01,
+        "tenor_years": 5
+      },
+      "name": "swvol_35"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.02,
+        "tenor_years": 5
+      },
+      "name": "swvol_36"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.03,
+        "tenor_years": 5
+      },
+      "name": "swvol_37"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.04,
+        "tenor_years": 5
+      },
+      "name": "swvol_38"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.05,
+        "tenor_years": 5
+      },
+      "name": "swvol_39"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.01,
+        "tenor_years": 10
+      },
+      "name": "swvol_40"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.02,
+        "tenor_years": 10
+      },
+      "name": "swvol_41"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.03,
+        "tenor_years": 10
+      },
+      "name": "swvol_42"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.04,
+        "tenor_years": 10
+      },
+      "name": "swvol_43"
+    },
+    {
+      "expected": {
+        "vol": 0.0
+      },
+      "inputs": {
+        "expiry_period_years": 5,
+        "strike": 0.05,
+        "tenor_years": 10
+      },
+      "name": "swvol_44"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-02T13:33:41Z",
+  "generated_by": "gaussian1d_vol_probe",
+  "test_group": "termstructures/volatility/gaussian1d_vol"
+}
