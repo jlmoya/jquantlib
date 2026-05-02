@@ -43,6 +43,7 @@ package org.jquantlib.termstructures.volatilities;
 
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.Constants;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.time.Date;
 
 /**
@@ -85,15 +86,29 @@ public class FlatSmileSection extends SmileSection {
             final double vol,
             final DayCounter dc,
             final /* @Real */ double atmLevel) {
-    	super(exerciseTime, dc);
-    	vol_ = vol;
-    	atmLevel_ = atmLevel;
+    	this(exerciseTime, vol, dc, atmLevel, VolatilityType.ShiftedLognormal, 0.0);
     }
 
     public FlatSmileSection(
             final /* @Time */ double exerciseTime,
             final double vol, final DayCounter dc) {
     	this(exerciseTime, vol, dc, Constants.NULL_REAL);
+    }
+
+    /**
+     * Full constructor mirroring C++ v1.42.1 {@code FlatSmileSection}
+     * with explicit volatility type and shift.
+     */
+    public FlatSmileSection(
+            final /* @Time */ double exerciseTime,
+            final double vol,
+            final DayCounter dc,
+            final /* @Real */ double atmLevel,
+            final VolatilityType type,
+            final double shift) {
+        super(exerciseTime, dc, type, shift);
+        vol_ = vol;
+        atmLevel_ = atmLevel;
     }
 
 
@@ -111,9 +126,13 @@ public class FlatSmileSection extends SmileSection {
         return vol_;
     }
 
+    /**
+     * Mirrors C++ {@code FlatSmileSection::minStrike()}: {@code QL_MIN_REAL - shift()}.
+     * QL_MIN_REAL == -Double.MAX_VALUE; shift() == 0 unless constructed with non-zero shift.
+     */
     @Override
     public double minStrike() {
-        return Constants.DBL_MIN;
+        return -Constants.DBL_MAX - shift();
     }
 
     @Override

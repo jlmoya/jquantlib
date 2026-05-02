@@ -45,7 +45,10 @@ import java.util.List;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.instruments.Option;
 import org.jquantlib.math.Constants;
+import org.jquantlib.model.VolatilityType;
+import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.time.Date;
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
@@ -65,6 +68,11 @@ public abstract class SmileSection implements Observer, Observable {
     private final DayCounter dc_;
     private final boolean isFloating_;
 
+    /** Mirrors C++ {@code volatilityType_}; defaults to ShiftedLognormal. */
+    private final VolatilityType volatilityType_;
+    /** Mirrors C++ {@code shift_}; defaults to 0.0. */
+    private final double shift_;
+
     protected double exerciseTime_;
 
 
@@ -76,8 +84,19 @@ public abstract class SmileSection implements Observer, Observable {
             final Date d,
             final DayCounter dc,
             final Date referenceDate) {
+        this(d, dc, referenceDate, VolatilityType.ShiftedLognormal, 0.0);
+    }
+
+    public SmileSection(
+            final Date d,
+            final DayCounter dc,
+            final Date referenceDate,
+            final VolatilityType type,
+            final double shift) {
     	exerciseDate_ = d;
     	dc_ = dc;
+        volatilityType_ = type;
+        shift_ = shift;
     	isFloating_ = referenceDate.isNull();
     	if (isFloating_) {
     		final Settings settings = new Settings();
@@ -91,8 +110,18 @@ public abstract class SmileSection implements Observer, Observable {
     public SmileSection(
             final /* @Time */ double exerciseTime,
             final DayCounter dc) {
+        this(exerciseTime, dc, VolatilityType.ShiftedLognormal, 0.0);
+    }
+
+    public SmileSection(
+            final /* @Time */ double exerciseTime,
+            final DayCounter dc,
+            final VolatilityType type,
+            final double shift) {
     	isFloating_ = false;
     	dc_ = dc;
+        volatilityType_ = type;
+        shift_ = shift;
     	exerciseTime_ = exerciseTime;
     	QL.require(exerciseTime_>=0.0,
     			"expiry time must be positive: " +
@@ -156,6 +185,57 @@ public abstract class SmileSection implements Observer, Observable {
 
     public DayCounter dayCounter() {
         return dc_;
+    }
+
+    /**
+     * Volatility type (ShiftedLognormal or Normal).
+     * Mirrors C++ {@code SmileSection::volatilityType()}.
+     */
+    public VolatilityType volatilityType() {
+        return volatilityType_;
+    }
+
+    /**
+     * Displacement shift (zero for unshifted lognormal / normal).
+     * Mirrors C++ {@code SmileSection::shift()}.
+     */
+    public double shift() {
+        return shift_;
+    }
+
+    /**
+     * Call or put option price using this smile section.
+     * Mirrors C++ {@code SmileSection::optionPrice}.
+     *
+     * <p>For ShiftedLognormal: uses Black formula. For Normal: uses Bachelier formula.
+     * Discount defaults to 1.0 (undiscounted).
+     */
+    public double optionPrice(final double strike, final Option.Type type, final double discount) {
+        final double atm = atmLevel();
+        QL.require(atm != Constants.NULL_REAL,
+                "smile section must provide atm level to compute option price");
+        if (volatilityType_ == VolatilityType.ShiftedLognormal) {
+            // Mirror C++: if strike == -shift (at lower barrier) use default stddev=0.2
+            final double stddev = Math.abs(strike + shift_) < Constants.QL_EPSILON
+                    ? 0.2
+                    : Math.sqrt(variance(strike));
+            // When strike+shift == 0 (at-barrier), replicate C++ blackFormula inline:
+            // strike_shifted = 0 → formula returns fwd*discount for Call, 0 for Put.
+            if (Math.abs(strike + shift_) < Constants.QL_EPSILON) {
+                final double fwd = atm + shift_;
+                return type == Option.Type.Call ? fwd * discount : 0.0;
+            }
+            return BlackFormula.blackFormula(type, strike, atm, stddev, discount, shift_);
+        } else {
+            return BlackFormula.bachelierBlackFormula(type, strike, atm, Math.sqrt(variance(strike)), discount);
+        }
+    }
+
+    /**
+     * Convenience overload: undiscounted option price (discount=1.0).
+     */
+    public double optionPrice(final double strike, final Option.Type type) {
+        return optionPrice(strike, type, 1.0);
     }
 
     //

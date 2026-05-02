@@ -112,7 +112,9 @@ public class BlackFormula {
             @DiscountFactor final double discount,
             @Real final double displacement) {
 
-        QL.require(strike >= 0.0       , "strike must be non-negative"); // TODO: message
+        // strike may be negative when displacement > 0; the shifted strike must be non-negative.
+        // Mirrors C++ QuantLib v1.42.1 blackFormula which checks after shifting.
+        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative"); // TODO: message
         QL.require(forward > 0.0       , "forward must be positive"); // TODO: message
         QL.require(stddev >= 0.0       , "stddev must be non-negative"); // TODO: message
         QL.require(discount > 0.0      , "discount must be positive"); // TODO: message
