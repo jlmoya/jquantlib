@@ -1,0 +1,2164 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "numeraire": 0.17752382389670224,
+        "zerobond": 0.9862719934524203
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "x": -0.02
+      },
+      "name": "fm_000"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17752382389670224,
+        "zerobond": 0.9727147871716105
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 0.5,
+        "x": -0.02
+      },
+      "name": "fm_001"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17752382389670224,
+        "zerobond": 0.9461061589266253
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 0.5,
+        "x": -0.02
+      },
+      "name": "fm_002"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17752382389670224,
+        "zerobond": 0.8702081019753174
+      },
+      "inputs": {
+        "T": 5.5,
+        "t": 0.5,
+        "x": -0.02
+      },
+      "name": "fm_003"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17696319947340045,
+        "zerobond": 0.9862372978882996
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "x": -0.01
+      },
+      "name": "fm_004"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17696319947340045,
+        "zerobond": 0.9726465217485467
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 0.5,
+        "x": -0.01
+      },
+      "name": "fm_005"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17696319947340045,
+        "zerobond": 0.9459740281458001
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 0.5,
+        "x": -0.01
+      },
+      "name": "fm_006"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17696319947340045,
+        "zerobond": 0.8699088021405509
+      },
+      "inputs": {
+        "T": 5.5,
+        "t": 0.5,
+        "x": -0.01
+      },
+      "name": "fm_007"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17640434551525147,
+        "zerobond": 0.9862026035447163
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "fm_008"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17640434551525147,
+        "zerobond": 0.9725782611163715
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "fm_009"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17640434551525147,
+        "zerobond": 0.9458419158180241
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "fm_010"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17640434551525147,
+        "zerobond": 0.8696096052471278
+      },
+      "inputs": {
+        "T": 5.5,
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "fm_011"
+    },
+    {
+      "expected": {
+        "numeraire": 0.1758472564310846,
+        "zerobond": 0.9861679104216279
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "x": 0.01
+      },
+      "name": "fm_012"
+    },
+    {
+      "expected": {
+        "numeraire": 0.1758472564310846,
+        "zerobond": 0.9725100052747483
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 0.5,
+        "x": 0.01
+      },
+      "name": "fm_013"
+    },
+    {
+      "expected": {
+        "numeraire": 0.1758472564310846,
+        "zerobond": 0.9457098219407196
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 0.5,
+        "x": 0.01
+      },
+      "name": "fm_014"
+    },
+    {
+      "expected": {
+        "numeraire": 0.1758472564310846,
+        "zerobond": 0.8693105112596423
+      },
+      "inputs": {
+        "T": 5.5,
+        "t": 0.5,
+        "x": 0.01
+      },
+      "name": "fm_015"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17529192664738616,
+        "zerobond": 0.9861332185189913
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "x": 0.02
+      },
+      "name": "fm_016"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17529192664738616,
+        "zerobond": 0.972441754223341
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 0.5,
+        "x": 0.02
+      },
+      "name": "fm_017"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17529192664738616,
+        "zerobond": 0.9455777465113104
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 0.5,
+        "x": 0.02
+      },
+      "name": "fm_018"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17529192664738616,
+        "zerobond": 0.8690115201427013
+      },
+      "inputs": {
+        "T": 5.5,
+        "t": 0.5,
+        "x": 0.02
+      },
+      "name": "fm_019"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17473835060824375,
+        "zerobond": 0.9860985278367635
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "x": 0.03
+      },
+      "name": "fm_020"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17473835060824375,
+        "zerobond": 0.9723735079618137
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 0.5,
+        "x": 0.03
+      },
+      "name": "fm_021"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17473835060824375,
+        "zerobond": 0.9454456895272197
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 0.5,
+        "x": 0.03
+      },
+      "name": "fm_022"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17473835060824375,
+        "zerobond": 0.8687126318609231
+      },
+      "inputs": {
+        "T": 5.5,
+        "t": 0.5,
+        "x": 0.03
+      },
+      "name": "fm_023"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18960631622916324,
+        "zerobond": 0.9873681214498079
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 1.0,
+        "x": -0.02
+      },
+      "name": "fm_024"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18960631622916324,
+        "zerobond": 0.97486085389712
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.0,
+        "x": -0.02
+      },
+      "name": "fm_025"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18960631622916324,
+        "zerobond": 0.9502189978857082
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 1.0,
+        "x": -0.02
+      },
+      "name": "fm_026"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18960631622916324,
+        "zerobond": 0.8792490251487151
+      },
+      "inputs": {
+        "T": 6.0,
+        "t": 1.0,
+        "x": -0.02
+      },
+      "name": "fm_027"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18876736173926323,
+        "zerobond": 0.9873191226782256
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 1.0,
+        "x": -0.01
+      },
+      "name": "fm_028"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18876736173926323,
+        "zerobond": 0.9747643413857799
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.0,
+        "x": -0.01
+      },
+      "name": "fm_029"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18876736173926323,
+        "zerobond": 0.9500317972317204
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 1.0,
+        "x": -0.01
+      },
+      "name": "fm_030"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18876736173926323,
+        "zerobond": 0.8788224490184666
+      },
+      "inputs": {
+        "T": 6.0,
+        "t": 1.0,
+        "x": -0.01
+      },
+      "name": "fm_031"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18793211938643817,
+        "zerobond": 0.9872701263382386
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "fm_032"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18793211938643817,
+        "zerobond": 0.9746678384293057
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "fm_033"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18793211938643817,
+        "zerobond": 0.9498446334577414
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "fm_034"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18793211938643817,
+        "zerobond": 0.8783960798457346
+      },
+      "inputs": {
+        "T": 6.0,
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "fm_035"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18710057274552816,
+        "zerobond": 0.9872211324297263
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 1.0,
+        "x": 0.01
+      },
+      "name": "fm_036"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18710057274552816,
+        "zerobond": 0.9745713450267516
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.0,
+        "x": 0.01
+      },
+      "name": "fm_037"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18710057274552816,
+        "zerobond": 0.9496575065565053
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 1.0,
+        "x": 0.01
+      },
+      "name": "fm_038"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18710057274552816,
+        "zerobond": 0.8779699175301122
+      },
+      "inputs": {
+        "T": 6.0,
+        "t": 1.0,
+        "x": 0.01
+      },
+      "name": "fm_039"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18627270546404998,
+        "zerobond": 0.987172140952568
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 1.0,
+        "x": 0.02
+      },
+      "name": "fm_040"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18627270546404998,
+        "zerobond": 0.9744748611771717
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.0,
+        "x": 0.02
+      },
+      "name": "fm_041"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18627270546404998,
+        "zerobond": 0.9494704165207479
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 1.0,
+        "x": 0.02
+      },
+      "name": "fm_042"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18627270546404998,
+        "zerobond": 0.8775439619712404
+      },
+      "inputs": {
+        "T": 6.0,
+        "t": 1.0,
+        "x": 0.02
+      },
+      "name": "fm_043"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18544850126187554,
+        "zerobond": 0.9871231519066426
+      },
+      "inputs": {
+        "T": 1.5,
+        "t": 1.0,
+        "x": 0.03
+      },
+      "name": "fm_044"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18544850126187554,
+        "zerobond": 0.9743783868796205
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.0,
+        "x": 0.03
+      },
+      "name": "fm_045"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18544850126187554,
+        "zerobond": 0.9492833633432066
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 1.0,
+        "x": 0.03
+      },
+      "name": "fm_046"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18544850126187554,
+        "zerobond": 0.8771182130688093
+      },
+      "inputs": {
+        "T": 6.0,
+        "t": 1.0,
+        "x": 0.03
+      },
+      "name": "fm_047"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20645451538294526,
+        "zerobond": 0.988905065538143
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.5,
+        "x": -0.02
+      },
+      "name": "fm_048"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20645451538294526,
+        "zerobond": 0.9778736675534385
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 1.5,
+        "x": -0.02
+      },
+      "name": "fm_049"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20645451538294526,
+        "zerobond": 0.9560067147033667
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 1.5,
+        "x": -0.02
+      },
+      "name": "fm_050"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20645451538294526,
+        "zerobond": 0.8920567341223795
+      },
+      "inputs": {
+        "T": 6.5,
+        "t": 1.5,
+        "x": -0.02
+      },
+      "name": "fm_051"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20526904207034533,
+        "zerobond": 0.988840938295144
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.5,
+        "x": -0.01
+      },
+      "name": "fm_052"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20526904207034533,
+        "zerobond": 0.9777471641167168
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 1.5,
+        "x": -0.01
+      },
+      "name": "fm_053"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20526904207034533,
+        "zerobond": 0.955760611846954
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 1.5,
+        "x": -0.01
+      },
+      "name": "fm_054"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20526904207034533,
+        "zerobond": 0.8914912375283159
+      },
+      "inputs": {
+        "T": 6.5,
+        "t": 1.5,
+        "x": -0.01
+      },
+      "name": "fm_055"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2040903758114554,
+        "zerobond": 0.988776815210586
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.5,
+        "x": 0.0
+      },
+      "name": "fm_056"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2040903758114554,
+        "zerobond": 0.977620677045217
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 1.5,
+        "x": 0.0
+      },
+      "name": "fm_057"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2040903758114554,
+        "zerobond": 0.9555145723442972
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 1.5,
+        "x": 0.0
+      },
+      "name": "fm_058"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2040903758114554,
+        "zerobond": 0.8909260994163822
+      },
+      "inputs": {
+        "T": 6.5,
+        "t": 1.5,
+        "x": 0.0
+      },
+      "name": "fm_059"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20291847751979442,
+        "zerobond": 0.9887126962841993
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.5,
+        "x": 0.01
+      },
+      "name": "fm_060"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20291847751979442,
+        "zerobond": 0.9774942063368219
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 1.5,
+        "x": 0.01
+      },
+      "name": "fm_061"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20291847751979442,
+        "zerobond": 0.955268596179087
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 1.5,
+        "x": 0.01
+      },
+      "name": "fm_062"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20291847751979442,
+        "zerobond": 0.8903613195593275
+      },
+      "inputs": {
+        "T": 6.5,
+        "t": 1.5,
+        "x": 0.01
+      },
+      "name": "fm_063"
+    },
+    {
+      "expected": {
+        "numeraire": 0.201753308333318,
+        "zerobond": 0.9886485815157142
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.5,
+        "x": 0.02
+      },
+      "name": "fm_064"
+    },
+    {
+      "expected": {
+        "numeraire": 0.201753308333318,
+        "zerobond": 0.9773677519894147
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 1.5,
+        "x": 0.02
+      },
+      "name": "fm_065"
+    },
+    {
+      "expected": {
+        "numeraire": 0.201753308333318,
+        "zerobond": 0.9550226833350188
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 1.5,
+        "x": 0.02
+      },
+      "name": "fm_066"
+    },
+    {
+      "expected": {
+        "numeraire": 0.201753308333318,
+        "zerobond": 0.8897968977300456
+      },
+      "inputs": {
+        "T": 6.5,
+        "t": 1.5,
+        "x": 0.02
+      },
+      "name": "fm_067"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20059482961312988,
+        "zerobond": 0.9885844709048611
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.5,
+        "x": 0.03
+      },
+      "name": "fm_068"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20059482961312988,
+        "zerobond": 0.9772413140008788
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 1.5,
+        "x": 0.03
+      },
+      "name": "fm_069"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20059482961312988,
+        "zerobond": 0.9547768337957919
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 1.5,
+        "x": 0.03
+      },
+      "name": "fm_070"
+    },
+    {
+      "expected": {
+        "numeraire": 0.20059482961312988,
+        "zerobond": 0.8892328337015735
+      },
+      "inputs": {
+        "T": 6.5,
+        "t": 1.5,
+        "x": 0.03
+      },
+      "name": "fm_071"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22426723618998706,
+        "zerobond": 0.9904171519731891
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 2.0,
+        "x": -0.02
+      },
+      "name": "fm_072"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22426723618998706,
+        "zerobond": 0.9808419752014846
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 2.0,
+        "x": -0.02
+      },
+      "name": "fm_073"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22426723618998706,
+        "zerobond": 0.9617247561134573
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 2.0,
+        "x": -0.02
+      },
+      "name": "fm_074"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22426723618998706,
+        "zerobond": 0.9048084342050177
+      },
+      "inputs": {
+        "T": 7.0,
+        "t": 2.0,
+        "x": -0.02
+      },
+      "name": "fm_075"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22274649177938438,
+        "zerobond": 0.9903407859476131
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 2.0,
+        "x": -0.01
+      },
+      "name": "fm_076"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22274649177938438,
+        "zerobond": 0.98069110271923
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 2.0,
+        "x": -0.01
+      },
+      "name": "fm_077"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22274649177938438,
+        "zerobond": 0.9614303867087984
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 2.0,
+        "x": -0.01
+      },
+      "name": "fm_078"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22274649177938438,
+        "zerobond": 0.9041264648485846
+      },
+      "inputs": {
+        "T": 7.0,
+        "t": 2.0,
+        "x": -0.01
+      },
+      "name": "fm_079"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22123605945717084,
+        "zerobond": 0.9902644258102328
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "fm_080"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22123605945717084,
+        "zerobond": 0.9805402534440835
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "fm_081"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22123605945717084,
+        "zerobond": 0.9611361074061626
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "fm_082"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22123605945717084,
+        "zerobond": 0.9034450095039417
+      },
+      "inputs": {
+        "T": 7.0,
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "fm_083"
+    },
+    {
+      "expected": {
+        "numeraire": 0.21973586929761388,
+        "zerobond": 0.9901880715605939
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 2.0,
+        "x": 0.01
+      },
+      "name": "fm_084"
+    },
+    {
+      "expected": {
+        "numeraire": 0.21973586929761388,
+        "zerobond": 0.9803894273724754
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 2.0,
+        "x": 0.01
+      },
+      "name": "fm_085"
+    },
+    {
+      "expected": {
+        "numeraire": 0.21973586929761388,
+        "zerobond": 0.9608419181779714
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 2.0,
+        "x": 0.01
+      },
+      "name": "fm_086"
+    },
+    {
+      "expected": {
+        "numeraire": 0.21973586929761388,
+        "zerobond": 0.9027640677836699
+      },
+      "inputs": {
+        "T": 7.0,
+        "t": 2.0,
+        "x": 0.01
+      },
+      "name": "fm_087"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2182458518491437,
+        "zerobond": 0.9901117231982427
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 2.0,
+        "x": 0.02
+      },
+      "name": "fm_088"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2182458518491437,
+        "zerobond": 0.9802386245008369
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 2.0,
+        "x": 0.02
+      },
+      "name": "fm_089"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2182458518491437,
+        "zerobond": 0.960547818996654
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 2.0,
+        "x": 0.02
+      },
+      "name": "fm_090"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2182458518491437,
+        "zerobond": 0.9020836393006416
+      },
+      "inputs": {
+        "T": 7.0,
+        "t": 2.0,
+        "x": 0.02
+      },
+      "name": "fm_091"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2167659381311379,
+        "zerobond": 0.990035380722725
+      },
+      "inputs": {
+        "T": 2.5,
+        "t": 2.0,
+        "x": 0.03
+      },
+      "name": "fm_092"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2167659381311379,
+        "zerobond": 0.9800878448255991
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 2.0,
+        "x": 0.03
+      },
+      "name": "fm_093"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2167659381311379,
+        "zerobond": 0.9602538098346488
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 2.0,
+        "x": 0.03
+      },
+      "name": "fm_094"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2167659381311379,
+        "zerobond": 0.9014037236680214
+      },
+      "inputs": {
+        "T": 7.0,
+        "t": 2.0,
+        "x": 0.03
+      },
+      "name": "fm_095"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2829792658028048,
+        "zerobond": 0.9950200185483096
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 3.0,
+        "x": -0.02
+      },
+      "name": "fm_096"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2829792658028048,
+        "zerobond": 0.9899043041601554
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 3.0,
+        "x": -0.02
+      },
+      "name": "fm_097"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2829792658028048,
+        "zerobond": 0.9792826617430997
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 3.0,
+        "x": -0.02
+      },
+      "name": "fm_098"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2829792658028048,
+        "zerobond": 0.9445992384442076
+      },
+      "inputs": {
+        "T": 8.0,
+        "t": 3.0,
+        "x": -0.02
+      },
+      "name": "fm_099"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2803699050638141,
+        "zerobond": 0.9949142105108396
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 3.0,
+        "x": -0.01
+      },
+      "name": "fm_100"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2803699050638141,
+        "zerobond": 0.9896943121873006
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 3.0,
+        "x": -0.01
+      },
+      "name": "fm_101"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2803699050638141,
+        "zerobond": 0.9788692946601822
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 3.0,
+        "x": -0.01
+      },
+      "name": "fm_102"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2803699050638141,
+        "zerobond": 0.9436174794327403
+      },
+      "inputs": {
+        "T": 8.0,
+        "t": 3.0,
+        "x": -0.01
+      },
+      "name": "fm_103"
+    },
+    {
+      "expected": {
+        "numeraire": 0.27778460532253246,
+        "zerobond": 0.9948084137247419
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "fm_104"
+    },
+    {
+      "expected": {
+        "numeraire": 0.27778460532253246,
+        "zerobond": 0.9894843647608007
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "fm_105"
+    },
+    {
+      "expected": {
+        "numeraire": 0.27778460532253246,
+        "zerobond": 0.9784561020645216
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "fm_106"
+    },
+    {
+      "expected": {
+        "numeraire": 0.27778460532253246,
+        "zerobond": 0.942636740801893
+      },
+      "inputs": {
+        "T": 8.0,
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "fm_107"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2752231447117408,
+        "zerobond": 0.9947026281888202
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 3.0,
+        "x": 0.01
+      },
+      "name": "fm_108"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2752231447117408,
+        "zerobond": 0.9892744618712063
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 3.0,
+        "x": 0.01
+      },
+      "name": "fm_109"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2752231447117408,
+        "zerobond": 0.9780430838824646
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 3.0,
+        "x": 0.01
+      },
+      "name": "fm_110"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2752231447117408,
+        "zerobond": 0.9416570214911442
+      },
+      "inputs": {
+        "T": 8.0,
+        "t": 3.0,
+        "x": 0.01
+      },
+      "name": "fm_111"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2726853034100646,
+        "zerobond": 0.9945968539018782
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 3.0,
+        "x": 0.02
+      },
+      "name": "fm_112"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2726853034100646,
+        "zerobond": 0.9890646035090691
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 3.0,
+        "x": 0.02
+      },
+      "name": "fm_113"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2726853034100646,
+        "zerobond": 0.9776302400403888
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 3.0,
+        "x": 0.02
+      },
+      "name": "fm_114"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2726853034100646,
+        "zerobond": 0.9406783204410744
+      },
+      "inputs": {
+        "T": 8.0,
+        "t": 3.0,
+        "x": 0.02
+      },
+      "name": "fm_115"
+    },
+    {
+      "expected": {
+        "numeraire": 0.27017086362310927,
+        "zerobond": 0.9944910908627197
+      },
+      "inputs": {
+        "T": 3.5,
+        "t": 3.0,
+        "x": 0.03
+      },
+      "name": "fm_116"
+    },
+    {
+      "expected": {
+        "numeraire": 0.27017086362310927,
+        "zerobond": 0.9888547896649441
+      },
+      "inputs": {
+        "T": 4.0,
+        "t": 3.0,
+        "x": 0.03
+      },
+      "name": "fm_117"
+    },
+    {
+      "expected": {
+        "numeraire": 0.27017086362310927,
+        "zerobond": 0.9772175704647037
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 3.0,
+        "x": 0.03
+      },
+      "name": "fm_118"
+    },
+    {
+      "expected": {
+        "numeraire": 0.27017086362310927,
+        "zerobond": 0.9397006365933654
+      },
+      "inputs": {
+        "T": 8.0,
+        "t": 3.0,
+        "x": 0.03
+      },
+      "name": "fm_119"
+    },
+    {
+      "expected": {
+        "swap_annuity": 0.9405880633643421,
+        "swap_rate": 0.030969890048780747
+      },
+      "inputs": {
+        "expiry_serial": 46524,
+        "tenor_length": 1,
+        "tenor_units": 3,
+        "x": -0.01
+      },
+      "name": "sr_00"
+    },
+    {
+      "expected": {
+        "swap_annuity": 1.8579133385461812,
+        "swap_rate": 0.030927595672491943
+      },
+      "inputs": {
+        "expiry_serial": 46524,
+        "tenor_length": 2,
+        "tenor_units": 3,
+        "x": -0.01
+      },
+      "name": "sr_01"
+    },
+    {
+      "expected": {
+        "swap_annuity": 4.429398022779409,
+        "swap_rate": 0.030918381194586304
+      },
+      "inputs": {
+        "expiry_serial": 46524,
+        "tenor_length": 5,
+        "tenor_units": 3,
+        "x": -0.01
+      },
+      "name": "sr_02"
+    },
+    {
+      "expected": {
+        "swap_annuity": 0.8852221339401861,
+        "swap_rate": 0.030883979470933975
+      },
+      "inputs": {
+        "expiry_serial": 47253,
+        "tenor_length": 1,
+        "tenor_units": 3,
+        "x": -0.01
+      },
+      "name": "sr_03"
+    },
+    {
+      "expected": {
+        "swap_annuity": 1.7485507995296719,
+        "swap_rate": 0.030884102543742006
+      },
+      "inputs": {
+        "expiry_serial": 47253,
+        "tenor_length": 2,
+        "tenor_units": 3,
+        "x": -0.01
+      },
+      "name": "sr_04"
+    },
+    {
+      "expected": {
+        "swap_annuity": 4.168533464400776,
+        "swap_rate": 0.03090114950798015
+      },
+      "inputs": {
+        "expiry_serial": 47253,
+        "tenor_length": 5,
+        "tenor_units": 3,
+        "x": -0.01
+      },
+      "name": "sr_05"
+    },
+    {
+      "expected": {
+        "swap_annuity": 0.832768155737091,
+        "swap_rate": 0.03096989004878075
+      },
+      "inputs": {
+        "expiry_serial": 47983,
+        "tenor_length": 1,
+        "tenor_units": 3,
+        "x": -0.01
+      },
+      "name": "sr_06"
+    },
+    {
+      "expected": {
+        "swap_annuity": 1.6405876313724392,
+        "swap_rate": 0.030927587987848098
+      },
+      "inputs": {
+        "expiry_serial": 47983,
+        "tenor_length": 2,
+        "tenor_units": 3,
+        "x": -0.01
+      },
+      "name": "sr_07"
+    },
+    {
+      "expected": {
+        "swap_annuity": 3.921655025938986,
+        "swap_rate": 0.030918378817655415
+      },
+      "inputs": {
+        "expiry_serial": 47983,
+        "tenor_length": 5,
+        "tenor_units": 3,
+        "x": -0.01
+      },
+      "name": "sr_08"
+    },
+    {
+      "expected": {
+        "swap_annuity": 0.9405880633643421,
+        "swap_rate": 0.030969890048780747
+      },
+      "inputs": {
+        "expiry_serial": 46524,
+        "tenor_length": 1,
+        "tenor_units": 3,
+        "x": 0.0
+      },
+      "name": "sr_09"
+    },
+    {
+      "expected": {
+        "swap_annuity": 1.8579133385461812,
+        "swap_rate": 0.030927595672491943
+      },
+      "inputs": {
+        "expiry_serial": 46524,
+        "tenor_length": 2,
+        "tenor_units": 3,
+        "x": 0.0
+      },
+      "name": "sr_10"
+    },
+    {
+      "expected": {
+        "swap_annuity": 4.429398022779409,
+        "swap_rate": 0.030918381194586304
+      },
+      "inputs": {
+        "expiry_serial": 46524,
+        "tenor_length": 5,
+        "tenor_units": 3,
+        "x": 0.0
+      },
+      "name": "sr_11"
+    },
+    {
+      "expected": {
+        "swap_annuity": 0.8852221339401861,
+        "swap_rate": 0.030883979470933975
+      },
+      "inputs": {
+        "expiry_serial": 47253,
+        "tenor_length": 1,
+        "tenor_units": 3,
+        "x": 0.0
+      },
+      "name": "sr_12"
+    },
+    {
+      "expected": {
+        "swap_annuity": 1.7485507995296719,
+        "swap_rate": 0.030884102543742006
+      },
+      "inputs": {
+        "expiry_serial": 47253,
+        "tenor_length": 2,
+        "tenor_units": 3,
+        "x": 0.0
+      },
+      "name": "sr_13"
+    },
+    {
+      "expected": {
+        "swap_annuity": 4.168533464400776,
+        "swap_rate": 0.03090114950798015
+      },
+      "inputs": {
+        "expiry_serial": 47253,
+        "tenor_length": 5,
+        "tenor_units": 3,
+        "x": 0.0
+      },
+      "name": "sr_14"
+    },
+    {
+      "expected": {
+        "swap_annuity": 0.832768155737091,
+        "swap_rate": 0.03096989004878075
+      },
+      "inputs": {
+        "expiry_serial": 47983,
+        "tenor_length": 1,
+        "tenor_units": 3,
+        "x": 0.0
+      },
+      "name": "sr_15"
+    },
+    {
+      "expected": {
+        "swap_annuity": 1.6405876313724392,
+        "swap_rate": 0.030927587987848098
+      },
+      "inputs": {
+        "expiry_serial": 47983,
+        "tenor_length": 2,
+        "tenor_units": 3,
+        "x": 0.0
+      },
+      "name": "sr_16"
+    },
+    {
+      "expected": {
+        "swap_annuity": 3.921655025938986,
+        "swap_rate": 0.030918378817655415
+      },
+      "inputs": {
+        "expiry_serial": 47983,
+        "tenor_length": 5,
+        "tenor_units": 3,
+        "x": 0.0
+      },
+      "name": "sr_17"
+    },
+    {
+      "expected": {
+        "swap_annuity": 0.9405880633643421,
+        "swap_rate": 0.030969890048780747
+      },
+      "inputs": {
+        "expiry_serial": 46524,
+        "tenor_length": 1,
+        "tenor_units": 3,
+        "x": 0.01
+      },
+      "name": "sr_18"
+    },
+    {
+      "expected": {
+        "swap_annuity": 1.8579133385461812,
+        "swap_rate": 0.030927595672491943
+      },
+      "inputs": {
+        "expiry_serial": 46524,
+        "tenor_length": 2,
+        "tenor_units": 3,
+        "x": 0.01
+      },
+      "name": "sr_19"
+    },
+    {
+      "expected": {
+        "swap_annuity": 4.429398022779409,
+        "swap_rate": 0.030918381194586304
+      },
+      "inputs": {
+        "expiry_serial": 46524,
+        "tenor_length": 5,
+        "tenor_units": 3,
+        "x": 0.01
+      },
+      "name": "sr_20"
+    },
+    {
+      "expected": {
+        "swap_annuity": 0.8852221339401861,
+        "swap_rate": 0.030883979470933975
+      },
+      "inputs": {
+        "expiry_serial": 47253,
+        "tenor_length": 1,
+        "tenor_units": 3,
+        "x": 0.01
+      },
+      "name": "sr_21"
+    },
+    {
+      "expected": {
+        "swap_annuity": 1.7485507995296719,
+        "swap_rate": 0.030884102543742006
+      },
+      "inputs": {
+        "expiry_serial": 47253,
+        "tenor_length": 2,
+        "tenor_units": 3,
+        "x": 0.01
+      },
+      "name": "sr_22"
+    },
+    {
+      "expected": {
+        "swap_annuity": 4.168533464400776,
+        "swap_rate": 0.03090114950798015
+      },
+      "inputs": {
+        "expiry_serial": 47253,
+        "tenor_length": 5,
+        "tenor_units": 3,
+        "x": 0.01
+      },
+      "name": "sr_23"
+    },
+    {
+      "expected": {
+        "swap_annuity": 0.832768155737091,
+        "swap_rate": 0.03096989004878075
+      },
+      "inputs": {
+        "expiry_serial": 47983,
+        "tenor_length": 1,
+        "tenor_units": 3,
+        "x": 0.01
+      },
+      "name": "sr_24"
+    },
+    {
+      "expected": {
+        "swap_annuity": 1.6405876313724392,
+        "swap_rate": 0.030927587987848098
+      },
+      "inputs": {
+        "expiry_serial": 47983,
+        "tenor_length": 2,
+        "tenor_units": 3,
+        "x": 0.01
+      },
+      "name": "sr_25"
+    },
+    {
+      "expected": {
+        "swap_annuity": 3.921655025938986,
+        "swap_rate": 0.030918378817655415
+      },
+      "inputs": {
+        "expiry_serial": 47983,
+        "tenor_length": 5,
+        "tenor_units": 3,
+        "x": 0.01
+      },
+      "name": "sr_26"
+    },
+    {
+      "expected": {
+        "numeraire": 0.1652988882215866
+      },
+      "inputs": {
+        "t": 0.0,
+        "x": 0.0
+      },
+      "name": "mesh_00"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17079838127046276
+      },
+      "inputs": {
+        "t": 0.25,
+        "x": 0.0
+      },
+      "name": "mesh_01"
+    },
+    {
+      "expected": {
+        "numeraire": 0.17640434551525147
+      },
+      "inputs": {
+        "t": 0.5,
+        "x": 0.0
+      },
+      "name": "mesh_02"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18211591731393895
+      },
+      "inputs": {
+        "t": 0.75,
+        "x": 0.0
+      },
+      "name": "mesh_03"
+    },
+    {
+      "expected": {
+        "numeraire": 0.18793211938643817
+      },
+      "inputs": {
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "mesh_04"
+    },
+    {
+      "expected": {
+        "numeraire": 0.19584496850777142
+      },
+      "inputs": {
+        "t": 1.25,
+        "x": 0.0
+      },
+      "name": "mesh_05"
+    },
+    {
+      "expected": {
+        "numeraire": 0.2040903758114554
+      },
+      "inputs": {
+        "t": 1.5,
+        "x": 0.0
+      },
+      "name": "mesh_06"
+    },
+    {
+      "expected": {
+        "numeraire": 0.21255420418675247
+      },
+      "inputs": {
+        "t": 1.75,
+        "x": 0.0
+      },
+      "name": "mesh_07"
+    },
+    {
+      "expected": {
+        "numeraire": 0.22123605945717084
+      },
+      "inputs": {
+        "t": 2.0,
+        "x": 0.0
+      },
+      "name": "mesh_08"
+    },
+    {
+      "expected": {
+        "numeraire": 0.23409672156629655
+      },
+      "inputs": {
+        "t": 2.25,
+        "x": 0.0
+      },
+      "name": "mesh_09"
+    },
+    {
+      "expected": {
+        "numeraire": 0.24806705979976434
+      },
+      "inputs": {
+        "t": 2.5,
+        "x": 0.0
+      },
+      "name": "mesh_10"
+    },
+    {
+      "expected": {
+        "numeraire": 0.26262678751973295
+      },
+      "inputs": {
+        "t": 2.75,
+        "x": 0.0
+      },
+      "name": "mesh_11"
+    },
+    {
+      "expected": {
+        "numeraire": 0.27778460532253246
+      },
+      "inputs": {
+        "t": 3.0,
+        "x": 0.0
+      },
+      "name": "mesh_12"
+    },
+    {
+      "expected": {
+        "numeraire": 0.29354833538353253
+      },
+      "inputs": {
+        "t": 3.25,
+        "x": 0.0
+      },
+      "name": "mesh_13"
+    },
+    {
+      "expected": {
+        "numeraire": 0.3099248660479362
+      },
+      "inputs": {
+        "t": 3.5,
+        "x": 0.0
+      },
+      "name": "mesh_14"
+    },
+    {
+      "expected": {
+        "numeraire": 0.32692009805327366
+      },
+      "inputs": {
+        "t": 3.75,
+        "x": 0.0
+      },
+      "name": "mesh_15"
+    },
+    {
+      "expected": {
+        "numeraire": 0.3445388926731294
+      },
+      "inputs": {
+        "t": 4.0,
+        "x": 0.0
+      },
+      "name": "mesh_16"
+    },
+    {
+      "expected": {
+        "numeraire": 0.3627850220682061
+      },
+      "inputs": {
+        "t": 4.25,
+        "x": 0.0
+      },
+      "name": "mesh_17"
+    },
+    {
+      "expected": {
+        "numeraire": 0.3816611221256985
+      },
+      "inputs": {
+        "t": 4.5,
+        "x": 0.0
+      },
+      "name": "mesh_18"
+    },
+    {
+      "expected": {
+        "numeraire": 0.40116864806066876
+      },
+      "inputs": {
+        "t": 4.75,
+        "x": 0.0
+      },
+      "name": "mesh_19"
+    },
+    {
+      "expected": {
+        "numeraire": 0.4213078330443119
+      },
+      "inputs": {
+        "t": 5.0,
+        "x": 0.0
+      },
+      "name": "mesh_20"
+    },
+    {
+      "expected": {
+        "value": 0.6826894921370861
+      },
+      "inputs": {
+        "a": 0.0,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 0.0,
+        "e": 1.0,
+        "x0": -1.0,
+        "x1": 1.0
+      },
+      "name": "gpi_00"
+    },
+    {
+      "expected": {
+        "value": 0.3449513138882447
+      },
+      "inputs": {
+        "a": 0.0,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 1.0,
+        "e": 0.0,
+        "x0": 0.0,
+        "x1": 2.0
+      },
+      "name": "gpi_01"
+    },
+    {
+      "expected": {
+        "value": 0.7385358700508895
+      },
+      "inputs": {
+        "a": 0.0,
+        "b": 0.0,
+        "c": 1.0,
+        "d": 0.0,
+        "e": 0.0,
+        "x0": -2.0,
+        "x1": 2.0
+      },
+      "name": "gpi_02"
+    },
+    {
+      "expected": {
+        "value": 0.05615134012905576
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 0.0,
+        "e": 0.0,
+        "x0": 0.0,
+        "x1": 1.0
+      },
+      "name": "gpi_03"
+    },
+    {
+      "expected": {
+        "value": 0.7290032268518413
+      },
+      "inputs": {
+        "a": 0.5,
+        "b": -0.3,
+        "c": 0.2,
+        "d": -0.1,
+        "e": 0.05,
+        "x0": -1.5,
+        "x1": 2.5
+      },
+      "name": "gpi_04"
+    },
+    {
+      "expected": {
+        "value": 4.6408168435525345
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 1.0,
+        "c": 1.0,
+        "d": 1.0,
+        "e": 1.0,
+        "x0": -3.0,
+        "x1": 3.0
+      },
+      "name": "gpi_05"
+    },
+    {
+      "expected": {
+        "value": 0.6826894921370861
+      },
+      "inputs": {
+        "a": 0.0,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 0.0,
+        "e": 1.0,
+        "h": 0.5,
+        "x0": -1.0,
+        "x1": 1.0
+      },
+      "name": "gspi_00"
+    },
+    {
+      "expected": {
+        "value": 0.9771608040767998
+      },
+      "inputs": {
+        "a": 0.0,
+        "b": 0.0,
+        "c": 1.0,
+        "d": 0.0,
+        "e": 0.0,
+        "h": -0.5,
+        "x0": -2.0,
+        "x1": 2.0
+      },
+      "name": "gspi_01"
+    },
+    {
+      "expected": {
+        "value": 1.8123210972503452
+      },
+      "inputs": {
+        "a": 0.5,
+        "b": -0.3,
+        "c": 0.2,
+        "d": -0.1,
+        "e": 0.05,
+        "h": 0.7,
+        "x0": -1.5,
+        "x1": 2.5
+      },
+      "name": "gspi_02"
+    },
+    {
+      "expected": {
+        "value": 17.3663996804855
+      },
+      "inputs": {
+        "a": 1.0,
+        "b": 1.0,
+        "c": 1.0,
+        "d": 1.0,
+        "e": 1.0,
+        "h": -1.0,
+        "x0": -3.0,
+        "x1": 3.0
+      },
+      "name": "gspi_03"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-02T09:17:23Z",
+  "generated_by": "gaussian1d_model_probe",
+  "test_group": "models/shortrate/onefactormodels/gaussian1d_model"
+}
