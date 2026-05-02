@@ -5,8 +5,9 @@ Living document — updated by the controller after every implementer subagent r
 **Plan:** `docs/migration/phase2j-plan.md` (commit `3f2c33f`)
 **Design:** `docs/migration/phase2j-design.md` (commit `368dbda`)
 **Predecessor:** `jquantlib-phase2i.6-complete` @ `44be66c`
-**Phase 2j start tip on main:** `<fill at L0 land>`
+**Phase 2j start tip on main:** `3f2c33f`
 **Baseline:** Tests `688/0/0/22`, scanner `0 stubs`
+**Current tip on main:** `7ec9333` (WI-4.0c complete)
 
 ## Worktrees
 
@@ -41,43 +42,49 @@ Living document — updated by the controller after every implementer subagent r
 - L0.1 baseline confirmed (`688/0/0/22`, scanner 0 stubs, tip `3f2c33f`, submodule pin `099987f0ca2c11c505dc4348cdb9ce01a598e1e5`)
 - L0.2 4 worktrees created off main tip `3f2c33f`; submodules init'd in each
 
-### L1 — WI-1 model layer (4 sub-commits, sequential, worktree A)
+### L1 — WI-1 model layer (4 sub-commits, sequential, worktree A) ✅
 
-#### Sub-layer 1.1 — Gaussian1dModel base
-_(Pending — first implementer dispatched after L0)_
+#### Sub-layer 1.1 — Gaussian1dModel base ✅
+Commit `b22afae` (worktree A → main). `Gaussian1dModel.java` abstract base + `Gaussian1dModelTest`.
 
-#### Sub-layer 1.2 — GsrProcessCore + GsrProcess
-_(Pending — dispatch after 1.1 lands)_
+#### Sub-layer 1.2 — GsrProcessCore + GsrProcess ✅
+Commit `3b29638` (worktree A → main). `GsrProcessCore.java` + `GsrProcess.java`; align commit `9b26a30` for friend-pattern setters + pairKey fix.
 
-#### Sub-layer 1.3 — Gsr concrete model
-_(Pending — dispatch after 1.2 lands)_
+#### Sub-layer 1.3 — Gsr concrete model ✅
+Commit `1e70e44` (worktree A → main). `Gsr.java` concrete model.
 
-#### Sub-layer 1.4 — Gaussian1dSmileSection + Gaussian1dSwaptionVolatility
-_(Pending — dispatch after 1.3 lands)_
+#### Sub-layer 1.4 — Gaussian1dSmileSection + Gaussian1dSwaptionVolatility ✅
+Commit `b46f065` (worktree A → main). Align commit `f931ce2` for SmileSection API (volatilityType/shift/optionPrice + BlackFormula shift fix).
 
 ### L2 — WI-2 standard engines + WI-3 niche engines (parallel after WI-1.4 lands)
 
 #### WI-2 (worktree B): SwaptionEngine + CapFloorEngine
-_(Pending — dispatches after WI-1.4 lands)_
+- WI-2.1 Gaussian1dSwaptionEngine: **in progress** (worktree B)
+- WI-2.2 Gaussian1dCapFloorEngine: pending after 2.1
 
 #### WI-3 (worktree C): Jamshidian + Nonstandard + FloatFloat
-_(Pending — dispatches after WI-1.4 lands; parallel with WI-2)_
+- WI-3.1 Gaussian1dJamshidianSwaptionEngine ✅ — commit `24c0a8e` → main
+- WI-3.2 Gaussian1dNonstandardSwaptionEngine: pending
+- WI-3.3 Gaussian1dFloatFloatSwaptionEngine: pending
 
 ### L3 — WI-4 MarkovFunctional (parallel after WI-1.1 lands)
 
-**Per Option A scope expansion (P2J-11):** WI-4 expanded to 4 sub-commits after first dispatch hit A16 — MarkovFunctional has 3 missing Java dependencies (MfStateProcess + KahaleSmileSection + SmileSectionUtils, ~907 LOC C++). Sub-commit order:
+**Per Option A scope expansion (P2J-11):** WI-4 expanded to 4 sub-commits. Sub-commit order:
 
-#### Sub-commit 4.0a — MfStateProcess prereq (~179 LOC C++)
-_(Pending — dispatch in worktree D)_
+#### Sub-commit 4.0a — MfStateProcess prereq (~179 LOC C++) ✅
+Commit `0aee3f4` → main. `MfStateProcess.java` + `MfStateProcessTest`.
 
-#### Sub-commit 4.0b — SmileSectionUtils prereq (~278 LOC C++)
-_(Pending — dispatch after 4.0a)_
+#### Sub-commit 4.0b — SmileSectionUtils prereq (~278 LOC C++) ✅
+Commits `4dec5d8` + align `f931ce2` → main. `SmileSectionUtils.java` + `SmileSectionUtilsTest`.
 
-#### Sub-commit 4.0c — KahaleSmileSection prereq (~450 LOC C++)
-_(Pending — dispatch after 4.0b)_
+#### Sub-commit 4.0c — KahaleSmileSection prereq (~450 LOC C++) ✅
+Commit `7ec9333` → main. `KahaleSmileSection.java` + `KahaleSmileSectionTest`.
+Key fixes: CFunction.eval N(d1) saturation for d1>8.2; Halley-refined invNormal; local
+blackFormulaImpliedStdDevKahale with maxStdDev=24.0 matching C++ (Java BlackFormula uses 3.0
+causing 1e-6 bisection path divergence). All 5 scenarios A-E pass at TIGHT tier, 790 tests.
 
 #### Sub-commit 4.0d — MarkovFunctional (~1710 LOC C++)
-_(Pending — dispatch after 4.0c)_
+_(Pending — dispatch after 4.0c lands; WI-4.0c now complete on main)_
 
 ### L4 — completion doc + tag
 _(Not yet started)_
@@ -87,3 +94,11 @@ _(Not yet started)_
 | Event | Tests | Failures | Errors | Skipped | Notes |
 |-------|-------|----------|--------|---------|-------|
 | Phase 2j start (`3f2c33f`) | 688 | 0 | 0 | 22 | baseline |
+| WI-1.1 (`b22afae`) | 692 | 0 | 0 | 22 | +4 Gaussian1dModelTest |
+| WI-1.2 (`3b29638`) | 692 | 0 | 0 | 22 | no new tests |
+| WI-1.3 (`1e70e44`) | 692 | 0 | 0 | 22 | no new tests |
+| WI-1.4 (`b46f065`) | 693 | 0 | 0 | 22 | +1 Gaussian1dVolTest |
+| WI-3.1 (`24c0a8e`) | 694 | 0 | 0 | 22 | +1 JamshidianSwaptionEngineTest |
+| WI-4.0a (`0aee3f4`) | 695 | 0 | 0 | 22 | +1 MfStateProcessTest |
+| WI-4.0b (`4dec5d8`) | 696 | 0 | 0 | 22 | +1 SmileSectionUtilsTest |
+| WI-4.0c (`7ec9333`) | 790 | 0 | 0 | 22 | +94 (KahaleSmileSectionTest covers 5 scenarios × many strikes) |
