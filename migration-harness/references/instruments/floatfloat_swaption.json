@@ -1,0 +1,290 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "exerciseDay": 15,
+        "exerciseMonth": 1,
+        "exerciseYear": 2027,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 20,
+        "nLeg2Coupons": 10,
+        "settlementMethod": 0,
+        "settlementType": 0,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 1,
+        "settlementMethod": "PhysicalOTC",
+        "settlementType": "Physical",
+        "swapType": "Receiver",
+        "swapYears": 5
+      },
+      "name": "receiver_physical_otc_1y5y"
+    },
+    {
+      "expected": {
+        "exerciseDay": 17,
+        "exerciseMonth": 1,
+        "exerciseYear": 2028,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 12,
+        "nLeg2Coupons": 6,
+        "settlementMethod": 0,
+        "settlementType": 0,
+        "swapType": 1
+      },
+      "inputs": {
+        "exerciseYears": 2,
+        "settlementMethod": "PhysicalOTC",
+        "settlementType": "Physical",
+        "swapType": "Payer",
+        "swapYears": 3
+      },
+      "name": "payer_physical_otc_2y3y"
+    },
+    {
+      "expected": {
+        "exerciseDay": 15,
+        "exerciseMonth": 1,
+        "exerciseYear": 2027,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 40,
+        "nLeg2Coupons": 20,
+        "settlementMethod": 2,
+        "settlementType": 1,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 1,
+        "settlementMethod": "CollateralizedCashPrice",
+        "settlementType": "Cash",
+        "swapType": "Receiver",
+        "swapYears": 10
+      },
+      "name": "receiver_cash_ccp_1y10y"
+    },
+    {
+      "expected": {
+        "exerciseDay": 15,
+        "exerciseMonth": 1,
+        "exerciseYear": 2029,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 28,
+        "nLeg2Coupons": 14,
+        "settlementMethod": 3,
+        "settlementType": 1,
+        "swapType": 1
+      },
+      "inputs": {
+        "exerciseYears": 3,
+        "settlementMethod": "ParYieldCurve",
+        "settlementType": "Cash",
+        "swapType": "Payer",
+        "swapYears": 7
+      },
+      "name": "payer_cash_paryieldcurve_3y7y"
+    },
+    {
+      "expected": {
+        "exerciseDay": 15,
+        "exerciseMonth": 1,
+        "exerciseYear": 2031,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 20,
+        "nLeg2Coupons": 10,
+        "settlementMethod": 1,
+        "settlementType": 0,
+        "swapType": 1
+      },
+      "inputs": {
+        "exerciseYears": 5,
+        "settlementMethod": "PhysicalCleared",
+        "settlementType": "Physical",
+        "swapType": "Payer",
+        "swapYears": 5
+      },
+      "name": "payer_physical_cleared_5y5y"
+    },
+    {
+      "expected": {
+        "isExpired": true
+      },
+      "inputs": {
+        "evalDate": "2026-01-15",
+        "exerciseDate": "2025-01-14",
+        "expectExpired": true
+      },
+      "name": "is_expired_past_exercise"
+    },
+    {
+      "expected": {
+        "exerciseMonth": 1,
+        "exerciseYear": 2027,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 8,
+        "nLeg2Coupons": 4,
+        "settlementMethod": 0,
+        "settlementType": 0,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 1,
+        "settlementMethod": 0,
+        "settlementType": 0,
+        "swapYears": 2
+      },
+      "name": "grid_0_1y2y"
+    },
+    {
+      "expected": {
+        "exerciseMonth": 1,
+        "exerciseYear": 2027,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 20,
+        "nLeg2Coupons": 10,
+        "settlementMethod": 3,
+        "settlementType": 1,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 1,
+        "settlementMethod": 3,
+        "settlementType": 1,
+        "swapYears": 5
+      },
+      "name": "grid_1_1y5y"
+    },
+    {
+      "expected": {
+        "exerciseMonth": 1,
+        "exerciseYear": 2028,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 20,
+        "nLeg2Coupons": 10,
+        "settlementMethod": 0,
+        "settlementType": 0,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 2,
+        "settlementMethod": 0,
+        "settlementType": 0,
+        "swapYears": 5
+      },
+      "name": "grid_2_2y5y"
+    },
+    {
+      "expected": {
+        "exerciseMonth": 1,
+        "exerciseYear": 2028,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 40,
+        "nLeg2Coupons": 20,
+        "settlementMethod": 2,
+        "settlementType": 1,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 2,
+        "settlementMethod": 2,
+        "settlementType": 1,
+        "swapYears": 10
+      },
+      "name": "grid_3_2y10y"
+    },
+    {
+      "expected": {
+        "exerciseMonth": 1,
+        "exerciseYear": 2029,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 20,
+        "nLeg2Coupons": 10,
+        "settlementMethod": 1,
+        "settlementType": 0,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 3,
+        "settlementMethod": 1,
+        "settlementType": 0,
+        "swapYears": 5
+      },
+      "name": "grid_4_3y5y"
+    },
+    {
+      "expected": {
+        "exerciseMonth": 1,
+        "exerciseYear": 2031,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 20,
+        "nLeg2Coupons": 10,
+        "settlementMethod": 3,
+        "settlementType": 1,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 5,
+        "settlementMethod": 3,
+        "settlementType": 1,
+        "swapYears": 5
+      },
+      "name": "grid_5_5y5y"
+    },
+    {
+      "expected": {
+        "exerciseMonth": 1,
+        "exerciseYear": 2031,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 40,
+        "nLeg2Coupons": 20,
+        "settlementMethod": 0,
+        "settlementType": 0,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 5,
+        "settlementMethod": 0,
+        "settlementType": 0,
+        "swapYears": 10
+      },
+      "name": "grid_6_5y10y"
+    },
+    {
+      "expected": {
+        "exerciseMonth": 1,
+        "exerciseYear": 2036,
+        "hasUnderlying": true,
+        "isExpired": false,
+        "nLeg1Coupons": 20,
+        "nLeg2Coupons": 10,
+        "settlementMethod": 2,
+        "settlementType": 1,
+        "swapType": 0
+      },
+      "inputs": {
+        "exerciseYears": 10,
+        "settlementMethod": 2,
+        "settlementType": 1,
+        "swapYears": 5
+      },
+      "name": "grid_7_10y5y"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-07T19:53:52Z",
+  "generated_by": "floatfloat_swaption_probe",
+  "test_group": "instruments/floatfloat_swaption"
+}
