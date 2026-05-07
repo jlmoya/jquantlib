@@ -24,9 +24,9 @@ All carry-forward triggers (A2/A3/A4/A8/A9/A15/A16/A17/A18/A19/A20/A21/A22) not 
 ### L0 ✅
 Baseline confirmed; 3 worktrees + submodules init'd.
 
-### Track A — SabrInterpolatedSmileSection + MF SabrSmile wiring (1 commit) — pending
-### Track B — BasketGeneratingEngine + Nonstandard/FloatFloat basket wiring (1 commit) — pending
-### Track C — TqrEigenDecomposition lift + CustomSmileFactory MF inner class + MF CustomSmile wiring (2 commits) — pending
+### Track A — SabrInterpolatedSmileSection + MF SabrSmile wiring (1 commit) — DONE ✅ (`be6a34f`)
+### Track B — BasketGeneratingEngine + Nonstandard/FloatFloat basket wiring (1 commit) — DONE ✅ (`74f2df4`)
+### Track C — TqrEigenDecomposition lift + CustomSmileFactory MF inner class + MF CustomSmile wiring (2 commits) — Track C.1 DONE ✅ (`791a3e7`); C.2 pending
 ### L2 — completion + tag + memory + README + teardown — pending
 
 ## Test count tracking
@@ -34,3 +34,6 @@ Baseline confirmed; 3 worktrees + submodules init'd.
 | Event | Tests | Failures | Errors | Skipped | Notes |
 |-------|-------|----------|--------|---------|-------|
 | Phase 2k start (`df1fbd9`) | 801 | 0 | 0 | 22 | baseline |
+| Track C.1 merged (`791a3e7`) | 803 | 0 | 0 | 22 | TqrEigenDecomposition lift |
+| Track A merged (`be6a34f`) | 806 | 0 | 0 | 22 | SabrInterpolatedSmileSection |
+| Track B merged (`74f2df4`) | 808 | 0 | 0 | 22 | BasketGeneratingEngine |
