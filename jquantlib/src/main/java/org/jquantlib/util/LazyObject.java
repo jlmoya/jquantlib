@@ -59,6 +59,7 @@ public abstract class LazyObject implements Observer, Observable {
 
     protected boolean calculated;
     protected boolean frozen;
+    private   boolean alwaysForwardNotifications_;
 
     //
     // protected abstract methods
@@ -83,6 +84,7 @@ public abstract class LazyObject implements Observer, Observable {
     public LazyObject() {
         this.calculated = false;
         this.frozen = false;
+        this.alwaysForwardNotifications_ = false;
     }
 
     //
@@ -112,6 +114,19 @@ public abstract class LazyObject implements Observer, Observable {
      */
     public final void freeze() {
         frozen = true;
+    }
+
+    /**
+     * Forces the object to always forward notifications to its observers,
+     * even when already marked as needing recalculation.
+     *
+     * <p>Mirrors C++ {@code LazyObject::alwaysForwardNotifications()}.
+     * This is needed for instruments (e.g., swaptions) where the underlying
+     * asset can change the expired state without triggering a recalculation,
+     * so observers must still be notified.
+     */
+    public final void alwaysForwardNotifications() {
+        alwaysForwardNotifications_ = true;
     }
 
     /**
@@ -168,8 +183,9 @@ public abstract class LazyObject implements Observer, Observable {
     public void update() {
         // observers don't expect notifications from frozen objects
         // LazyObject forwards notifications only once until it has been
-        // recalculated
-        if (!frozen && calculated)
+        // recalculated (unless alwaysForwardNotifications_ is set, in which
+        // case every upstream change is forwarded unconditionally).
+        if (!frozen && (calculated || alwaysForwardNotifications_))
             //XXX::OBS notifyObservers(arg);
             notifyObservers();
         calculated = false;
