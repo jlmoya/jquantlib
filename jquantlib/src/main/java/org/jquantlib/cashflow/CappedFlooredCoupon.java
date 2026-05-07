@@ -106,12 +106,18 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         isCapped_ = false;
         isFloored_ = false;
 
+        // Phase 2j.5 fix: treat both NaN and NULL_RATE (= Double.MAX_VALUE) as
+        // "missing", matching how the rest of the JQuantLib leg builders
+        // populate cap/floor sentinels (and matching C++ Null<Real>()).
+        final boolean capPresent   = !Double.isNaN(cap)   && cap   != Constants.NULL_RATE;
+        final boolean floorPresent = !Double.isNaN(floor) && floor != Constants.NULL_RATE;
+
         if (gearing_ > 0) {
-            if (!Double.isNaN(cap)) {
+            if (capPresent) {
                 isCapped_ = true;
                 cap_ = cap;
             }
-            if (!Double.isNaN(floor)) {
+            if (floorPresent) {
                 floor_ = floor;
                 isFloored_ = true;
             }
@@ -127,11 +133,11 @@ public class CappedFlooredCoupon extends FloatingRateCoupon {
         // gearing again through the floor and cap functions.
 
         else {
-            if (!Double.isNaN(cap)) {
+            if (capPresent) {
                 floor_ = cap;
                 isFloored_ = true;
             }
-            if (!Double.isNaN(floor)) {
+            if (floorPresent) {
                 isCapped_ = true;
                 cap_ = floor;
             }
