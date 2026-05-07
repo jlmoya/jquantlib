@@ -105,4 +105,16 @@ public class SwapIndex extends InterestRateIndex {
         return iborIndex.termStructure();
     }
 
+    /**
+     * Returns a copy of this SwapIndex retemplated to a new tenor (mirrors
+     * C++ {@code SwapIndex::clone(Period)}). The new instance shares the
+     * same iborIndex / dayCounter / fixed-leg conventions but builds its
+     * underlying swap on the given tenor. Phase 2j.5 Track C.3 alignment.
+     */
+    public SwapIndex clone(final Period newTenor) {
+        return new SwapIndex(
+                familyName(), newTenor, fixingDays(), currency,
+                fixingCalendar(), fixedLegTenor, fixedLegConvention,
+                dayCounter, iborIndex);
+    }
 }

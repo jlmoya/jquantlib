@@ -689,9 +689,8 @@ public abstract class Gaussian1dModel extends LazyObject implements TermStructur
                 + "|" + tenor.units().ordinal() + "|" + tenor.length();
         VanillaSwap cached = swapCache_.get(key);
         if (cached == null) {
-            // TODO (Phase 2j follow-up): when SwapIndex.clone(Period) lands,
-            // call index.clone(tenor).underlyingSwap(expiry) instead.
-            cached = index.underlyingSwap(expiry);
+            // SwapIndex.clone(Period) landed in Phase 2j.5 Track C.3 alignment.
+            cached = index.clone(tenor).underlyingSwap(expiry);
             swapCache_.put(key, cached);
         }
         return cached;
