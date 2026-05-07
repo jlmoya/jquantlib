@@ -1,0 +1,426 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "leg1NPV": -11.157746682229615,
+        "leg2NPV": 11.157746682229615,
+        "nLeg1": 12,
+        "nLeg2": 12,
+        "npv": 0.0
+      },
+      "inputs": {
+        "g1": 1.0,
+        "g2": 1.0,
+        "nom1": 100.0,
+        "nom2": 100.0,
+        "s1": 0.0,
+        "s2": 0.0,
+        "tenor": 3,
+        "type": "Payer"
+      },
+      "name": "basic_same3m_0"
+    },
+    {
+      "expected": {
+        "leg1NPV": 11.439151622703445,
+        "leg2NPV": -11.157746682229615,
+        "nLeg1": 12,
+        "nLeg2": 12,
+        "npv": 0.2814049404738306
+      },
+      "inputs": {
+        "g1": 1.0,
+        "g2": 1.0,
+        "nom1": 100.0,
+        "nom2": 100.0,
+        "s1": 0.001,
+        "s2": 0.0,
+        "tenor": 3,
+        "type": "Receiver"
+      },
+      "name": "basic_same3m_1"
+    },
+    {
+      "expected": {
+        "leg1NPV": -35.77692888585323,
+        "leg2NPV": 28.186166912825865,
+        "nLeg1": 20,
+        "nLeg2": 20,
+        "npv": -7.590761973027366
+      },
+      "inputs": {
+        "g1": 1.0,
+        "g2": 1.0,
+        "nom1": 200.0,
+        "nom2": 150.0,
+        "s1": 0.0,
+        "s2": 0.002,
+        "tenor": 5,
+        "type": "Payer"
+      },
+      "name": "basic_same3m_2"
+    },
+    {
+      "expected": {
+        "leg1NPV": 13.416348332194962,
+        "leg2NPV": -35.77692888585323,
+        "nLeg1": 20,
+        "nLeg2": 20,
+        "npv": -22.360580553658266
+      },
+      "inputs": {
+        "g1": 0.5,
+        "g2": 2.0,
+        "nom1": 150.0,
+        "nom2": 100.0,
+        "s1": 0.0,
+        "s2": 0.0,
+        "tenor": 5,
+        "type": "Receiver"
+      },
+      "name": "basic_same3m_3"
+    },
+    {
+      "expected": {
+        "leg1NPV": -9.286832218373066,
+        "leg2NPV": 5.872611665036058,
+        "nLeg1": 8,
+        "nLeg2": 8,
+        "npv": -3.4142205533370076
+      },
+      "inputs": {
+        "g1": 1.2,
+        "g2": 0.8,
+        "nom1": 100.0,
+        "nom2": 100.0,
+        "s1": 0.001,
+        "s2": -0.001,
+        "tenor": 2,
+        "type": "Payer"
+      },
+      "name": "basic_same3m_4"
+    },
+    {
+      "expected": {
+        "leg1NPV": -11.157746682229615,
+        "leg2NPV": 11.157746682229613,
+        "nLeg1": 12,
+        "nLeg2": 6,
+        "npv": -1.7763568394002505e-15
+      },
+      "inputs": {
+        "g1": 1.0,
+        "g2": 1.0,
+        "s1": 0.0,
+        "s2": 0.0,
+        "tenor": 3,
+        "type": "Payer"
+      },
+      "name": "mixed_3m6m_0"
+    },
+    {
+      "expected": {
+        "leg1NPV": 18.339621192405268,
+        "leg2NPV": -17.43956570564971,
+        "nLeg1": 20,
+        "nLeg2": 10,
+        "npv": 0.9000554867555586
+      },
+      "inputs": {
+        "g1": 1.0,
+        "g2": 1.0,
+        "s1": 0.001,
+        "s2": -0.001,
+        "tenor": 5,
+        "type": "Receiver"
+      },
+      "name": "mixed_3m6m_1"
+    },
+    {
+      "expected": {
+        "leg1NPV": -17.001931497591247,
+        "leg2NPV": 20.12620962449625,
+        "nLeg1": 20,
+        "nLeg2": 10,
+        "npv": 3.124278126905004
+      },
+      "inputs": {
+        "g1": 0.9,
+        "g2": 1.1,
+        "s1": 0.002,
+        "s2": 0.001,
+        "tenor": 5,
+        "type": "Payer"
+      },
+      "name": "mixed_3m6m_2"
+    },
+    {
+      "expected": {
+        "leg1NPV": -24.09285588072623,
+        "leg2NPV": 24.092855880726255,
+        "nLeg1": 28,
+        "nLeg2": 14,
+        "npv": 2.4868995751603507e-14
+      },
+      "inputs": {
+        "g1": 1.0,
+        "g2": 1.0,
+        "s1": 0.0,
+        "s2": 0.0,
+        "tenor": 7,
+        "type": "Payer"
+      },
+      "name": "mixed_3m6m_3"
+    },
+    {
+      "expected": {
+        "leg1NPV": 11.369582912556842,
+        "leg2NPV": -3.9800710557274415,
+        "nLeg1": 8,
+        "nLeg2": 4,
+        "npv": 7.389511856829401
+      },
+      "inputs": {
+        "g1": 1.5,
+        "g2": 0.5,
+        "s1": 0.0,
+        "s2": 0.001,
+        "tenor": 2,
+        "type": "Receiver"
+      },
+      "name": "mixed_3m6m_4"
+    },
+    {
+      "expected": {
+        "leg1NPV": -8.153514523931547,
+        "leg2NPV": 8.983722014796713,
+        "nLeg1": 12,
+        "nLeg2": 6,
+        "npv": 0.8302074908651669
+      },
+      "inputs": {
+        "n1": 12,
+        "n2": 6,
+        "nom1_0": 100.0,
+        "nom2_0": 100.0
+      },
+      "name": "vector_nom_amortising"
+    },
+    {
+      "expected": {
+        "leg1NPV": 8.999793957948413,
+        "leg2NPV": -8.999793957948413,
+        "nLeg1": 12,
+        "nLeg2": 12,
+        "npv": 0.0
+      },
+      "inputs": {
+        "n1": 12,
+        "nom1_0": 50.0
+      },
+      "name": "vector_nom_accreting"
+    },
+    {
+      "expected": {
+        "leg1NPV": -7.799958070647768,
+        "leg2NPV": 7.555535887983145,
+        "nLeg1": 8,
+        "nLeg2": 8,
+        "npv": -0.24442218266462312
+      },
+      "inputs": {
+        "g1_0": 1.1,
+        "g2_0": 1.0,
+        "n": 8,
+        "s1_0": 0.001
+      },
+      "name": "vector_gearing_spread"
+    },
+    {
+      "expected": {
+        "leg1NPV": -99.8012052860444,
+        "leg2NPV": 99.8012052860444,
+        "nLeg1": 13,
+        "nLeg2": 13,
+        "npv": 0.0
+      },
+      "inputs": {
+        "finalCapitalExchange": 1
+      },
+      "name": "final_capital_exchange"
+    },
+    {
+      "expected": {
+        "leg1NPV": -55.521201430780025,
+        "leg2NPV": 55.521201430780025,
+        "nLeg1": 15,
+        "nLeg2": 15,
+        "npv": 0.0
+      },
+      "inputs": {
+        "intermediateCapitalExchange": 1
+      },
+      "name": "intermediate_capital_exchange"
+    },
+    {
+      "expected": {
+        "leg1NPV": -99.84293073268742,
+        "leg2NPV": 99.84293073268742,
+        "nLeg1": 16,
+        "nLeg2": 16,
+        "npv": 0.0
+      },
+      "inputs": {
+        "finalCapitalExchange": 1,
+        "intermediateCapitalExchange": 1
+      },
+      "name": "both_capital_exchanges"
+    },
+    {
+      "expected": {
+        "leg1NPV": -3.963142435102274,
+        "leg2NPV": 3.8656480855901445,
+        "nLeg1": 4,
+        "nLeg2": 4,
+        "npv": -0.09749434951212965
+      },
+      "inputs": {
+        "n1": 4,
+        "n2": 4,
+        "tenor_years": 1
+      },
+      "name": "tenor_1y"
+    },
+    {
+      "expected": {
+        "leg1NPV": -7.770887830032153,
+        "leg2NPV": 7.5797219417045625,
+        "nLeg1": 8,
+        "nLeg2": 8,
+        "npv": -0.19116588832759085
+      },
+      "inputs": {
+        "n1": 8,
+        "n2": 8,
+        "tenor_years": 2
+      },
+      "name": "tenor_2y"
+    },
+    {
+      "expected": {
+        "leg1NPV": -18.339621192405268,
+        "leg2NPV": 17.888464442926615,
+        "nLeg1": 20,
+        "nLeg2": 20,
+        "npv": -0.4511567494786526
+      },
+      "inputs": {
+        "n1": 20,
+        "n2": 20,
+        "tenor_years": 5
+      },
+      "name": "tenor_5y"
+    },
+    {
+      "expected": {
+        "leg1NPV": -24.700491755533694,
+        "leg2NPV": 24.09285588072623,
+        "nLeg1": 28,
+        "nLeg2": 28,
+        "npv": -0.607635874807464
+      },
+      "inputs": {
+        "n1": 28,
+        "n2": 28,
+        "tenor_years": 7
+      },
+      "name": "tenor_7y"
+    },
+    {
+      "expected": {
+        "leg1NPV": -33.35154286033046,
+        "leg2NPV": 32.531090713214006,
+        "nLeg1": 40,
+        "nLeg2": 40,
+        "npv": -0.8204521471164554
+      },
+      "inputs": {
+        "n1": 40,
+        "n2": 40,
+        "tenor_years": 10
+      },
+      "name": "tenor_10y"
+    },
+    {
+      "expected": {
+        "nLeg1": 12,
+        "nLeg2": 12
+      },
+      "inputs": {
+        "hasCap": 1,
+        "hasFloor": 0
+      },
+      "name": "capfloor_leg1_struct_0"
+    },
+    {
+      "expected": {
+        "nLeg1": 12,
+        "nLeg2": 12
+      },
+      "inputs": {
+        "hasCap": 0,
+        "hasFloor": 1
+      },
+      "name": "capfloor_leg1_struct_1"
+    },
+    {
+      "expected": {
+        "nLeg1": 12,
+        "nLeg2": 12
+      },
+      "inputs": {
+        "hasCap": 1,
+        "hasFloor": 1
+      },
+      "name": "capfloor_leg1_struct_2"
+    },
+    {
+      "expected": {
+        "nLeg1": 12,
+        "nLeg2": 12
+      },
+      "inputs": {
+        "hasCap": 1,
+        "hasFloor": 0
+      },
+      "name": "capfloor_leg2_struct_0"
+    },
+    {
+      "expected": {
+        "nLeg1": 12,
+        "nLeg2": 12
+      },
+      "inputs": {
+        "hasCap": 0,
+        "hasFloor": 1
+      },
+      "name": "capfloor_leg2_struct_1"
+    },
+    {
+      "expected": {
+        "nLeg1": 12,
+        "nLeg2": 12
+      },
+      "inputs": {
+        "hasCap": 1,
+        "hasFloor": 1
+      },
+      "name": "capfloor_leg2_struct_2"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-07T19:27:32Z",
+  "generated_by": "floatfloat_swap_probe",
+  "test_group": "instruments/floatfloat_swap"
+}
