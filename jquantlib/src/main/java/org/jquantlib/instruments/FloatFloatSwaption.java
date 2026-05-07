@@ -45,13 +45,19 @@
 package org.jquantlib.instruments;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.exercise.Exercise;
+import org.jquantlib.indexes.SwapIndex;
+import org.jquantlib.model.BlackCalibrationHelper;
 import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.swaption.BasketGeneratingEngine;
+import org.jquantlib.pricingengines.swaption.gaussian1d.Gaussian1dFloatFloatSwaptionEngine;
+import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.time.Date;
 
 /**
@@ -74,11 +80,12 @@ import org.jquantlib.time.Date;
  *     ({@code swap}, {@code exercise}, {@code settlementType},
  *     {@code settlementMethod}). This matches the Swaption / NonstandardSwaption
  *     pattern used throughout this port.
- * <li>C++ {@code calibrationBasket()} is deferred — it requires
- *     {@code BasketGeneratingEngine} which is not yet ported (B.3 / later).
+ * <li>C++ {@code calibrationBasket()} delegates to the engine which exposes
+ *     a {@code calibrationBasket} method backed by {@link BasketGeneratingEngine}.
+ *     Wired in Phase 2k Track B.
  * </ul>
  *
- * <p>Phase 2j.5 Track B.2.
+ * <p>Phase 2j.5 Track B.2 (wired Phase 2k Track B).
  */
 public class FloatFloatSwaption extends Option {
 
@@ -161,6 +168,36 @@ public class FloatFloatSwaption extends Option {
      */
     public Exercise exercise() {
         return exercise;
+    }
+
+    /**
+     * Generates a calibration basket of swaption helpers.
+     *
+     * <p>Mirrors C++ {@code FloatFloatSwaption::calibrationBasket(SwapIndex,
+     * SwaptionVolatilityStructure, CalibrationBasketType)}.
+     * Delegates to the pricing engine which must be a
+     * {@link Gaussian1dFloatFloatSwaptionEngine}. Phase 2k Track B.
+     *
+     * @param standardSwapBase    swap index defining basket swaption attributes
+     * @param swaptionVolatility  vol surface for helper construction
+     * @param basketType          Naive or MaturityStrikeByDeltaGamma
+     * @return list of calibration helpers
+     */
+    public List<BlackCalibrationHelper> calibrationBasket(
+            final SwapIndex standardSwapBase,
+            final SwaptionVolatilityStructure swaptionVolatility,
+            final BasketGeneratingEngine.CalibrationBasketType basketType) {
+
+        QL.require(engine != null,
+                "no pricing engine set — cannot generate calibration basket");
+        QL.require(engine instanceof Gaussian1dFloatFloatSwaptionEngine,
+                "calibrationBasket requires a Gaussian1dFloatFloatSwaptionEngine");
+
+        // Trigger setupArguments so engine's arguments_ are populated
+        setupArguments(engine.getArguments());
+
+        return ((Gaussian1dFloatFloatSwaptionEngine) engine)
+                .calibrationBasket(exercise, standardSwapBase, swaptionVolatility, basketType);
     }
 
     /**

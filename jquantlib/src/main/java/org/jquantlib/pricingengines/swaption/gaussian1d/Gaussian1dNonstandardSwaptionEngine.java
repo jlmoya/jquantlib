@@ -49,6 +49,7 @@ import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.model.shortrate.onefactormodels.gaussian1d.Gaussian1dModel;
+import org.jquantlib.pricingengines.swaption.BasketGeneratingEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -423,16 +424,65 @@ public class Gaussian1dNonstandardSwaptionEngine extends NonstandardSwaption.Eng
         results.value = npv1[0] * model_.numeraire(0.0, 0.0, discountCurve_);
     }
 
-    // ── BasketGeneratingEngine hooks (not wired to public interface yet) ───────
+    // ── calibrationBasket() ───────────────────────────────────────────────────
+
+    /**
+     * Generates a calibration basket for a given exercise schedule.
+     *
+     * <p>Mirrors C++ {@code NonstandardSwaption::calibrationBasket()} which
+     * delegates to {@code BasketGeneratingEngine::calibrationBasket()}.
+     * The four BGE abstract hooks ({@code underlyingNpv}, {@code underlyingType},
+     * {@code underlyingLastDate}, {@code initialGuess}) are satisfied by this
+     * engine's package-private helper methods. Phase 2k Track B wiring.
+     *
+     * @param exercise            exercise schedule
+     * @param standardSwapBase    standard swap index for basket construction
+     * @param swaptionVolatility  vol surface
+     * @param basketType          Naive or MaturityStrikeByDeltaGamma
+     * @return list of calibration helper instruments
+     */
+    public java.util.List<org.jquantlib.model.BlackCalibrationHelper> calibrationBasket(
+            final org.jquantlib.exercise.Exercise exercise,
+            final org.jquantlib.indexes.SwapIndex standardSwapBase,
+            final org.jquantlib.termstructures.SwaptionVolatilityStructure swaptionVolatility,
+            final BasketGeneratingEngine.CalibrationBasketType basketType) {
+
+        // Build an anonymous BGE subclass that routes the 4 abstract hooks
+        // back into this engine's package-private methods.
+        final Gaussian1dNonstandardSwaptionEngine self = this;
+        final BasketGeneratingEngine bge = new BasketGeneratingEngine(
+                model_, oas_, discountCurve_) {
+            @Override
+            protected double underlyingNpv(final Date expiry, final double y) {
+                return self.underlyingNpv(expiry, y);
+            }
+            @Override
+            protected VanillaSwap.Type underlyingType() {
+                return self.underlyingType();
+            }
+            @Override
+            protected Date underlyingLastDate() {
+                return self.underlyingLastDate();
+            }
+            @Override
+            protected double[] initialGuess(final Date expiry) {
+                return self.initialGuess(expiry);
+            }
+        };
+        return bge.calibrationBasket(exercise, standardSwapBase, swaptionVolatility, basketType);
+    }
+
+    // ── BasketGeneratingEngine hooks ──────────────────────────────────────────
     // These implement the four virtual methods from C++ BasketGeneratingEngine.
-    // They are correct implementations but not callable until that class is ported.
+    // Promoted to package-private (from private) so that the BGE adapter inner
+    // class can access them (see calibrationBasket method below).
 
     /**
      * Mirrors C++ {@code underlyingNpv(expiry, y)}.
      * Computes the NPV of the non-standard swap cashflows conditional on {@code y}
      * at the expiry date.
      */
-    private double underlyingNpv(final Date expiry, final double y) {
+    double underlyingNpv(final Date expiry, final double y) {
         final NonstandardSwaption.ArgumentsImpl args =
                 (NonstandardSwaption.ArgumentsImpl) arguments_;
 
@@ -480,14 +530,14 @@ public class Gaussian1dNonstandardSwaptionEngine extends NonstandardSwaption.Eng
     /**
      * Mirrors C++ {@code underlyingType()}: returns the swap direction.
      */
-    private VanillaSwap.Type underlyingType() {
+    VanillaSwap.Type underlyingType() {
         return ((NonstandardSwaption.ArgumentsImpl) arguments_).swap.type();
     }
 
     /**
      * Mirrors C++ {@code underlyingLastDate()}: last fixed-leg pay date.
      */
-    private Date underlyingLastDate() {
+    Date underlyingLastDate() {
         final List<Date> dates =
                 ((NonstandardSwaption.ArgumentsImpl) arguments_).fixedPayDates;
         return dates.get(dates.size() - 1);
@@ -496,7 +546,7 @@ public class Gaussian1dNonstandardSwaptionEngine extends NonstandardSwaption.Eng
     /**
      * Mirrors C++ {@code initialGuess(expiry)}: returns (nominalAvg, maturityTime, weightedRate).
      */
-    private double[] initialGuess(final Date expiry) {
+    double[] initialGuess(final Date expiry) {
         final NonstandardSwaption.ArgumentsImpl args =
                 (NonstandardSwaption.ArgumentsImpl) arguments_;
         final int fixedIdx = upperBoundIndex(args.fixedResetDates, expiry.add(-1));

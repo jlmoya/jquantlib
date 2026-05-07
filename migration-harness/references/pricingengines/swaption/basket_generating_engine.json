@@ -1,0 +1,541 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "basket_size": 3,
+        "helper_nominals": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "helper_strikes": [
+          0.030476031506104152,
+          0.03048363218808716,
+          0.030451012118343373
+        ],
+        "helper_vols": [
+          0.15,
+          0.15,
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.03,
+        "n_exercise_dates": 3,
+        "spec_tag": "berm_3y_payer",
+        "swap_type": "Payer",
+        "swap_years": 4
+      },
+      "name": "Naive_berm_3y_payer_000"
+    },
+    {
+      "expected": {
+        "basket_size": 3,
+        "helper_nominals": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "helper_strikes": [
+          0.030476031506104152,
+          0.03048363218808716,
+          0.030451012118343373
+        ],
+        "helper_vols": [
+          0.15,
+          0.15,
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.03,
+        "n_exercise_dates": 3,
+        "spec_tag": "berm_3y_recv",
+        "swap_type": "Receiver",
+        "swap_years": 4
+      },
+      "name": "Naive_berm_3y_recv_001"
+    },
+    {
+      "expected": {
+        "basket_size": 5,
+        "helper_nominals": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "helper_strikes": [
+          0.030482363768104072,
+          0.030488449019455317,
+          0.030473598689951534,
+          0.030480332629348586,
+          0.03049378792128636
+        ],
+        "helper_vols": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.025,
+        "n_exercise_dates": 5,
+        "spec_tag": "berm_5y_payer",
+        "swap_type": "Payer",
+        "swap_years": 6
+      },
+      "name": "Naive_berm_5y_payer_002"
+    },
+    {
+      "expected": {
+        "basket_size": 5,
+        "helper_nominals": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "helper_strikes": [
+          0.030482363768104072,
+          0.030488449019455317,
+          0.030473598689951534,
+          0.030480332629348586,
+          0.03049378792128636
+        ],
+        "helper_vols": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.035,
+        "n_exercise_dates": 5,
+        "spec_tag": "berm_5y_recv",
+        "swap_type": "Receiver",
+        "swap_years": 6
+      },
+      "name": "Naive_berm_5y_recv_003"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          1.0
+        ],
+        "helper_strikes": [
+          0.030482776748037337
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.02,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_1y_payer",
+        "swap_type": "Payer",
+        "swap_years": 3
+      },
+      "name": "Naive_euro_1y_payer_004"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          1.0
+        ],
+        "helper_strikes": [
+          0.030482776748037337
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.04,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_1y_recv",
+        "swap_type": "Receiver",
+        "swap_years": 3
+      },
+      "name": "Naive_euro_1y_recv_005"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          1.0
+        ],
+        "helper_strikes": [
+          0.030488449019455317
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.03,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_2y_payer",
+        "swap_type": "Payer",
+        "swap_years": 5
+      },
+      "name": "Naive_euro_2y_payer_006"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          1.0
+        ],
+        "helper_strikes": [
+          0.030488449019455317
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.03,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_2y_recv",
+        "swap_type": "Receiver",
+        "swap_years": 5
+      },
+      "name": "Naive_euro_2y_recv_007"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          1.0
+        ],
+        "helper_strikes": [
+          0.030482776748037337
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.01,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_1y_payer_itm",
+        "swap_type": "Payer",
+        "swap_years": 3
+      },
+      "name": "Naive_euro_1y_payer_itm_008"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          1.0
+        ],
+        "helper_strikes": [
+          0.030482776748037337
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "Naive",
+        "fixed_rate": 0.06,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_1y_recv_otm",
+        "swap_type": "Receiver",
+        "swap_years": 3
+      },
+      "name": "Naive_euro_1y_recv_otm_009"
+    },
+    {
+      "expected": {
+        "basket_size": 3,
+        "helper_nominals": [
+          98.63050561889777,
+          98.63037205034205,
+          98.12870459109064
+        ],
+        "helper_strikes": [
+          0.030416662359806428,
+          0.03041665221171085,
+          0.0304172627920855
+        ],
+        "helper_vols": [
+          0.15,
+          0.15,
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.03,
+        "n_exercise_dates": 3,
+        "spec_tag": "berm_3y_payer",
+        "swap_type": "Payer",
+        "swap_years": 4
+      },
+      "name": "MaturityStrikeByDeltaGamma_berm_3y_payer_010"
+    },
+    {
+      "expected": {
+        "basket_size": 3,
+        "helper_nominals": [
+          98.63050561889777,
+          98.63037205034205,
+          98.12870459109064
+        ],
+        "helper_strikes": [
+          0.030416662359806428,
+          0.03041665221171085,
+          0.0304172627920855
+        ],
+        "helper_vols": [
+          0.15,
+          0.15,
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.03,
+        "n_exercise_dates": 3,
+        "spec_tag": "berm_3y_recv",
+        "swap_type": "Receiver",
+        "swap_years": 4
+      },
+      "name": "MaturityStrikeByDeltaGamma_berm_3y_recv_011"
+    },
+    {
+      "expected": {
+        "basket_size": 5,
+        "helper_nominals": [
+          98.63009145481576,
+          98.6301077813831,
+          98.36945514063692,
+          97.92802518496903,
+          97.80606172667355
+        ],
+        "helper_strikes": [
+          0.025347222564000727,
+          0.025347221837322666,
+          0.025347405517340955,
+          0.02534766988801142,
+          0.025349301765457525
+        ],
+        "helper_vols": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.025,
+        "n_exercise_dates": 5,
+        "spec_tag": "berm_5y_payer",
+        "swap_type": "Payer",
+        "swap_years": 6
+      },
+      "name": "MaturityStrikeByDeltaGamma_berm_5y_payer_012"
+    },
+    {
+      "expected": {
+        "basket_size": 5,
+        "helper_nominals": [
+          98.62970925218575,
+          98.63000151149754,
+          98.37421039077218,
+          97.93506011942242,
+          97.81264112785895
+        ],
+        "helper_strikes": [
+          0.03548611240031288,
+          0.03548611268843508,
+          0.03548581976356644,
+          0.035486046764879695,
+          0.03548777636810954
+        ],
+        "helper_vols": [
+          0.15,
+          0.15,
+          0.15,
+          0.15,
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.035,
+        "n_exercise_dates": 5,
+        "spec_tag": "berm_5y_recv",
+        "swap_type": "Receiver",
+        "swap_years": 6
+      },
+      "name": "MaturityStrikeByDeltaGamma_berm_5y_recv_013"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          98.63031580904493
+        ],
+        "helper_strikes": [
+          0.02027777592613825
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.02,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_1y_payer",
+        "swap_type": "Payer",
+        "swap_years": 3
+      },
+      "name": "MaturityStrikeByDeltaGamma_euro_1y_payer_014"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          98.63053388926598
+        ],
+        "helper_strikes": [
+          0.0405555416042218
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.04,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_1y_recv",
+        "swap_type": "Receiver",
+        "swap_years": 3
+      },
+      "name": "MaturityStrikeByDeltaGamma_euro_1y_recv_015"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          98.63039952325839
+        ],
+        "helper_strikes": [
+          0.0304166637693108
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.03,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_2y_payer",
+        "swap_type": "Payer",
+        "swap_years": 5
+      },
+      "name": "MaturityStrikeByDeltaGamma_euro_2y_payer_016"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          98.63039952325839
+        ],
+        "helper_strikes": [
+          0.0304166637693108
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.03,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_2y_recv",
+        "swap_type": "Receiver",
+        "swap_years": 5
+      },
+      "name": "MaturityStrikeByDeltaGamma_euro_2y_recv_017"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          98.63005679762863
+        ],
+        "helper_strikes": [
+          0.01013888976494857
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.01,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_1y_payer_itm",
+        "swap_type": "Payer",
+        "swap_years": 3
+      },
+      "name": "MaturityStrikeByDeltaGamma_euro_1y_payer_itm_018"
+    },
+    {
+      "expected": {
+        "basket_size": 1,
+        "helper_nominals": [
+          98.62944826241271
+        ],
+        "helper_strikes": [
+          0.06083334078237525
+        ],
+        "helper_vols": [
+          0.15
+        ]
+      },
+      "inputs": {
+        "basket_type": "MaturityStrikeByDeltaGamma",
+        "fixed_rate": 0.06,
+        "n_exercise_dates": 1,
+        "spec_tag": "euro_1y_recv_otm",
+        "swap_type": "Receiver",
+        "swap_years": 3
+      },
+      "name": "MaturityStrikeByDeltaGamma_euro_1y_recv_otm_019"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-07T21:49:34Z",
+  "generated_by": "basket_generating_engine_probe",
+  "test_group": "pricingengines/swaption/basket_generating_engine"
+}

@@ -44,11 +44,18 @@
 
 package org.jquantlib.instruments;
 
+import java.util.List;
+
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.exercise.Exercise;
+import org.jquantlib.indexes.SwapIndex;
+import org.jquantlib.model.BlackCalibrationHelper;
 import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.swaption.BasketGeneratingEngine;
+import org.jquantlib.pricingengines.swaption.gaussian1d.Gaussian1dNonstandardSwaptionEngine;
+import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.time.Date;
 
 /**
@@ -66,11 +73,13 @@ import org.jquantlib.time.Date;
  *     {@link NonstandardSwap.ArgumentsImpl} and adds the swaption fields
  *     ({@code swap}, {@code exercise}, {@code settlementType},
  *     {@code settlementMethod}). This matches the Swaption pattern.
- * <li>C++ {@code calibrationBasket()} is deferred — it requires
- *     {@code BasketGeneratingEngine} which is not yet ported (A.3 / later).
+ * <li>C++ {@code calibrationBasket()} delegates to the engine which extends
+ *     {@code BasketGeneratingEngine}. In Java the engine exposes a public
+ *     {@code calibrationBasket} method instead of inheriting from BGE directly
+ *     (Java lacks C++ multiple inheritance). See Phase 2k Track B.
  * </ul>
  *
- * <p>Phase 2j.5 Track A.2.
+ * <p>Phase 2j.5 Track A.2 (wired Phase 2k Track B).
  */
 public class NonstandardSwaption extends Option {
 
@@ -158,6 +167,37 @@ public class NonstandardSwaption extends Option {
      */
     public Exercise exercise() {
         return exercise;
+    }
+
+    /**
+     * Generates a calibration basket of swaption helpers.
+     *
+     * <p>Mirrors C++ {@code NonstandardSwaption::calibrationBasket(SwapIndex,
+     * SwaptionVolatilityStructure, CalibrationBasketType)}. Delegates to the
+     * pricing engine which must be a
+     * {@link Gaussian1dNonstandardSwaptionEngine} (or another engine that
+     * exposes {@code calibrationBasket()}). Phase 2k Track B.
+     *
+     * @param standardSwapBase    swap index defining basket swaption attributes
+     * @param swaptionVolatility  vol surface for helper construction
+     * @param basketType          Naive or MaturityStrikeByDeltaGamma
+     * @return list of calibration helpers
+     */
+    public List<BlackCalibrationHelper> calibrationBasket(
+            final SwapIndex standardSwapBase,
+            final SwaptionVolatilityStructure swaptionVolatility,
+            final BasketGeneratingEngine.CalibrationBasketType basketType) {
+
+        QL.require(engine != null,
+                "no pricing engine set — cannot generate calibration basket");
+        QL.require(engine instanceof Gaussian1dNonstandardSwaptionEngine,
+                "calibrationBasket requires a Gaussian1dNonstandardSwaptionEngine");
+
+        // Trigger setupArguments so engine's arguments_ are populated
+        setupArguments(engine.getArguments());
+
+        return ((Gaussian1dNonstandardSwaptionEngine) engine)
+                .calibrationBasket(exercise, standardSwapBase, swaptionVolatility, basketType);
     }
 
 

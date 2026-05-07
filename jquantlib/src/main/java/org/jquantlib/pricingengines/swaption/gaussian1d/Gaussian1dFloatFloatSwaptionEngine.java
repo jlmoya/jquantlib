@@ -58,6 +58,7 @@ import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.model.shortrate.onefactormodels.gaussian1d.Gaussian1dModel;
+import org.jquantlib.pricingengines.swaption.BasketGeneratingEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -577,24 +578,67 @@ public class Gaussian1dFloatFloatSwaptionEngine extends FloatFloatSwaption.Engin
         } while (!done);
     }
 
-    // ── BasketGeneratingEngine hooks (not wired to public interface yet) ─────
-    // Provided for parity with C++ design — not used by Phase 2j.5 callers.
+    // ── calibrationBasket() ───────────────────────────────────────────────────
+
+    /**
+     * Generates a calibration basket for a given exercise schedule.
+     *
+     * <p>Mirrors C++ {@code FloatFloatSwaption::calibrationBasket()} which
+     * delegates to {@code BasketGeneratingEngine::calibrationBasket()}.
+     * Phase 2k Track B wiring.
+     *
+     * @param exercise            exercise schedule
+     * @param standardSwapBase    standard swap index for basket construction
+     * @param swaptionVolatility  vol surface
+     * @param basketType          Naive or MaturityStrikeByDeltaGamma
+     * @return list of calibration helper instruments
+     */
+    public java.util.List<org.jquantlib.model.BlackCalibrationHelper> calibrationBasket(
+            final org.jquantlib.exercise.Exercise exercise,
+            final org.jquantlib.indexes.SwapIndex standardSwapBase,
+            final org.jquantlib.termstructures.SwaptionVolatilityStructure swaptionVolatility,
+            final BasketGeneratingEngine.CalibrationBasketType basketType) {
+
+        final Gaussian1dFloatFloatSwaptionEngine self = this;
+        // discountCurve() accessor resolves to model ts if empty
+        final Handle<YieldTermStructure> discTs = discountCurve_;
+        final BasketGeneratingEngine bge = new BasketGeneratingEngine(
+                model_, oas_, discTs) {
+            @Override
+            protected double underlyingNpv(final Date expiry, final double y) {
+                return self.underlyingNpv(expiry, y);
+            }
+            @Override
+            protected VanillaSwap.Type underlyingType() {
+                return self.underlyingType();
+            }
+            @Override
+            protected Date underlyingLastDate() {
+                return self.underlyingLastDate();
+            }
+            @Override
+            protected double[] initialGuess(final Date expiry) {
+                return self.initialGuess(expiry);
+            }
+        };
+        return bge.calibrationBasket(exercise, standardSwapBase, swaptionVolatility, basketType);
+    }
+
+    // ── BasketGeneratingEngine hooks ──────────────────────────────────────────
+    // Promoted to package-private so the anonymous BGE subclass can access them.
 
     /** Mirrors C++ {@code underlyingNpv(expiry, y)}. */
-    @SuppressWarnings("unused")
-    private double underlyingNpv(final Date expiry, final double y) {
+    double underlyingNpv(final Date expiry, final double y) {
         return npvs(expiry, y, true)[1];
     }
 
     /** Mirrors C++ {@code underlyingType()}. */
-    @SuppressWarnings("unused")
-    private VanillaSwap.Type underlyingType() {
+    VanillaSwap.Type underlyingType() {
         return ((FloatFloatSwaption.ArgumentsImpl) arguments_).swap.type();
     }
 
     /** Mirrors C++ {@code underlyingLastDate()} — last leg pay date. */
-    @SuppressWarnings("unused")
-    private Date underlyingLastDate() {
+    Date underlyingLastDate() {
         final FloatFloatSwaption.ArgumentsImpl args =
                 (FloatFloatSwaption.ArgumentsImpl) arguments_;
         final Date l1 = args.leg1PayDates.get(args.leg1PayDates.size() - 1);
@@ -606,8 +650,7 @@ public class Gaussian1dFloatFloatSwaptionEngine extends FloatFloatSwaption.Engin
      * Mirrors C++ {@code initialGuess(expiry)}: returns
      * (nominalAvg1, weightedMaturity1, 0.03).
      */
-    @SuppressWarnings("unused")
-    private double[] initialGuess(final Date expiry) {
+    double[] initialGuess(final Date expiry) {
         final FloatFloatSwaption.ArgumentsImpl args =
                 (FloatFloatSwaption.ArgumentsImpl) arguments_;
         final List<Date> resetDates = args.leg1ResetDates;
