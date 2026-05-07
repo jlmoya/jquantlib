@@ -238,6 +238,44 @@ public abstract class SmileSection implements Observer, Observable {
         return optionPrice(strike, type, 1.0);
     }
 
+    /**
+     * Digital call/put option price computed via a centred finite difference
+     * on the call price function, mirroring C++
+     * {@code SmileSection::digitalOptionPrice}:
+     * <pre>
+     *   m  = (volatilityType == ShiftedLognormal ? -shift() : -infinity)
+     *   kl = max(strike - gap/2, m)
+     *   kr = kl + gap
+     *   D  = sign(type) * (P(kl, type) - P(kr, type)) / gap
+     * </pre>
+     * where {@code P(strike, type)} is {@link #optionPrice(double, Option.Type, double)}.
+     *
+     * @param strike   strike rate
+     * @param type     {@link Option.Type#Call} or {@link Option.Type#Put}
+     * @param discount discount factor applied to the call/put leg
+     * @param gap      finite-difference gap (e.g. 1e-5)
+     * @return digital option price
+     */
+    public double digitalOptionPrice(
+            final double strike, final Option.Type type,
+            final double discount, final double gap) {
+        final double m = (volatilityType_ == VolatilityType.ShiftedLognormal)
+                ? -shift_
+                : -Double.MAX_VALUE;
+        final double kl = Math.max(strike - 0.5 * gap, m);
+        final double kr = kl + gap;
+        final double sign = (type == Option.Type.Call) ? 1.0 : -1.0;
+        return sign * (optionPrice(kl, type, discount) - optionPrice(kr, type, discount)) / gap;
+    }
+
+    /**
+     * Convenience overload: undiscounted ({@code discount=1.0}) digital with
+     * {@code gap=1e-5} (matches C++ default {@code marketRateAccuracy_} class).
+     */
+    public double digitalOptionPrice(final double strike, final Option.Type type) {
+        return digitalOptionPrice(strike, type, 1.0, 1.0e-5);
+    }
+
     //
     // protected methods
     //

@@ -310,19 +310,11 @@ public class KahaleSmileSection extends SmileSection {
     @Override
     public double atmLevel() { return f_; }
 
-    /**
-     * Digital option price using THIS object's optionPrice.
-     * Mirrors C++ {@code SmileSection::digitalOptionPrice} called on {@code this}.
-     * Used only AFTER cFunctions_ are fully populated (sanity check).
-     */
-    private double digitalOptionPrice(final double strike, final Option.Type type,
-                                      final double discount, final double gapParam) {
-        final double m = -source_.shift();
-        final double kl = Math.max(strike - gapParam / 2.0, m);
-        final double kr = kl + gapParam;
-        return (type == Option.Type.Call ? 1.0 : -1.0)
-                * (optionPrice(kl, type, discount) - optionPrice(kr, type, discount)) / gapParam;
-    }
+    // NOTE: the previous private digitalOptionPrice helper was removed when
+    // SmileSection gained a public digitalOptionPrice (Phase 2j.5 Track C.3
+    // alignment). The base implementation is identical for KahaleSmileSection
+    // (forced ShiftedLognormal, shift() == source_.shift()), so callers now use
+    // the inherited surface.
 
     /**
      * Digital option price using the SOURCE section's optionPrice.
