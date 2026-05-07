@@ -1,0 +1,1628 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_atmLevel"
+    },
+    {
+      "expected": {
+        "value": -1.7976931348623157e+308
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_minStrike"
+    },
+    {
+      "expected": {
+        "value": 1.7976931348623157e+308
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_maxStrike"
+    },
+    {
+      "expected": {
+        "value": 1.0054794520547945
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_exerciseTime"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_shift"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.15"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.15"
+    },
+    {
+      "expected": {
+        "strike": 0.2,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.20"
+    },
+    {
+      "expected": {
+        "strike": 0.2,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.20"
+    },
+    {
+      "expected": {
+        "strike": 0.25,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.25"
+    },
+    {
+      "expected": {
+        "strike": 0.25,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.25"
+    },
+    {
+      "expected": {
+        "strike": 0.3,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_k0.30"
+    },
+    {
+      "expected": {
+        "strike": 0.3,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_k0.30"
+    },
+    {
+      "expected": {
+        "strike": null,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_vol_atm"
+    },
+    {
+      "expected": {
+        "strike": null,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": null,
+        "scenario": "A",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "A_var_atm"
+    },
+    {
+      "expected": {
+        "value": 0.06
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_atmLevel"
+    },
+    {
+      "expected": {
+        "value": -1.7976931348623157e+308
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_minStrike"
+    },
+    {
+      "expected": {
+        "value": 1.7976931348623157e+308
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_maxStrike"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.15"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.15"
+    },
+    {
+      "expected": {
+        "strike": 0.2,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.20"
+    },
+    {
+      "expected": {
+        "strike": 0.2,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.20"
+    },
+    {
+      "expected": {
+        "strike": 0.25,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.25"
+    },
+    {
+      "expected": {
+        "strike": 0.25,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.25"
+    },
+    {
+      "expected": {
+        "strike": 0.3,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_k0.30"
+    },
+    {
+      "expected": {
+        "strike": 0.3,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_k0.30"
+    },
+    {
+      "expected": {
+        "strike": null,
+        "value": 0.2
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_vol_atm"
+    },
+    {
+      "expected": {
+        "strike": null,
+        "value": 0.04021917808219179
+      },
+      "inputs": {
+        "overrideAtm": 0.06,
+        "scenario": "B",
+        "shift": 0.0,
+        "srcAtm": 0.05,
+        "srcVol": 0.2
+      },
+      "name": "B_var_atm"
+    },
+    {
+      "expected": {
+        "value": 0.045
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 1.0054794520547945
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_exerciseTime"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.15"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.15"
+    },
+    {
+      "expected": {
+        "strike": 0.2,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.20"
+    },
+    {
+      "expected": {
+        "strike": 0.2,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.20"
+    },
+    {
+      "expected": {
+        "strike": 0.25,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.25"
+    },
+    {
+      "expected": {
+        "strike": 0.25,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.25"
+    },
+    {
+      "expected": {
+        "strike": 0.3,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_k0.30"
+    },
+    {
+      "expected": {
+        "strike": 0.3,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_k0.30"
+    },
+    {
+      "expected": {
+        "strike": null,
+        "value": 0.15
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_vol_atm"
+    },
+    {
+      "expected": {
+        "strike": null,
+        "value": 0.022623287671232874
+      },
+      "inputs": {
+        "T": 1.0054794520547945,
+        "overrideAtm": 0.045,
+        "scenario": "C",
+        "shift": 0.0,
+        "srcAtm": 0.04,
+        "srcVol": 0.15
+      },
+      "name": "C_var_atm"
+    },
+    {
+      "expected": {
+        "value": 0.03
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 0.01
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_shift"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.18
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_vol_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.0324
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_var_k0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.18
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_vol_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.0324
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_var_k0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.18
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_vol_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.0324
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_var_k0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.18
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_vol_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.0324
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_var_k0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.18
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_vol_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.0324
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_var_k0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.18
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_vol_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.0324
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_var_k0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.18
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_vol_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.0324
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_var_k0.10"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.18
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_vol_k0.15"
+    },
+    {
+      "expected": {
+        "strike": 0.15,
+        "value": 0.0324
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_var_k0.15"
+    },
+    {
+      "expected": {
+        "strike": null,
+        "value": 0.18
+      },
+      "inputs": {
+        "T": 1.0,
+        "overrideAtm": null,
+        "scenario": "D",
+        "shift": 0.01,
+        "srcAtm": 0.03,
+        "srcVol": 0.18
+      },
+      "name": "D_vol_atm"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-07T19:48:00Z",
+  "generated_by": "atm_smile_section_probe",
+  "test_group": "termstructures/volatility/atm_smile_section"
+}
