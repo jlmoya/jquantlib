@@ -44,6 +44,9 @@
 
 package org.jquantlib.instruments;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.exercise.Exercise;
@@ -84,6 +87,14 @@ public class FloatFloatSwaption extends Option {
     private final FloatFloatSwap swap_;
     private final Settlement.Type settlementType_;
     private final Settlement.Method settlementMethod_;
+
+    /**
+     * Cached copy of the engine's additionalResults (keyed by name). Populated
+     * during {@link #fetchResults(PricingEngine.Results)} so callers can
+     * retrieve named extra results via {@link #result(String)} (mirrors C++
+     * {@code Instrument::result<T>(name)}).
+     */
+    private Map<String, Object> additionalResults_ = new HashMap<String, Object>();
 
 
     // ── constructors ──────────────────────────────────────────────────────────
@@ -152,6 +163,22 @@ public class FloatFloatSwaption extends Option {
         return exercise;
     }
 
+    /**
+     * Retrieve a named additional result populated by the pricing engine.
+     * Mirrors C++ {@code Instrument::result<T>(name)}. Returns {@code null}
+     * if not present.
+     */
+    public Object result(final String key) /* @ReadOnly */ {
+        calculate();
+        return additionalResults_.get(key);
+    }
+
+    /** Read-only access to the engine's additional-results snapshot. */
+    public Map<String, Object> additionalResults() /* @ReadOnly */ {
+        calculate();
+        return additionalResults_;
+    }
+
 
     // ── Instrument interface ──────────────────────────────────────────────────
 
@@ -163,6 +190,23 @@ public class FloatFloatSwaption extends Option {
     public boolean isExpired() /* @ReadOnly */ {
         final Date today = new Settings().evaluationDate();
         return exercise.lastDate().le(today);
+    }
+
+    /**
+     * Snapshot the engine's additional-results map alongside the standard
+     * NPV/error fields. Mirrors C++ {@code Instrument::fetchResults} which
+     * implicitly captures additionalResults from the engine's results object.
+     */
+    @Override
+    protected void fetchResults(final PricingEngine.Results r) /* @ReadOnly */ {
+        super.fetchResults(r);
+        if (r instanceof Instrument.ResultsImpl) {
+            // copy by reference — engine.reset() will replace map next round
+            additionalResults_ = new HashMap<String, Object>(
+                    ((Instrument.ResultsImpl) r).additionalResults());
+        } else {
+            additionalResults_ = new HashMap<String, Object>();
+        }
     }
 
     /**
