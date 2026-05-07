@@ -164,6 +164,26 @@ public abstract class SwaptionVolatilityStructure extends AbstractTermStructure 
         return smileSectionImpl(optionDate, swapTenor);
     }
 
+    /**
+     * Smile section at a fixed option date and swap tenor.
+     * Mirrors C++ {@code SwaptionVolatilityStructure::smileSection(Date, Period, bool)}.
+     * The {@code extrapolate} flag is accepted for API parity but currently
+     * ignored by the constant-vol implementation.
+     */
+    public SmileSection smileSection(final Date optionDate, final Period swapTenor, final boolean extrapolate) {
+        // C++ calls checkSwapTenor + checkRange; Java's Constant impl does not
+        // need these for a flat surface. Forward to smileSectionImpl directly.
+        return smileSectionImpl(optionDate, swapTenor);
+    }
+
+    /**
+     * Smile section at a fixed option date and swap tenor (no extrapolation).
+     * Convenience overload — see {@link #smileSection(Date, Period, boolean)}.
+     */
+    public SmileSection smileSection(final Date optionDate, final Period swapTenor) {
+        return smileSection(optionDate, swapTenor, false);
+    }
+
     public void checkRange(final double optionTime, final double swapLength, final double k, final boolean extrapolate) {
         super.checkRange(optionTime, extrapolate);
         if (swapLength < 0.0) {
