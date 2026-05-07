@@ -1,0 +1,345 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "fixedLegNPV": -8.308544192515425,
+        "fixedNominal0": 100.0,
+        "fixedRate0": 0.03,
+        "floatingLegNPV": 11.157746682229615,
+        "gearingScalar": 1.0,
+        "nFixedCoupons": 3,
+        "nFloatCoupons": 12,
+        "npv": 2.849202489714189,
+        "spreadScalar": 0.0
+      },
+      "inputs": {
+        "nominal": 100.0,
+        "rate": 0.03,
+        "spread": 0.0,
+        "tenor_years": 3,
+        "type": "Payer"
+      },
+      "name": "from_vanilla_0"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -35.53324321884252,
+        "fixedNominal0": 200.0,
+        "fixedRate0": 0.04,
+        "floatingLegNPV": 36.679242384810536,
+        "gearingScalar": 1.0,
+        "nFixedCoupons": 5,
+        "nFloatCoupons": 20,
+        "npv": 1.1459991659680142,
+        "spreadScalar": 0.001
+      },
+      "inputs": {
+        "nominal": 200.0,
+        "rate": 0.04,
+        "spread": 0.001,
+        "tenor_years": 5,
+        "type": "Payer"
+      },
+      "name": "from_vanilla_1"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": 23.31869086236537,
+        "fixedNominal0": 150.0,
+        "fixedRate0": 0.035,
+        "floatingLegNPV": -26.832696664389925,
+        "gearingScalar": 1.0,
+        "nFixedCoupons": 5,
+        "nFloatCoupons": 20,
+        "npv": -3.514005802024556,
+        "spreadScalar": 0.0
+      },
+      "inputs": {
+        "nominal": 150.0,
+        "rate": 0.035,
+        "spread": 0.0,
+        "tenor_years": 5,
+        "type": "Receiver"
+      },
+      "name": "from_vanilla_2"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": 4.707700362000795,
+        "fixedNominal0": 100.0,
+        "fixedRate0": 0.025,
+        "floatingLegNPV": -7.388556053376972,
+        "gearingScalar": 1.0,
+        "nFixedCoupons": 2,
+        "nFloatCoupons": 8,
+        "npv": -2.680855691376177,
+        "spreadScalar": -0.001
+      },
+      "inputs": {
+        "nominal": 100.0,
+        "rate": 0.025,
+        "spread": -0.001,
+        "tenor_years": 2,
+        "type": "Receiver"
+      },
+      "name": "from_vanilla_3"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -6.691195620475231,
+        "fixedNominal0": 100.0,
+        "fixedRate0": 0.03,
+        "floatingLegNPV": 11.157746682229615,
+        "gearingScalar": 1.0,
+        "nFixedCoupons": 3,
+        "nFloatCoupons": 12,
+        "npv": 4.466551061754384,
+        "spreadScalar": 0.0
+      },
+      "inputs": {
+        "fixedNom0": 100.0,
+        "fixedRate0": 0.03,
+        "gearing": 1.0,
+        "spread": 0.0,
+        "tenor_years": 3,
+        "type": "Payer"
+      },
+      "name": "per_coupon_scalar_0"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": 8.234610415077276,
+        "fixedNominal0": 50.0,
+        "fixedRate0": 0.04,
+        "floatingLegNPV": -8.30267266463352,
+        "gearingScalar": 1.0,
+        "nFixedCoupons": 3,
+        "nFloatCoupons": 12,
+        "npv": -0.06806224955624351,
+        "spreadScalar": 0.0
+      },
+      "inputs": {
+        "fixedNom0": 50.0,
+        "fixedRate0": 0.04,
+        "gearing": 1.0,
+        "spread": 0.0,
+        "tenor_years": 3,
+        "type": "Receiver"
+      },
+      "name": "per_coupon_scalar_1"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -15.368099904531288,
+        "fixedNominal0": 100.0,
+        "fixedRate0": 0.025,
+        "floatingLegNPV": 18.339621192405268,
+        "gearingScalar": 1.0,
+        "nFixedCoupons": 5,
+        "nFloatCoupons": 20,
+        "npv": 2.97152128787398,
+        "spreadScalar": 0.001
+      },
+      "inputs": {
+        "fixedNom0": 100.0,
+        "fixedRate0": 0.025,
+        "gearing": 1.0,
+        "spread": 0.001,
+        "tenor_years": 5,
+        "type": "Payer"
+      },
+      "name": "per_coupon_scalar_2"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": 17.76662160942126,
+        "fixedNominal0": 100.0,
+        "fixedRate0": 0.04,
+        "floatingLegNPV": -8.49307547198466,
+        "gearingScalar": 0.5,
+        "nFixedCoupons": 5,
+        "nFloatCoupons": 20,
+        "npv": 9.2735461374366,
+        "spreadScalar": -0.001
+      },
+      "inputs": {
+        "fixedNom0": 100.0,
+        "fixedRate0": 0.04,
+        "gearing": 0.5,
+        "spread": -0.001,
+        "tenor_years": 5,
+        "type": "Receiver"
+      },
+      "name": "per_coupon_scalar_3"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -8.624237876921649,
+        "fixedNominal0": 100.0,
+        "fixedRate0": 0.03,
+        "floatingLegNPV": 9.924893500776436,
+        "nFixedCoupons": 3,
+        "nFloatCoupons": 12,
+        "npv": 1.3006556238547873
+      },
+      "inputs": {
+        "fixedNom0": 100.0,
+        "fixedRate0": 0.03,
+        "gearing0": 1.1,
+        "spread0": 0.001
+      },
+      "name": "vector_gearing_spread"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": 8.624237876921649,
+        "floatingLegNPV": -9.924893500776436,
+        "nFixedCoupons": 3,
+        "nFloatCoupons": 12,
+        "npv": -1.3006556238547873
+      },
+      "inputs": {
+        "fixedNom0": 100.0,
+        "fixedRate0": 0.03
+      },
+      "name": "vector_gearing_spread_receiver"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -54.17990465751853,
+        "floatingLegNPV": 64.39700830087655,
+        "nFixedCoupons": 5,
+        "nFloatCoupons": 15,
+        "npv": 10.217103643358023
+      },
+      "inputs": {
+        "finalCapitalExchange": false,
+        "intermediateCapitalExchange": true
+      },
+      "name": "intermediate_capital_exchange"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -51.236347428656444,
+        "floatingLegNPV": 42.785705265974364,
+        "nFixedCoupons": 4,
+        "nFloatCoupons": 13,
+        "npv": -8.45064216268208
+      },
+      "inputs": {
+        "finalCapitalExchange": true,
+        "intermediateCapitalExchange": false
+      },
+      "name": "final_capital_exchange"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -98.50163395942592,
+        "floatingLegNPV": 99.85439174240247,
+        "nFixedCoupons": 6,
+        "nFloatCoupons": 16,
+        "npv": 1.3527577829765534
+      },
+      "inputs": {
+        "finalCapitalExchange": true,
+        "intermediateCapitalExchange": true
+      },
+      "name": "both_capital_exchanges"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -3.766160289600653,
+        "floatingLegNPV": 7.5797219417045625,
+        "nFixedCoupons": 2,
+        "nFloatCoupons": 8,
+        "npv": 3.8135616521039095
+      },
+      "inputs": {
+        "rate": 0.02,
+        "spread": 0.0,
+        "tenor_years": 2
+      },
+      "name": "flat_rate_0"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -8.308544192515425,
+        "floatingLegNPV": 11.157746682229615,
+        "nFixedCoupons": 3,
+        "nFloatCoupons": 12,
+        "npv": 2.849202489714189
+      },
+      "inputs": {
+        "rate": 0.03,
+        "spread": 0.0,
+        "tenor_years": 3
+      },
+      "name": "flat_rate_1"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -17.76662160942126,
+        "floatingLegNPV": 17.888464442926615,
+        "nFixedCoupons": 5,
+        "nFloatCoupons": 20,
+        "npv": 0.12184283350535452
+      },
+      "inputs": {
+        "rate": 0.04,
+        "spread": 0.0,
+        "tenor_years": 5
+      },
+      "name": "flat_rate_2"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -22.208277011776595,
+        "floatingLegNPV": 18.79077794188391,
+        "nFixedCoupons": 5,
+        "nFloatCoupons": 20,
+        "npv": -3.417499069892685
+      },
+      "inputs": {
+        "rate": 0.05,
+        "spread": 0.002,
+        "tenor_years": 5
+      },
+      "name": "flat_rate_3"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -35.88573253930364,
+        "floatingLegNPV": 24.09285588072623,
+        "nFixedCoupons": 7,
+        "nFloatCoupons": 28,
+        "npv": -11.79287665857741
+      },
+      "inputs": {
+        "rate": 0.06,
+        "spread": 0.0,
+        "tenor_years": 7
+      },
+      "name": "flat_rate_4"
+    },
+    {
+      "expected": {
+        "fixedLegNPV": -28.27054384940471,
+        "floatingLegNPV": 33.35154286033046,
+        "nFixedCoupons": 10,
+        "nFloatCoupons": 40,
+        "npv": 5.080999010925751
+      },
+      "inputs": {
+        "rate": 0.035,
+        "spread": 0.001,
+        "tenor_years": 10
+      },
+      "name": "flat_rate_5"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-07T19:07:54Z",
+  "generated_by": "nonstandard_swap_probe",
+  "test_group": "instruments/nonstandard_swap"
+}
