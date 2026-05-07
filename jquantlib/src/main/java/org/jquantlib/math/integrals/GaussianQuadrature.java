@@ -17,11 +17,11 @@
  */
 package org.jquantlib.math.integrals;
 
-import java.util.Arrays;
-import java.util.Comparator;
-
 import org.jquantlib.QL;
 import org.jquantlib.math.Ops;
+import org.jquantlib.math.matrixutilities.TqrEigenDecomposition;
+import org.jquantlib.math.matrixutilities.TqrEigenDecomposition.EigenVectorCalculation;
+import org.jquantlib.math.matrixutilities.TqrEigenDecomposition.ShiftStrategy;
 
 /**
  * 1-dimensional Gauss quadrature derived from the orthogonal polynomial
@@ -34,9 +34,8 @@ import org.jquantlib.math.Ops;
  * <p>The constructor builds the symmetric tridiagonal Jacobi matrix of the
  * polynomial's recurrence coefficients and runs an implicit-shift QR
  * eigendecomposition (a transcription of QuantLib's
- * {@code TqrEigenDecomposition}, embedded here as a private inner class
- * because Phase 2j.5 Track C.1 scope is bounded to
- * {@code org.jquantlib.math.integrals}). Eigenvalues become the abscissae;
+ * {@link org.jquantlib.math.matrixutilities.TqrEigenDecomposition}).
+ * Eigenvalues become the abscissae;
  * the first row of the orthogonal eigenvector matrix gives the weights via
  * {@code w_i = mu_0 * v_{0,i}^2 / w(x_i)}.
  *
@@ -74,7 +73,7 @@ public class GaussianQuadrature {
 
         // Implicit-shift tridiagonal QR with first-row eigenvector only,
         // overrelaxation shift strategy (matches C++).
-        final TqrEigen tqr = new TqrEigen(x_, e,
+        final TqrEigenDecomposition tqr = new TqrEigenDecomposition(x_, e,
                 EigenVectorCalculation.OnlyFirstRowEigenVector,
                 ShiftStrategy.Overrelaxation);
 
@@ -117,162 +116,4 @@ public class GaussianQuadrature {
         return sum;
     }
 
-    // ===================================================================
-    // Embedded tridiagonal QR eigendecomposition (Wilkinson algorithm).
-    // Transcription of QuantLib v1.42.1
-    // ql/math/matrixutilities/tqreigendecomposition.{hpp,cpp}.
-    //
-    // Private to this package per Phase 2j.5 Track C.1 scope: the Java port
-    // does not yet host TqrEigenDecomposition in math.matrixutilities (only
-    // SymmetricSchurDecomposition and EigenvalueDecomposition exist there),
-    // and the task scope is bounded to math.integrals. Future phases that
-    // need the same algorithm outside Gauss quadratures should lift this to
-    // org.jquantlib.math.matrixutilities.
-    // ===================================================================
-
-    enum EigenVectorCalculation {
-        WithEigenVector,
-        WithoutEigenVector,
-        OnlyFirstRowEigenVector
-    }
-
-    enum ShiftStrategy {
-        NoShift,
-        Overrelaxation,
-        CloseEigenValue
-    }
-
-    static final class TqrEigen {
-        final double[] d;       // eigenvalues (sorted descending; first ev component non-negative)
-        final double[][] ev;    // eigenvector rows; ev.length == 0/1/n depending on calc
-
-        TqrEigen(final double[] diag,
-                 final double[] sub,
-                 final EigenVectorCalculation calc,
-                 final ShiftStrategy strategy) {
-            final int n = diag.length;
-            QL.require(n == sub.length + 1, "Wrong dimensions");
-
-            this.d = new double[n];
-            System.arraycopy(diag, 0, this.d, 0, n);
-
-            final int evRows = (calc == EigenVectorCalculation.WithEigenVector) ? n
-                             : (calc == EigenVectorCalculation.WithoutEigenVector) ? 0
-                             : 1;
-            this.ev = new double[evRows][n];
-
-            // e[0] is unused; the C++ code copies sub into e starting at index 1
-            final double[] e = new double[n];
-            System.arraycopy(sub, 0, e, 1, n - 1);
-
-            for (int i = 0; i < evRows; ++i) {
-                ev[i][i] = 1.0;
-            }
-
-            for (int k = n - 1; k >= 1; --k) {
-                while (!offDiagIsZero(k, e)) {
-                    int l = k;
-                    while (--l > 0 && !offDiagIsZero(l, e)) {
-                        // walk down to find first zero off-diagonal element
-                    }
-
-                    double q = d[l];
-                    if (strategy != ShiftStrategy.NoShift) {
-                        // eigenvalue of 2x2 sub matrix closer to d[k+1]
-                        final double t1 = Math.sqrt(
-                                0.25 * (d[k] * d[k] + d[k - 1] * d[k - 1])
-                                - 0.5 * d[k - 1] * d[k] + e[k] * e[k]);
-                        final double t2 = 0.5 * (d[k] + d[k - 1]);
-
-                        final double lambda =
-                                (Math.abs(t2 + t1 - d[k]) < Math.abs(t2 - t1 - d[k]))
-                                        ? (t2 + t1) : (t2 - t1);
-
-                        if (strategy == ShiftStrategy.CloseEigenValue) {
-                            q -= lambda;
-                        } else {
-                            q -= ((k == n - 1) ? 1.25 : 1.0) * lambda;
-                        }
-                    }
-
-                    // QR transformation
-                    double sine = 1.0;
-                    double cosine = 1.0;
-                    double u = 0.0;
-
-                    boolean recoverUnderflow = false;
-                    for (int i = l + 1; i <= k && !recoverUnderflow; ++i) {
-                        final double h = cosine * e[i];
-                        final double p = sine * e[i];
-
-                        e[i - 1] = Math.sqrt(p * p + q * q);
-                        if (e[i - 1] != 0.0) {
-                            sine = p / e[i - 1];
-                            cosine = q / e[i - 1];
-
-                            final double g = d[i - 1] - u;
-                            final double t = (d[i] - g) * sine + 2.0 * cosine * h;
-
-                            u = sine * t;
-                            d[i - 1] = g + u;
-                            q = cosine * t - h;
-
-                            for (int j = 0; j < evRows; ++j) {
-                                final double tmp = ev[j][i - 1];
-                                ev[j][i - 1] = sine * ev[j][i] + cosine * tmp;
-                                ev[j][i] = cosine * ev[j][i] - sine * tmp;
-                            }
-                        } else {
-                            // recover from underflow
-                            d[i - 1] -= u;
-                            e[l] = 0.0;
-                            recoverUnderflow = true;
-                        }
-                    }
-
-                    if (!recoverUnderflow) {
-                        d[k] -= u;
-                        e[k] = q;
-                        e[l] = 0.0;
-                    }
-                }
-            }
-
-            // Sort (eigenvalues, eigenvectors) descending by eigenvalue.
-            // First eigenvector component is forced non-negative (matches C++).
-            final Integer[] order = new Integer[n];
-            for (int i = 0; i < n; ++i) order[i] = i;
-            // Stable sort descending by d[i]; matches std::sort with std::greater<>
-            // on pair<Real, vector<Real>> where the vector breaks ties — we use
-            // index-stable Arrays.sort then re-permute.
-            Arrays.sort(order, new Comparator<Integer>() {
-                @Override
-                public int compare(final Integer a, final Integer b) {
-                    return Double.compare(d[b], d[a]);
-                }
-            });
-            final double[] dCopy = d.clone();
-            final double[][] evCopy = new double[evRows][n];
-            for (int j = 0; j < evRows; ++j) {
-                System.arraycopy(ev[j], 0, evCopy[j], 0, n);
-            }
-            for (int i = 0; i < n; ++i) {
-                final int src = order[i];
-                d[i] = dCopy[src];
-                double sign = 1.0;
-                if (evRows > 0 && evCopy[0][src] < 0.0) {
-                    sign = -1.0;
-                }
-                for (int j = 0; j < evRows; ++j) {
-                    ev[j][i] = sign * evCopy[j][src];
-                }
-            }
-        }
-
-        private boolean offDiagIsZero(final int k, final double[] e) {
-            // NR-style termination check: |d[k-1]|+|d[k]| == |d[k-1]|+|d[k]|+|e[k]|
-            final double a = Math.abs(d[k - 1]) + Math.abs(d[k]);
-            return a == a + Math.abs(e[k]);
-        }
-    }
 }
