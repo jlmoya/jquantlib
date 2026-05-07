@@ -2,8 +2,8 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2i.5--complete-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-687%2F0%2F0%2F22-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2j--complete-blue)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-792%2F0%2F0%2F22-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
@@ -42,9 +42,11 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 2g | `jquantlib-phase2g-complete` | Brent.solveImpl pre-loop alignment → **+19 LOOSE→TIGHT promotions**; FdHullWhite/FdG2 deferred to 2h on framework gap | 675/0/0/22 | 2026-04-26 |
 | 2h | `jquantlib-phase2h-complete` | Full `Fdm*` finite-difference framework (~3826 LOC, 30 classes); FdHullWhiteSwaptionEngine + **FdG2 TIGHT 8.4e-15 (bit-exact)** + bonus BicubicSpline Address-mapping fix | 677/0/0/22 | 2026-04-27 |
 | 2i | `jquantlib-phase2i-complete` | **CORE-MATH correctly-rounded `JQuantMath.exp`**; FdHullWhite tier LOOSE → `within(3e-12)`; A3 finding (Apple libm not always correctly-rounded) | 684/0/0/22 | 2026-04-28 |
-| **2i.5** | **`jquantlib-phase2i.5-complete`** | **`JQuantMath.cos` + `.sin` via Dint64 (u128 emulation); NCCS A19 partial — Math.log floor identified for Phase 2j** | **687/0/0/22** | **2026-04-28** |
+| 2i.5 | `jquantlib-phase2i.5-complete` | `JQuantMath.cos` + `.sin` via Dint64 (u128 emulation); NCCS A19 partial — Math.log floor identified | 687/0/0/22 | 2026-04-28 |
+| 2i.6 | `jquantlib-phase2i.6-complete` | `JQuantMath.log` (CORE-MATH, 1203-case bit-exact first-shot); NCCS A19 re-fire pinned `gammaFunction_.logValue` Lanczos as actual residual | 688/0/0/22 | 2026-04-30 |
+| **2j** | **`jquantlib-phase2j-complete`** | **Gaussian1D family partial (P2J-10 trim): full model layer + 3 of 5 engines (Standard SwaptionEngine LOOSE, CapFloorEngine LOOSE, Jamshidian TIGHT) + 3 MF prereqs (MfStateProcess + SmileSectionUtils + KahaleSmileSection); Nonstandard + FloatFloat + MarkovFunctional deferred to Phase 2j.5 (4× A16 fires)** | **792/0/0/22** | **2026-05-02** |
 
-**Current tip:** `aa5a820` on `main`. **Scanner WIP-stub count:** `0`.
+**Current tip:** `efa487b` on `main`. **Scanner WIP-stub count:** `0`. **Active phase:** Phase 2j.5 (autonomous mode).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
@@ -92,8 +94,9 @@ Phase 2i and 2i.5 attack the floor head-on by porting **CORE-MATH** — an acade
 | `JQuantMath.exp` | ✅ Phase 2i | CORE-MATH `src/binary64/exp/exp.c` | Bit-exact across 508 probe cases including all 51 hard-cases DB entries |
 | `JQuantMath.cos` | ✅ Phase 2i.5 | CORE-MATH `src/binary64/cos/cos.c` | Bit-exact across 1,381 probe cases incl. Payne-Hanek stress through 2^50·π |
 | `JQuantMath.sin` | ✅ Phase 2i.5 | CORE-MATH `src/binary64/sin/sin.c` | Bit-exact across 1,376 probe cases |
-| `JQuantMath.log` | 🟡 Phase 2j candidate | CORE-MATH `src/binary64/log/log.c` | NCCS A19 confirmed Math.log as next floor |
-| `JQuantMath.pow` | ⚪ Future | CORE-MATH `src/binary64/pow/pow.c` | Depends on log + exp |
+| `JQuantMath.log` | ✅ Phase 2i.6 | CORE-MATH `src/binary64/log/log.c` | Bit-exact across 1,203 probe cases first-shot. Sister `long[4]` dint64-style helpers (log_dint.h is bit-incompatible with sin/cos's dint.h) |
+| `JQuantMath.pow` | ⚪ Future (BroadieKaya prereq) | CORE-MATH `src/binary64/pow/pow.c` | Depends on log + exp; deferred per Phase 2j-pre B3 (low empirical leverage at 1 site) |
+| `JQuantMath.lgamma` | ❌ Blocked | No correctly-rounded source available | CORE-MATH does not have lgamma; msun/glibc options either non-correctly-rounded or license-incompatible. NCCS EXACT remains blocked. |
 
 A supporting type — `Dint64` — emulates `unsigned __int128` (the extended-precision `dint64_t` CORE-MATH uses for accurate-path arithmetic). It's package-private, validated against 100 probe cases of `add`/`mul`/`mul21`/`fromDouble`/`toDouble`/etc., and **reusable across future log/pow ports**.
 
@@ -183,11 +186,13 @@ mvn clean verify install
 
 ## What the next phase looks like
 
-**Phase 2j** is the next major milestone. Three top candidates ranked by leverage from the [Phase 2i tier audit](docs/migration/phase2i-tier-audit.md) and [Phase 2i.5 completion doc](docs/migration/phase2i.5-completion.md):
+**Phase 2j.5** is in flight (autonomous-mode execution per 2026-05-02 directive — controller decides scope/sequencing without per-phase user gates). Three parallel tracks:
 
-1. **`JQuantMath.log` port** — empirically confirmed (NCCS A19) as the next dominant floor; reuses `Dint64` infrastructure.
-2. **Gaussian1D family** — 10 engines + model; finally unblocked now that correctly-rounded transcendentals are available.
-3. **Douglas ADI / `FdmAffineModelTermStructure`** — the actual non-transcendental floor for FdHullWhite (Phase 2i WI-2 B-1 A19); needed to flip FdHullWhite from `within(3e-12)` to full TIGHT.
+1. **Track A — Nonstandard engine track** — NonstandardSwap + NonstandardSwaption instruments + `Gaussian1dNonstandardSwaptionEngine`
+2. **Track B — FloatFloat engine track** — FloatFloatSwap + FloatFloatSwaption instruments + `Gaussian1dFloatFloatSwaptionEngine`
+3. **Track C — MarkovFunctional track** — `GaussHermiteIntegration` family + `AtmSmileSection` + `MarkovFunctional`
+
+**After Phase 2j.5:** Douglas ADI / FdmAffineModelTermStructure investigation, U128.java shared util refactor, Phase 2h Fdm completeness items (Bermudan/American/dividend, BiCGStab/GMRES, scheme expansion), then Phase 3+ subsystems (`experimental/`, `models/marketmodels/`, `termstructures/credit/`, `inflation/`, etc.). Binding exit criterion: every C++ class, function, header, and test from QuantLib v1.42.1 has a faithful Java equivalent. Realistic path to "done" is ~50-100+ phases.
 
 ## Documentation links
 
