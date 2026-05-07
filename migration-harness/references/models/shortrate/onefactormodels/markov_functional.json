@@ -1,0 +1,1216 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 15.01917808219178
+      },
+      "inputs": null,
+      "name": "swaption_numeraire_time"
+    },
+    {
+      "expected": {
+        "value": 1
+      },
+      "inputs": null,
+      "name": "swaption_sigma_size"
+    },
+    {
+      "expected": {
+        "value": 0.01
+      },
+      "inputs": {
+        "i": 0
+      },
+      "name": "swaption_sigma_00"
+    },
+    {
+      "expected": {
+        "value": 0.6372614025820506
+      },
+      "inputs": {
+        "t": 0.0,
+        "y": -2.0
+      },
+      "name": "swaption_num_000"
+    },
+    {
+      "expected": {
+        "value": 0.6372614025820506
+      },
+      "inputs": {
+        "t": 0.0,
+        "y": -1.0
+      },
+      "name": "swaption_num_001"
+    },
+    {
+      "expected": {
+        "value": 0.6372614025820506
+      },
+      "inputs": {
+        "t": 0.0,
+        "y": 0.0
+      },
+      "name": "swaption_num_002"
+    },
+    {
+      "expected": {
+        "value": 0.6372614025820506
+      },
+      "inputs": {
+        "t": 0.0,
+        "y": 1.0
+      },
+      "name": "swaption_num_003"
+    },
+    {
+      "expected": {
+        "value": 0.6372614025820506
+      },
+      "inputs": {
+        "t": 0.0,
+        "y": 2.0
+      },
+      "name": "swaption_num_004"
+    },
+    {
+      "expected": {
+        "value": 0.6582796358611174
+      },
+      "inputs": {
+        "t": 0.5,
+        "y": -2.0
+      },
+      "name": "swaption_num_005"
+    },
+    {
+      "expected": {
+        "value": 0.6548075537763292
+      },
+      "inputs": {
+        "t": 0.5,
+        "y": -1.0
+      },
+      "name": "swaption_num_006"
+    },
+    {
+      "expected": {
+        "value": 0.6491088892518168
+      },
+      "inputs": {
+        "t": 0.5,
+        "y": 0.0
+      },
+      "name": "swaption_num_007"
+    },
+    {
+      "expected": {
+        "value": 0.6395198914909896
+      },
+      "inputs": {
+        "t": 0.5,
+        "y": 1.0
+      },
+      "name": "swaption_num_008"
+    },
+    {
+      "expected": {
+        "value": 0.6228054191426644
+      },
+      "inputs": {
+        "t": 0.5,
+        "y": 2.0
+      },
+      "name": "swaption_num_009"
+    },
+    {
+      "expected": {
+        "value": 0.6802018667583688
+      },
+      "inputs": {
+        "t": 1.0,
+        "y": -2.0
+      },
+      "name": "swaption_num_010"
+    },
+    {
+      "expected": {
+        "value": 0.6729375620741737
+      },
+      "inputs": {
+        "t": 1.0,
+        "y": -1.0
+      },
+      "name": "swaption_num_011"
+    },
+    {
+      "expected": {
+        "value": 0.6611843979810957
+      },
+      "inputs": {
+        "t": 1.0,
+        "y": 0.0
+      },
+      "name": "swaption_num_012"
+    },
+    {
+      "expected": {
+        "value": 0.64186975474223
+      },
+      "inputs": {
+        "t": 1.0,
+        "y": 1.0
+      },
+      "name": "swaption_num_013"
+    },
+    {
+      "expected": {
+        "value": 0.609522426821949
+      },
+      "inputs": {
+        "t": 1.0,
+        "y": 2.0
+      },
+      "name": "swaption_num_014"
+    },
+    {
+      "expected": {
+        "value": 0.726969413836202
+      },
+      "inputs": {
+        "t": 2.0,
+        "y": -2.0
+      },
+      "name": "swaption_num_015"
+    },
+    {
+      "expected": {
+        "value": 0.7110474244803546
+      },
+      "inputs": {
+        "t": 2.0,
+        "y": -1.0
+      },
+      "name": "swaption_num_016"
+    },
+    {
+      "expected": {
+        "value": 0.6860379091305002
+      },
+      "inputs": {
+        "t": 2.0,
+        "y": 0.0
+      },
+      "name": "swaption_num_017"
+    },
+    {
+      "expected": {
+        "value": 0.6468399638927738
+      },
+      "inputs": {
+        "t": 2.0,
+        "y": 1.0
+      },
+      "name": "swaption_num_018"
+    },
+    {
+      "expected": {
+        "value": 0.586011613645983
+      },
+      "inputs": {
+        "t": 2.0,
+        "y": 2.0
+      },
+      "name": "swaption_num_019"
+    },
+    {
+      "expected": {
+        "value": 0.7780273478024388
+      },
+      "inputs": {
+        "t": 3.0,
+        "y": -2.0
+      },
+      "name": "swaption_num_020"
+    },
+    {
+      "expected": {
+        "value": 0.7518007086592222
+      },
+      "inputs": {
+        "t": 3.0,
+        "y": -1.0
+      },
+      "name": "swaption_num_021"
+    },
+    {
+      "expected": {
+        "value": 0.711859775951741
+      },
+      "inputs": {
+        "t": 3.0,
+        "y": 0.0
+      },
+      "name": "swaption_num_022"
+    },
+    {
+      "expected": {
+        "value": 0.6521654555645705
+      },
+      "inputs": {
+        "t": 3.0,
+        "y": 1.0
+      },
+      "name": "swaption_num_023"
+    },
+    {
+      "expected": {
+        "value": 0.565947222340559
+      },
+      "inputs": {
+        "t": 3.0,
+        "y": 2.0
+      },
+      "name": "swaption_num_024"
+    },
+    {
+      "expected": {
+        "value": 0.8339140226223932
+      },
+      "inputs": {
+        "t": 4.0,
+        "y": -2.0
+      },
+      "name": "swaption_num_025"
+    },
+    {
+      "expected": {
+        "value": 0.7954301917478218
+      },
+      "inputs": {
+        "t": 4.0,
+        "y": -1.0
+      },
+      "name": "swaption_num_026"
+    },
+    {
+      "expected": {
+        "value": 0.7386894646726426
+      },
+      "inputs": {
+        "t": 4.0,
+        "y": 0.0
+      },
+      "name": "swaption_num_027"
+    },
+    {
+      "expected": {
+        "value": 0.6578407123184696
+      },
+      "inputs": {
+        "t": 4.0,
+        "y": 1.0
+      },
+      "name": "swaption_num_028"
+    },
+    {
+      "expected": {
+        "value": 0.5487326492221043
+      },
+      "inputs": {
+        "t": 4.0,
+        "y": 2.0
+      },
+      "name": "swaption_num_029"
+    },
+    {
+      "expected": {
+        "value": 0.9704455335485082
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.0,
+        "y": -1.0
+      },
+      "name": "swaption_zb_000"
+    },
+    {
+      "expected": {
+        "value": 0.9704455335485082
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.0,
+        "y": 0.0
+      },
+      "name": "swaption_zb_001"
+    },
+    {
+      "expected": {
+        "value": 0.9704455335485082
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.0,
+        "y": 1.0
+      },
+      "name": "swaption_zb_002"
+    },
+    {
+      "expected": {
+        "value": 0.9417645335842487
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.0,
+        "y": -1.0
+      },
+      "name": "swaption_zb_003"
+    },
+    {
+      "expected": {
+        "value": 0.9417645335842487
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.0,
+        "y": 0.0
+      },
+      "name": "swaption_zb_004"
+    },
+    {
+      "expected": {
+        "value": 0.9417645335842487
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.0,
+        "y": 1.0
+      },
+      "name": "swaption_zb_005"
+    },
+    {
+      "expected": {
+        "value": 0.8607079764250578
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 0.0,
+        "y": -1.0
+      },
+      "name": "swaption_zb_006"
+    },
+    {
+      "expected": {
+        "value": 0.8607079764250578
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 0.0,
+        "y": 0.0
+      },
+      "name": "swaption_zb_007"
+    },
+    {
+      "expected": {
+        "value": 0.8607079764250578
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 0.0,
+        "y": 1.0
+      },
+      "name": "swaption_zb_008"
+    },
+    {
+      "expected": {
+        "value": 0.7408182206817179
+      },
+      "inputs": {
+        "T": 10.0,
+        "t": 0.0,
+        "y": -1.0
+      },
+      "name": "swaption_zb_009"
+    },
+    {
+      "expected": {
+        "value": 0.7408182206817179
+      },
+      "inputs": {
+        "T": 10.0,
+        "t": 0.0,
+        "y": 0.0
+      },
+      "name": "swaption_zb_010"
+    },
+    {
+      "expected": {
+        "value": 0.7408182206817179
+      },
+      "inputs": {
+        "T": 10.0,
+        "t": 0.0,
+        "y": 1.0
+      },
+      "name": "swaption_zb_011"
+    },
+    {
+      "expected": {
+        "value": 0.9793476822295208
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "y": -1.0
+      },
+      "name": "swaption_zb_012"
+    },
+    {
+      "expected": {
+        "value": 0.9849174770882337
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "y": 0.0
+      },
+      "name": "swaption_zb_013"
+    },
+    {
+      "expected": {
+        "value": 0.9909791212777358
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "y": 1.0
+      },
+      "name": "swaption_zb_014"
+    },
+    {
+      "expected": {
+        "value": 0.9427165724435714
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.5,
+        "y": -1.0
+      },
+      "name": "swaption_zb_015"
+    },
+    {
+      "expected": {
+        "value": 0.955728722117619
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.5,
+        "y": 0.0
+      },
+      "name": "swaption_zb_016"
+    },
+    {
+      "expected": {
+        "value": 0.9693402628172316
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.5,
+        "y": 1.0
+      },
+      "name": "swaption_zb_017"
+    },
+    {
+      "expected": {
+        "value": 0.8482401424790446
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 0.5,
+        "y": -1.0
+      },
+      "name": "swaption_zb_018"
+    },
+    {
+      "expected": {
+        "value": 0.8735016167290302
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 0.5,
+        "y": 0.0
+      },
+      "name": "swaption_zb_019"
+    },
+    {
+      "expected": {
+        "value": 0.8990238230531082
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 0.5,
+        "y": 1.0
+      },
+      "name": "swaption_zb_020"
+    },
+    {
+      "expected": {
+        "value": 0.7460728243179423
+      },
+      "inputs": {
+        "T": 10.0,
+        "t": 0.5,
+        "y": -1.0
+      },
+      "name": "swaption_zb_021"
+    },
+    {
+      "expected": {
+        "value": 0.7534366458383581
+      },
+      "inputs": {
+        "T": 10.0,
+        "t": 0.5,
+        "y": 0.0
+      },
+      "name": "swaption_zb_022"
+    },
+    {
+      "expected": {
+        "value": 0.7582200243607428
+      },
+      "inputs": {
+        "T": 10.0,
+        "t": 0.5,
+        "y": 1.0
+      },
+      "name": "swaption_zb_023"
+    },
+    {
+      "expected": {
+        "value": 0.9590285160970864
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.0,
+        "y": -1.0
+      },
+      "name": "swaption_zb_024"
+    },
+    {
+      "expected": {
+        "value": 0.9700943060322305
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.0,
+        "y": 0.0
+      },
+      "name": "swaption_zb_025"
+    },
+    {
+      "expected": {
+        "value": 0.9818037113465747
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 1.0,
+        "y": 1.0
+      },
+      "name": "swaption_zb_026"
+    },
+    {
+      "expected": {
+        "value": 0.8567821342617427
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 1.0,
+        "y": -1.0
+      },
+      "name": "swaption_zb_027"
+    },
+    {
+      "expected": {
+        "value": 0.8865377783534392
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 1.0,
+        "y": 0.0
+      },
+      "name": "swaption_zb_028"
+    },
+    {
+      "expected": {
+        "value": 0.9164151673719839
+      },
+      "inputs": {
+        "T": 5.0,
+        "t": 1.0,
+        "y": 1.0
+      },
+      "name": "swaption_zb_029"
+    },
+    {
+      "expected": {
+        "value": 0.7604052889619705
+      },
+      "inputs": {
+        "T": 10.0,
+        "t": 1.0,
+        "y": -1.0
+      },
+      "name": "swaption_zb_030"
+    },
+    {
+      "expected": {
+        "value": 0.7662855515052558
+      },
+      "inputs": {
+        "T": 10.0,
+        "t": 1.0,
+        "y": 0.0
+      },
+      "name": "swaption_zb_031"
+    },
+    {
+      "expected": {
+        "value": 0.7669997152084814
+      },
+      "inputs": {
+        "T": 10.0,
+        "t": 1.0,
+        "y": 1.0
+      },
+      "name": "swaption_zb_032"
+    },
+    {
+      "expected": {
+        "value": 0.030000000000000016
+      },
+      "inputs": {
+        "i": 0
+      },
+      "name": "swaption_mkt_zr_00"
+    },
+    {
+      "expected": {
+        "value": 0.029999997598208417
+      },
+      "inputs": {
+        "i": 0
+      },
+      "name": "swaption_mdl_zr_00"
+    },
+    {
+      "expected": {
+        "value": 0.030000000000000006
+      },
+      "inputs": {
+        "i": 1
+      },
+      "name": "swaption_mkt_zr_01"
+    },
+    {
+      "expected": {
+        "value": 0.029999997447642757
+      },
+      "inputs": {
+        "i": 1
+      },
+      "name": "swaption_mdl_zr_01"
+    },
+    {
+      "expected": {
+        "value": 0.029999999999999995
+      },
+      "inputs": {
+        "i": 2
+      },
+      "name": "swaption_mkt_zr_02"
+    },
+    {
+      "expected": {
+        "value": 0.02999999837965164
+      },
+      "inputs": {
+        "i": 2
+      },
+      "name": "swaption_mdl_zr_02"
+    },
+    {
+      "expected": {
+        "value": 0.029999999999999995
+      },
+      "inputs": {
+        "i": 3
+      },
+      "name": "swaption_mkt_zr_03"
+    },
+    {
+      "expected": {
+        "value": 0.029999998748678605
+      },
+      "inputs": {
+        "i": 3
+      },
+      "name": "swaption_mdl_zr_03"
+    },
+    {
+      "expected": {
+        "value": 0.03
+      },
+      "inputs": {
+        "i": 4
+      },
+      "name": "swaption_mkt_zr_04"
+    },
+    {
+      "expected": {
+        "value": 0.02999999914237058
+      },
+      "inputs": {
+        "i": 4
+      },
+      "name": "swaption_mdl_zr_04"
+    },
+    {
+      "expected": {
+        "value": 0.029999999999999995
+      },
+      "inputs": {
+        "i": 5
+      },
+      "name": "swaption_mkt_zr_05"
+    },
+    {
+      "expected": {
+        "value": 0.02999999925863102
+      },
+      "inputs": {
+        "i": 5
+      },
+      "name": "swaption_mdl_zr_05"
+    },
+    {
+      "expected": {
+        "value": 0.029999999999999995
+      },
+      "inputs": {
+        "i": 6
+      },
+      "name": "swaption_mkt_zr_06"
+    },
+    {
+      "expected": {
+        "value": 0.029999999667033858
+      },
+      "inputs": {
+        "i": 6
+      },
+      "name": "swaption_mdl_zr_06"
+    },
+    {
+      "expected": {
+        "value": 0.030000000000000002
+      },
+      "inputs": {
+        "i": 7
+      },
+      "name": "swaption_mkt_zr_07"
+    },
+    {
+      "expected": {
+        "value": 0.029999999821289643
+      },
+      "inputs": {
+        "i": 7
+      },
+      "name": "swaption_mdl_zr_07"
+    },
+    {
+      "expected": {
+        "value": 0.030000000000000016
+      },
+      "inputs": {
+        "i": 8
+      },
+      "name": "swaption_mkt_zr_08"
+    },
+    {
+      "expected": {
+        "value": 0.02999999976137134
+      },
+      "inputs": {
+        "i": 8
+      },
+      "name": "swaption_mdl_zr_08"
+    },
+    {
+      "expected": {
+        "value": 0.03
+      },
+      "inputs": {
+        "i": 9
+      },
+      "name": "swaption_mkt_zr_09"
+    },
+    {
+      "expected": {
+        "value": 0.030000000094385398
+      },
+      "inputs": {
+        "i": 9
+      },
+      "name": "swaption_mdl_zr_09"
+    },
+    {
+      "expected": {
+        "value": 2.506849315068493
+      },
+      "inputs": null,
+      "name": "caplet_numeraire_time"
+    },
+    {
+      "expected": {
+        "value": 1
+      },
+      "inputs": null,
+      "name": "caplet_sigma_size"
+    },
+    {
+      "expected": {
+        "value": 0.01
+      },
+      "inputs": {
+        "i": 0
+      },
+      "name": "caplet_sigma_00"
+    },
+    {
+      "expected": {
+        "value": 0.9275528736894957
+      },
+      "inputs": {
+        "t": 0.0,
+        "y": -1.0
+      },
+      "name": "caplet_num_000"
+    },
+    {
+      "expected": {
+        "value": 0.9275528736894957
+      },
+      "inputs": {
+        "t": 0.0,
+        "y": 0.0
+      },
+      "name": "caplet_num_001"
+    },
+    {
+      "expected": {
+        "value": 0.9275528736894957
+      },
+      "inputs": {
+        "t": 0.0,
+        "y": 1.0
+      },
+      "name": "caplet_num_002"
+    },
+    {
+      "expected": {
+        "value": 0.942552152480539
+      },
+      "inputs": {
+        "t": 0.5,
+        "y": -1.0
+      },
+      "name": "caplet_num_003"
+    },
+    {
+      "expected": {
+        "value": 0.9417103439560853
+      },
+      "inputs": {
+        "t": 0.5,
+        "y": 0.0
+      },
+      "name": "caplet_num_004"
+    },
+    {
+      "expected": {
+        "value": 0.940595668554393
+      },
+      "inputs": {
+        "t": 0.5,
+        "y": 1.0
+      },
+      "name": "caplet_num_005"
+    },
+    {
+      "expected": {
+        "value": 0.9577950216480038
+      },
+      "inputs": {
+        "t": 1.0,
+        "y": -1.0
+      },
+      "name": "caplet_num_006"
+    },
+    {
+      "expected": {
+        "value": 0.956083924140841
+      },
+      "inputs": {
+        "t": 1.0,
+        "y": 0.0
+      },
+      "name": "caplet_num_007"
+    },
+    {
+      "expected": {
+        "value": 0.9538228883546574
+      },
+      "inputs": {
+        "t": 1.0,
+        "y": 1.0
+      },
+      "name": "caplet_num_008"
+    },
+    {
+      "expected": {
+        "value": 0.9732854560870655
+      },
+      "inputs": {
+        "t": 1.5,
+        "y": -1.0
+      },
+      "name": "caplet_num_009"
+    },
+    {
+      "expected": {
+        "value": 0.970676913428337
+      },
+      "inputs": {
+        "t": 1.5,
+        "y": 0.0
+      },
+      "name": "caplet_num_010"
+    },
+    {
+      "expected": {
+        "value": 0.9672371530246713
+      },
+      "inputs": {
+        "t": 1.5,
+        "y": 1.0
+      },
+      "name": "caplet_num_011"
+    },
+    {
+      "expected": {
+        "value": 0.9704455335485082
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.0,
+        "y": -1.0
+      },
+      "name": "caplet_zb_000"
+    },
+    {
+      "expected": {
+        "value": 0.9704455335485082
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.0,
+        "y": 0.0
+      },
+      "name": "caplet_zb_001"
+    },
+    {
+      "expected": {
+        "value": 0.9704455335485082
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.0,
+        "y": 1.0
+      },
+      "name": "caplet_zb_002"
+    },
+    {
+      "expected": {
+        "value": 0.9417645335842487
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.0,
+        "y": -1.0
+      },
+      "name": "caplet_zb_003"
+    },
+    {
+      "expected": {
+        "value": 0.9417645335842487
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.0,
+        "y": 0.0
+      },
+      "name": "caplet_zb_004"
+    },
+    {
+      "expected": {
+        "value": 0.9417645335842487
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.0,
+        "y": 1.0
+      },
+      "name": "caplet_zb_005"
+    },
+    {
+      "expected": {
+        "value": 0.9139311852712282
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 0.0,
+        "y": -1.0
+      },
+      "name": "caplet_zb_006"
+    },
+    {
+      "expected": {
+        "value": 0.9139311852712282
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 0.0,
+        "y": 0.0
+      },
+      "name": "caplet_zb_007"
+    },
+    {
+      "expected": {
+        "value": 0.9139311852712282
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 0.0,
+        "y": 1.0
+      },
+      "name": "caplet_zb_008"
+    },
+    {
+      "expected": {
+        "value": 0.9846726212872761
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "y": -1.0
+      },
+      "name": "caplet_zb_009"
+    },
+    {
+      "expected": {
+        "value": 0.9851112106695726
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "y": 0.0
+      },
+      "name": "caplet_zb_010"
+    },
+    {
+      "expected": {
+        "value": 0.9855522811815274
+      },
+      "inputs": {
+        "T": 1.0,
+        "t": 0.5,
+        "y": 1.0
+      },
+      "name": "caplet_zb_011"
+    },
+    {
+      "expected": {
+        "value": 0.9549794242442473
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.5,
+        "y": -1.0
+      },
+      "name": "caplet_zb_012"
+    },
+    {
+      "expected": {
+        "value": 0.9559974887024442
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.5,
+        "y": 0.0
+      },
+      "name": "caplet_zb_013"
+    },
+    {
+      "expected": {
+        "value": 0.9570162593397383
+      },
+      "inputs": {
+        "T": 2.0,
+        "t": 0.5,
+        "y": 1.0
+      },
+      "name": "caplet_zb_014"
+    },
+    {
+      "expected": {
+        "value": 0.9287101903636513
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 0.5,
+        "y": -1.0
+      },
+      "name": "caplet_zb_015"
+    },
+    {
+      "expected": {
+        "value": 0.9278807443187426
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 0.5,
+        "y": 0.0
+      },
+      "name": "caplet_zb_016"
+    },
+    {
+      "expected": {
+        "value": 0.9267824386156842
+      },
+      "inputs": {
+        "T": 3.0,
+        "t": 0.5,
+        "y": 1.0
+      },
+      "name": "caplet_zb_017"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-07T20:25:59Z",
+  "generated_by": "markov_functional_probe",
+  "test_group": "models/shortrate/onefactormodels/markov_functional"
+}
