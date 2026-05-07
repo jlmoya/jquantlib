@@ -95,8 +95,10 @@ import org.jquantlib.time.TimeUnit;
  *       for all raw strikes to satisfy Java {@code blackFormulaStdDevDerivative}
  *       constraints (surfaces with negative raw strikes should use
  *       {@code KahaleSmile} instead).</li>
- *   <li>{@code CustomSmile} adjustment is <i>not yet supported</i> (requires
- *       a {@code CustomSmileFactory} interface — deferred to Phase 2k.5).</li>
+ *   <li>{@code CustomSmile} adjustment is now supported via the
+ *       {@link CustomSmileFactory} / {@link CustomSmileSection} inner classes
+ *       (Phase 2k Track C.2). Callers must supply a {@code CustomSmileFactory}
+ *       via {@link ModelSettings#withCustomSmileFactory}.</li>
  *   <li>{@code modelOutputs().marketVega_} is populated with {@code 0.0}
  *       (Java {@code SmileSection} does not yet expose
  *       {@code blackFormulaVolDerivative}).</li>
@@ -124,6 +126,86 @@ public class MarkovFunctional extends Gaussian1dModel {
     public static final int CUSTOM_SMILE                      = 1 << 9;
 
     // ──────────────────────────────────────────────────────────────────────
+    //   CustomSmileSection / CustomSmileFactory (C++ markovfunctional.hpp:103-118)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Abstract smile section returned by {@link CustomSmileFactory}.
+     * <p>
+     * Mirrors C++ {@code MarkovFunctional::CustomSmileSection} (markovfunctional.hpp:103-106).
+     * Implementations must provide an inverse-digital-call function so the
+     * numeraire tabulation can solve for the swap rate from a digital price
+     * without calling Brent (the custom smile is assumed arbitrage-free by construction).
+     *
+     * <p>Constructors mirror the four {@link SmileSection} constructors that do not
+     * require a specific DayCounter / VolatilityType — subclasses must forward to one.
+     */
+    public abstract static class CustomSmileSection extends SmileSection {
+
+        /** Construct from expiry time and day-counter (ShiftedLognormal, shift=0). */
+        protected CustomSmileSection(
+                final double exerciseTime, final org.jquantlib.daycounters.DayCounter dc) {
+            super(exerciseTime, dc);
+        }
+
+        /** Construct from expiry date, day-counter, and reference date (ShiftedLognormal, shift=0). */
+        protected CustomSmileSection(
+                final Date exerciseDate,
+                final org.jquantlib.daycounters.DayCounter dc,
+                final Date referenceDate) {
+            super(exerciseDate, dc, referenceDate);
+        }
+
+        /** Construct with explicit volatility type and shift from expiry time. */
+        protected CustomSmileSection(
+                final double exerciseTime,
+                final org.jquantlib.daycounters.DayCounter dc,
+                final org.jquantlib.model.VolatilityType type,
+                final double shift) {
+            super(exerciseTime, dc, type, shift);
+        }
+
+        /** Construct with explicit volatility type and shift from expiry date. */
+        protected CustomSmileSection(
+                final Date exerciseDate,
+                final org.jquantlib.daycounters.DayCounter dc,
+                final Date referenceDate,
+                final org.jquantlib.model.VolatilityType type,
+                final double shift) {
+            super(exerciseDate, dc, referenceDate, type, shift);
+        }
+
+        /**
+         * Return the swap rate {@code r} such that
+         * {@code digitalOptionPrice(r - shift, Call, discount) == price}.
+         *
+         * @param price    target digital call price
+         * @param discount annuity discount (equals {@code CalibrationPoint.annuity_})
+         * @return swap rate inverse
+         */
+        public abstract double inverseDigitalCall(double price, double discount);
+    }
+
+    /**
+     * Abstract factory for user-supplied smile sections used in the
+     * {@link MarkovFunctional#CUSTOM_SMILE} adjustment mode.
+     * <p>
+     * Mirrors C++ {@code MarkovFunctional::CustomSmileFactory} (markovfunctional.hpp:108-117).
+     * Implementations construct a {@link CustomSmileSection} per-fixing from the
+     * raw (ATM-shifted) smile section and the ATM rate.
+     */
+    public abstract static class CustomSmileFactory {
+        /**
+         * Construct a {@link CustomSmileSection} for a given fixing.
+         *
+         * @param source raw (ATM-normalised) smile section built by {@code updateSmiles()}
+         * @param atm    at-the-money rate for this fixing
+         * @return user-supplied {@link CustomSmileSection} (non-null, arbitrage-free)
+         */
+        public abstract CustomSmileSection smileSection(SmileSection source, double atm);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     //   ModelSettings (mirrors C++ MarkovFunctional::ModelSettings)
     // ──────────────────────────────────────────────────────────────────────
 
@@ -142,6 +224,7 @@ public class MarkovFunctional extends Gaussian1dModel {
         public double upperRateBound_        = 2.0;
         public int adjustments_              = KAHALE_SMILE | SMILE_EXPONENTIAL_EXTRAPOLATION;
         public double[] smileMoneynessCheckpoints_ = new double[0];
+        public CustomSmileFactory customSmileFactory_ = null;
 
         public ModelSettings() {}
 
@@ -157,6 +240,10 @@ public class MarkovFunctional extends Gaussian1dModel {
         public ModelSettings removeAdjustment(final int a) { adjustments_ &= ~a; return this; }
         public ModelSettings withSmileMoneynessCheckpoints(final double[] m) {
             smileMoneynessCheckpoints_ = m == null ? new double[0] : m.clone();
+            return this;
+        }
+        public ModelSettings withCustomSmileFactory(final CustomSmileFactory f) {
+            customSmileFactory_ = f;
             return this;
         }
 
@@ -183,8 +270,8 @@ public class MarkovFunctional extends Gaussian1dModel {
             QL.require(lowerRateBound_ < upperRateBound_,
                     "Lower rate bound (%f) must be strictly less than upper rate bound (%f)",
                     lowerRateBound_, upperRateBound_);
-            QL.require((adjustments_ & CUSTOM_SMILE) == 0,
-                    "CustomSmile adjustment not yet supported in Java port (Phase 2j.5 Track C.3 limitation)");
+            QL.require((adjustments_ & CUSTOM_SMILE) == 0 || customSmileFactory_ != null,
+                    "CustomSmile mode requires a non-null CustomSmileFactory in ModelSettings");
         }
     }
 
@@ -781,18 +868,25 @@ public class MarkovFunctional extends Gaussian1dModel {
                 cp.smileSection_ = ks;
                 arbitrageIndices_.add(ks.coreIndices());
 
+            } else if ((modelSettings_.adjustments_ & CUSTOM_SMILE) != 0) {
+                // Custom smile is arbitrage-free by assumption (mirrors C++ markovfunctional.cpp:408-420).
+                cp.smileSection_ = modelSettings_.customSmileFactory_.smileSection(
+                        cp.rawSmileSection_, cp.atm_);
+                arbitrageIndices_.add(new int[]{-1, Integer.MAX_VALUE});
             } else {
-                // No smile pretreatment (no Kahale / no SABR / no Custom).
+                // No smile pretreatment (no Kahale / no SABR / no CustomSmile).
                 cp.smileSection_ = cp.rawSmileSection_;
             }
 
-            // Compute min/max digital prices (skipped for CustomSmile, which we don't support).
-            cp.minRateDigital_ = cp.smileSection_.digitalOptionPrice(
-                    modelSettings_.lowerRateBound_ - cp.smileSection_.shift(),
-                    Option.Type.Call, cp.annuity_, modelSettings_.digitalGap_);
-            cp.maxRateDigital_ = cp.smileSection_.digitalOptionPrice(
-                    modelSettings_.upperRateBound_ - cp.smileSection_.shift(),
-                    Option.Type.Call, cp.annuity_, modelSettings_.digitalGap_);
+            // Compute min/max digital prices — skipped for CustomSmile (it handles its own inversion).
+            if ((modelSettings_.adjustments_ & CUSTOM_SMILE) == 0) {
+                cp.minRateDigital_ = cp.smileSection_.digitalOptionPrice(
+                        modelSettings_.lowerRateBound_ - cp.smileSection_.shift(),
+                        Option.Type.Call, cp.annuity_, modelSettings_.digitalGap_);
+                cp.maxRateDigital_ = cp.smileSection_.digitalOptionPrice(
+                        modelSettings_.upperRateBound_ - cp.smileSection_.shift(),
+                        Option.Type.Call, cp.annuity_, modelSettings_.digitalGap_);
+            }
 
             ++pointIndex;
         }
@@ -808,6 +902,16 @@ public class MarkovFunctional extends Gaussian1dModel {
         // Reverse iteration over calibrationPoints_ — A20 discipline.
         for (Map.Entry<Date, CalibrationPoint> e : calibrationPoints_.descendingMap().entrySet()) {
             final CalibrationPoint cp = e.getValue();
+
+            // For CustomSmile, cast the smile section to retrieve inverseDigitalCall.
+            final CustomSmileSection customSec;
+            if ((modelSettings_.adjustments_ & CUSTOM_SMILE) != 0) {
+                QL.require(cp.smileSection_ instanceof CustomSmileSection,
+                        "no CustomSmileSection given, this is unexpected...");
+                customSec = (CustomSmileSection) cp.smileSection_;
+            } else {
+                customSec = null;
+            }
 
             final Array discreteDeflatedAnnuities = new Array(y_.size());
             for (int j = 0; j < y_.size(); j++) discreteDeflatedAnnuities.set(j, 0.0);
@@ -891,7 +995,10 @@ public class MarkovFunctional extends Gaussian1dModel {
                     digital += integral * numeraire0 * digitalsCorrectionFactor;
 
                     boolean check = true;
-                    if (digital >= cp.minRateDigital_) {
+                    if (customSec != null) {
+                        // CustomSmile handles its own inversion (mirrors C++ markovfunctional.cpp:551-553).
+                        swapRate = customSec.inverseDigitalCall(digital, cp.annuity_);
+                    } else if (digital >= cp.minRateDigital_) {
                         swapRate = modelSettings_.lowerRateBound_ - cp.rawSmileSection_.shift();
                         check = false;
                     } else if (digital <= cp.maxRateDigital_) {
