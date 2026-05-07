@@ -61,16 +61,18 @@ public class MfStateProcess extends StochasticProcess1D {
     }
 
     // -----------------------------------------------------------------------
-    // Package-private setters (called by MarkovFunctional as a "friend")
+    // Public setters (called by MarkovFunctional as a "friend"; Java has no
+    // friend mechanism and MarkovFunctional lives in a different package, so
+    // these are public — Phase 2j.5 Track C.3 alignment).
     // -----------------------------------------------------------------------
 
-    void setTimes(final double[] times) {
+    public void setTimes(final double[] times) {
         times_ = times.clone();
         checkTimesVols();
         notifyObservers();
     }
 
-    void setVols(final double[] vols) {
+    public void setVols(final double[] vols) {
         vols_ = vols.clone();
         checkTimesVols();
         notifyObservers();
