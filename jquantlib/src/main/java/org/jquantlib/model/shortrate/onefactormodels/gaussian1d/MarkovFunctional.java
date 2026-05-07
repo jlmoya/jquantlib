@@ -56,9 +56,13 @@ import org.jquantlib.processes.MfStateProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.termstructures.volatilities.AtmSmileSection;
 import org.jquantlib.termstructures.volatilities.KahaleSmileSection;
+import org.jquantlib.termstructures.volatilities.SabrInterpolatedSmileSection;
 import org.jquantlib.termstructures.volatilities.SmileSection;
+import org.jquantlib.termstructures.volatilities.SmileSectionUtils;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
@@ -83,11 +87,16 @@ import org.jquantlib.time.TimeUnit;
  * <p>
  * <b>Limitations vs C++ v1.42.1.</b>
  * <ul>
- *   <li>{@code SabrSmile} adjustment is <i>not yet supported</i> (requires
- *       {@code SabrInterpolatedSmileSection}, deferred). Setting that flag
- *       triggers a {@link IllegalStateException}.</li>
+ *   <li>{@code SabrSmile} adjustment is now supported via
+ *       {@link SabrInterpolatedSmileSection}. The SABR fit is superimposed with
+ *       a {@link KahaleSmileSection} to guarantee arbitrage-freeness, matching
+ *       C++ behaviour. Note: {@code SabrSmile} with Normal-type input volatilities
+ *       is rejected (as in C++); shifted-lognormal surfaces require a shift ≥ 0
+ *       for all raw strikes to satisfy Java {@code blackFormulaStdDevDerivative}
+ *       constraints (surfaces with negative raw strikes should use
+ *       {@code KahaleSmile} instead).</li>
  *   <li>{@code CustomSmile} adjustment is <i>not yet supported</i> (requires
- *       a {@code CustomSmileFactory} interface — deferred).</li>
+ *       a {@code CustomSmileFactory} interface — deferred to Phase 2k.5).</li>
  *   <li>{@code modelOutputs().marketVega_} is populated with {@code 0.0}
  *       (Java {@code SmileSection} does not yet expose
  *       {@code blackFormulaVolDerivative}).</li>
@@ -174,8 +183,6 @@ public class MarkovFunctional extends Gaussian1dModel {
             QL.require(lowerRateBound_ < upperRateBound_,
                     "Lower rate bound (%f) must be strictly less than upper rate bound (%f)",
                     lowerRateBound_, upperRateBound_);
-            QL.require((adjustments_ & SABR_SMILE) == 0,
-                    "SabrSmile adjustment not yet supported in Java port (Phase 2j.5 Track C.3 limitation)");
             QL.require((adjustments_ & CUSTOM_SMILE) == 0,
                     "CustomSmile adjustment not yet supported in Java port (Phase 2j.5 Track C.3 limitation)");
         }
@@ -724,8 +731,58 @@ public class MarkovFunctional extends Gaussian1dModel {
                         forcedLeftIndex, forcedRightIndex);
                 cp.smileSection_ = ks;
                 arbitrageIndices_.add(ks.coreIndices());
+            } else if ((modelSettings_.adjustments_ & SABR_SMILE) != 0) {
+                // Mirror C++ markovfunctional.cpp lines 355-406:
+                // 1) Build a strike grid from SmileSectionUtils (erase first zero-strike entry).
+                // 2) Require ShiftedLognormal input (Normal not supported).
+                // 3) Require >= 4 strikes for SABR calibration.
+                // 4) Fit SabrInterpolatedSmileSection (initial params: α=0.03, β=0.80, ν=0.50, ρ=0.00).
+                // 5) Superimpose KahaleSmileSection for arbitrage-freeness.
+                final SmileSectionUtils ssutils = new SmileSectionUtils(
+                        cp.rawSmileSection_,
+                        modelSettings_.smileMoneynessCheckpoints_,
+                        cp.atm_);
+                double[] strikeGrid = ssutils.strikeGrid();
+                // Erase first entry (zero / at-barrier strike not wanted in SABR calibration).
+                final double[] k = new double[strikeGrid.length - 1];
+                System.arraycopy(strikeGrid, 1, k, 0, k.length);
+
+                QL.require(cp.rawSmileSection_.volatilityType()
+                                == VolatilityType.ShiftedLognormal,
+                        "MarkovFunctional: SABR calibration to normal input volatilities is not supported");
+                QL.require(k.length >= 4,
+                        "for sabr calibration at least 4 points are needed (is %d)", k.length);
+
+                // Sample volatilities from rawSmileSection at the chosen strikes.
+                final double[] v = new double[k.length];
+                for (int ki = 0; ki < k.length; ki++) {
+                    v[ki] = cp.rawSmileSection_.volatility(k[ki]);
+                }
+
+                // Fit SABR — initial params match C++ (α=0.03, β=0.80, ν=0.50, ρ=0.00, all free).
+                final SabrInterpolatedSmileSection sabrSection = new SabrInterpolatedSmileSection(
+                        expiry, cp.atm_, k, false,
+                        cp.rawSmileSection_.volatility(cp.atm_),
+                        v,
+                        0.03, 0.80, 0.50, 0.00,
+                        false, false, false, false, true,
+                        null, null,
+                        new Actual365Fixed(),
+                        cp.rawSmileSection_.shift());
+
+                // Superimpose Kahale for arbitrage-freeness (mirrors C++ lines 390-406).
+                final KahaleSmileSection ks = new KahaleSmileSection(
+                        sabrSection, cp.atm_, false,
+                        (modelSettings_.adjustments_ & SMILE_EXPONENTIAL_EXTRAPOLATION) != 0,
+                        (modelSettings_.adjustments_ & SMILE_DELETE_ARBITRAGE_POINTS) != 0,
+                        modelSettings_.smileMoneynessCheckpoints_,
+                        modelSettings_.digitalGap_,
+                        forcedLeftIndex, forcedRightIndex);
+                cp.smileSection_ = ks;
+                arbitrageIndices_.add(ks.coreIndices());
+
             } else {
-                // No smile pretreatment (no SABR / no Kahale / no Custom in this port).
+                // No smile pretreatment (no Kahale / no SABR / no Custom).
                 cp.smileSection_ = cp.rawSmileSection_;
             }
 

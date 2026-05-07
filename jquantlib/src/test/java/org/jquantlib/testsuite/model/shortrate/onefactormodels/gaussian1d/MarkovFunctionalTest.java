@@ -242,4 +242,68 @@ public class MarkovFunctionalTest {
                     + " (diff=" + Math.abs(java - cpp) + ")");
         }
     }
+
+    /**
+     * Smoke test: verify that {@code SABR_SMILE} adjustment no longer throws
+     * {@code IllegalStateException} after Phase 2k Track A wiring.
+     *
+     * <p>Uses the same swaption fixture as {@link #buildSwaptionMF()} but with
+     * {@code SABR_SMILE | SMILE_EXPONENTIAL_EXTRAPOLATION} adjustments (mirroring
+     * the natural pairing in C++). The test simply asserts that construction and
+     * {@code numeraireTime()} are reachable — numeric cross-validation of the
+     * SABR-calibrated MF is out of scope for this smoke (that would require a
+     * dedicated C++ probe, deferred to Phase 2k.5).
+     */
+    @Test
+    public void testSabrSmileNoLongerThrows() {
+        new Settings().setEvaluationDate(REFERENCE_DATE);
+
+        final Handle<YieldTermStructure> flatYts = new Handle<YieldTermStructure>(
+                new FlatForward(REFERENCE_DATE, 0.03, new Actual365Fixed()));
+
+        final Handle<SwaptionVolatilityStructure> flatSwaptionVts =
+                new Handle<SwaptionVolatilityStructure>(
+                        new ConstantSwaptionVolatility(
+                                0, new Target(),
+                                BusinessDayConvention.ModifiedFollowing,
+                                0.20, new Actual365Fixed()));
+
+        final SwapIndex swapIndexBase = new EurLiborSwapIsdaFixA(
+                new Period(1, TimeUnit.Years));
+
+        final List<Date> volStepDates = new ArrayList<Date>();
+        final double[] vols = new double[]{0.01};
+
+        final List<Date> expiries = new ArrayList<Date>();
+        expiries.add(REFERENCE_DATE.add(new Period(5, TimeUnit.Years)));
+        final List<Period> tenors = new ArrayList<Period>();
+        tenors.add(new Period(10, TimeUnit.Years));
+
+        // Use SABR_SMILE | SMILE_EXPONENTIAL_EXTRAPOLATION (natural C++ pairing).
+        // lowerRateBound must be 0.0 when KahaleSmile is active; here KAHALE is
+        // NOT set so any lowerRateBound_ is valid. We leave defaults.
+        final MarkovFunctional.ModelSettings settings = new MarkovFunctional.ModelSettings()
+                .withYGridPoints(64)
+                .withYStdDevs(7.0)
+                .withGaussHermitePoints(32)
+                .withDigitalGap(1e-5)
+                .withMarketRateAccuracy(1e-7)
+                .withLowerRateBound(0.0)
+                .withUpperRateBound(2.0)
+                .withAdjustments(
+                        MarkovFunctional.SABR_SMILE
+                        | MarkovFunctional.SMILE_EXPONENTIAL_EXTRAPOLATION);
+
+        final MarkovFunctional mf = new MarkovFunctional(
+                flatYts, 0.01, volStepDates, vols, flatSwaptionVts,
+                expiries, tenors, swapIndexBase, settings);
+
+        // Access numeraireTime() to force lazy-initialization (triggers updateSmiles).
+        // Asserts that no UnsupportedOperationException / IllegalStateException is thrown.
+        final double nt = mf.numeraireTime();
+        // numeraireTime must be > 0 (5Y from reference date)
+        if (nt <= 0.0) {
+            fail("testSabrSmileNoLongerThrows: unexpected numeraireTime=" + nt);
+        }
+    }
 }

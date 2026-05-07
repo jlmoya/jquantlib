@@ -1,0 +1,1857 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 0.1963507919295076
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_alpha"
+    },
+    {
+      "expected": {
+        "value": 0.9999999994980399
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_beta"
+    },
+    {
+      "expected": {
+        "value": 0.41757297264493565
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_nu"
+    },
+    {
+      "expected": {
+        "value": 0.14042511673663147
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_rho"
+    },
+    {
+      "expected": {
+        "value": 0.0015274526241415003
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_rmsError"
+    },
+    {
+      "expected": {
+        "value": 0.008655907131777607
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_maxError"
+    },
+    {
+      "expected": {
+        "value": 3
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_endCriteria"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 0.02
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_minStrike"
+    },
+    {
+      "expected": {
+        "value": 0.08
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_maxStrike"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.2586559071317776
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.06726946940810338
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.21895414432534147
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.04820360727514516
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.2004717695378265
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.04040914369878702
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.1997029379152223
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.04009979088272166
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.20952120328829463
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.04413967783081255
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.22295800084184308
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.04998265518125098
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.23675631018570165
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.05636069315473583
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.33261512055007536
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.11123902564275236
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.09,
+        "value": 0.24984424038904562
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.09"
+    },
+    {
+      "expected": {
+        "strike": 0.09,
+        "value": 0.06276418360328102
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.09"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.26195794226662183
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_vol_0.1"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.06899797427555764
+      },
+      "inputs": {
+        "alpha_init": 0.2,
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "beta_init": 0.5,
+        "forward": 0.05,
+        "nu_init": 0.4,
+        "rho_init": 0.0,
+        "scenario": "A",
+        "shift": 0.0
+      },
+      "name": "A_var_0.1"
+    },
+    {
+      "expected": {
+        "value": 0.04385807935591774
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_alpha"
+    },
+    {
+      "expected": {
+        "value": 0.5000000000000001
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_beta"
+    },
+    {
+      "expected": {
+        "value": 0.45120915971540704
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_nu"
+    },
+    {
+      "expected": {
+        "value": 0.37444671135856517
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_rho"
+    },
+    {
+      "expected": {
+        "value": 0.0018276094507538455
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_rmsError"
+    },
+    {
+      "expected": {
+        "value": 0.022358350639928526
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_maxError"
+    },
+    {
+      "expected": {
+        "value": 3
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_endCriteria"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 0.02
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_minStrike"
+    },
+    {
+      "expected": {
+        "value": 0.08
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_maxStrike"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.2723583506399285
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_vol_0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.07458553182721077
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_var_0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.22181244093045271
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_vol_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.049470352151259965
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_var_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.1997417691668584
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_vol_0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.04011538681209781
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_var_0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.19967744764993994
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_vol_0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.040089554788213654
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_var_0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.21016077047037876
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_vol_0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.04440956341426324
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_var_0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.22297615727971265
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_vol_0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.049990796121885936
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_var_0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.23529592784465975
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_vol_0.08"
+    },
+    {
+      "expected": {
+        "strike": 0.08,
+        "value": 0.055667538995404144
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": true,
+        "beta_val": 0.5,
+        "forward": 0.05,
+        "scenario": "B",
+        "shift": 0.0
+      },
+      "name": "B_var_0.08"
+    },
+    {
+      "expected": {
+        "value": 0.1475697822249319
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_alpha"
+    },
+    {
+      "expected": {
+        "value": 0.999999999970923
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_beta"
+    },
+    {
+      "expected": {
+        "value": 0.4084305854009873
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_nu"
+    },
+    {
+      "expected": {
+        "value": 0.06293632476290574
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_rho"
+    },
+    {
+      "expected": {
+        "value": 0.000862302471900737
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_rmsError"
+    },
+    {
+      "expected": {
+        "value": 0.07319424841052913
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_maxError"
+    },
+    {
+      "expected": {
+        "value": 3
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_endCriteria"
+    },
+    {
+      "expected": {
+        "value": 0.02
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_atmLevel"
+    },
+    {
+      "expected": {
+        "value": -0.01
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_minStrike"
+    },
+    {
+      "expected": {
+        "value": 0.04
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_maxStrike"
+    },
+    {
+      "expected": {
+        "strike": -0.01,
+        "value": 0.27319424841052914
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_vol_-0.01"
+    },
+    {
+      "expected": {
+        "strike": -0.01,
+        "value": 0.07504405680220812
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_var_-0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.0,
+        "value": 0.19926273031786654
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_vol_0"
+    },
+    {
+      "expected": {
+        "strike": 0.0,
+        "value": 0.03992320082081974
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_var_0"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.16029082740710282
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_vol_0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.025833933730858304
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_var_0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.14976088966730267
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_vol_0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.02255121900037456
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_var_0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.16092721455389822
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_vol_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.0260394728683727
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_var_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.17785840380881335
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_vol_0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.03180694666462668
+      },
+      "inputs": {
+        "atmVol": 0.15,
+        "beta_fixed": false,
+        "forward": 0.02,
+        "scenario": "C",
+        "shift": 0.02
+      },
+      "name": "C_var_0.04"
+    },
+    {
+      "expected": {
+        "value": 0.19589865919344673
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_alpha"
+    },
+    {
+      "expected": {
+        "value": 0.999999999989613
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_beta"
+    },
+    {
+      "expected": {
+        "value": 0.4661102217100239
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_nu"
+    },
+    {
+      "expected": {
+        "value": 0.18221783274312317
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_rho"
+    },
+    {
+      "expected": {
+        "value": 0.00024220739072715246
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_rmsError"
+    },
+    {
+      "expected": {
+        "value": 0.0008798285899746516
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_maxError"
+    },
+    {
+      "expected": {
+        "value": 3
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_endCriteria"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 0.03
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_minStrike"
+    },
+    {
+      "expected": {
+        "value": 0.07
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_maxStrike"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.22087982858997465
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_vol_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.04905522962959651
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_var_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.19974818337027894
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_vol_0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.0401179632625196
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_var_0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.20010652930853465
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_vol_0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.04026203470517816
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_var_0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.22992111977211335
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_vol_0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.053153385543658456
+      },
+      "inputs": {
+        "atmVol": 0.2,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "nStrikes": 4,
+        "scenario": "D",
+        "shift": 0.0
+      },
+      "name": "D_var_0.07"
+    },
+    {
+      "expected": {
+        "value": 0.28745364639026416
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_alpha"
+    },
+    {
+      "expected": {
+        "value": 0.9999999999996028
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_beta"
+    },
+    {
+      "expected": {
+        "value": 0.5380974421769875
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_nu"
+    },
+    {
+      "expected": {
+        "value": 0.17187511260086544
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_rho"
+    },
+    {
+      "expected": {
+        "value": 0.006682885760305972
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_rmsError"
+    },
+    {
+      "expected": {
+        "value": 0.05629744368607564
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_maxError"
+    },
+    {
+      "expected": {
+        "value": 3
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_endCriteria"
+    },
+    {
+      "expected": {
+        "value": 0.05
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_atmLevel"
+    },
+    {
+      "expected": {
+        "value": 0.01
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_minStrike"
+    },
+    {
+      "expected": {
+        "value": 0.12
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_maxStrike"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.45629744368607567
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.01,
+        "value": 0.2093482193452115
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.01"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.3614634215415479
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.02,
+        "value": 0.13137172733231742
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.02"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.3133871189690516
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.03,
+        "value": 0.09874963146632919
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.03"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.2960395923373045
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.05,
+        "value": 0.08811965634209352
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.05"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.3272174135543913
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.07,
+        "value": 0.10765792743587338
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.07"
+    },
+    {
+      "expected": {
+        "strike": 0.09,
+        "value": 0.3620885688369216
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.09"
+    },
+    {
+      "expected": {
+        "strike": 0.09,
+        "value": 0.1318265324039173
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.09"
+    },
+    {
+      "expected": {
+        "strike": 0.12,
+        "value": 0.40593024722754595
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.12"
+    },
+    {
+      "expected": {
+        "strike": 0.12,
+        "value": 0.16568226624771912
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.12"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.2939868975992376
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.04,
+        "value": 0.08690187566391515
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.04"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.3096932335928706
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.06,
+        "value": 0.09643543262599301
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.06"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.3778863225339028
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_vol_0.1"
+    },
+    {
+      "expected": {
+        "strike": 0.1,
+        "value": 0.1435805279513924
+      },
+      "inputs": {
+        "atmVol": 0.3,
+        "beta_fixed": false,
+        "forward": 0.05,
+        "scenario": "E",
+        "shift": 0.0
+      },
+      "name": "E_var_0.1"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-07T21:45:39Z",
+  "generated_by": "sabr_interpolated_smile_section_probe",
+  "test_group": "termstructures/volatility/sabr_interpolated_smile_section"
+}
