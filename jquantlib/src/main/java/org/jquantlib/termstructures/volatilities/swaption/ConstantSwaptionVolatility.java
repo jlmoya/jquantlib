@@ -36,6 +36,7 @@ import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.SwaptionVolatilityStructure;
+import org.jquantlib.termstructures.volatilities.FlatSmileSection;
 import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
@@ -194,15 +195,22 @@ public class ConstantSwaptionVolatility extends SwaptionVolatilityStructure {
 
     @Override
     protected SmileSection smileSectionImpl(final double optionTime, final double swapLength) {
-        // Black76-only port: BlackSwaptionEngine reads variance/vol directly,
-        // never asks for a SmileSection. Deferring port of FlatSmileSection
-        // until a smile-aware consumer arrives.
-        return null;
+        // Mirrors C++ ConstantSwaptionVolatility::smileSectionImpl
+        // (swaptionconstantvol.cpp): a flat smile section at the constant vol.
+        // No atm level (caller wraps with AtmSmileSection if needed).
+        return new FlatSmileSection(
+                optionTime,
+                volatility_.currentLink().value(),
+                dayCounter(),
+                org.jquantlib.math.Constants.NULL_REAL,
+                volatilityType_,
+                shift_);
     }
 
     @Override
     protected SmileSection smileSectionImpl(final Date optionDate, final Period swapTenor) {
-        return null;
+        final double t = timeFromReference(optionDate);
+        return smileSectionImpl(t, 0.0);
     }
 
     @Override
