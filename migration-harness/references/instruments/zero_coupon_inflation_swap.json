@@ -1,0 +1,149 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "baseDate_serial": 39215,
+        "fairRate": 0.03572165483091383,
+        "fixedLegBPS": 421.6577376680595,
+        "fixedLegNPV": 81071.90461937059,
+        "fixedLegPaymentDate_serial": 41134,
+        "fixingDate_serial": 41042,
+        "inflationLegNPV": -149425.92699370653,
+        "inflationLegPaymentDate_serial": 41134,
+        "maturityDate_actual_serial": 41134,
+        "npv": -68354.02237433594,
+        "startDate_actual_serial": 39307
+      },
+      "inputs": {
+        "bdc": "ModifiedFollowing",
+        "calendar": "UnitedKingdom",
+        "dayCounter": "ActualActual.ISDA",
+        "fixedRate": 0.02,
+        "interpolation": "AsIndex",
+        "maturity_serial": 41134,
+        "nominal": 1000000.0,
+        "observationLag_months": 3,
+        "startDate_serial": 39307,
+        "type": "Payer"
+      },
+      "name": "A_5y_payer_AsIndex"
+    },
+    {
+      "expected": {
+        "baseDate_serial": 39215,
+        "fairRate": 0.03572165483091383,
+        "fixedLegBPS": -421.6577376680595,
+        "fixedLegNPV": -81071.90461937059,
+        "fixedLegPaymentDate_serial": 41134,
+        "fixingDate_serial": 41042,
+        "inflationLegNPV": 149425.92699370653,
+        "inflationLegPaymentDate_serial": 41134,
+        "maturityDate_actual_serial": 41134,
+        "npv": 68354.02237433594,
+        "startDate_actual_serial": 39307
+      },
+      "inputs": {
+        "bdc": "ModifiedFollowing",
+        "calendar": "UnitedKingdom",
+        "dayCounter": "ActualActual.ISDA",
+        "fixedRate": 0.02,
+        "interpolation": "AsIndex",
+        "maturity_serial": 41134,
+        "nominal": 1000000.0,
+        "observationLag_months": 3,
+        "startDate_serial": 39307,
+        "type": "Receiver"
+      },
+      "name": "B_5y_receiver_AsIndex"
+    },
+    {
+      "expected": {
+        "baseDate_serial": 39215,
+        "fairRate": 0.03556633954046773,
+        "fixedLegBPS": 429.988335874782,
+        "fixedLegNPV": 102358.3820055054,
+        "fixedLegPaymentDate_serial": 41134,
+        "fixingDate_serial": 41042,
+        "inflationLegNPV": -148730.04215747616,
+        "inflationLegPaymentDate_serial": 41134,
+        "maturityDate_actual_serial": 41134,
+        "npv": -46371.66015197076,
+        "startDate_actual_serial": 39307
+      },
+      "inputs": {
+        "bdc": "ModifiedFollowing",
+        "calendar": "UnitedKingdom",
+        "dayCounter": "ActualActual.ISDA",
+        "fixedRate": 0.025,
+        "interpolation": "Linear",
+        "maturity_serial": 41134,
+        "nominal": 1000000.0,
+        "observationLag_months": 3,
+        "startDate_serial": 39307,
+        "type": "Payer"
+      },
+      "name": "C_5y_payer_Linear"
+    },
+    {
+      "expected": {
+        "baseDate_serial": 39215,
+        "fairRate": 0.0378860033332884,
+        "fixedLegBPS": 1583.2446627040881,
+        "fixedLegNPV": 417134.511271274,
+        "fixedLegPaymentDate_serial": 42961,
+        "fixingDate_serial": 42868,
+        "inflationLegNPV": -546323.4673303079,
+        "inflationLegPaymentDate_serial": 42961,
+        "maturityDate_actual_serial": 42960,
+        "npv": -129188.95605903392,
+        "startDate_actual_serial": 39307
+      },
+      "inputs": {
+        "bdc": "ModifiedFollowing",
+        "calendar": "UnitedKingdom",
+        "dayCounter": "ActualActual.ISDA",
+        "fixedRate": 0.03,
+        "interpolation": "AsIndex",
+        "maturity_serial": 42960,
+        "nominal": 2000000.0,
+        "observationLag_months": 3,
+        "startDate_serial": 39307,
+        "type": "Payer"
+      },
+      "name": "D_10y_payer_AsIndex"
+    },
+    {
+      "expected": {
+        "baseDate_serial": 39246,
+        "fairRate": 0.037695878027073304,
+        "fixedLegBPS": 388.94789022246994,
+        "fixedLegNPV": 96439.64630508202,
+        "fixedLegPaymentDate_serial": 42961,
+        "fixingDate_serial": 42899,
+        "inflationLegNPV": -135775.87380574044,
+        "inflationLegPaymentDate_serial": 42961,
+        "maturityDate_actual_serial": 42960,
+        "npv": -39336.227500658424,
+        "startDate_actual_serial": 39307
+      },
+      "inputs": {
+        "bdc": "ModifiedFollowing",
+        "calendar": "UnitedKingdom",
+        "dayCounter": "ActualActual.ISDA",
+        "fixedRate": 0.028,
+        "interpolation": "Flat",
+        "maturity_serial": 42960,
+        "nominal": 500000.0,
+        "observationLag_months": 2,
+        "startDate_serial": 39307,
+        "type": "Payer"
+      },
+      "name": "E_10y_payer_2M_Flat"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T11:54:08Z",
+  "generated_by": "zero_coupon_inflation_swap_probe",
+  "test_group": "instruments/zero_coupon_inflation_swap"
+}
