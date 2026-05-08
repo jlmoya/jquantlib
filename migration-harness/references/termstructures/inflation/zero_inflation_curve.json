@@ -1,0 +1,469 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 39203
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "I"
+      },
+      "name": "I_baseDate_serial"
+    },
+    {
+      "expected": {
+        "value": 39307
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "I"
+      },
+      "name": "I_referenceDate_serial"
+    },
+    {
+      "expected": {
+        "value": 42960
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "I"
+      },
+      "name": "I_maxDate_serial"
+    },
+    {
+      "expected": {
+        "value": 12
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "I"
+      },
+      "name": "I_frequency"
+    },
+    {
+      "expected": {
+        "value": 0.025
+      },
+      "inputs": {
+        "date_serial": 39203,
+        "index": 0
+      },
+      "name": "I_zeroRate_pillar_0"
+    },
+    {
+      "expected": {
+        "value": 0.029872522483192176
+      },
+      "inputs": {
+        "date_serial": 39673,
+        "index": 1
+      },
+      "name": "I_zeroRate_pillar_1"
+    },
+    {
+      "expected": {
+        "value": 0.03193417710136457
+      },
+      "inputs": {
+        "date_serial": 40038,
+        "index": 2
+      },
+      "name": "I_zeroRate_pillar_2"
+    },
+    {
+      "expected": {
+        "value": 0.03393424657534247
+      },
+      "inputs": {
+        "date_serial": 40403,
+        "index": 3
+      },
+      "name": "I_zeroRate_pillar_3"
+    },
+    {
+      "expected": {
+        "value": 0.03596723040838542
+      },
+      "inputs": {
+        "date_serial": 41134,
+        "index": 4
+      },
+      "name": "I_zeroRate_pillar_4"
+    },
+    {
+      "expected": {
+        "value": 0.037986846538456354
+      },
+      "inputs": {
+        "date_serial": 42960,
+        "index": 5
+      },
+      "name": "I_zeroRate_pillar_5"
+    },
+    {
+      "expected": {
+        "value": 0.027939113478273523
+      },
+      "inputs": {
+        "date_serial": 39491
+      },
+      "name": "I_zeroRate_inter_0"
+    },
+    {
+      "expected": {
+        "value": 0.030941348380280106
+      },
+      "inputs": {
+        "date_serial": 39857
+      },
+      "name": "I_zeroRate_inter_1"
+    },
+    {
+      "expected": {
+        "value": 0.03294246575342466
+      },
+      "inputs": {
+        "date_serial": 40222
+      },
+      "name": "I_zeroRate_inter_2"
+    },
+    {
+      "expected": {
+        "value": 0.03496661317292693
+      },
+      "inputs": {
+        "date_serial": 40768
+      },
+      "name": "I_zeroRate_inter_3"
+    },
+    {
+      "expected": {
+        "value": 0.03678659317259875
+      },
+      "inputs": {
+        "date_serial": 41864
+      },
+      "name": "I_zeroRate_inter_4"
+    },
+    {
+      "expected": {
+        "value": 0.03758722029801934
+      },
+      "inputs": {
+        "date_serial": 42595
+      },
+      "name": "I_zeroRate_inter_5"
+    },
+    {
+      "expected": {
+        "value": 0.02610783200908059
+      },
+      "inputs": {
+        "time": 0.0
+      },
+      "name": "I_zeroRate_time_0"
+    },
+    {
+      "expected": {
+        "value": 0.028051864140399896
+      },
+      "inputs": {
+        "time": 0.5
+      },
+      "name": "I_zeroRate_time_1"
+    },
+    {
+      "expected": {
+        "value": 0.0299958962717192
+      },
+      "inputs": {
+        "time": 1.0
+      },
+      "name": "I_zeroRate_time_2"
+    },
+    {
+      "expected": {
+        "value": 0.03099894341658611
+      },
+      "inputs": {
+        "time": 1.5
+      },
+      "name": "I_zeroRate_time_3"
+    },
+    {
+      "expected": {
+        "value": 0.034
+      },
+      "inputs": {
+        "time": 3.0
+      },
+      "name": "I_zeroRate_time_4"
+    },
+    {
+      "expected": {
+        "value": 0.03699978886178533
+      },
+      "inputs": {
+        "time": 7.5
+      },
+      "name": "I_zeroRate_time_5"
+    },
+    {
+      "expected": {
+        "value": 0.03779995777235706
+      },
+      "inputs": {
+        "time": 9.5
+      },
+      "name": "I_zeroRate_time_6"
+    },
+    {
+      "expected": {
+        "values": [
+          39203,
+          39673,
+          40038,
+          40403,
+          41134,
+          42960
+        ]
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "I"
+      },
+      "name": "I_dates_serials"
+    },
+    {
+      "expected": {
+        "values": [
+          -0.2849315068493151,
+          1.0010554682236694,
+          2.0,
+          3.0,
+          5.00105546822367,
+          10.0
+        ]
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "I"
+      },
+      "name": "I_times"
+    },
+    {
+      "expected": {
+        "values": [
+          0.025,
+          0.03,
+          0.032,
+          0.034,
+          0.036,
+          0.038
+        ]
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "I"
+      },
+      "name": "I_rates"
+    },
+    {
+      "expected": {
+        "value": 39203
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "P",
+        "swapObsLag_months": 3
+      },
+      "name": "P_baseDate_serial"
+    },
+    {
+      "expected": {
+        "value": 39307
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "P",
+        "swapObsLag_months": 3
+      },
+      "name": "P_referenceDate_serial"
+    },
+    {
+      "expected": {
+        "value": 0.02499999999999991
+      },
+      "inputs": {
+        "index": 0,
+        "input_rate": 0.025,
+        "tenor_years": 1
+      },
+      "name": "P_helperQuote_0"
+    },
+    {
+      "expected": {
+        "value": 0.028999999999999915
+      },
+      "inputs": {
+        "index": 1,
+        "input_rate": 0.029,
+        "tenor_years": 2
+      },
+      "name": "P_helperQuote_1"
+    },
+    {
+      "expected": {
+        "value": 0.03299999999999992
+      },
+      "inputs": {
+        "index": 2,
+        "input_rate": 0.033,
+        "tenor_years": 5
+      },
+      "name": "P_helperQuote_2"
+    },
+    {
+      "expected": {
+        "value": 0.03600000000000003
+      },
+      "inputs": {
+        "index": 3,
+        "input_rate": 0.036,
+        "tenor_years": 10
+      },
+      "name": "P_helperQuote_3"
+    },
+    {
+      "expected": {
+        "values": [
+          39203,
+          39569,
+          39934,
+          41030,
+          42856
+        ]
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "P",
+        "swapObsLag_months": 3
+      },
+      "name": "P_pillarDates_serials"
+    },
+    {
+      "expected": {
+        "values": [
+          0.024980332444811813,
+          0.024980332444811813,
+          0.028999999999999984,
+          0.0329947799574108,
+          0.035999999999999976
+        ]
+      },
+      "inputs": {
+        "dayCounter": "ActualActual.ISDA",
+        "frequency": "Monthly",
+        "scenario": "P",
+        "swapObsLag_months": 3
+      },
+      "name": "P_pillarData"
+    },
+    {
+      "expected": {
+        "value": 0.024980332444811813
+      },
+      "inputs": {
+        "date_serial": 39491
+      },
+      "name": "P_zeroRate_grid_0"
+    },
+    {
+      "expected": {
+        "value": 0.02599259714542465
+      },
+      "inputs": {
+        "date_serial": 39673
+      },
+      "name": "P_zeroRate_grid_1"
+    },
+    {
+      "expected": {
+        "value": 0.02801806103758895
+      },
+      "inputs": {
+        "date_serial": 39857
+      },
+      "name": "P_zeroRate_grid_2"
+    },
+    {
+      "expected": {
+        "value": 0.029335429424649777
+      },
+      "inputs": {
+        "date_serial": 40038
+      },
+      "name": "P_zeroRate_grid_3"
+    },
+    {
+      "expected": {
+        "value": 0.030666209207227763
+      },
+      "inputs": {
+        "date_serial": 40403
+      },
+      "name": "P_zeroRate_grid_4"
+    },
+    {
+      "expected": {
+        "value": 0.03199698898980575
+      },
+      "inputs": {
+        "date_serial": 40768
+      },
+      "name": "P_zeroRate_grid_5"
+    },
+    {
+      "expected": {
+        "value": 0.0331459174942424
+      },
+      "inputs": {
+        "date_serial": 41134
+      },
+      "name": "P_zeroRate_grid_6"
+    },
+    {
+      "expected": {
+        "value": 0.034347757966176055
+      },
+      "inputs": {
+        "date_serial": 41864
+      },
+      "name": "P_zeroRate_grid_7"
+    },
+    {
+      "expected": {
+        "value": 0.03615155161227495
+      },
+      "inputs": {
+        "date_serial": 42960
+      },
+      "name": "P_zeroRate_grid_8"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T10:57:36Z",
+  "generated_by": "zero_inflation_curve_probe",
+  "test_group": "termstructures/inflation/zero_inflation_curve"
+}
