@@ -33,6 +33,7 @@ package org.jquantlib.termstructures.inflation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
@@ -82,6 +83,14 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     private final InflationTraits traits;
     private final double accuracy;
     private final GlobalBootstrap globalBootstrap;
+    /**
+     * Optional lazy base-date supplier — when non-null, the curve's
+     * baseDate (stored in {@code dates[0]}) is reset on each
+     * {@link #performCalculations()} from {@code baseDateSupplier.get()}.
+     * Mirrors C++ v1.42.1 {@code BaseDateFunc baseDateFunc_}
+     * ({@code piecewisezeroinflationcurve.hpp:48,89-92,128-132,166-170}).
+     */
+    private final Supplier<Date> baseDateSupplier;
     private boolean validCurve;
     private boolean calculated;
     private boolean calculating;
@@ -139,11 +148,71 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         this.traits = new InflationTraits();
         this.accuracy = accuracy;
         this.globalBootstrap = globalBootstrap;
+        this.baseDateSupplier = null;
         this.validCurve = false;
         this.calculated = false;
 
         // Register helpers — bootstrapping needs each helper to know about
         // the curve being built.
+        for (final ZeroCouponInflationSwapHelper h : this.instruments) {
+            h.addObserver(this);
+        }
+    }
+
+    /**
+     * Lazy base-date constructor — Java port of QuantLib v1.42.1
+     * {@code PiecewiseZeroInflationCurve(referenceDate, BaseDateFunc, ...)}
+     * ({@code piecewisezeroinflationcurve.hpp:74-92}).
+     *
+     * <p>The {@code baseDateSupplier} is invoked on every
+     * {@link #performCalculations()} call (typically the first time a public
+     * accessor — including {@link #baseDate()} — is invoked). This lets
+     * callers create a curve whose base date depends on data that does not
+     * yet exist at construction time (e.g. an index's {@code lastFixingDate}
+     * before fixings are added).
+     *
+     * <p>The placeholder base date passed to the base class is {@code referenceDate}
+     * — a sensible default that won't trip negative-Period checks during
+     * construction. The real base date is installed on the first
+     * {@link #performCalculations()}.
+     *
+     * @param baseDateSupplier non-null supplier returning the curve base date.
+     *                         Invoked at every {@code performCalculations()}.
+     */
+    public PiecewiseZeroInflationCurve(
+            final Class<I> classI,
+            final Date referenceDate,
+            final Supplier<Date> baseDateSupplier,
+            final Frequency frequency,
+            final DayCounter dayCounter,
+            final List<ZeroCouponInflationSwapHelper> instruments) {
+        this(classI, referenceDate, baseDateSupplier, frequency, dayCounter,
+             instruments, 1.0e-14);
+    }
+
+    public PiecewiseZeroInflationCurve(
+            final Class<I> classI,
+            final Date referenceDate,
+            final Supplier<Date> baseDateSupplier,
+            final Frequency frequency,
+            final DayCounter dayCounter,
+            final List<ZeroCouponInflationSwapHelper> instruments,
+            final double accuracy) {
+        // Use referenceDate as the placeholder base date — non-null,
+        // sensible-Period default. The real value is installed on the
+        // first performCalculations() via baseDateSupplier.
+        super(classI, referenceDate, referenceDate, frequency, dayCounter);
+        QL.require(baseDateSupplier != null, "null baseDateSupplier");
+        QL.require(instruments != null && !instruments.isEmpty(),
+                "no helpers provided to piecewise inflation curve");
+        this.instruments = new ArrayList<>(instruments);
+        this.traits = new InflationTraits();
+        this.accuracy = accuracy;
+        this.globalBootstrap = null;
+        this.baseDateSupplier = baseDateSupplier;
+        this.validCurve = false;
+        this.calculated = false;
+
         for (final ZeroCouponInflationSwapHelper h : this.instruments) {
             h.addObserver(this);
         }
@@ -199,7 +268,13 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
 
     @Override
     public Date baseDate() {
-        // baseDate is the curve anchor — it does NOT depend on the bootstrap.
+        // Lazy mode: baseDate IS curve-bootstrap dependent — the supplier
+        // may need fixings/quotes/etc. that arrive after construction.
+        // Mirrors C++ PiecewiseZeroInflationCurve<...>::baseDate() at
+        // piecewisezeroinflationcurve.hpp:128-132.
+        if (baseDateSupplier != null) {
+            ensureCalculated();
+        }
         return super.baseDate();
     }
 
@@ -226,6 +301,20 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     //
 
     private void performCalculations() {
+        // Lazy base-date evaluation — mirrors C++
+        // PiecewiseZeroInflationCurve<...>::performCalculations() at
+        // piecewisezeroinflationcurve.hpp:166-170.
+        if (baseDateSupplier != null) {
+            final Date evaluatedBaseDate = baseDateSupplier.get();
+            QL.require(evaluatedBaseDate != null,
+                    "baseDateSupplier returned null");
+            // Replace the placeholder dates[0] with the evaluated base date.
+            // The bootstrap (iterative or global) will rebuild the full
+            // dates/times grid below; we only need dates[0] correct so that
+            // traits.initialDate(this) returns the right value.
+            setDates(new Date[] { evaluatedBaseDate });
+        }
+
         // Branch to GlobalBootstrap if configured — mirrors C++
         // PiecewiseZeroInflationCurve<I, GlobalBootstrap, Traits> path.
         if (globalBootstrap != null) {

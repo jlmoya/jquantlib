@@ -250,16 +250,112 @@ public class InflationTest {
     // testZeroTermStructureLazyBaseDate — inflation.cpp:511-591
     // ===================================================================
     @Test
-    @Ignore("Phase 2v: PiecewiseZeroInflationCurve lazy-baseDate supplier"
-            + " constructor (taking a Supplier<Date>) not ported")
     public void testZeroTermStructureLazyBaseDate() {
-        // C++ creates a curve that calls index->lastFixingDate() lazily,
-        // then sets fixings + quote values, then verifies the lazy curve
-        // produces the same baseDate and nodes as a non-lazy curve.
+        // Faithful port of inflation.cpp:511-591 (Phase 2v L0 A.3).
         //
-        // Java port has only the eager (Date baseDate) constructor on
-        // PiecewiseZeroInflationCurve. Adding the lazy overload requires a
-        // ~50-line port.
+        // The Java IndexManager is a global singleton; clear UK RPI fixings
+        // up-front so any leftover state from earlier tests doesn't poison
+        // this test's empty-then-seed-then-bootstrap flow.
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
+
+        final Calendar calendar = new org.jquantlib.time.calendars.UnitedKingdom();
+        final BusinessDayConvention bdc = BusinessDayConvention.ModifiedFollowing;
+        final Period observationLag = new Period(3, org.jquantlib.time.TimeUnit.Months);
+        final DayCounter dc = new Thirty360(Thirty360.Convention.BondBasis);
+        final Frequency frequency = Frequency.Monthly;
+        Date evaluationDate = new Date(13, Month.August, 2007);
+        evaluationDate = calendar.adjust(evaluationDate, bdc);
+        new Settings().setEvaluationDate(evaluationDate);
+
+        // 14 ZC swap pillars (matches inflation.cpp:524-538).
+        final Date[] zcDates = new Date[] {
+                new Date(13, Month.August, 2008),
+                new Date(13, Month.August, 2009),
+                new Date(13, Month.August, 2010),
+                new Date(15, Month.August, 2011),
+                new Date(13, Month.August, 2012),
+                new Date(13, Month.August, 2014),
+                new Date(13, Month.August, 2017),
+                new Date(13, Month.August, 2019),
+                new Date(15, Month.August, 2022),
+                new Date(14, Month.August, 2027),
+                new Date(13, Month.August, 2032),
+                new Date(15, Month.August, 2037),
+                new Date(13, Month.August, 2047),
+                new Date(13, Month.August, 2057)
+        };
+        final double[] zcRatesPct = new double[] {
+                2.93, 2.95, 2.965, 2.98, 3.0, 3.06, 3.175, 3.243, 3.293,
+                3.338, 3.348, 3.348, 3.308, 3.228
+        };
+
+        final UKRPI ii = new UKRPI(frequency, false, false);
+
+        // Helpers built with EMPTY quotes — value is set later (mirrors
+        // C++ make_shared<SimpleQuote>() with no argument).
+        final List<SimpleQuote> quotes = new ArrayList<>();
+        final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
+        for (int i = 0; i < zcDates.length; ++i) {
+            final SimpleQuote q = new SimpleQuote();
+            quotes.add(q);
+            helpers.add(new ZeroCouponInflationSwapHelper(
+                    new Handle<>(q), observationLag, zcDates[i], calendar, bdc, dc,
+                    ii, CPI.InterpolationType.AsIndex));
+        }
+
+        // Lazy curve — supplier evaluated at performCalculations time.
+        final PiecewiseZeroInflationCurve<Linear> curveLazy =
+                new PiecewiseZeroInflationCurve<>(Linear.class, evaluationDate,
+                        () -> ii.lastFixingDate(), frequency, dc, helpers);
+
+        // Now set quote values.
+        for (int i = 0; i < zcDates.length; ++i) {
+            quotes.get(i).setValue(zcRatesPct[i] / 100.0);
+        }
+
+        // Set fixings — 31 monthly RPI values from Jan 2005 to Jul 2007.
+        final double[] fixData = new double[] {
+                189.9, 189.9, 189.6, 190.5, 191.6, 192.0,
+                192.2, 192.2, 192.6, 193.1, 193.3, 193.6,
+                194.1, 193.4, 194.2, 195.0, 196.5, 197.7,
+                198.5, 198.5, 199.2, 200.1, 200.4, 201.1,
+                202.7, 201.6, 203.1, 204.4, 205.4, 206.2,
+                207.3
+        };
+        Date fixDate = new Date(1, Month.January, 2005);
+        for (final double v : fixData) {
+            ii.addFixing(fixDate, v, true);
+            fixDate = fixDate.add(new Period(1, org.jquantlib.time.TimeUnit.Months));
+        }
+
+        // Now create a non-lazy curve with the explicit baseDate, and
+        // verify the two produce the same baseDate and node set.
+        final Date explicitBaseDate = ii.lastFixingDate();
+        final PiecewiseZeroInflationCurve<Linear> curve =
+                new PiecewiseZeroInflationCurve<>(Linear.class, evaluationDate,
+                        explicitBaseDate, frequency, dc, helpers);
+
+        // Trigger eager bootstrap on both curves.
+        curveLazy.dates();
+        curve.dates();
+
+        assertEquals("lazy baseDate must match eager baseDate",
+                curve.baseDate(), curveLazy.baseDate());
+
+        // Compare nodes (date + data) one-by-one.
+        final Date[] lazyDates = curveLazy.dates();
+        final Date[] eagerDates = curve.dates();
+        assertEquals("date count mismatch", eagerDates.length, lazyDates.length);
+        final double[] lazyData = curveLazy.data();
+        final double[] eagerData = curve.data();
+        for (int i = 0; i < eagerDates.length; ++i) {
+            assertEquals("dates[" + i + "] mismatch", eagerDates[i], lazyDates[i]);
+            assertEquals("data[" + i + "] mismatch (LOOSE 1e-10)",
+                    eagerData[i], lazyData[i], 1.0e-10);
+        }
+
+        // Clean up so subsequent tests start with a known-empty UK RPI.
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
     }
 
     // ===================================================================
