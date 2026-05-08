@@ -40,14 +40,20 @@ import org.jquantlib.util.Pair;
 /**
  * Base class for zero inflation indices.
  *
+ * <p>Mirrors C++ v1.42.1 {@code QuantLib::ZeroInflationIndex}
+ * ({@code ql/indexes/inflationindex.{hpp,cpp}}). C++ exposes the class as
+ * concrete; the Java port follows suit (Phase 2q L0 A.1) so that
+ * {@link #clone(Handle)} can return a new ZCII with the supplied curve handle
+ * without requiring a concrete subclass.
+ *
  * @author Tim Blackler
  *
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
-public abstract class ZeroInflationIndex extends InflationIndex {
-    
+public class ZeroInflationIndex extends InflationIndex {
+
     private Handle<ZeroInflationTermStructure> zeroInflation;
-    
+
     public ZeroInflationIndex(final String familyName,
 			 final Region region,
 			 final boolean revised,
@@ -57,7 +63,7 @@ public abstract class ZeroInflationIndex extends InflationIndex {
 			 final Currency currency) {
     	this(familyName, region, revised, interpolated, frequency, availabilityLag, currency, new Handle<ZeroInflationTermStructure>());
     }
-    
+
     public ZeroInflationIndex(final String familyName,
             				 final Region region,
             				 final boolean revised,
@@ -68,7 +74,27 @@ public abstract class ZeroInflationIndex extends InflationIndex {
             				 final Handle<ZeroInflationTermStructure> zeroInflation) {
     	super(familyName, region, revised, interpolated, frequency, availabilityLag, currency);
     	this.zeroInflation = zeroInflation;
-    	this.zeroInflation.addObserver(this);	
+    	this.zeroInflation.addObserver(this);
+    }
+
+    /**
+     * Return a new {@link ZeroInflationIndex} that is a copy of this one with
+     * the supplied {@link Handle} replacing the internal zero-inflation
+     * term-structure handle.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code ZeroInflationIndex::clone(const
+     * Handle<ZeroInflationTermStructure>&)} ({@code inflationindex.cpp:240}).
+     *
+     * @param h the new zero-inflation term-structure handle
+     * @return  a new {@code ZeroInflationIndex} sharing this index's
+     *          {@code familyName}, {@code region}, {@code revised},
+     *          {@code interpolated}, {@code frequency},
+     *          {@code availabilityLag} and {@code currency}, but linked to
+     *          the supplied curve handle
+     */
+    public ZeroInflationIndex clone(final Handle<ZeroInflationTermStructure> h) {
+        return new ZeroInflationIndex(familyName, region, revised, interpolated,
+                frequency, availabilityLag, currency, h);
     }
  
     @Override

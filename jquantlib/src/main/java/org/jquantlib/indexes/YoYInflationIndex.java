@@ -39,19 +39,25 @@ import org.jquantlib.util.Pair;
 /**
  * Base class for year-on-year inflation indices.
  *
- * These may be genuine indices published on, say, Bloomberg, or
- * "fake" indices that are defined as the ratio of an index at
- * different time points. 
- * 
+ * <p>These may be genuine indices published on, say, Bloomberg, or
+ * "fake" indices that are defined as the ratio of an index at different time
+ * points.
+ *
+ * <p>Mirrors C++ v1.42.1 {@code QuantLib::YoYInflationIndex}
+ * ({@code ql/indexes/inflationindex.{hpp,cpp}}). C++ exposes the class as
+ * concrete; the Java port follows suit (Phase 2q L0 A.1) so that
+ * {@link #clone(Handle)} can return a new YoYInflationIndex with the supplied
+ * curve handle without requiring a concrete subclass.
+ *
  * @author Tim Blackler
  *
  */
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
-public abstract class YoYInflationIndex extends InflationIndex {
-    
+public class YoYInflationIndex extends InflationIndex {
+
     private Handle<YoYInflationTermStructure> yoyInflation;
     private boolean ratio;
-    
+
     public YoYInflationIndex(final String familyName,
 			 final Region region,
 			 final boolean revised,
@@ -61,9 +67,9 @@ public abstract class YoYInflationIndex extends InflationIndex {
 			 final Period availabilityLag,
 			 final Currency currency) {
     	this(familyName, region, revised, interpolated, ratio, frequency, availabilityLag, currency, new Handle<YoYInflationTermStructure	>());
-  	
+
     }
-    
+
     public YoYInflationIndex(final String familyName,
             				 final Region region,
             				 final boolean revised,
@@ -76,7 +82,33 @@ public abstract class YoYInflationIndex extends InflationIndex {
     	super(familyName, region, revised, interpolated, frequency, availabilityLag, currency);
     	this.ratio = ratio;
     	this.yoyInflation = yoyInflation;
-    	this.yoyInflation.addObserver(this);	
+    	this.yoyInflation.addObserver(this);
+    }
+
+    /**
+     * Return a new {@link YoYInflationIndex} that is a copy of this one with
+     * the supplied {@link Handle} replacing the internal year-on-year
+     * inflation term-structure handle.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code YoYInflationIndex::clone(const
+     * Handle<YoYInflationTermStructure>&)} ({@code inflationindex.cpp:391}).
+     *
+     * <p>The C++ implementation has two branches by {@code ratio_} flag.
+     * The Java port mirrors the {@code ratio_ = false} branch (genuine
+     * year-on-year index): copies {@code familyName / region / revised /
+     * interpolated / frequency / availabilityLag / currency} and the
+     * {@code ratio} flag is preserved. The {@code ratio_ = true} branch
+     * (which constructs a ratio YoY from an underlying ZeroInflationIndex)
+     * is not yet exercised by the Java port; it can be added when Track B
+     * (Phase 2q L1) introduces ratio-style YoY indices via the underlying
+     * index constructor.
+     *
+     * @param h the new year-on-year term-structure handle
+     * @return  a new {@code YoYInflationIndex} linked to the supplied handle
+     */
+    public YoYInflationIndex clone(final Handle<YoYInflationTermStructure> h) {
+        return new YoYInflationIndex(familyName, region, revised, interpolated,
+                ratio, frequency, availabilityLag, currency, h);
     }
  
     @Override
