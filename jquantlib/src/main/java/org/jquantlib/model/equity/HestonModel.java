@@ -23,6 +23,7 @@
 package org.jquantlib.model.equity;
 
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.optimization.BoundaryConstraint;
 import org.jquantlib.math.optimization.Constraint;
 import org.jquantlib.math.optimization.PositiveConstraint;
 import org.jquantlib.model.CalibratedModel;
@@ -64,7 +65,7 @@ public class HestonModel extends CalibratedModel {
         arguments_.set(0, new ConstantParameter(process.theta().currentLink().value(), new PositiveConstraint()));
         arguments_.set(1, new ConstantParameter(process.kappa().currentLink().value(), new PositiveConstraint()));
         arguments_.set(2, new ConstantParameter(process.sigma().currentLink().value(), new PositiveConstraint()));
-        arguments_.set(3, new ConstantParameter(process.rho().currentLink().value(), new PositiveConstraint()));
+        arguments_.set(3, new ConstantParameter(process.rho().currentLink().value(), new BoundaryConstraint(-1.0, 1.0)));
         arguments_.set(4, new ConstantParameter(process.v0().currentLink().value(), new PositiveConstraint()));
 
     }
