@@ -22,28 +22,26 @@ import java.util.Set;
  * exponents, InterestRate compounding, large stress, subnormal/boundary
  * cases, hard-rounding-boundary cases, and small integer powers.
  *
- * <p><b>Phase 2n A.1.b/1 partial-port note:</b> the current
- * {@code JQuantMath.pow} implements the CORE-MATH Stage 1 fast path
- * (log_1 → multiply → exp_1 → Ziv rounding test); for the ~0.07% of
- * inputs whose Stage 1 err-bound test fails, we currently fall back to
- * {@link Math#pow}. That fallback bit-matches cr_pow for all but two
- * cases — see {@link #KNOWN_STAGE1_FALLTHROUGH}. Stage 2 (Dint64) and
- * Stage 3 (Qint64 + exact_pow) will close that gap; once they land,
- * remove the exclusion list and validate all 2,763 cases bit-exact.
+ * <p><b>Phase 2n A.1.c status:</b> Stage 1 (fast path) + Stage 2 (Dint64
+ * accurate path) are complete. All 2,763 reference cases are bit-exact
+ * against CORE-MATH cr_pow. Stage 3 (Qint64 + exact_pow) is deferred to
+ * Phase 2o and triggers only when Stage 2's 28-ulp rounding test fails
+ * — extremely rare in practice; when triggered we currently fall back
+ * to {@link Math#pow} which may differ by ≤ 1 ULP on those edge cases.
  *
  * <p>Collect-all-failures pattern (per Phase 2i WI-1.1 review).
  */
 public class JQuantMathPowTest {
 
     /**
-     * Specific reference cases that fall through Stage 1's error bound
-     * AND happen to disagree with JVM's {@link Math#pow} by 1 ULP. These
-     * are the only cases pending Stage 2/3 ports; everything else is
-     * already bit-exact under Stage 1 + Math.pow fallback.
+     * Specific reference cases that the Stage 2 28-ulp rounding test
+     * fails to disambiguate, falling through to {@code Math.pow}. Empty
+     * after Stage 2 lands — Stage 2 is sufficient for all current
+     * reference-set cases; Stage 3 closure (Phase 2o) is reserved for
+     * inputs that strictly need >256-bit precision.
      */
     private static final Set<String> KNOWN_STAGE1_FALLTHROUGH = new HashSet<>(Arrays.asList(
-        "dense_b2.71828_y01186",
-        "compound_b1.5_e0.25_00083"
+        // (empty — Stage 2 catches all current reference cases.)
     ));
 
     @Test
@@ -79,7 +77,7 @@ public class JQuantMathPowTest {
             final StringBuilder sb = new StringBuilder();
             sb.append(mismatches.size()).append(" of ").append(validated)
               .append(" validated cases mismatched (")
-              .append(skipped).append(" cases scoped out pending Stage 2/3 port). First 5:\n");
+              .append(skipped).append(" cases scoped out pending Stage 3 port). First 5:\n");
             for (int i = 0; i < Math.min(5, mismatches.size()); ++i) {
                 sb.append("  ").append(mismatches.get(i)).append('\n');
             }
