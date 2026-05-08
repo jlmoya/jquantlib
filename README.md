@@ -2,8 +2,8 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2k--complete-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-809%2F0%2F0%2F22-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2l--complete-blue)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-812%2F0%2F0%2F22-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
@@ -46,9 +46,10 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 2i.6 | `jquantlib-phase2i.6-complete` | `JQuantMath.log` (CORE-MATH, 1203-case bit-exact first-shot); NCCS A19 re-fire pinned `gammaFunction_.logValue` Lanczos as actual residual | 688/0/0/22 | 2026-04-30 |
 | 2j | `jquantlib-phase2j-complete` | Gaussian1D family partial (P2J-10 trim): full model layer + 3 of 5 engines (Standard SwaptionEngine LOOSE, CapFloorEngine LOOSE, Jamshidian TIGHT) + 3 MF prereqs; Nonstandard + FloatFloat + MarkovFunctional deferred (4× A16 fires) | 792/0/0/22 | 2026-05-02 |
 | 2j.5 | `jquantlib-phase2j.5-complete` | Full Gaussian1D family completion: 5/5 engines + MarkovFunctional (split tier) + 4 niche-engine instruments + GaussHermiteIntegration family + AtmSmileSection + 11 align-fix commits | 801/0/0/22 | 2026-05-02 |
-| **2k** | **`jquantlib-phase2k-complete`** | **Gaussian1D feature completion: SabrInterpolatedSmileSection + MF SabrSmile wiring; BasketGeneratingEngine + Nonstandard/FloatFloat basket-helper wiring; TqrEigenDecomposition lifted to public math.matrixutilities; MarkovFunctional.CustomSmileFactory + CustomSmile branch wiring. All 4 MarkovFunctional smile branches now operational.** | **809/0/0/22** | **2026-05-02** |
+| 2k | `jquantlib-phase2k-complete` | Gaussian1D feature completion: SabrInterpolatedSmileSection + BasketGeneratingEngine + TqrEigenDecomposition lifted + MF.CustomSmileFactory; all 4 MarkovFunctional smile branches operational | 809/0/0/22 | 2026-05-02 |
+| **2l** | **`jquantlib-phase2l-complete`** | **Fdm framework completeness: BiCGStab + GMRES iterative solvers; FdmAmerican/Bermudan step conditions + FdmDividendHandler + vanillaComposite wiring; 6 new schemes (ExplicitEuler + CrankNicolson + CraigSneyd + ModifiedCraigSneyd + MethodOfLines + TrBDF2). 9 schemes total. New `math.ode` package with AdaptiveRungeKutta. Now-unblocked Fdm-dependent engines for Phase 2m: FdHestonHullWhite, FdSabrVanilla, FdConvertibleBond, FdAndreasenHugeLocalVol, FdBlackScholesVanilla.** | **812/0/0/22** | **2026-05-02** |
 
-**Current tip:** `70e5007` on `main`. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
+**Current tip:** `9dab878` on `main`. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
