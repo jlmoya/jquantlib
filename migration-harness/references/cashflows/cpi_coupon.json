@@ -1,0 +1,236 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "adjustedIndexGrowth": 1.01854714064915,
+        "amount": 1018547.14064915,
+        "date_serial": 38944,
+        "indexFixing": 197.7,
+        "indexRatio_at_endDate": 1.01854714064915,
+        "rate": 1.01854714064915
+      },
+      "inputs": {
+        "baseCPI": "194.100000",
+        "baseDate_serial": -1,
+        "endDate_serial": 38942,
+        "fixedRate": 1.0,
+        "notional": 1000000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "paymentDate_serial": 38944,
+        "startDate_serial": 38577
+      },
+      "name": "A1_past_AsIndex_baseCPI"
+    },
+    {
+      "expected": {
+        "adjustedIndexGrowth": 1.01854714064915,
+        "amount": 1018547.14064915,
+        "date_serial": 38944,
+        "indexFixing": 197.7,
+        "indexRatio_at_endDate": 1.01854714064915,
+        "rate": 1.01854714064915
+      },
+      "inputs": {
+        "baseCPI": "194.100000",
+        "baseDate_serial": -1,
+        "endDate_serial": 38942,
+        "fixedRate": 1.0,
+        "notional": 1000000.0,
+        "observationInterpolation": "Flat",
+        "observationLag_months": 3,
+        "paymentDate_serial": 38944,
+        "startDate_serial": 38577
+      },
+      "name": "A2_past_Flat_baseCPI"
+    },
+    {
+      "expected": {
+        "adjustedIndexGrowth": 1.0201425936082165,
+        "amount": 1020142.5936082165,
+        "date_serial": 38944,
+        "indexFixing": 198.00967741935483,
+        "indexRatio_at_endDate": 1.0201425936082165,
+        "rate": 1.0201425936082165
+      },
+      "inputs": {
+        "baseCPI": "194.100000",
+        "baseDate_serial": -1,
+        "endDate_serial": 38942,
+        "fixedRate": 1.0,
+        "notional": 1000000.0,
+        "observationInterpolation": "Linear",
+        "observationLag_months": 3,
+        "paymentDate_serial": 38944,
+        "startDate_serial": 38577
+      },
+      "name": "A3_past_Linear_baseCPI"
+    },
+    {
+      "expected": {
+        "adjustedIndexGrowth": 1.1724828326605168,
+        "amount": 5862414.163302585,
+        "date_serial": 40405,
+        "indexFixing": 227.57891781940629,
+        "indexRatio_at_endDate": 1.1724828326605168,
+        "rate": 1.1724828326605168
+      },
+      "inputs": {
+        "baseCPI": "194.100000",
+        "baseDate_serial": -1,
+        "endDate_serial": 40403,
+        "fixedRate": 1.0,
+        "notional": 1000000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "paymentDate_serial": 40405,
+        "startDate_serial": 38577
+      },
+      "name": "A4_future_AsIndex_baseCPI"
+    },
+    {
+      "expected": {
+        "adjustedIndexGrowth": 1.0296874999999999,
+        "amount": 1029687.4999999999,
+        "date_serial": 38944,
+        "indexFixing": 197.7,
+        "indexRatio_at_endDate": 1.0296874999999999,
+        "rate": 1.0296874999999999
+      },
+      "inputs": {
+        "baseCPI": "null",
+        "baseDate_serial": 38485,
+        "endDate_serial": 38942,
+        "fixedRate": 1.0,
+        "notional": 1000000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "paymentDate_serial": 38944,
+        "startDate_serial": 38577
+      },
+      "name": "A5_past_AsIndex_baseDate"
+    },
+    {
+      "expected": {
+        "adjustedIndexGrowth": 1.1314681563776152,
+        "amount": 1131468.1563776152,
+        "date_serial": 40040,
+        "indexFixing": 219.6179691528951,
+        "indexRatio_at_endDate": 1.1314681563776152,
+        "rate": 0.5657340781888076
+      },
+      "inputs": {
+        "baseCPI": "194.100000",
+        "baseDate_serial": -1,
+        "endDate_serial": 40038,
+        "fixedRate": 0.5,
+        "notional": 500000.0,
+        "observationInterpolation": "Linear",
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "startDate_serial": 38577
+      },
+      "name": "A6_future_Linear_gearing"
+    },
+    {
+      "expected": {
+        "amount": 1062339.0005151983,
+        "baseFixing": 194.1,
+        "date_serial": 39309,
+        "indexFixing": 206.2
+      },
+      "inputs": {
+        "baseDate_serial": 39203,
+        "baseFixing": "194.100000",
+        "growthOnly": false,
+        "interpolation": "AsIndex",
+        "notional": 1000000.0,
+        "observationDate_serial": 39307,
+        "observationLag_months": 3,
+        "paymentDate_serial": 39309
+      },
+      "name": "B1_pastObs_AsIndex_baseFixing_grow"
+    },
+    {
+      "expected": {
+        "amount": 62339.00051519825,
+        "baseFixing": 194.1,
+        "date_serial": 39309,
+        "indexFixing": 206.2
+      },
+      "inputs": {
+        "baseDate_serial": 39203,
+        "baseFixing": "194.100000",
+        "growthOnly": true,
+        "interpolation": "AsIndex",
+        "notional": 1000000.0,
+        "observationDate_serial": 39307,
+        "observationLag_months": 3,
+        "paymentDate_serial": 39309
+      },
+      "name": "B2_pastObs_AsIndex_baseFixing_swap"
+    },
+    {
+      "expected": {
+        "amount": 1172482.8326605167,
+        "baseFixing": 194.1,
+        "date_serial": 40405,
+        "indexFixing": 227.57891781940629
+      },
+      "inputs": {
+        "baseDate_serial": 39203,
+        "baseFixing": "194.100000",
+        "growthOnly": false,
+        "interpolation": "AsIndex",
+        "notional": 1000000.0,
+        "observationDate_serial": 40403,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40405
+      },
+      "name": "B3_futureObs_AsIndex_baseFixing_grow"
+    },
+    {
+      "expected": {
+        "amount": 1173982.9988333355,
+        "baseFixing": 194.1,
+        "date_serial": 40405,
+        "indexFixing": 227.87010007355042
+      },
+      "inputs": {
+        "baseDate_serial": 39203,
+        "baseFixing": "194.100000",
+        "growthOnly": false,
+        "interpolation": "Linear",
+        "notional": 1000000.0,
+        "observationDate_serial": 40403,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40405
+      },
+      "name": "B4_futureObs_Linear_baseFixing_grow"
+    },
+    {
+      "expected": {
+        "amount": 0.0,
+        "baseFixing": 206.2,
+        "date_serial": 39309,
+        "indexFixing": 206.2
+      },
+      "inputs": {
+        "baseDate_serial": 39203,
+        "baseFixing": "null",
+        "growthOnly": true,
+        "interpolation": "AsIndex",
+        "notional": 500000.0,
+        "observationDate_serial": 39307,
+        "observationLag_months": 3,
+        "paymentDate_serial": 39309
+      },
+      "name": "B5_pastObs_AsIndex_baseDate"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T13:04:55Z",
+  "generated_by": "cpi_coupon_probe",
+  "test_group": "cashflows/cpi_coupon"
+}
