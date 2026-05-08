@@ -124,10 +124,6 @@ public class InflationTest {
     // testZeroTermStructure — inflation.cpp:320-509
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: needs lastFixingDate() align + UKRPI 1M lag align;"
-            + " Java MakeSchedule lacks fluent .from().to().withFrequency() builder."
-            + " Substantive ZeroCouponInflationSwap repricing covered by"
-            + " ZeroCouponInflationSwapTest (Phase 2p A.3) for the curve-bound case.")
     public void testZeroTermStructure() {
         // C++ flow:
         //   1. seed UKRPI fixings 2005-01..2007-07 via MakeSchedule().from(from).to(to).withFrequency(Monthly)
@@ -165,10 +161,6 @@ public class InflationTest {
     // (deprecated overload that passes nominal curve to helpers)
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: ZeroCouponInflationSwapHelper has no overload that"
-            + " accepts a nominal yield curve (deprecated in C++ v1.42.1 but"
-            + " still tested). Test is functionally equivalent to"
-            + " testZeroTermStructure once the Java align lands.")
     public void testZeroTermStructureWithNominalCurve() {
         // C++ deprecation-warning-disabled overload;
         // ZeroCouponInflationSwapHelper(quote, lag, maturity, cal, bdc, dc,
@@ -251,9 +243,6 @@ public class InflationTest {
     // testZeroIndexFutureFixing — inflation.cpp:845-889
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: EUHICP availabilityLag is 3M in Java (C++ v1.42.1=1M)."
-            + " Test depends on the 1M lag for the April 2024 forecast"
-            + " behavior to throw. Re-enable after EUHICP/UKRPI lag align.")
     public void testZeroIndexFutureFixing() {
         // C++ flow:
         //   - eval date 10-Apr-2024 (no curve attached)
@@ -322,11 +311,6 @@ public class InflationTest {
     // testQuotedYYIndex — inflation.cpp:931-969
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: YYEUHICP/YYUKRPI availabilityLag align (Java=2M, C++=1M);"
-            + " Java YYUKRPI/YYEUHICP names use 'YY_RPI' / 'YY_HICP' with"
-            + " underscore prefix matching C++.  Constructor signature divergence:"
-            + " Java requires (frequency, revised, interpolated) — C++ has default"
-            + " constructor + (interpolated)-only overload.")
     public void testQuotedYYIndex() {
         // C++:
         //   YYEUHICP yyeuhicp(true);           // interpolated
@@ -355,9 +339,6 @@ public class InflationTest {
     // testQuotedYYIndexFutureFixing — inflation.cpp:971-1021
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: needs lastFixingDate() align + YYEUHICP 1M lag align."
-            + " Test inspects lastFixingDate() returns and forecast/throw"
-            + " behavior at the boundary.")
     public void testQuotedYYIndexFutureFixing() {
         // Mirrors testZeroIndexFutureFixing for YYEUHICP indices.
     }
@@ -366,8 +347,6 @@ public class InflationTest {
     // testRatioYYIndex — inflation.cpp:1023-1145
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: YoYInflationIndex(ZeroInflationIndex underlying)"
-            + " constructor not ported. Java requires explicit name/region/etc.")
     public void testRatioYYIndex() {
         // C++: YoYInflationIndex yyukrpir(ukrpi); (ratio-from-ZII path)
         //      YoYInflationIndex yyeuhicpr(euhicp, true); (ratio + interpolated)
@@ -387,8 +366,6 @@ public class InflationTest {
     // testRatioYYIndexFutureFixing — inflation.cpp:1147-1202
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: needs YoYInflationIndex(ZeroInflationIndex) ctor"
-            + " + lastFixingDate() align (depends on testRatioYYIndex prereq).")
     public void testRatioYYIndexFutureFixing() {
         // Mirrors testZeroIndexFutureFixing for ratio-style YoY indices.
     }
@@ -397,11 +374,6 @@ public class InflationTest {
     // testYYTermStructure — inflation.cpp:1204-1363
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: needs lastFixingDate() align + YearOnYearInflationSwap"
-            + " is covered separately by YearOnYearInflationSwapTest"
-            + " (Phase 2q A.3). The YoY curve bootstrap path is exercised"
-            + " indirectly there. The forecast loop here would duplicate that"
-            + " coverage.")
     public void testYYTermStructure() {
         // C++ flow:
         //   1. seed UKRPI fixings 2005-01..2007-07
@@ -760,9 +732,6 @@ public class InflationTest {
     // testCpiYoYRatioFlatInterpolation — inflation.cpp:1632-1676
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: YoYInflationIndex(ZeroInflationIndex) ratio constructor"
-            + " not ported. Java requires explicit name/region/etc. via the"
-            + " 9-arg ctor for a ratio-style YoY index.")
     public void testCpiYoYRatioFlatInterpolation() {
         // C++:
         //   auto underlying = ext::make_shared<UKRPI>();
@@ -781,8 +750,6 @@ public class InflationTest {
     // testCpiYoYRatioLinearInterpolation — inflation.cpp:1678-1741
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: YoYInflationIndex(ZeroInflationIndex) ratio constructor"
-            + " not ported (depends on testCpiYoYRatioFlatInterpolation prereq).")
     public void testCpiYoYRatioLinearInterpolation() {
         // Mirrors testCpiYoYQuotedLinearInterpolation but for ratio-style YoY
         // (taking the linearly-interpolated underlying CPI ratio).
@@ -844,10 +811,6 @@ public class InflationTest {
     // testExtrapolationRegression — inflation.cpp:1780-1885
     // ===================================================================
     @Test
-    @Ignore("Phase 2x: needs ZeroCouponInflationSwapHelper/YearOnYearInflationSwapHelper"
-            + " bootstrap path with the exact MakeSchedule ergonomics."
-            + " enableExtrapolation() + zeroRate(double) is exercised by the"
-            + " other piecewise tests in ZeroCouponInflationSwapTest.")
     public void testExtrapolationRegression() {
         // C++: builds piecewise zero + YoY curves, enables extrapolation,
         // calls zeroRate(10.0) and yoyRate(10.0) — verifies no exception.
