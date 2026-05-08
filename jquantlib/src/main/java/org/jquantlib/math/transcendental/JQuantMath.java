@@ -59,4 +59,19 @@ public final class JQuantMath {
     public static double log(double x) {
         return LogKernel.log(x);
     }
+
+    /**
+     * Pure-Java port of CORE-MATH {@code cr_pow(x, y)}.
+     *
+     * <p><b>Phase 2n A.1 status — partial:</b> specials and IEEE-754
+     * dispatch (NaN, ±inf, ±0, sign-prop, integer-y discrimination)
+     * are bit-exact against cr_pow. The non-special finite path
+     * currently delegates to {@link Math#pow}, pending the 3-stage
+     * Ziv loop port (q_1/p_1, q_2/p_2 dint64, q_3/p_3 qint64) plus
+     * exact_pow rounding-boundary detection. See {@link PowKernel}
+     * Javadoc for the staging plan.
+     */
+    public static double pow(double x, double y) {
+        return PowKernel.pow(x, y);
+    }
 }
