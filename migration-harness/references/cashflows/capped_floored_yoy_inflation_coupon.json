@@ -1,0 +1,246 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "amount": 28399.52840781496,
+        "date_serial": 40040,
+        "gearing": 1.0,
+        "isCapped": false,
+        "isFloored": false,
+        "rate": 0.02842953487849291,
+        "spread": 0.0,
+        "underlyingRate": 0.02842953487849291
+      },
+      "inputs": {
+        "cap": "null",
+        "endDate_serial": 40038,
+        "floor": "null",
+        "gearing": 1.0,
+        "notional": 1000000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "spread": 0.0,
+        "startDate_serial": 39673
+      },
+      "name": "PASS_1_future_g1_s0"
+    },
+    {
+      "expected": {
+        "amount": 33394.251066696605,
+        "date_serial": 40040,
+        "gearing": 1.0,
+        "isCapped": false,
+        "isFloored": false,
+        "rate": 0.03342953487849291,
+        "spread": 0.005,
+        "underlyingRate": 0.03342953487849291
+      },
+      "inputs": {
+        "cap": "null",
+        "endDate_serial": 40038,
+        "floor": "null",
+        "gearing": 1.0,
+        "notional": 1000000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "spread": 0.005,
+        "startDate_serial": 39673
+      },
+      "name": "PASS_2_future_g1_s50bp"
+    },
+    {
+      "expected": {
+        "amount": 28399.52840781496,
+        "date_serial": 40040,
+        "gearing": 2.0,
+        "isCapped": false,
+        "isFloored": false,
+        "rate": 0.05685906975698582,
+        "spread": 0.0,
+        "underlyingRate": 0.05685906975698582
+      },
+      "inputs": {
+        "cap": "null",
+        "endDate_serial": 40038,
+        "floor": "null",
+        "gearing": 2.0,
+        "notional": 500000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "spread": 0.0,
+        "startDate_serial": 39673
+      },
+      "name": "PASS_3_future_g2_s0"
+    },
+    {
+      "expected": {
+        "amount": -18410.083090051652,
+        "date_serial": 40040,
+        "gearing": -1.0,
+        "isCapped": false,
+        "isFloored": false,
+        "rate": -0.018429534878492908,
+        "spread": 0.01,
+        "underlyingRate": -0.018429534878492908
+      },
+      "inputs": {
+        "cap": "null",
+        "endDate_serial": 40038,
+        "floor": "null",
+        "gearing": -1.0,
+        "notional": 1000000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "spread": 0.01,
+        "startDate_serial": 39673
+      },
+      "name": "PASS_4_future_gNeg1_s100bp"
+    },
+    {
+      "expected": {
+        "amount": 30430.13698630137,
+        "date_serial": 40405,
+        "gearing": 1.0,
+        "isCapped": false,
+        "isFloored": false,
+        "rate": 0.03043013698630137,
+        "spread": 0.0,
+        "underlyingRate": 0.03043013698630137
+      },
+      "inputs": {
+        "cap": "null",
+        "endDate_serial": 40403,
+        "floor": "null",
+        "gearing": 1.0,
+        "notional": 1000000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "paymentDate_serial": 40405,
+        "spread": 0.0,
+        "startDate_serial": 40038
+      },
+      "name": "PASS_5_future_long_g1_s0"
+    },
+    {
+      "expected": {
+        "cap": 0.05,
+        "date_serial": 40040,
+        "effectiveCap": 0.05,
+        "floor": "null",
+        "isCapped": true,
+        "isFloored": false
+      },
+      "inputs": {
+        "cap": "0.050000",
+        "endDate_serial": 40038,
+        "floor": "null",
+        "gearing": 1.0,
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "spread": 0.0,
+        "startDate_serial": 39673
+      },
+      "name": "META_1_capOnly_g1"
+    },
+    {
+      "expected": {
+        "cap": "null",
+        "date_serial": 40040,
+        "effectiveFloor": 0.0,
+        "floor": 0.005,
+        "isCapped": false,
+        "isFloored": true
+      },
+      "inputs": {
+        "cap": "null",
+        "endDate_serial": 40038,
+        "floor": "0.005000",
+        "gearing": 1.0,
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "spread": 0.005,
+        "startDate_serial": 39673
+      },
+      "name": "META_2_floorOnly_g1_s50bp"
+    },
+    {
+      "expected": {
+        "cap": 0.04,
+        "date_serial": 40040,
+        "effectiveCap": 0.04,
+        "effectiveFloor": 0.005,
+        "floor": 0.005,
+        "isCapped": true,
+        "isFloored": true
+      },
+      "inputs": {
+        "cap": "0.040000",
+        "endDate_serial": 40038,
+        "floor": "0.005000",
+        "gearing": 1.0,
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "spread": 0.0,
+        "startDate_serial": 39673
+      },
+      "name": "META_3_collar_g1"
+    },
+    {
+      "expected": {
+        "cap": 0.04,
+        "date_serial": 40040,
+        "effectiveCap": -0.005,
+        "effectiveFloor": -0.04,
+        "floor": 0.005,
+        "isCapped": true,
+        "isFloored": true
+      },
+      "inputs": {
+        "cap": "0.040000",
+        "endDate_serial": 40038,
+        "floor": "0.005000",
+        "gearing": -1.0,
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "spread": 0.0,
+        "startDate_serial": 39673
+      },
+      "name": "META_4_collar_gNeg1"
+    },
+    {
+      "expected": {
+        "cap": 0.07,
+        "date_serial": 40040,
+        "effectiveCap": 0.030000000000000002,
+        "floor": "null",
+        "isCapped": true,
+        "isFloored": false
+      },
+      "inputs": {
+        "cap": "0.070000",
+        "endDate_serial": 40038,
+        "floor": "null",
+        "gearing": 2.0,
+        "notional": 500000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "spread": 0.01,
+        "startDate_serial": 39673
+      },
+      "name": "META_5_capOnly_g2_s100bp"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T13:32:59Z",
+  "generated_by": "capped_floored_yoy_inflation_coupon_probe",
+  "test_group": "cashflows/capped_floored_yoy_inflation_coupon"
+}
