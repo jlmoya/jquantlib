@@ -57,7 +57,7 @@ public class EUHICP extends ZeroInflationIndex {
               revised,
               interpolated,
               frequency,
-              new Period(3, TimeUnit.Months),
+              new Period(1, TimeUnit.Months),
               new EURCurrency(),
               termStructure);
     	

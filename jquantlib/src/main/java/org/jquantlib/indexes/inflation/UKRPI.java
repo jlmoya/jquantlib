@@ -57,7 +57,7 @@ public class UKRPI extends ZeroInflationIndex {
               revised,
               interpolated,
               frequency,
-              new Period(2, TimeUnit.Months),
+              new Period(1, TimeUnit.Months),
               new GBPCurrency(),
               termStructure);
     	

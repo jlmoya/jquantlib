@@ -59,7 +59,7 @@ public class YYUKRPI extends YoYInflationIndex {
               interpolated,
               false,
               frequency,
-              new Period(2, TimeUnit.Months),
+              new Period(1, TimeUnit.Months),
               new GBPCurrency(),
               termStructure);
     	
