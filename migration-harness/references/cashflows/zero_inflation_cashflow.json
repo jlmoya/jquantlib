@@ -1,0 +1,153 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "amount": 1029687.4999999999,
+        "baseFixing": 192.0,
+        "date_serial": 38944,
+        "indexFixing": 197.7
+      },
+      "inputs": {
+        "endDate_serial": 38942,
+        "growthOnly": false,
+        "interpolation": "AsIndex",
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 38944,
+        "startDate_serial": 38577
+      },
+      "name": "A_past_AsIndex_grow"
+    },
+    {
+      "expected": {
+        "amount": 1029687.4999999999,
+        "baseFixing": 192.0,
+        "date_serial": 38944,
+        "indexFixing": 197.7
+      },
+      "inputs": {
+        "endDate_serial": 38942,
+        "growthOnly": false,
+        "interpolation": "Flat",
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 38944,
+        "startDate_serial": 38577
+      },
+      "name": "B_past_Flat_grow"
+    },
+    {
+      "expected": {
+        "amount": 1030884.7239016525,
+        "baseFixing": 192.0774193548387,
+        "date_serial": 38944,
+        "indexFixing": 198.00967741935483
+      },
+      "inputs": {
+        "endDate_serial": 38942,
+        "growthOnly": false,
+        "interpolation": "Linear",
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 38944,
+        "startDate_serial": 38577
+      },
+      "name": "C_past_Linear_grow"
+    },
+    {
+      "expected": {
+        "amount": 29687.499999999865,
+        "baseFixing": 192.0,
+        "date_serial": 38944,
+        "indexFixing": 197.7
+      },
+      "inputs": {
+        "endDate_serial": 38942,
+        "growthOnly": true,
+        "interpolation": "AsIndex",
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 38944,
+        "startDate_serial": 38577
+      },
+      "name": "D_past_AsIndex_swap"
+    },
+    {
+      "expected": {
+        "amount": 1185306.863642741,
+        "baseFixing": 192.0,
+        "date_serial": 40405,
+        "indexFixing": 227.57891781940629
+      },
+      "inputs": {
+        "endDate_serial": 40403,
+        "growthOnly": false,
+        "interpolation": "AsIndex",
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40405,
+        "startDate_serial": 38577
+      },
+      "name": "E_future_AsIndex_grow"
+    },
+    {
+      "expected": {
+        "amount": 1186345.0729343113,
+        "baseFixing": 192.0774193548387,
+        "date_serial": 40405,
+        "indexFixing": 227.87010007355042
+      },
+      "inputs": {
+        "endDate_serial": 40403,
+        "growthOnly": false,
+        "interpolation": "Linear",
+        "notional": 1000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40405,
+        "startDate_serial": 38577
+      },
+      "name": "F_future_Linear_grow"
+    },
+    {
+      "expected": {
+        "amount": 716912.739940001,
+        "baseFixing": 192.0774193548387,
+        "date_serial": 40040,
+        "indexFixing": 219.6179691528951
+      },
+      "inputs": {
+        "endDate_serial": 40038,
+        "growthOnly": true,
+        "interpolation": "Linear",
+        "notional": 5000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 40040,
+        "startDate_serial": 38577
+      },
+      "name": "G_future_Linear_swap"
+    },
+    {
+      "expected": {
+        "amount": 560052.0731869168,
+        "baseFixing": 192.0,
+        "date_serial": 41136,
+        "indexFixing": 245.764999025944
+      },
+      "inputs": {
+        "endDate_serial": 41134,
+        "growthOnly": true,
+        "interpolation": "AsIndex",
+        "notional": 2000000.0,
+        "observationLag_months": 3,
+        "paymentDate_serial": 41136,
+        "startDate_serial": 38577
+      },
+      "name": "H_long_future_AsIndex_swap"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T11:33:13Z",
+  "generated_by": "zero_inflation_cashflow_probe",
+  "test_group": "cashflows/zero_inflation_cashflow"
+}
