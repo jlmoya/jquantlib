@@ -119,4 +119,64 @@ public final class CPI {
                         + interpolationType);
         }
     }
+
+    /**
+     * Year-on-year inflation rate, applying observation lag and the requested
+     * interpolation between fixings.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code CPI::laggedYoYRate}
+     * ({@code ql/indexes/inflationindex.cpp:65-116}). Used by YoY-coupon
+     * pricers and by {@link org.jquantlib.cashflow.YoYInflationCoupon}.
+     *
+     * <p>The C++ {@code Linear + ratio} branch (which interpolates the
+     * underlying ZeroInflationIndex fixings then forms the ratio) is not
+     * implemented here because Java's {@link YoYInflationIndex} ratio path is
+     * not currently exercised by Phase 2q (see clone(Handle) note in
+     * YoYInflationIndex). Genuine (non-ratio) YoY indices fall through to the
+     * else branch, matching C++ behavior for ratio_=false.
+     *
+     * @param index             the YoY inflation index whose fixing is observed
+     * @param date              the unlagged date (e.g. payment / accrual end)
+     * @param observationLag    the observation lag to subtract
+     * @param interpolationType {@link InterpolationType#AsIndex},
+     *                          {@link InterpolationType#Flat}, or
+     *                          {@link InterpolationType#Linear}
+     */
+    public static double laggedYoYRate(final YoYInflationIndex index,
+                                       final Date date,
+                                       final Period observationLag,
+                                       final InterpolationType interpolationType) {
+        switch (interpolationType) {
+            case AsIndex:
+                return index.fixing(date.sub(observationLag));
+            case Flat: {
+                final Pair<Date, Date> fixingPeriod = InflationTermStructure
+                        .inflationPeriod(date.sub(observationLag), index.frequency());
+                return index.fixing(fixingPeriod.first());
+            }
+            case Linear: {
+                final Pair<Date, Date> fixingPeriod = InflationTermStructure
+                        .inflationPeriod(date.sub(observationLag), index.frequency());
+                final Pair<Date, Date> interpolationPeriod = InflationTermStructure
+                        .inflationPeriod(date, index.frequency());
+
+                final double Y0 = index.fixing(fixingPeriod.first());
+
+                if (date.eq(interpolationPeriod.first())) {
+                    return Y0;
+                }
+
+                final Period oneDay = new Period(1, TimeUnit.Days);
+                final double Y1 = index.fixing(fixingPeriod.second().add(oneDay));
+
+                final long numerator = date.sub(interpolationPeriod.first());
+                final long denominator = (interpolationPeriod.second().add(oneDay))
+                        .sub(interpolationPeriod.first());
+                return Y0 + (Y1 - Y0) * ((double) numerator) / ((double) denominator);
+            }
+            default:
+                throw new LibraryException("unknown CPI interpolation type: "
+                        + interpolationType);
+        }
+    }
 }
