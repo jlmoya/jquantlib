@@ -1,0 +1,729 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 0.38507413489459486
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.250000_K0.700000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.08505427451542251
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.250000_K0.700000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.21022697088786893
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.250000_K1.000000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.21022445613010282
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.250000_K1.000000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.09651262729374675
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.250000_K1.500000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.5965451980646143
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.250000_K1.500000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.3819523830065645
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.500000_K0.700000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.08193538652226051
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.500000_K0.700000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.21296283794108178
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.500000_K1.000000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.21296191413543478
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.500000_K1.000000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.1070000327859707
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.500000_K1.500000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.6070320891352584
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.500000_K1.500000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.3806637944240587
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.600000_K0.700000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.08064812081180119
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.600000_K0.700000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.21406089072487322
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.600000_K1.000000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.2140605768942745
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.600000_K1.000000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.11140643814810158
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.600000_K1.500000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.6114378030518516
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.0,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.600000_K1.500000_r0.000000"
+    },
+    {
+      "expected": {
+        "npv": 0.3626487612176065
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.250000_K0.700000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.08010069134871346
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.250000_K0.700000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.19798406095525087
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.250000_K1.000000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.19798168206526398
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.250000_K1.000000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.09089198261990958
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.250000_K1.500000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.5618049051925268
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.25,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.250000_K1.500000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.3597088181449869
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.500000_K0.700000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.07716344910217011
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.500000_K0.700000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.20056060624442626
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.500000_K1.000000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.20055973072625774
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.500000_K1.000000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.10076865012542732
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.500000_K1.500000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.5716810955045456
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.5,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.500000_K1.500000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.35849527570703615
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.600000_K0.700000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.07595115407862087
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 0.7,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.600000_K0.700000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.20159471499589113
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.600000_K1.000000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.20159441605161507
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.0,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.600000_K1.000000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.10491844850772479
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "call",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "call_beta0.600000_K1.500000_r0.030000"
+    },
+    {
+      "expected": {
+        "npv": 0.5758302456885861
+      },
+      "inputs": {
+        "alpha": 0.35,
+        "beta": 0.6,
+        "f0": 1.0,
+        "fGrid": 400,
+        "maturity_years": 2.0,
+        "nu": 1.0,
+        "option_type": "put",
+        "rate": 0.03,
+        "rho": 0.25,
+        "strike": 1.5,
+        "tGrid": 50,
+        "xGrid": 50
+      },
+      "name": "put_beta0.600000_K1.500000_r0.030000"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T06:12:02Z",
+  "generated_by": "fd_sabr_vanilla_engine_probe",
+  "test_group": "pricingengines/vanilla/fd_sabr_vanilla_engine"
+}
