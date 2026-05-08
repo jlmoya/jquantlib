@@ -229,38 +229,49 @@ public abstract class InflationTermStructure extends AbstractTermStructure {
     
     }
  
-    //! utility function giving the inflation period for a given date   
+    //! utility function giving the inflation period for a given date
+    /**
+     * Mirrors C++ v1.42.1 {@code inflationPeriod(const Date&, Frequency)}
+     * ({@code termstructures/inflationtermstructure.cpp:163-188}).
+     *
+     * <p>For sub-annual frequencies the C++ formula is
+     * {@code startMonth = month - (month - 1) % nMonths} where
+     * {@code nMonths = 12 / frequency}. The earlier Java formula
+     * ({@code 6*(month-1)/6 + 1} / {@code 3*(month-1)/3 + 1}) was
+     * wrong: for February under Quarterly it yields {@code Feb..Apr},
+     * but the inflation period must be the calendar quarter
+     * {@code Jan..Mar}. Phase 2t aligns to C++ (testPeriod regression).
+     */
     public static Pair<Date,Date> inflationPeriod(final Date date,
     									   final Frequency frequency) {
-    	
+
         Month month = date.month();
         int year = date.year();
 
         Month startMonth, endMonth;
         switch (frequency) {
           case Annual:
-            startMonth = Month.January;
-            endMonth = Month.December;
-            break;
-          case Semiannual:       	  
-            startMonth = Month.valueOf(6*(month.value()-1)/6 + 1);
-            endMonth = Month.valueOf(startMonth.value() + 5);
-            break;
+          case Semiannual:
+          case EveryFourthMonth:
           case Quarterly:
-            startMonth = Month.valueOf(3*(month.value()-1)/3 + 1);
-            endMonth = Month.valueOf(startMonth.value() + 2);
+          case Bimonthly: {
+            final int nMonths = 12 / frequency.toInteger();
+            final int startMonthValue = month.value() - (month.value() - 1) % nMonths;
+            startMonth = Month.valueOf(startMonthValue);
+            endMonth = Month.valueOf(startMonthValue + nMonths - 1);
             break;
+          }
           case Monthly:
             startMonth = endMonth = month;
             break;
           default:
         	  throw new LibraryException("Frequency not handled: " + frequency);
-          
+
         };
 
         Date startDate = new Date(1, startMonth, year);
-        Date endDate = Date.endOfMonth(new Date(1, endMonth, year));   	
-        
+        Date endDate = Date.endOfMonth(new Date(1, endMonth, year));
+
         return new Pair<Date,Date>(startDate, endDate);
     }
     
