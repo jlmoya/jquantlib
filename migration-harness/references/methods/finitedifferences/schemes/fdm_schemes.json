@@ -1,0 +1,261 @@
+{
+  "cases": [
+    {
+      "expected": 0.18123929056689514,
+      "inputs": {
+        "T": 0.1,
+        "n": 50,
+        "nSteps": 50
+      },
+      "name": "explicit_euler_n50_T0.1_nSteps50"
+    },
+    {
+      "expected": 0.18119831919326657,
+      "inputs": {
+        "T": 0.1,
+        "n": 50,
+        "nSteps": 100
+      },
+      "name": "explicit_euler_n50_T0.1_nSteps100"
+    },
+    {
+      "expected": 0.0951587372080761,
+      "inputs": {
+        "T": 0.05,
+        "n": 100,
+        "nSteps": 100
+      },
+      "name": "explicit_euler_n100_T0.05_nSteps100"
+    },
+    {
+      "expected": 0.09481802640780623,
+      "inputs": {
+        "T": 0.05,
+        "n": 20,
+        "nSteps": 200
+      },
+      "name": "explicit_euler_n20_T0.05_nSteps200"
+    },
+    {
+      "expected": 0.8642163540381862,
+      "inputs": {
+        "T": 1.0,
+        "n": 50,
+        "nSteps": 50,
+        "theta": 0.5
+      },
+      "name": "crank_nicolson_theta0.5_n50_T1_nSteps50"
+    },
+    {
+      "expected": 0.8645503641925896,
+      "inputs": {
+        "T": 1.0,
+        "n": 100,
+        "nSteps": 100,
+        "theta": 0.5
+      },
+      "name": "crank_nicolson_theta0.5_n100_T1_nSteps100"
+    },
+    {
+      "expected": 0.8628707206397379,
+      "inputs": {
+        "T": 1.0,
+        "n": 50,
+        "nSteps": 50,
+        "theta": 1.0
+      },
+      "name": "crank_nicolson_theta1.0_n50_T1_nSteps50"
+    },
+    {
+      "expected": 0.631772191787322,
+      "inputs": {
+        "T": 0.5,
+        "n": 50,
+        "nSteps": 20,
+        "theta": 0.5
+      },
+      "name": "crank_nicolson_theta0.5_n50_T0.5_nSteps20"
+    },
+    {
+      "expected": 0.8642163540381862,
+      "inputs": {
+        "T": 1.0,
+        "mu": 0.5,
+        "n": 50,
+        "nSteps": 50,
+        "theta": 0.5
+      },
+      "name": "craig_sneyd_theta0.5_mu0.5_n50_T1_nSteps50"
+    },
+    {
+      "expected": 0.8642163540381862,
+      "inputs": {
+        "T": 1.0,
+        "mu": 0.3,
+        "n": 50,
+        "nSteps": 50,
+        "theta": 0.5
+      },
+      "name": "craig_sneyd_theta0.5_mu0.3_n50_T1_nSteps50"
+    },
+    {
+      "expected": 0.8645503641925897,
+      "inputs": {
+        "T": 1.0,
+        "mu": 0.5,
+        "n": 100,
+        "nSteps": 100,
+        "theta": 0.5
+      },
+      "name": "craig_sneyd_theta0.5_mu0.5_n100_T1_nSteps100"
+    },
+    {
+      "expected": 0.9812084077339704,
+      "inputs": {
+        "T": 2.0,
+        "mu": 0.5,
+        "n": 50,
+        "nSteps": 100,
+        "theta": 0.5
+      },
+      "name": "craig_sneyd_theta0.5_mu0.5_n50_T2_nSteps100"
+    },
+    {
+      "expected": 0.8642163540381862,
+      "inputs": {
+        "T": 1.0,
+        "mu": 0.5,
+        "n": 50,
+        "nSteps": 50,
+        "theta": 0.5
+      },
+      "name": "mod_craig_sneyd_theta0.5_mu0.5_n50_T1_nSteps50"
+    },
+    {
+      "expected": 0.8636743436555523,
+      "inputs": {
+        "T": 1.0,
+        "mu": 0.3,
+        "n": 50,
+        "nSteps": 50,
+        "theta": 0.5
+      },
+      "name": "mod_craig_sneyd_theta0.5_mu0.3_n50_T1_nSteps50"
+    },
+    {
+      "expected": 0.8645503641925897,
+      "inputs": {
+        "T": 1.0,
+        "mu": 0.5,
+        "n": 100,
+        "nSteps": 100,
+        "theta": 0.5
+      },
+      "name": "mod_craig_sneyd_theta0.5_mu0.5_n100_T1_nSteps100"
+    },
+    {
+      "expected": 0.9812084077339704,
+      "inputs": {
+        "T": 2.0,
+        "mu": 0.5,
+        "n": 50,
+        "nSteps": 100,
+        "theta": 0.5
+      },
+      "name": "mod_craig_sneyd_theta0.5_mu0.5_n50_T2_nSteps100"
+    },
+    {
+      "expected": 0.864211929513054,
+      "inputs": {
+        "T": 1.0,
+        "eps": 1e-06,
+        "n": 50,
+        "nSteps": 20,
+        "relInitStep": 0.01
+      },
+      "name": "mol_eps1e-6_relStep0.01_n50_T1_nSteps20"
+    },
+    {
+      "expected": 0.6317626801588048,
+      "inputs": {
+        "T": 0.5,
+        "eps": 1e-06,
+        "n": 50,
+        "nSteps": 10,
+        "relInitStep": 0.01
+      },
+      "name": "mol_eps1e-6_relStep0.01_n50_T0.5_nSteps10"
+    },
+    {
+      "expected": 0.8634392388746975,
+      "inputs": {
+        "T": 1.0,
+        "eps": 1e-08,
+        "n": 30,
+        "nSteps": 10,
+        "relInitStep": 0.01
+      },
+      "name": "mol_eps1e-8_relStep0.01_n30_T1_nSteps10"
+    },
+    {
+      "expected": 0.864549329565125,
+      "inputs": {
+        "T": 1.0,
+        "eps": 1e-06,
+        "n": 100,
+        "nSteps": 20,
+        "relInitStep": 0.01
+      },
+      "name": "mol_eps1e-6_relStep0.01_n100_T1_nSteps20"
+    },
+    {
+      "expected": 0.8642140384575173,
+      "inputs": {
+        "T": 1.0,
+        "alpha": 0.5857864376269049,
+        "n": 50,
+        "nSteps": 50,
+        "theta": 0.5
+      },
+      "name": "trbdf2_alpha0.5858_theta0.5_n50_T1_nSteps50"
+    },
+    {
+      "expected": 0.8645514293130214,
+      "inputs": {
+        "T": 1.0,
+        "alpha": 0.5857864376269049,
+        "n": 100,
+        "nSteps": 50,
+        "theta": 0.5
+      },
+      "name": "trbdf2_alpha0.5858_theta0.5_n100_T1_nSteps50"
+    },
+    {
+      "expected": 0.8642141045619636,
+      "inputs": {
+        "T": 1.0,
+        "alpha": 0.5,
+        "n": 50,
+        "nSteps": 50,
+        "theta": 0.5
+      },
+      "name": "trbdf2_alpha0.5_theta0.5_n50_T1_nSteps50"
+    },
+    {
+      "expected": 0.9812077807917593,
+      "inputs": {
+        "T": 2.0,
+        "alpha": 0.5857864376269049,
+        "n": 50,
+        "nSteps": 100,
+        "theta": 0.5
+      },
+      "name": "trbdf2_alpha0.5858_theta0.5_n50_T2_nSteps100"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T05:30:33Z",
+  "generated_by": "fdm_schemes_probe",
+  "test_group": "methods/finitedifferences/schemes/fdm_schemes"
+}
