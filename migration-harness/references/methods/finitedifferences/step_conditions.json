@@ -1,0 +1,283 @@
+{
+  "cases": [
+    {
+      "expected": [
+        5.0,
+        10.0,
+        20.0,
+        15.0,
+        40.0
+      ],
+      "inputs": {
+        "end": 100.0,
+        "exerciseStart": 0.0,
+        "n": 5,
+        "start": 0.0,
+        "strike": 60.0,
+        "t": 0.5
+      },
+      "name": "american_applyTo_basic"
+    },
+    {
+      "expected": [
+        5.0,
+        10.0,
+        20.0,
+        10.0,
+        30.0
+      ],
+      "inputs": {
+        "end": 100.0,
+        "exerciseStart": 1.0,
+        "n": 5,
+        "start": 0.0,
+        "strike": 60.0,
+        "t": 0.5
+      },
+      "name": "american_applyTo_before_start"
+    },
+    {
+      "expected": [
+        5.0,
+        10.0,
+        20.0,
+        15.0,
+        40.0
+      ],
+      "inputs": {
+        "end": 100.0,
+        "exerciseStart": 0.5,
+        "n": 5,
+        "start": 0.0,
+        "strike": 60.0,
+        "t": 0.5
+      },
+      "name": "american_applyTo_at_start"
+    },
+    {
+      "expected": [
+        50.0,
+        75.0,
+        100.0,
+        125.0,
+        150.0
+      ],
+      "inputs": {
+        "end": 150.0,
+        "exerciseStart": 0.0,
+        "n": 5,
+        "start": 50.0,
+        "strike": 0.0,
+        "t": 0.0
+      },
+      "name": "american_applyTo_all_replaced"
+    },
+    {
+      "expected": [
+        0.0,
+        0.0,
+        5.0,
+        20.0,
+        40.0,
+        60.0,
+        80.0
+      ],
+      "inputs": {
+        "end": 120.0,
+        "exerciseStart": 0.0,
+        "n": 7,
+        "start": 0.0,
+        "strike": 40.0,
+        "t": 1.0
+      },
+      "name": "american_applyTo_7cell"
+    },
+    {
+      "expected": [
+        1.0,
+        2.0
+      ],
+      "inputs": {
+        "ex1": "2027-01-15",
+        "ex2": "2028-01-15",
+        "refDate": "2026-01-15"
+      },
+      "name": "bermudan_exerciseTimes"
+    },
+    {
+      "expected": [
+        5.0,
+        10.0,
+        20.0,
+        15.0,
+        40.0
+      ],
+      "inputs": {
+        "isExercise": true,
+        "t": 1.0
+      },
+      "name": "bermudan_applyTo_at_t1"
+    },
+    {
+      "expected": [
+        5.0,
+        10.0,
+        20.0,
+        15.0,
+        40.0
+      ],
+      "inputs": {
+        "isExercise": true,
+        "t": 2.0
+      },
+      "name": "bermudan_applyTo_at_t2"
+    },
+    {
+      "expected": [
+        5.0,
+        10.0,
+        20.0,
+        10.0,
+        30.0
+      ],
+      "inputs": {
+        "isExercise": false,
+        "t": 1.5
+      },
+      "name": "bermudan_applyTo_at_tmid"
+    },
+    {
+      "expected": [
+        0.0,
+        0.0,
+        5.0,
+        10.0,
+        20.0,
+        40.0,
+        60.0
+      ],
+      "inputs": {
+        "end": 120.0,
+        "n": 7,
+        "numDates": 3,
+        "start": 0.0,
+        "strike": 60.0,
+        "t": 3.0
+      },
+      "name": "bermudan_applyTo_3dates_at_t3"
+    },
+    {
+      "expected": [
+        0.4958904109589041
+      ],
+      "inputs": {
+        "divDate": "2026-07-01",
+        "refDate": "2026-01-01"
+      },
+      "name": "dividendHandler_dividendTimes"
+    },
+    {
+      "expected": [
+        5.0
+      ],
+      "inputs": {
+        "amount": 5.0
+      },
+      "name": "dividendHandler_dividends"
+    },
+    {
+      "expected": [
+        0.0,
+        0.0,
+        0.0,
+        4.08668500805157,
+        9.306030676876988
+      ],
+      "inputs": {
+        "dividend": 5.0,
+        "logHi": 5.0106352940962555,
+        "logLo": 3.912023005428146,
+        "n": 5,
+        "t": 0.4958904109589041
+      },
+      "name": "dividendHandler_applyTo_at_divTime"
+    },
+    {
+      "expected": [
+        0.0,
+        0.0,
+        0.0,
+        5.0,
+        10.0
+      ],
+      "inputs": {
+        "t": 0.5958904109589042
+      },
+      "name": "dividendHandler_applyTo_nonDiv_noChange"
+    },
+    {
+      "expected": [
+        0.0,
+        0.2724575301711137,
+        2.4908526463551786,
+        4.6816383534474095,
+        8.0,
+        8.272457530171113,
+        10.490852646355178,
+        12.68163835344741,
+        16.0,
+        16.272457530171113,
+        18.49085264635518,
+        20.681638353447408
+      ],
+      "inputs": {
+        "dims": [
+          4,
+          3
+        ],
+        "dividend": 10.0,
+        "logHi": 4.787491742782046,
+        "logLo": 4.382026634673881,
+        "t": 0.2465753424657534
+      },
+      "name": "dividendHandler_2d_applyTo"
+    },
+    {
+      "expected": [
+        0.0,
+        1.5116610053754005,
+        3.607989992786627,
+        5.685317274583898,
+        7.747391097540513,
+        9.797220335125132
+      ],
+      "inputs": {
+        "dividend1": 3.0,
+        "n": 6,
+        "t": 0.2465753424657534
+      },
+      "name": "dividendHandler_twoDivs_applyAt_t1"
+    },
+    {
+      "expected": [
+        0.0,
+        0.6504241538674602,
+        2.64924439439717,
+        4.922668428863846,
+        7.1396765247984195,
+        9.312279368302335
+      ],
+      "inputs": {
+        "dividend2": 7.0,
+        "n": 6,
+        "t": 0.7479452054794521
+      },
+      "name": "dividendHandler_twoDivs_applyAt_t2"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T05:26:08Z",
+  "generated_by": "step_conditions_probe",
+  "test_group": "methods/finitedifferences/step_conditions"
+}
