@@ -65,6 +65,7 @@ public abstract class InflationIndex extends Index implements Observer {
         this.region = region;
         this.revised = revised;
         this.interpolated = interpolated;
+        this.frequency = frequency;
         this.availabilityLag = availabilityLag;
         this.currency = currency;
 
