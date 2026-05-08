@@ -121,6 +121,22 @@ public class ZeroInflationIndex extends InflationIndex {
     	}
     }
     
+    /**
+     * Return the date of the last stored fixing, adjusted to the first day of
+     * the corresponding inflation period.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code ZeroInflationIndex::lastFixingDate()}
+     * ({@code ql/indexes/inflationindex.cpp:190-194}).
+     *
+     * @throws IllegalArgumentException if no fixings are stored for this index
+     */
+    public Date lastFixingDate() {
+        final org.jquantlib.time.TimeSeries<Double> fixings = timeSeries();
+        QL.require(!fixings.isEmpty(), "no fixings stored for " + name());
+        // attribute fixing to first day of the underlying inflation period
+        return InflationTermStructure.inflationPeriod(fixings.lastKey(), frequency).first();
+    }
+
     public Handle<ZeroInflationTermStructure> zeroInflationTermStructure() {
     	return zeroInflation;
     }

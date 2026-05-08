@@ -172,6 +172,24 @@ public class YoYInflationIndex extends InflationIndex {
     	}
     }    
     
+    /**
+     * Return the date of the last stored fixing, adjusted to the first day of
+     * the corresponding inflation period.  For ratio-style indices built on a
+     * {@link ZeroInflationIndex} underlying (see A.3), this method is overridden
+     * in the ratio-ctor path to delegate to the underlying.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code YoYInflationIndex::lastFixingDate()}
+     * ({@code ql/indexes/inflationindex.cpp:287-297}).
+     *
+     * @throws IllegalArgumentException if no fixings are stored for this index
+     */
+    public Date lastFixingDate() {
+        final org.jquantlib.time.TimeSeries<Double> fixings = timeSeries();
+        QL.require(!fixings.isEmpty(), "no fixings stored for " + name());
+        // attribute fixing to first day of the underlying inflation period
+        return InflationTermStructure.inflationPeriod(fixings.lastKey(), frequency).first();
+    }
+
     public Handle<YoYInflationTermStructure> yoyInflationTermStructure() {
     	return yoyInflation;
     }
