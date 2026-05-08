@@ -71,6 +71,20 @@ public class Swap extends Instrument {
     protected double[] legNPV;
     protected double[] legBPS;
 
+    /**
+     * Per-leg discount factor at the leg's start date. Phase 2q L0 A.2 align —
+     * mirrors C++ v1.42.1 {@code Swap::startDiscounts_}
+     * ({@code ql/instruments/swap.hpp:137}).
+     */
+    protected double[] startDiscounts;
+
+    /**
+     * Per-leg discount factor at the leg's maturity date. Phase 2q L0 A.2 align —
+     * mirrors C++ v1.42.1 {@code Swap::endDiscounts_}
+     * ({@code ql/instruments/swap.hpp:137}).
+     */
+    protected double[] endDiscounts;
+
 
     //
     // public constructors
@@ -82,6 +96,8 @@ public class Swap extends Instrument {
         this.payer = new double[2];
         this.legNPV = new double[2];
         this.legBPS = new double[2];
+        this.startDiscounts = new double[2];
+        this.endDiscounts = new double[2];
         legs.add(firstLeg);
         legs.add(secondLeg);
         payer[0] = -1.0;
@@ -101,6 +117,8 @@ public class Swap extends Instrument {
         Arrays.fill(this.payer, 1.0);
         this.legNPV = new double[legs.size()];
         this.legBPS = new double[legs.size()];
+        this.startDiscounts = new double[legs.size()];
+        this.endDiscounts = new double[legs.size()];
 
         for (int j = 0; j < this.legs.size(); j++) {
             if (payer[j]) {
@@ -124,6 +142,8 @@ public class Swap extends Instrument {
         this.payer  = new double[legs];
         this.legNPV = new double[legs];
         this.legBPS = new double[legs];
+        this.startDiscounts = new double[legs];
+        this.endDiscounts = new double[legs];
     }
 
 
@@ -151,6 +171,34 @@ public class Swap extends Instrument {
         calculate();
         QL.require(!Double.isNaN(legNPV[j]), "result not available"); // TODO: message
         return legNPV[j];
+    }
+
+    /**
+     * Returns the discount factor at the start date of leg {@code j}.
+     * Mirrors C++ v1.42.1 {@code Swap::startDiscounts(Size j) const}
+     * ({@code ql/instruments/swap.hpp:94}).
+     *
+     * <p>Phase 2q L0 A.2 align.
+     */
+    public /*@DiscountFactor*/ double startDiscounts(final int j) /* @ReadOnly */ {
+        QL.require(j < legs.size(), "leg index out of range");
+        calculate();
+        QL.require(!Double.isNaN(startDiscounts[j]), "result not available");
+        return startDiscounts[j];
+    }
+
+    /**
+     * Returns the discount factor at the maturity date of leg {@code j}.
+     * Mirrors C++ v1.42.1 {@code Swap::endDiscounts(Size j) const}
+     * ({@code ql/instruments/swap.hpp:100}).
+     *
+     * <p>Phase 2q L0 A.2 align.
+     */
+    public /*@DiscountFactor*/ double endDiscounts(final int j) /* @ReadOnly */ {
+        QL.require(j < legs.size(), "leg index out of range");
+        calculate();
+        QL.require(!Double.isNaN(endDiscounts[j]), "result not available");
+        return endDiscounts[j];
     }
 
     public Date startDate() /* @ReadOnly */ {
@@ -194,6 +242,12 @@ public class Swap extends Instrument {
         super.setupExpired();
         Arrays.fill(legBPS, 0.0);
         Arrays.fill(legNPV, 0.0);
+        if (startDiscounts != null) {
+            Arrays.fill(startDiscounts, 0.0);
+        }
+        if (endDiscounts != null) {
+            Arrays.fill(endDiscounts, 0.0);
+        }
     }
 
     @Override
@@ -220,6 +274,26 @@ public class Swap extends Instrument {
             legBPS = r.legBPS;
         } else {
             Arrays.fill(legBPS, Constants.NULL_REAL);
+        }
+
+        // Phase 2q L0 A.2 align: forward startDiscounts / endDiscounts populated
+        // by DiscountingSwapEngine. Mirrors the C++ Swap result-fetching path
+        // implicit in the QL_REQUIRE checks within
+        // Swap::startDiscounts(j) / endDiscounts(j).
+        if (r.startDiscounts != null && r.startDiscounts.length > 0) {
+            QL.require(r.startDiscounts.length == startDiscounts.length,
+                    "wrong number of leg startDiscounts returned");
+            startDiscounts = r.startDiscounts;
+        } else {
+            Arrays.fill(startDiscounts, Constants.NULL_REAL);
+        }
+
+        if (r.endDiscounts != null && r.endDiscounts.length > 0) {
+            QL.require(r.endDiscounts.length == endDiscounts.length,
+                    "wrong number of leg endDiscounts returned");
+            endDiscounts = r.endDiscounts;
+        } else {
+            Arrays.fill(endDiscounts, Constants.NULL_REAL);
         }
     }
 
@@ -264,6 +338,26 @@ public class Swap extends Instrument {
         public double[] legNPV;
         public double[] legBPS;
 
+        /**
+         * Per-leg discount factor at the leg's start date. Populated by
+         * {@code DiscountingSwapEngine}. Mirrors C++ v1.42.1
+         * {@code Swap::results::startDiscounts}
+         * ({@code ql/instruments/swap.hpp:153}).
+         *
+         * <p>Phase 2q L0 A.2 align.
+         */
+        public double[] startDiscounts;
+
+        /**
+         * Per-leg discount factor at the leg's maturity date. Populated by
+         * {@code DiscountingSwapEngine}. Mirrors C++ v1.42.1
+         * {@code Swap::results::endDiscounts}
+         * ({@code ql/instruments/swap.hpp:153}).
+         *
+         * <p>Phase 2q L0 A.2 align.
+         */
+        public double[] endDiscounts;
+
         @Override
         public void reset() {
             super.reset();
@@ -272,6 +366,12 @@ public class Swap extends Instrument {
             }
             if (legBPS != null) {
                 Arrays.fill(legBPS, 0.0);
+            }
+            if (startDiscounts != null) {
+                Arrays.fill(startDiscounts, 0.0);
+            }
+            if (endDiscounts != null) {
+                Arrays.fill(endDiscounts, 0.0);
             }
         }
     }
