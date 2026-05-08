@@ -262,6 +262,66 @@
     },
     {
       "expected": {
+        "adjusted": 0.025392002095520727,
+        "unadjusted": 0.025392002095520824
+      },
+      "inputs": {
+        "date_serial": 39295
+      },
+      "name": "M_correctYoYRate_curve_0"
+    },
+    {
+      "expected": {
+        "adjusted": 0.025911830961320215,
+        "unadjusted": 0.02591183096132018
+      },
+      "inputs": {
+        "date_serial": 39417
+      },
+      "name": "M_correctYoYRate_curve_1"
+    },
+    {
+      "expected": {
+        "adjusted": 0.026689804709100873,
+        "unadjusted": 0.026689804709100963
+      },
+      "inputs": {
+        "date_serial": 39600
+      },
+      "name": "M_correctYoYRate_curve_2"
+    },
+    {
+      "expected": {
+        "adjusted": 0.028599577366634543,
+        "unadjusted": 0.028599577366634446
+      },
+      "inputs": {
+        "date_serial": 39965
+      },
+      "name": "M_correctYoYRate_curve_3"
+    },
+    {
+      "expected": {
+        "adjusted": 0.031451816355617446,
+        "unadjusted": 0.031451816355617404
+      },
+      "inputs": {
+        "date_serial": 40513
+      },
+      "name": "M_correctYoYRate_curve_4"
+    },
+    {
+      "expected": {
+        "adjusted": 0.0337009774765169,
+        "unadjusted": 0.033700977476517
+      },
+      "inputs": {
+        "date_serial": 41061
+      },
+      "name": "M_correctYoYRate_curve_5"
+    },
+    {
+      "expected": {
         "value": true
       },
       "inputs": {
@@ -433,7 +493,7 @@
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-05-08T13:05:03Z",
+  "generated_at": "2026-05-08T13:40:41Z",
   "generated_by": "seasonality_probe",
   "test_group": "termstructures/inflation/seasonality"
 }

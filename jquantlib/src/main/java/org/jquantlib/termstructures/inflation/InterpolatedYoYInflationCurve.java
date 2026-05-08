@@ -232,6 +232,15 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
      * snaps the date to its inflation-period start before sampling the curve,
      * permitting dates {@code >= baseDate} (which can predate the reference
      * date by the observation lag).
+     *
+     * <p>Phase 2q D.2: applies seasonality if installed, mirroring the C++
+     * tail of {@code YoYInflationTermStructure::yoyRate}:
+     * <pre>
+     *   if (hasSeasonality())
+     *       yoyRate = seasonality()-&gt;correctYoYRate(d - useLag, yoyRate, *this);
+     * </pre>
+     * with {@code useLag = 0} for this overload — same pattern Track C
+     * applied to {@link InterpolatedZeroInflationCurve#zeroRate}.
      */
     @Override
     public /*@Rate*/ double yoyRate(final Date d, final boolean extrapolate) {
@@ -243,7 +252,12 @@ public class InterpolatedYoYInflationCurve<I extends Interpolator>
             QL.require(dd.first().le(maxDate()),
                     "date " + dd.first() + " past max curve date " + maxDate());
         }
-        return yoyRateImpl(timeFromReference(dd.first()));
+        double rate = yoyRateImpl(timeFromReference(dd.first()));
+        // Phase 2q L1 D.2: apply seasonality correction if installed.
+        if (hasSeasonality()) {
+            rate = seasonality().correctYoYRate(d, rate, this);
+        }
+        return rate;
     }
 
     @Override

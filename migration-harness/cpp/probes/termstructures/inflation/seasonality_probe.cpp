@@ -18,6 +18,7 @@
 
 #include <ql/termstructures/inflation/seasonality.hpp>
 #include <ql/termstructures/inflation/interpolatedzeroinflationcurve.hpp>
+#include <ql/termstructures/inflation/interpolatedyoyinflationcurve.hpp>
 #include <ql/time/calendars/unitedkingdom.hpp>
 #include <ql/time/daycounters/actualactual.hpp>
 
@@ -149,6 +150,53 @@ int main() {
                    {"input_rate", yoyInputs[i]}};
             out.addCase(nm, k,
                 json{{"value", seas->correctYoYRate(yoyDates[i], yoyInputs[i], *curve)}});
+        }
+
+        // Phase 2q D.2: exercise InterpolatedYoYInflationCurve::yoyRate with
+        // seasonality installed. Mirrors the M_correctZeroRate_grid_* cases
+        // but on the YoY curve. With *stationary* monthly factors (12 values
+        // repeating annually), YoY seasonality correction factor(d) /
+        // factor(d-1Y) ≈ 1 by construction (same calendar month → identical
+        // factor). The unadjusted/adjusted columns therefore match within
+        // floating-point roundoff but the test still verifies that the wiring
+        // is in place and that the path doesn't throw. Non-stationary
+        // multi-year factors are forbidden by C++'s isConsistent check
+        // (factor(curveBaseDate + nYears) must equal factor(curveBaseDate)).
+        std::vector<Date> yoyNodeDates = {
+            Date(1, May, 2007),
+            Date(13, August, 2008),
+            Date(13, August, 2009),
+            Date(13, August, 2010),
+            Date(13, August, 2012),
+            Date(13, August, 2017)
+        };
+        std::vector<Rate> yoyNodeRates = { 0.025, 0.027, 0.029, 0.031, 0.034, 0.036 };
+        auto yoyCurve = ext::make_shared<InterpolatedYoYInflationCurve<Linear>>(
+            refDate, yoyNodeDates, yoyNodeRates, freq, dc);
+        yoyCurve->enableExtrapolation();
+
+        auto yoyCurveSeas = ext::make_shared<InterpolatedYoYInflationCurve<Linear>>(
+            refDate, yoyNodeDates, yoyNodeRates, freq, dc);
+        yoyCurveSeas->enableExtrapolation();
+        yoyCurveSeas->setSeasonality(seas);
+
+        Date yoyRateProbe[] = {
+            Date(1, August,  2007),
+            Date(1, December,2007),
+            Date(1, June,    2008),
+            Date(1, June,    2009),
+            Date(1, December,2010),
+            Date(1, June,    2012)
+        };
+        for (size_t i = 0; i < sizeof(yoyRateProbe)/sizeof(Date); ++i) {
+            char nm[64];
+            std::snprintf(nm, sizeof(nm), "M_correctYoYRate_curve_%zu", i);
+            json k{{"date_serial", (Integer)yoyRateProbe[i].serialNumber()}};
+            json v{
+                {"unadjusted", yoyCurve->yoyRate(yoyRateProbe[i])},
+                {"adjusted", yoyCurveSeas->yoyRate(yoyRateProbe[i])}
+            };
+            out.addCase(nm, k, v);
         }
 
         // isConsistent — we have 12 factors with Monthly frequency: should pass

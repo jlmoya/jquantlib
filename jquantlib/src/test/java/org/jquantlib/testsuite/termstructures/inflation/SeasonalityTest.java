@@ -14,6 +14,7 @@ import org.jquantlib.Settings;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.interpolations.factories.Linear;
+import org.jquantlib.termstructures.inflation.InterpolatedYoYInflationCurve;
 import org.jquantlib.termstructures.inflation.InterpolatedZeroInflationCurve;
 import org.jquantlib.termstructures.inflation.KerkhofSeasonality;
 import org.jquantlib.termstructures.inflation.MultiplicativePriceSeasonality;
@@ -99,6 +100,23 @@ public class SeasonalityTest {
         curveSeasK.enableExtrapolation();
         curveSeasK.setSeasonality(seasK);
 
+        // Phase 2q D.2: parallel YoY curve to validate the
+        // InterpolatedYoYInflationCurve.yoyRate seasonality wiring.
+        // Same nodes as the probe.
+        final double[] yoyNodeRates = new double[]{
+                0.025, 0.027, 0.029, 0.031, 0.034, 0.036
+        };
+        final InterpolatedYoYInflationCurve<Linear> yoyCurveUnadjusted =
+                new InterpolatedYoYInflationCurve<>(Linear.class,
+                        refDate, nodeDates, yoyNodeRates, freq, dc);
+        yoyCurveUnadjusted.enableExtrapolation();
+
+        final InterpolatedYoYInflationCurve<Linear> yoyCurveSeasM =
+                new InterpolatedYoYInflationCurve<>(Linear.class,
+                        refDate, nodeDates, yoyNodeRates, freq, dc);
+        yoyCurveSeasM.enableExtrapolation();
+        yoyCurveSeasM.setSeasonality(seasM);
+
         // ---------- Cross-validate every case ----------
         final ReferenceReader ref = ReferenceReader.load(REF_GROUP);
         final List<String> mismatches = new ArrayList<>();
@@ -107,7 +125,8 @@ public class SeasonalityTest {
             final Case c = ref.getCase(name);
             try {
                 checkCase(name, c, seasM, seasK,
-                          curveUnadjusted, curveSeasM, curveSeasK, mismatches);
+                          curveUnadjusted, curveSeasM, curveSeasK,
+                          yoyCurveUnadjusted, yoyCurveSeasM, mismatches);
             } catch (final Exception e) {
                 mismatches.add(name + ": EXCEPTION " + e.getClass().getSimpleName()
                         + " " + e.getMessage());
@@ -125,6 +144,8 @@ public class SeasonalityTest {
                                   final InterpolatedZeroInflationCurve<Linear> curveUnadjusted,
                                   final InterpolatedZeroInflationCurve<Linear> curveSeasM,
                                   final InterpolatedZeroInflationCurve<Linear> curveSeasK,
+                                  final InterpolatedYoYInflationCurve<Linear> yoyCurveUnadjusted,
+                                  final InterpolatedYoYInflationCurve<Linear> yoyCurveSeasM,
                                   final List<String> mismatches) {
         final JSONObject expected = (JSONObject) c.expectedRaw();
 
@@ -158,6 +179,27 @@ public class SeasonalityTest {
                 mismatches.add(fmt(name + ".unadjusted", expUnadj, actUnadj));
             }
             final double actAdj = curveSeasM.zeroRate(d, true);
+            if (!Tolerance.tight(actAdj, expAdj)) {
+                mismatches.add(fmt(name + ".adjusted", expAdj, actAdj));
+            }
+        } else if (name.startsWith("M_correctYoYRate_curve_")) {
+            // Phase 2q D.2: validates that
+            // InterpolatedYoYInflationCurve.yoyRate(d, ext) applies seasonality
+            // when one is installed via setSeasonality. With stationary
+            // monthly factors, factor(d) / factor(d-1Y) is 1 to within
+            // floating-point roundoff so the adjusted/unadjusted columns are
+            // numerically identical — the test's value here is to confirm
+            // that the wiring path is exercised without throwing and produces
+            // a value matching the C++ reference at TIGHT tolerance.
+            final double expUnadj = expected.getDouble("unadjusted");
+            final double expAdj = expected.getDouble("adjusted");
+            final long ds = c.inputs().getLong("date_serial");
+            final Date d = new Date(ds);
+            final double actUnadj = yoyCurveUnadjusted.yoyRate(d, true);
+            if (!Tolerance.tight(actUnadj, expUnadj)) {
+                mismatches.add(fmt(name + ".unadjusted", expUnadj, actUnadj));
+            }
+            final double actAdj = yoyCurveSeasM.yoyRate(d, true);
             if (!Tolerance.tight(actAdj, expAdj)) {
                 mismatches.add(fmt(name + ".adjusted", expAdj, actAdj));
             }
