@@ -30,26 +30,39 @@
 package org.jquantlib.cashflow;
 
 import org.jquantlib.QL;
+import org.jquantlib.instruments.Option;
+import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatility.inflation.YoYOptionletVolatilitySurface;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
 
 /**
  * Base pricer for capped/floored YoY-inflation coupons (and ordinary
  * swaplets — capless/floorless YoY coupons use this pricer directly).
  *
  * <p>Java port of QuantLib v1.42.1 {@code YoYInflationCouponPricer}
- * ({@code ql/cashflows/inflationcouponpricer.{hpp,cpp}}). Phase 2q B ports
- * the swaplet path only. The optionlet path (for cap/floor pricers via
- * {@code BlackYoYInflationCouponPricer}, etc.) is deferred to Phase 2r along
- * with {@code YoYOptionletVolatilitySurface}.
+ * ({@code ql/cashflows/inflationcouponpricer.{hpp,cpp}}).
  *
- * <p>The non-capped / non-floored swaplet is the only operation needed by
- * {@link YearOnYearInflationSwap}'s YoY leg. Cap/floor variants ride atop
- * the same base via {@code optionletPriceImp} which throws here (matches
- * C++ default behavior — vol-dependent overrides supply the formula).
+ * <p>Phase 2r C.3 fills out the optionlet path: {@link #optionletRate},
+ * {@link #optionletPrice}, {@link #capletRate} / {@link #capletPrice} /
+ * {@link #floorletRate} / {@link #floorletPrice}, plus the constructor
+ * variant taking a {@link YoYOptionletVolatilitySurface} handle. Concrete
+ * vol-dependent subclasses
+ * ({@link BlackYoYInflationCouponPricer},
+ *  {@link UnitDisplacedBlackYoYInflationCouponPricer},
+ *  {@link BachelierYoYInflationCouponPricer}) supply
+ * {@link #optionletPriceImp}.
  *
- * @author JQuantLib migration team (Phase 2q B)
+ * <p>The {@link YoYOptionletVolatilitySurface} interface is forward-declared
+ * in this package; Track B's full vol-surface family lives in
+ * {@code org.jquantlib.termstructures.volatility.inflation} and implements
+ * this interface (or an adapter is added when Track B lands).
+ *
+ * @author JQuantLib migration team (Phase 2q B + 2r C.3)
  */
 public class YoYInflationCouponPricer extends InflationCouponPricer {
 
@@ -62,6 +75,8 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
     protected double spread_;
     protected double discount_;
 
+    /** YoY optionlet vol surface (Phase 2r C.3) — may be {@code null}. */
+    protected Handle<YoYOptionletVolatilitySurface> capletVol_;
     private final Handle<YieldTermStructure> nominalTermStructure_;
 
     //
@@ -74,11 +89,22 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
      * {@link Constants#NULL_REAL}; {@link #swapletRate} still works.
      */
     public YoYInflationCouponPricer() {
-        this(new Handle<YieldTermStructure>());
+        this(new Handle<YoYOptionletVolatilitySurface>(),
+                new Handle<YieldTermStructure>());
     }
 
     public YoYInflationCouponPricer(final Handle<YieldTermStructure> nominalTermStructure) {
+        this(new Handle<YoYOptionletVolatilitySurface>(), nominalTermStructure);
+    }
+
+    public YoYInflationCouponPricer(
+            final Handle<YoYOptionletVolatilitySurface> capletVol,
+            final Handle<YieldTermStructure> nominalTermStructure) {
+        this.capletVol_ = capletVol;
         this.nominalTermStructure_ = nominalTermStructure;
+        if (this.capletVol_ != null) {
+            this.capletVol_.addObserver(this);
+        }
         if (this.nominalTermStructure_ != null) {
             this.nominalTermStructure_.addObserver(this);
         }
@@ -86,6 +112,22 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
 
     public Handle<YieldTermStructure> nominalTermStructure() {
         return nominalTermStructure_;
+    }
+
+    public Handle<YoYOptionletVolatilitySurface> capletVolatility() {
+        return capletVol_;
+    }
+
+    /**
+     * Replace the caplet volatility surface (mirrors C++
+     * {@code setCapletVolatility}). The supplied handle must be non-empty.
+     */
+    public void setCapletVolatility(
+            final Handle<YoYOptionletVolatilitySurface> capletVol) {
+        QL.require(capletVol != null && !capletVol.empty(),
+                "empty capletVol handle");
+        this.capletVol_ = capletVol;
+        this.capletVol_.addObserver(this);
     }
 
     //
@@ -117,7 +159,7 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
     public double swapletRate() {
         // Identity adjustment matches C++ default
         // YoYInflationCouponPricer::adjustedFixing(Null<>): no transformation.
-        return gearing_ * coupon_.indexFixing() + spread_;
+        return gearing_ * adjustedFixing(Double.NaN) + spread_;
     }
 
     @Override
@@ -127,35 +169,88 @@ public class YoYInflationCouponPricer extends InflationCouponPricer {
         return swapletRate() * coupon_.accrualPeriod() * discount_;
     }
 
-    /**
-     * Cap/floor optionlet pricers are deferred to Phase 2r — fail loudly if
-     * called from a path the Java port doesn't yet exercise.
-     */
     @Override
     public double capletRate(final double effectiveCap) {
-        QL.error("capletRate not implemented in Phase 2q (deferred to Phase 2r " +
-                "with YoYOptionletVolatilitySurface)");
-        return Constants.NULL_REAL;
+        return gearing_ * optionletRate(Option.Type.Call, effectiveCap);
     }
 
     @Override
     public double capletPrice(final double effectiveCap) {
-        QL.error("capletPrice not implemented in Phase 2q (deferred to Phase 2r " +
-                "with YoYOptionletVolatilitySurface)");
-        return Constants.NULL_REAL;
+        final double capletPrice = optionletPrice(Option.Type.Call, effectiveCap);
+        return gearing_ * capletPrice;
     }
 
     @Override
     public double floorletRate(final double effectiveFloor) {
-        QL.error("floorletRate not implemented in Phase 2q (deferred to Phase 2r " +
-                "with YoYOptionletVolatilitySurface)");
-        return Constants.NULL_REAL;
+        return gearing_ * optionletRate(Option.Type.Put, effectiveFloor);
     }
 
     @Override
     public double floorletPrice(final double effectiveFloor) {
-        QL.error("floorletPrice not implemented in Phase 2q (deferred to Phase 2r " +
-                "with YoYOptionletVolatilitySurface)");
-        return Constants.NULL_REAL;
+        final double floorletPrice = optionletPrice(Option.Type.Put, effectiveFloor);
+        return gearing_ * floorletPrice;
+    }
+
+    //
+    // protected helpers — mirror C++ optionletPrice / optionletRate /
+    // optionletPriceImp / adjustedFixing
+    //
+
+    protected double optionletPrice(final Option.Type optionType, final double effStrike) {
+        QL.require(discount_ != Constants.NULL_REAL,
+                "no nominal term structure provided");
+        return optionletRate(optionType, effStrike)
+                * coupon_.accrualPeriod() * discount_;
+    }
+
+    protected double optionletRate(final Option.Type optionType, final double effStrike) {
+        final Date fixingDate = coupon_.fixingDate();
+        if (capletVol_ == null || capletVol_.empty()
+                || fixingDate.le(capletVol_.currentLink().baseDate())) {
+            // amount is determined; the surface need not be present.
+            final double a, b;
+            if (optionType == Option.Type.Call) {
+                a = coupon_.indexFixing();
+                b = effStrike;
+            } else {
+                a = effStrike;
+                b = coupon_.indexFixing();
+            }
+            return Math.max(a - b, 0.0);
+        }
+        // not yet determined — Black/DD/Bachelier from optionletPriceImp
+        QL.require(!capletVol_.empty(), "missing optionlet volatility");
+
+        final double stdDev = Math.sqrt(
+                capletVol_.currentLink().totalVariance(
+                        fixingDate, effStrike, new Period(0, TimeUnit.Days), false));
+        return optionletPriceImp(optionType, effStrike,
+                adjustedFixing(Double.NaN), stdDev);
+    }
+
+    /**
+     * Hook for derived classes (Black/DD/Bachelier) to provide the
+     * vol-dependent rate. The base implementation always errors —
+     * subclasses must override.
+     */
+    protected double optionletPriceImp(final Option.Type optionType,
+                                       final double strike,
+                                       final double forward,
+                                       final double stdDev) {
+        throw new LibraryException(
+                "you must implement this to get a vol-dependent price");
+    }
+
+    /**
+     * Adjusted fixing — returns the index fixing if {@code fixing} is
+     * {@code NaN} (Java sentinel for C++ {@code Null<Rate>()}), otherwise
+     * returns the supplied value. The base class applies no adjustment;
+     * subclasses can override.
+     */
+    protected double adjustedFixing(final double fixing) {
+        if (Double.isNaN(fixing)) {
+            return coupon_.indexFixing();
+        }
+        return fixing;
     }
 }

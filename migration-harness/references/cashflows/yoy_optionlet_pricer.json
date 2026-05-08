@@ -1,0 +1,135 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "bachelier": 0.039894228040143274,
+        "black": 0.0009969402919186236,
+        "unitDisplacedBlack": 0.04087455196866361
+      },
+      "inputs": {
+        "forward": 0.025,
+        "optionType": "Call",
+        "stdDev": 0.1,
+        "strike": 0.025
+      },
+      "name": "call_atm"
+    },
+    {
+      "expected": {
+        "bachelier": 0.03744408543866827,
+        "black": 3.683306581424187e-05,
+        "unitDisplacedBlack": 0.038522709002320125
+      },
+      "inputs": {
+        "forward": 0.025,
+        "optionType": "Call",
+        "stdDev": 0.1,
+        "strike": 0.03
+      },
+      "name": "call_otm"
+    },
+    {
+      "expected": {
+        "bachelier": 0.04244408543866827,
+        "black": 0.005009978585855461,
+        "unitDisplacedBlack": 0.043323557833360275
+      },
+      "inputs": {
+        "forward": 0.025,
+        "optionType": "Call",
+        "stdDev": 0.1,
+        "strike": 0.02
+      },
+      "name": "call_itm"
+    },
+    {
+      "expected": {
+        "bachelier": 0.039894228040143274,
+        "black": 0.0009969402919186236,
+        "unitDisplacedBlack": 0.040874551968663554
+      },
+      "inputs": {
+        "forward": 0.025,
+        "optionType": "Put",
+        "stdDev": 0.1,
+        "strike": 0.025
+      },
+      "name": "put_atm"
+    },
+    {
+      "expected": {
+        "bachelier": 0.03744408543866827,
+        "black": 9.97858585546127e-06,
+        "unitDisplacedBlack": 0.03832355783336032
+      },
+      "inputs": {
+        "forward": 0.025,
+        "optionType": "Put",
+        "stdDev": 0.1,
+        "strike": 0.02
+      },
+      "name": "put_otm"
+    },
+    {
+      "expected": {
+        "bachelier": 0.04244408543866827,
+        "black": 0.00503683306581424,
+        "unitDisplacedBlack": 0.043522709002320296
+      },
+      "inputs": {
+        "forward": 0.025,
+        "optionType": "Put",
+        "stdDev": 0.1,
+        "strike": 0.03
+      },
+      "name": "put_itm"
+    },
+    {
+      "expected": {
+        "bachelier": 0.003989422804014327,
+        "black": 9.973515453704125e-05,
+        "unitDisplacedBlack": 0.004089141336018648
+      },
+      "inputs": {
+        "forward": 0.025,
+        "optionType": "Call",
+        "stdDev": 0.01,
+        "strike": 0.025
+      },
+      "name": "call_low_vol"
+    },
+    {
+      "expected": {
+        "bachelier": 0.19947114020071635,
+        "black": 0.004935316284146185,
+        "unitDisplacedBlack": 0.20234796764999355
+      },
+      "inputs": {
+        "forward": 0.025,
+        "optionType": "Call",
+        "stdDev": 0.5,
+        "strike": 0.025
+      },
+      "name": "call_high_vol"
+    },
+    {
+      "expected": {
+        "bachelier": 0.053037698433248515,
+        "black": 0.024,
+        "unitDisplacedBlack": 0.05352358276228438
+      },
+      "inputs": {
+        "forward": 0.025,
+        "optionType": "Call",
+        "stdDev": 0.1,
+        "strike": 0.001
+      },
+      "name": "call_zero_strike"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T14:51:17Z",
+  "generated_by": "yoy_optionlet_pricer_probe",
+  "test_group": "cashflows/yoy_optionlet_pricer"
+}
