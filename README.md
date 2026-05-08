@@ -2,8 +2,8 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2m--complete-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-816%2F0%2F0%2F22-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2n--complete-blue)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-818%2F0%2F0%2F22-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
@@ -48,9 +48,10 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 2j.5 | `jquantlib-phase2j.5-complete` | Full Gaussian1D family completion: 5/5 engines + MarkovFunctional (split tier) + 4 niche-engine instruments + GaussHermiteIntegration family + AtmSmileSection + 11 align-fix commits | 801/0/0/22 | 2026-05-02 |
 | 2k | `jquantlib-phase2k-complete` | Gaussian1D feature completion: SabrInterpolatedSmileSection + BasketGeneratingEngine + TqrEigenDecomposition lifted + MF.CustomSmileFactory; all 4 MarkovFunctional smile branches operational | 809/0/0/22 | 2026-05-02 |
 | 2l | `jquantlib-phase2l-complete` | Fdm framework completeness: BiCGStab + GMRES + 6 new schemes (9 total) + Bermudan/American/dividend step conditions + vanillaComposite wiring + new `math.ode` package | 812/0/0/22 | 2026-05-02 |
-| **2m** | **`jquantlib-phase2m-complete`** | **3 Fdm-dependent vanilla engines (FdBlackScholesVanilla + FdHestonHullWhiteVanilla + FdSabrVanilla) + AndreasenHuge LocalVol family (3 classes). 8 commits across 4 parallel worktrees including 2 align prereqs (AbstractInterpolation2D validation; Option.exercise/payoff + BlackFormula.LiRS). FdConvertibleBond dropped — does not exist in v1.42.1.** | **816/0/0/22** | **2026-05-08** |
+| 2m | `jquantlib-phase2m-complete` | 3 Fdm-dependent vanilla engines (FdBlackScholesVanilla + FdHestonHullWhiteVanilla + FdSabrVanilla) + AndreasenHuge LocalVol family (3 classes). 8 commits across 4 parallel worktrees including 2 align prereqs. | 816/0/0/22 | 2026-05-08 |
+| **2n** | **`jquantlib-phase2n-complete`** | **`JQuantMath.pow` correctly-rounded via CORE-MATH cr_pow — 100% bit-exact (2,763/2,763 oracle cases). Qint64 (256-bit u128-pair) infra. 8 commits including 29-file/57-site Math.pow → JQuantMath.pow swap. JQuantMath now covers all 5 transcendentals: exp/log/sin/cos/pow.** | **818/0/0/22** | **2026-05-08** |
 
-**Current tip on `main`:** post-Phase 2m. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
+**Current tip on `main`:** post-Phase 2n. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
@@ -99,10 +100,13 @@ Phase 2i and 2i.5 attack the floor head-on by porting **CORE-MATH** — an acade
 | `JQuantMath.cos` | ✅ Phase 2i.5 | CORE-MATH `src/binary64/cos/cos.c` | Bit-exact across 1,381 probe cases incl. Payne-Hanek stress through 2^50·π |
 | `JQuantMath.sin` | ✅ Phase 2i.5 | CORE-MATH `src/binary64/sin/sin.c` | Bit-exact across 1,376 probe cases |
 | `JQuantMath.log` | ✅ Phase 2i.6 | CORE-MATH `src/binary64/log/log.c` | Bit-exact across 1,203 probe cases first-shot. Sister `long[4]` dint64-style helpers (log_dint.h is bit-incompatible with sin/cos's dint.h) |
-| `JQuantMath.pow` | ⚪ Future (BroadieKaya prereq) | CORE-MATH `src/binary64/pow/pow.c` | Depends on log + exp; deferred per Phase 2j-pre B3 (low empirical leverage at 1 site) |
+| `JQuantMath.pow` | ✅ Phase 2n | CORE-MATH `src/binary64/pow/pow.c` | Bit-exact across 2,763 probe cases. Stage-1 doubles + Stage-2 Dint64 Ziv chain (Stage-3 Qint64 deferred — no oracle case demands it). Production-wired at 29 files / 57 sites. |
 | `JQuantMath.lgamma` | ❌ Blocked | No correctly-rounded source available | CORE-MATH does not have lgamma; msun/glibc options either non-correctly-rounded or license-incompatible. NCCS EXACT remains blocked. |
 
-A supporting type — `Dint64` — emulates `unsigned __int128` (the extended-precision `dint64_t` CORE-MATH uses for accurate-path arithmetic). It's package-private, validated against 100 probe cases of `add`/`mul`/`mul21`/`fromDouble`/`toDouble`/etc., and **reusable across future log/pow ports**.
+Two supporting types in `org.jquantlib.math.transcendental` emulate the C source's extended-precision integers:
+
+- **`Dint64`** — emulates `unsigned __int128` (`dint64_t` in CORE-MATH source). Package-private; validated across 100 probe cases. Used by `LogKernel` (log), `SinCosKernel` (sin+cos), and `PowKernel` (pow stage-2 Ziv chain).
+- **`Qint64`** — emulates 256-bit u128-pair arithmetic (`qint64_t`). Package-private; validated across 322 probe cases / 16 ops. Foundation for pow's stage-3 Ziv (deferred — not exercised by current oracle) and any future `lgamma` port.
 
 ### Why CORE-MATH and not msun, glibc, or Apple libm?
 
@@ -132,7 +136,7 @@ Probe oracles for transcendentals therefore `#include "coremath/exp.c"` directly
 jquantlib/                              ← this repo root
 ├── jquantlib/                          ← Maven module under active port
 │   ├── src/main/java/org/jquantlib/   ← production code
-│   │   └── math/transcendental/       ← Phase 2i+ (JQuantMath, ExpKernel, SinCosKernel, Dint64)
+│   │   └── math/transcendental/       ← Phase 2i-2n (JQuantMath, ExpKernel, LogKernel, SinCosKernel, PowKernel, Dint64, Qint64)
 │   └── src/test/java/                 ← JUnit 4 tests cross-validated against probes
 ├── jquantlib-helpers/                  ← helper classes
 ├── jquantlib-contrib/                  ← third-party contributions (legacy)
@@ -162,7 +166,7 @@ jquantlib/                              ← this repo root
 ```bash
 # Test the Java module (run from the inner module — not the root)
 cd jquantlib && mvn test
-# Expected: Tests run: 687, Failures: 0, Errors: 0, Skipped: 22
+# Expected: Tests run: 818, Failures: 0, Errors: 0, Skipped: 22
 
 # Snapshot the stub scanner
 python3 tools/stub-scanner/scan_stubs.py
@@ -190,16 +194,17 @@ mvn clean verify install
 
 ## What the next phase looks like
 
-**Phase 2j.5 ✅ complete** — full Gaussian1D family in Java (5 of 5 engines + MarkovFunctional + all niche-engine instruments + GaussHermite family + AtmSmileSection). The next priorities, in autonomous-mode dispatch order:
+**Phase 2n ✅ complete** — JQuantMath.pow correctly-rounded (100% bit-exact 2,763/2,763 vs CORE-MATH cr_pow); Qint64 256-bit infra; 57-site production swap. JQuantMath now covers all 5 transcendentals: exp/log/sin/cos/pow. The next priorities, in autonomous-mode dispatch order:
 
-1. **MarkovFunctional smile branches** — `SabrInterpolatedSmileSection` + `CustomSmileFactory` ports (currently throw on validate() in MF's SabrSmile/CustomSmile adjustment modes)
-2. **`TqrEigenDecomposition` lift** — currently embedded private inside `GaussianQuadrature`; promote to `org.jquantlib.math.matrixutilities` for broader reuse
-3. **`BasketGeneratingEngine`** — Nonstandard / FloatFloat engines have basket helpers stubbed pending this
-4. **`U128.java` shared util** — consolidate u128 helpers duplicated across `Dint64`, `LogKernel`, and `GaussianQuadrature.TqrEigen`
+1. **HestonModel rho constraint align** — `PositiveConstraint` → `BoundaryConstraint(-1,1)` to match C++ v1.42.1 (Phase 2m Track B carry-forward)
+2. **AndreasenHuge calibration** — Phase 2m Track D ported the surfaces but not the calibration loop
+3. **SABRInterpolation shifted-strike support** — Phase 2k Track A Scenario C unblocker
+4. **`U128.java` shared util** — consolidate u128 helpers across `Dint64`, `Qint64`, `LogKernel`, `PowKernel`, `GaussianQuadrature.TqrEigen`
 5. **Douglas ADI / FdmAffineModelTermStructure** — FdHullWhite real floor (Phase 2i WI-2 B-1 A19)
-6. **Phase 2h Fdm completeness** — Bermudan/American/dividend conditions + BiCGStab/GMRES + scheme expansion
-7. **Other Fdm-dependent engines** — FdHestonHullWhite, FdSabrVanilla, FdConvertibleBond, FdAndreasenHugeLocalVol, FdBlackScholesVanilla
-8. **Phase 3+ subsystems** — `experimental/`, `models/marketmodels/`, `termstructures/credit/`, `inflation/`, plus the C++ test-suite/ deserves Java equivalents (~150-200K LOC of tests)
+6. **PowKernel stage-3 (Qint64 chain + exact_pow)** — only if a future test surfaces a hard-rounding case stage-2 fails
+7. **`JQuantMath.lgamma`** — still blocked; CORE-MATH has no lgamma. NCCS EXACT path still gated on this.
+8. **C++ test-suite Java equivalents** — every C++ engine test deserves a Java equivalent (~150-200K LOC of tests)
+9. **Phase 3+ subsystems** — `experimental/`, `models/marketmodels/`, `termstructures/credit/`, `inflation/`
 
 **Binding exit criterion:** every C++ class, function, header, and test from QuantLib v1.42.1 has a faithful Java equivalent. Realistic path to "done" is ~50-100+ phases.
 
