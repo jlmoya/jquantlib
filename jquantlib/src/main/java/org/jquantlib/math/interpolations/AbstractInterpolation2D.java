@@ -208,8 +208,15 @@ public class AbstractInterpolation2D implements Interpolation2D {
             this.mz = mz; // TODO: clone?
 
             QL.require(vx.size() >= 2 && vy.size() >= 2, "not enough points to interpolate"); // TODO: message
+            // Validate vx and vy independently — using a single combined loop
+            // bounded by vx.size()-1 is wrong when vx and vy have different
+            // sizes (e.g., FdSabrVanillaEngine uses a 400-point f-mesh and a
+            // 50-point x-mesh). Port mirrors C++ which validates x and y
+            // arrays separately.
             for (int i = 0; i < vx.size() - 1; i++) {
                 QL.require(vx.get(i) <= vx.get(i + 1), "unsorted values on array X"); // TODO: message
+            }
+            for (int i = 0; i < vy.size() - 1; i++) {
                 QL.require(vy.get(i) <= vy.get(i + 1), "unsorted values on array Y"); // TODO: message
             }
         }
