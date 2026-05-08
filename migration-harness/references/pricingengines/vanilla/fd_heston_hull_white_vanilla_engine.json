@@ -1,0 +1,180 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "delta": 0.5621039354179231,
+        "gamma": 0.022628236045875383,
+        "npv": 8.7820149504174
+      },
+      "inputs": {
+        "corr_equity_short_rate": -0.5,
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "r_grid": 10,
+        "strike": 100.0,
+        "t_grid": 30,
+        "v_grid": 20,
+        "x_grid": 60
+      },
+      "name": "eur_call_atm_1y_corr_neg05"
+    },
+    {
+      "expected": {
+        "delta": -0.41975187627372046,
+        "gamma": 0.022608357434739546,
+        "npv": 5.875099081137271
+      },
+      "inputs": {
+        "corr_equity_short_rate": -0.5,
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "r_grid": 10,
+        "strike": 100.0,
+        "t_grid": 30,
+        "v_grid": 20,
+        "x_grid": 60
+      },
+      "name": "eur_put_atm_1y_corr_neg05"
+    },
+    {
+      "expected": {
+        "delta": 0.35861847131198754,
+        "gamma": 0.019009072904381696,
+        "npv": 5.070182199336585
+      },
+      "inputs": {
+        "corr_equity_short_rate": -0.5,
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "r_grid": 10,
+        "strike": 110.0,
+        "t_grid": 30,
+        "v_grid": 20,
+        "x_grid": 60
+      },
+      "name": "eur_call_otm_1y_corr_neg05"
+    },
+    {
+      "expected": {
+        "delta": -0.20290448949132855,
+        "gamma": 0.016943566986358682,
+        "npv": 2.2458081241019103
+      },
+      "inputs": {
+        "corr_equity_short_rate": -0.5,
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "r_grid": 10,
+        "strike": 90.0,
+        "t_grid": 30,
+        "v_grid": 20,
+        "x_grid": 60
+      },
+      "name": "eur_put_otm_1y_corr_neg05"
+    },
+    {
+      "expected": {
+        "delta": 0.56256354503628,
+        "gamma": 0.022258062468242912,
+        "npv": 8.878061184592662
+      },
+      "inputs": {
+        "corr_equity_short_rate": 0.0,
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "r_grid": 10,
+        "strike": 100.0,
+        "t_grid": 30,
+        "v_grid": 20,
+        "x_grid": 60
+      },
+      "name": "eur_call_atm_1y_corr_zero"
+    },
+    {
+      "expected": {
+        "delta": 0.5629987822608191,
+        "gamma": 0.021906128302788375,
+        "npv": 8.972737312978662
+      },
+      "inputs": {
+        "corr_equity_short_rate": 0.5,
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "r_grid": 10,
+        "strike": 100.0,
+        "t_grid": 30,
+        "v_grid": 20,
+        "x_grid": 60
+      },
+      "name": "eur_call_atm_1y_corr_pos05"
+    },
+    {
+      "expected": {
+        "delta": 0.5920834699263171,
+        "gamma": 0.015683334567842877,
+        "npv": 12.767100097252944
+      },
+      "inputs": {
+        "corr_equity_short_rate": -0.5,
+        "damping_steps": 0,
+        "maturity_years": 2.0,
+        "option_type": "Call",
+        "r_grid": 10,
+        "strike": 100.0,
+        "t_grid": 30,
+        "v_grid": 20,
+        "x_grid": 60
+      },
+      "name": "eur_call_atm_2y_corr_neg05"
+    },
+    {
+      "expected": {
+        "delta": -0.3704840447618265,
+        "gamma": 0.015663264076641426,
+        "npv": 7.151781006233727
+      },
+      "inputs": {
+        "corr_equity_short_rate": -0.5,
+        "damping_steps": 0,
+        "maturity_years": 2.0,
+        "option_type": "Put",
+        "r_grid": 10,
+        "strike": 100.0,
+        "t_grid": 30,
+        "v_grid": 20,
+        "x_grid": 60
+      },
+      "name": "eur_put_atm_2y_corr_neg05"
+    },
+    {
+      "expected": {
+        "delta": 0.5620773827046159,
+        "gamma": 0.022641640431714904,
+        "npv": 8.780046333974031
+      },
+      "inputs": {
+        "corr_equity_short_rate": -0.5,
+        "damping_steps": 2,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "r_grid": 10,
+        "strike": 100.0,
+        "t_grid": 30,
+        "v_grid": 20,
+        "x_grid": 60
+      },
+      "name": "eur_call_atm_1y_damping2"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T06:44:15Z",
+  "generated_by": "fd_heston_hull_white_vanilla_engine_probe",
+  "test_group": "pricingengines/vanilla/fd_heston_hull_white_vanilla_engine"
+}

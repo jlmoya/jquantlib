@@ -28,7 +28,12 @@ import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.BlackConstantVol;
+import org.jquantlib.time.calendars.NullCalendar;
 
 /**
  * One-dimensional FDM mesher for the Black-Scholes equity process (log-space).
@@ -189,5 +194,32 @@ public class FdmBlackScholesMesher extends Fdm1dMesher {
              0.0001, 1.5,              // eps, scaleFactor
              strike, 0.1,             // cPoint (strike, density=0.1)
              dividendSchedule, spotAdjustment);
+    }
+
+    /**
+     * Build a constant-volatility GBS process — mirrors C++
+     * {@code FdmBlackScholesMesher::processHelper}.
+     * Used by hybrid engines (e.g., {@code FdHestonHullWhiteVanillaEngine})
+     * to turn a Heston process's spot/rate handles into a dummy GBS process
+     * for building the equity mesh.
+     *
+     * @param s0   spot quote handle
+     * @param rTS  risk-free rate term structure
+     * @param qTS  dividend yield term structure
+     * @param vol  constant Black-Scholes volatility
+     */
+    public static GeneralizedBlackScholesProcess processHelper(
+            final Handle<Quote> s0,
+            final Handle<YieldTermStructure> rTS,
+            final Handle<YieldTermStructure> qTS,
+            final double vol) {
+        final YieldTermStructure rTSLink = rTS.currentLink();
+        final Handle<BlackVolTermStructure> volH = new Handle<BlackVolTermStructure>(
+            new BlackConstantVol(
+                rTSLink.referenceDate(),
+                new NullCalendar(),
+                vol,
+                rTSLink.dayCounter()));
+        return new GeneralizedBlackScholesProcess(s0, qTS, rTS, volH);
     }
 }
