@@ -273,9 +273,19 @@ public class AbstractInterpolation2D implements Interpolation2D {
 
         protected int locateX(final double x) /* @ReadOnly */{
             QL.require(extraSafetyChecksX(), "unsorted values on array X"); // TODO: message
+            // Mirror C++ v1.42.1 ql/math/interpolations/interpolation2d.hpp:
+            //   else if (x > *(xEnd_-1))
+            //       return xEnd_-xBegin_-2;
+            //   else
+            //       return upper_bound(xBegin_, xEnd_-1, x) - xBegin_ - 1;
+            // The C++ upper_bound search is bounded by xEnd_-1 (excludes the
+            // last element), so for x == last the result is size-2. Java's
+            // Array.upperBound searches the whole range and returns size for
+            // that case, leading to size-1 here; the off-by-one access in
+            // BilinearInterpolation.op then trips the matrix bounds.
             if (x <= vx.first())
                 return 0;
-            else if (x > vx.last())
+            else if (x >= vx.last())
                 return vx.size() - 2;
             else
                 return vx.upperBound(x) - 1;
@@ -285,7 +295,7 @@ public class AbstractInterpolation2D implements Interpolation2D {
             QL.require(extraSafetyChecksY(), "unsorted values on array Y"); // TODO: message
             if (y <= vy.first())
                 return 0;
-            else if (y > vy.last())
+            else if (y >= vy.last())
                 return vy.size() - 2;
             else
                 return vy.upperBound(y) - 1;
