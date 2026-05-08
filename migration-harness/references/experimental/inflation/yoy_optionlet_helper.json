@@ -1,0 +1,114 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "impliedQuote": 8.93316658142702
+      },
+      "inputs": {
+        "capFloorType": "Cap",
+        "fixingDays": 0,
+        "flatVol": 0.2,
+        "n": 1,
+        "notional": 10000.0,
+        "observationLag_months": 3,
+        "strike": 0.03
+      },
+      "name": "cap_n1_k0p03"
+    },
+    {
+      "expected": {
+        "impliedQuote": 32.12067640146455
+      },
+      "inputs": {
+        "capFloorType": "Cap",
+        "fixingDays": 0,
+        "flatVol": 0.2,
+        "n": 2,
+        "notional": 10000.0,
+        "observationLag_months": 3,
+        "strike": 0.03
+      },
+      "name": "cap_n2_k0p03"
+    },
+    {
+      "expected": {
+        "impliedQuote": 69.89982461481121
+      },
+      "inputs": {
+        "capFloorType": "Cap",
+        "fixingDays": 0,
+        "flatVol": 0.2,
+        "n": 3,
+        "notional": 10000.0,
+        "observationLag_months": 3,
+        "strike": 0.03
+      },
+      "name": "cap_n3_k0p03"
+    },
+    {
+      "expected": {
+        "impliedQuote": 143.55976102617132
+      },
+      "inputs": {
+        "capFloorType": "Cap",
+        "fixingDays": 0,
+        "flatVol": 0.2,
+        "n": 2,
+        "notional": 10000.0,
+        "observationLag_months": 3,
+        "strike": 0.02
+      },
+      "name": "cap_n2_k0p02"
+    },
+    {
+      "expected": {
+        "impliedQuote": 5.209890240035875
+      },
+      "inputs": {
+        "capFloorType": "Cap",
+        "fixingDays": 0,
+        "flatVol": 0.2,
+        "n": 2,
+        "notional": 10000.0,
+        "observationLag_months": 3,
+        "strike": 0.04
+      },
+      "name": "cap_n2_k0p04"
+    },
+    {
+      "expected": {
+        "impliedQuote": 4.6615063572221604
+      },
+      "inputs": {
+        "capFloorType": "Floor",
+        "fixingDays": 0,
+        "flatVol": 0.2,
+        "n": 2,
+        "notional": 10000.0,
+        "observationLag_months": 3,
+        "strike": 0.02
+      },
+      "name": "floor_n2_k0p02"
+    },
+    {
+      "expected": {
+        "impliedQuote": 79.16334204480881
+      },
+      "inputs": {
+        "capFloorType": "Floor",
+        "fixingDays": 0,
+        "flatVol": 0.2,
+        "n": 2,
+        "notional": 10000.0,
+        "observationLag_months": 3,
+        "strike": 0.03
+      },
+      "name": "floor_n2_k0p03"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T16:00:59Z",
+  "generated_by": "yoy_optionlet_helper_probe",
+  "test_group": "experimental/inflation/yoy_optionlet_helper"
+}
