@@ -1,0 +1,894 @@
+{
+  "cases": [
+    {
+      "expected": 0.02276,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 3,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.03
+      },
+      "name": "cap_grid_s0_t0"
+    },
+    {
+      "expected": 0.034532,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.03
+      },
+      "name": "cap_grid_s0_t1"
+    },
+    {
+      "expected": 0.047795,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 7,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.03
+      },
+      "name": "cap_grid_s0_t2"
+    },
+    {
+      "expected": 0.075781,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 10,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.03
+      },
+      "name": "cap_grid_s0_t3"
+    },
+    {
+      "expected": 0.11407300000000001,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 15,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.03
+      },
+      "name": "cap_grid_s0_t4"
+    },
+    {
+      "expected": 0.15375999999999998,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 20,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.03
+      },
+      "name": "cap_grid_s0_t5"
+    },
+    {
+      "expected": 0.221167,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 30,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.03
+      },
+      "name": "cap_grid_s0_t6"
+    },
+    {
+      "expected": 0.010027,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 3,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.04
+      },
+      "name": "cap_grid_s1_t0"
+    },
+    {
+      "expected": 0.012790000000000001,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.04
+      },
+      "name": "cap_grid_s1_t1"
+    },
+    {
+      "expected": 0.017019,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 7,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.04
+      },
+      "name": "cap_grid_s1_t2"
+    },
+    {
+      "expected": 0.030395,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 10,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.04
+      },
+      "name": "cap_grid_s1_t3"
+    },
+    {
+      "expected": 0.048188999999999996,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 15,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.04
+      },
+      "name": "cap_grid_s1_t4"
+    },
+    {
+      "expected": 0.060772,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 20,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.04
+      },
+      "name": "cap_grid_s1_t5"
+    },
+    {
+      "expected": 0.083924,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 30,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.04
+      },
+      "name": "cap_grid_s1_t6"
+    },
+    {
+      "expected": 0.0038799999999999998,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 3,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.05
+      },
+      "name": "cap_grid_s2_t0"
+    },
+    {
+      "expected": 0.004059,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.05
+      },
+      "name": "cap_grid_s2_t1"
+    },
+    {
+      "expected": 0.005062,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 7,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.05
+      },
+      "name": "cap_grid_s2_t2"
+    },
+    {
+      "expected": 0.010762,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 10,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.05
+      },
+      "name": "cap_grid_s2_t3"
+    },
+    {
+      "expected": 0.01684,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 15,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.05
+      },
+      "name": "cap_grid_s2_t4"
+    },
+    {
+      "expected": 0.017227000000000003,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 20,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.05
+      },
+      "name": "cap_grid_s2_t5"
+    },
+    {
+      "expected": 0.018475,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 30,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.05
+      },
+      "name": "cap_grid_s2_t6"
+    },
+    {
+      "expected": 0.0014939999999999999,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 3,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.06
+      },
+      "name": "cap_grid_s3_t0"
+    },
+    {
+      "expected": 0.001411,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.06
+      },
+      "name": "cap_grid_s3_t1"
+    },
+    {
+      "expected": 0.0016879999999999998,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 7,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.06
+      },
+      "name": "cap_grid_s3_t2"
+    },
+    {
+      "expected": 0.004361,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 10,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.06
+      },
+      "name": "cap_grid_s3_t3"
+    },
+    {
+      "expected": 0.006365,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 15,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.06
+      },
+      "name": "cap_grid_s3_t4"
+    },
+    {
+      "expected": 0.005487,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 20,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.06
+      },
+      "name": "cap_grid_s3_t5"
+    },
+    {
+      "expected": 0.004503,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 30,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.06
+      },
+      "name": "cap_grid_s3_t6"
+    },
+    {
+      "expected": 0.001562,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 3,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": -0.01
+      },
+      "name": "floor_grid_s0_t0"
+    },
+    {
+      "expected": 0.0021449999999999998,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": -0.01
+      },
+      "name": "floor_grid_s0_t1"
+    },
+    {
+      "expected": 0.002445,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 7,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": -0.01
+      },
+      "name": "floor_grid_s0_t2"
+    },
+    {
+      "expected": 0.003925,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 10,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": -0.01
+      },
+      "name": "floor_grid_s0_t3"
+    },
+    {
+      "expected": 0.003682,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 15,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": -0.01
+      },
+      "name": "floor_grid_s0_t4"
+    },
+    {
+      "expected": 0.0039700000000000004,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 20,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": -0.01
+      },
+      "name": "floor_grid_s0_t5"
+    },
+    {
+      "expected": 0.004148,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 30,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": -0.01
+      },
+      "name": "floor_grid_s0_t6"
+    },
+    {
+      "expected": 0.002838,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 3,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.0
+      },
+      "name": "floor_grid_s1_t0"
+    },
+    {
+      "expected": 0.0036729999999999996,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.0
+      },
+      "name": "floor_grid_s1_t1"
+    },
+    {
+      "expected": 0.004208,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 7,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.0
+      },
+      "name": "floor_grid_s1_t2"
+    },
+    {
+      "expected": 0.006352,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 10,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.0
+      },
+      "name": "floor_grid_s1_t3"
+    },
+    {
+      "expected": 0.006362,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 15,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.0
+      },
+      "name": "floor_grid_s1_t4"
+    },
+    {
+      "expected": 0.0067469999999999995,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 20,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.0
+      },
+      "name": "floor_grid_s1_t5"
+    },
+    {
+      "expected": 0.007390000000000001,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 30,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.0
+      },
+      "name": "floor_grid_s1_t6"
+    },
+    {
+      "expected": 0.005361,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 3,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.01
+      },
+      "name": "floor_grid_s2_t0"
+    },
+    {
+      "expected": 0.006666,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.01
+      },
+      "name": "floor_grid_s2_t1"
+    },
+    {
+      "expected": 0.007704000000000001,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 7,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.01
+      },
+      "name": "floor_grid_s2_t2"
+    },
+    {
+      "expected": 0.010920000000000001,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 10,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.01
+      },
+      "name": "floor_grid_s2_t3"
+    },
+    {
+      "expected": 0.011696999999999999,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 15,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.01
+      },
+      "name": "floor_grid_s2_t4"
+    },
+    {
+      "expected": 0.012179,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 20,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.01
+      },
+      "name": "floor_grid_s2_t5"
+    },
+    {
+      "expected": 0.013975,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 30,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.01
+      },
+      "name": "floor_grid_s2_t6"
+    },
+    {
+      "expected": 0.010459999999999999,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 3,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.02
+      },
+      "name": "floor_grid_s3_t0"
+    },
+    {
+      "expected": 0.01296,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.02
+      },
+      "name": "floor_grid_s3_t1"
+    },
+    {
+      "expected": 0.015224000000000001,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 7,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.02
+      },
+      "name": "floor_grid_s3_t2"
+    },
+    {
+      "expected": 0.020344,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 10,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.02
+      },
+      "name": "floor_grid_s3_t3"
+    },
+    {
+      "expected": 0.023273,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 15,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.02
+      },
+      "name": "floor_grid_s3_t4"
+    },
+    {
+      "expected": 0.023856,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 20,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.02
+      },
+      "name": "floor_grid_s3_t5"
+    },
+    {
+      "expected": 0.028675,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 30,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.02
+      },
+      "name": "floor_grid_s3_t6"
+    },
+    {
+      "expected": 0.04853492105117733,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.025
+      },
+      "name": "cap_interior_s0025_t5y"
+    },
+    {
+      "expected": 0.005956,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 7,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.005
+      },
+      "name": "floor_interior_s0005_t7y"
+    },
+    {
+      "expected": 0.020578500000000007,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 10,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.045
+      },
+      "name": "cap_interior_s0045_t10y"
+    },
+    {
+      "expected": 0.017484999999999997,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 15,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.015
+      },
+      "name": "floor_interior_s0015_t15y"
+    },
+    {
+      "expected": 0.005361,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 3,
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "strike": 0.01
+      },
+      "name": "price_floor_3y_s001"
+    },
+    {
+      "expected": 0.031500000000000083,
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "maturity_period_years": 5,
+        "nominal": 1.0,
+        "observation_lag_months": 2
+      },
+      "name": "atm_rate_5y"
+    },
+    {
+      "expected": {
+        "max_strike": 0.06,
+        "min_strike": -0.01,
+        "num_strikes": 8,
+        "observation_lag_months": 2
+      },
+      "inputs": {
+        "baseRate": 0.03087,
+        "evaluation_date": "2010-06-01",
+        "interpolation": "Flat",
+        "interpolator2d": "Bilinear",
+        "nominal": 1.0,
+        "observation_lag_months": 2,
+        "query": "metadata"
+      },
+      "name": "metadata"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T16:21:51Z",
+  "generated_by": "cpi_cap_floor_term_price_surface_probe",
+  "test_group": "experimental/inflation/cpi_cap_floor_term_price_surface"
+}
