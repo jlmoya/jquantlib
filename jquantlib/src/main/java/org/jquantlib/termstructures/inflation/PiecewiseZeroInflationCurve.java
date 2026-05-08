@@ -41,6 +41,7 @@ import org.jquantlib.math.Ops;
 import org.jquantlib.math.interpolations.Interpolation.Interpolator;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.solvers1D.Brent;
+import org.jquantlib.math.solvers1D.FiniteDifferenceNewtonSafe;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 
@@ -226,7 +227,12 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         // helper.impliedQuote() which may evaluate slightly past dates[n].
         setMaxDate(newDates[n]);
 
-        final Brent solver = new Brent();
+        // C++ IterativeBootstrap uses two solvers:
+        //   firstSolver_ (Brent)               when validData == false (first pass)
+        //   solver_ (FiniteDifferenceNewtonSafe) when validData == true  (subsequent passes)
+        // Mirror that split here per Phase 2r L0 A.2.
+        final Brent firstSolver = new Brent();
+        final FiniteDifferenceNewtonSafe solver = new FiniteDifferenceNewtonSafe();
         final int maxIterations = traits.maxIterations();
 
         for (int iteration = 0; ; ++iteration) {
@@ -238,8 +244,9 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
 
             for (int i = 1; i < n + 1; ++i) {
                 final ZeroCouponInflationSwapHelper instrument = instruments.get(i - 1);
+                final boolean validData = validCurve || iteration > 0;
                 double guess;
-                if (validCurve || iteration > 0) {
+                if (validData) {
                     guess = data()[i];
                 } else if (i == 1) {
                     // First node — base value seeds from average inflation.
@@ -250,8 +257,8 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
                 }
 
                 final double[] curData = data();
-                final double min = traits.minValueAfter(i, curData, validCurve || iteration > 0);
-                final double max = traits.maxValueAfter(i, curData, validCurve || iteration > 0);
+                final double min = traits.minValueAfter(i, curData, validData);
+                final double max = traits.maxValueAfter(i, curData, validData);
                 if (guess <= min || guess >= max) {
                     guess = (min + max) / 2.0;
                 }
@@ -269,11 +276,15 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
                 // For first iteration, only have data up to (i+1); for later passes,
                 // use full curve. Use the larger size so the interpolation always
                 // covers fixingDate.
-                final int sizeForFn = (validCurve || iteration > 0) ? n + 1 : i + 1;
+                final int sizeForFn = validData ? n + 1 : i + 1;
                 final BootstrapErrorFn error = new BootstrapErrorFn(instrument, this, i, sizeForFn);
                 final double r;
                 try {
-                    r = solver.solve(error, accuracy, guess, min, max);
+                    // Mirror C++ IterativeBootstrap: use FDNewtonSafe when validData,
+                    // Brent on the first (virgin-data) pass.
+                    r = validData
+                            ? solver.solve(error, accuracy, guess, min, max)
+                            : firstSolver.solve(error, accuracy, guess, min, max);
                 } catch (final RuntimeException e) {
                     validCurve = false;
                     throw new LibraryException(

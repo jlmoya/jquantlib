@@ -178,16 +178,17 @@ public class PiecewiseYoYInflationCurveTest {
             }
             for (int i = 0; i < actual.length; ++i) {
                 // Per-test loosening for the long-tenor 10Y pillar:
-                // C++ IterativeBootstrap uses FiniteDifferenceNewtonSafe
-                // for iterations >= 1 (after the first Brent pass), while
-                // Java's port uses Brent throughout. Both converge to the
-                // same accuracy ball (1e-12) but exit at slightly different
-                // positions within. The 5th-pillar diff is ~3.5e-6 abs on
-                // value 0.0377 (rel ~1e-4). Tolerance loosened to 1e-5
-                // (abs+rel) per design §4.2 per-test-exception rule.
+                // Phase 2r L0 A.2: Java now adopts FiniteDifferenceNewtonSafe
+                // (when validData==true) mirroring C++ IterativeBootstrap.
+                // However, for Linear interpolation (global()==false), the
+                // bootstrap loop breaks after the FIRST iteration (iteration=0,
+                // validData=false), so Brent is the only solver exercised here.
+                // The 1e-5 loosening thus reflects the inherent bootstrapping
+                // tolerance rather than a solver divergence, and is retained
+                // (TIGHT promotion does not apply to non-global interpolators).
                 if (!Tolerance.within(actual[i], arr.getDouble(i),
                         1.0e-5,
-                        "Brent vs FDNewtonSafe iteration-2+ solver split")) {
+                        "bootstrap convergence tolerance for Linear (non-global) interpolator")) {
                     mismatches.add(name + "[" + i + "]: expected="
                             + arr.getDouble(i) + " actual=" + actual[i]);
                 }
@@ -197,13 +198,11 @@ public class PiecewiseYoYInflationCurveTest {
             final Date d = new Date(ds);
             final double expected = exp.getDouble("value");
             final double actual = curve.yoyRate(d, true);
-            // Same per-test loosening as P_pillarData — the curve's yoyRate
-            // is a Linear interpolation of the same data; long-tenor probe
-            // points show the same Brent-vs-FDNewtonSafe numerical-method
-            // discrepancy.
+            // Same per-test loosening as P_pillarData — same Linear (non-global)
+            // interpolator, same bootstrap convergence tolerance argument.
             if (!Tolerance.within(actual, expected,
                     1.0e-5,
-                    "Brent vs FDNewtonSafe iteration-2+ solver split")) {
+                    "bootstrap convergence tolerance for Linear (non-global) interpolator")) {
                 mismatches.add(fmt(name, expected, actual));
             }
         } else {
