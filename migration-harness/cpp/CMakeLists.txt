@@ -62,5 +62,16 @@ if(TARGET qint64_probe)
         PROPERTIES LANGUAGE C COMPILE_FLAGS "-std=c11")
 endif()
 
+# pow_probe needs pow_shim.c (which includes pow.c via pow_shim_body.c, with
+# pow_dint.h as the dint backend) compiled as C — same reasons as qint64_shim.
+if(TARGET pow_probe)
+    enable_language(C)
+    target_sources(pow_probe PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/probes/transcendental/pow_shim.c")
+    set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/probes/transcendental/pow_shim.c"
+        PROPERTIES LANGUAGE C COMPILE_FLAGS "-std=c11")
+endif()
+
 message(STATUS "Migration harness: ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "Probes discovered: ${PROBE_SOURCES}")
