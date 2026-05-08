@@ -1,0 +1,47 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "code": "GENERIC",
+        "name": "Generic"
+      },
+      "inputs": {
+        "class": "GenericRegion"
+      },
+      "name": "generic_region_metadata"
+    },
+    {
+      "expected": {
+        "familyName": "CPI",
+        "name": "Generic CPI"
+      },
+      "inputs": {
+        "class": "GenericCPI",
+        "currency": "EUR",
+        "frequency": "Monthly",
+        "lag_months": 3,
+        "revised": false
+      },
+      "name": "generic_cpi_metadata"
+    },
+    {
+      "expected": {
+        "familyName": "YY_CPI",
+        "name": "Generic YY_CPI"
+      },
+      "inputs": {
+        "class": "YYGenericCPI",
+        "currency": "EUR",
+        "frequency": "Monthly",
+        "lag_months": 3,
+        "revised": false
+      },
+      "name": "yy_generic_cpi_metadata"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T15:23:07Z",
+  "generated_by": "generic_indexes_probe",
+  "test_group": "experimental/inflation/generic_indexes"
+}

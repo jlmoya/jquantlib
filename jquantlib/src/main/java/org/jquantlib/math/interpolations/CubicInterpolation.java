@@ -385,7 +385,15 @@ public class CubicInterpolation extends AbstractInterpolation {
                         case FourthOrder:
                             throw new LibraryException("FourthOrder not implemented yet");
                         case Parabolic:
-                            throw new LibraryException("Parabolic not implemented yet");
+                            // Mirrors C++ CubicInterpolation::Parabolic case
+                            // (cubicinterpolation.hpp lines 577-584, v1.42.1).
+                            // intermediate points
+                            for (int i=1; i<n-1; ++i)
+                                tmp[i] = (dx[i-1]*S[i]+dx[i]*S[i-1]) / (dx[i]+dx[i-1]);
+                            // end points (require n >= 3)
+                            tmp[0]   = ((2.0*dx[0]+dx[1])*S[0] - dx[0]*S[1]) / (dx[0]+dx[1]);
+                            tmp[n-1] = ((2.0*dx[n-2]+dx[n-3])*S[n-2] - dx[n-2]*S[n-3]) / (dx[n-2]+dx[n-3]);
+                            break;
                         case ModifiedParabolic:
                             throw new LibraryException("ModifiedParabolic not implemented yet");
                         case FritschButland:
