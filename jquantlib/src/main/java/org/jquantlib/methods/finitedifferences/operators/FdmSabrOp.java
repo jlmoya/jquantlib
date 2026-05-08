@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.termstructures.Compounding;
@@ -94,7 +95,7 @@ public final class FdmSabrOp implements FdmLinearOpComposite {
         for (int i = 0; i < n; ++i) {
             final double f = fLocs.get(i);
             final double x = xLocs.get(i);
-            dffCoeff.set(i, 0.5 * Math.exp(2.0 * x) * Math.pow(f, 2.0 * beta));
+            dffCoeff.set(i, 0.5 * Math.exp(2.0 * x) * JQuantMath.pow(f, 2.0 * beta));
         }
         dffMap_ = new SecondDerivativeOp(0, mesher).mult(dffCoeff);
 
@@ -111,7 +112,7 @@ public final class FdmSabrOp implements FdmLinearOpComposite {
         for (int i = 0; i < n; ++i) {
             final double f = fLocs.get(i);
             final double x = xLocs.get(i);
-            corrCoeff.set(i, rho * nu * Math.exp(x) * Math.pow(f, beta));
+            corrCoeff.set(i, rho * nu * Math.exp(x) * JQuantMath.pow(f, beta));
         }
         correlationMap_ = new SecondOrderMixedDerivativeOp(0, 1, mesher)
                 .mult(corrCoeff);

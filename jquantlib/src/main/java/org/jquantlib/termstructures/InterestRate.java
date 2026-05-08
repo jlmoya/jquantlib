@@ -27,6 +27,7 @@ import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Date;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.time.Frequency;
 
 /**
@@ -134,7 +135,7 @@ public class InterestRate {
             return 1.0 + r * t;
         } else if (compound == Compounding.Compounded) {
             // (1+r/f)^(f*t)
-            return Math.pow((1 + r / freq), (freq * t));
+            return JQuantMath.pow((1 + r / freq), (freq * t));
         } else if (compound == Compounding.Continuous) {
             // e^(r*t)
             return Math.exp((r * t));
@@ -144,7 +145,7 @@ public class InterestRate {
                 return 1.0 + r * t;
             } else {
                 // (1+(r/f))^(f*t)
-                return Math.pow((1 + r / freq), (freq * t));
+                return JQuantMath.pow((1 + r / freq), (freq * t));
             }
         } else {
             throw new LibraryException("unknown compounding convention"); // TODO: message
@@ -298,7 +299,7 @@ public class InterestRate {
             break;
         case Compounded:
             // rate = (compound^(1/(f*t))-1)*f
-            rate = (Math.pow(c, (1 / (f * t))) - 1) * f;
+            rate = (JQuantMath.pow(c, (1 / (f * t))) - 1) * f;
             break;
         case Continuous:
             // rate = log(compound)/t
@@ -310,7 +311,7 @@ public class InterestRate {
                 rate = (c - 1) / t;
             } else {
                 // rate = (compound^(1/(f*t))-1)*f
-                rate = (Math.pow(c, (1 / (f * t))) - 1) * f;
+                rate = (JQuantMath.pow(c, (1 / (f * t))) - 1) * f;
             }
             break;
         default:

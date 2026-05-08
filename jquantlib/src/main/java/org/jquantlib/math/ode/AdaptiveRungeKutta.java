@@ -22,6 +22,7 @@ package org.jquantlib.math.ode;
 import java.util.function.BiFunction;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Runge-Kutta ODE integration with adaptive stepsize.
@@ -152,7 +153,7 @@ public class AdaptiveRungeKutta {
             errmax /= eps;
 
             if (errmax > 1.0) {
-                final double htemp1 = SAFETY * h * Math.pow(errmax, PSHRINK);
+                final double htemp1 = SAFETY * h * JQuantMath.pow(errmax, PSHRINK);
                 final double htemp2 = h / 10.0;
                 final double maxPositive = htemp1 > htemp2 ? htemp1 : htemp2;
                 final double maxNegative = htemp1 < htemp2 ? htemp1 : htemp2;
@@ -162,7 +163,7 @@ public class AdaptiveRungeKutta {
                 QL.require(xnew != x, "Stepsize underflow in AdaptiveRungeKutta::rkqs");
             } else {
                 hnext = (errmax > ERRCON)
-                        ? SAFETY * h * Math.pow(errmax, PGROW)
+                        ? SAFETY * h * JQuantMath.pow(errmax, PGROW)
                         : 5.0 * h;
                 hdid[0] = h;
                 System.arraycopy(ytemp, 0, y, 0, n);

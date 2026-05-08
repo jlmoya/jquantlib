@@ -46,6 +46,7 @@ import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.Option.Type;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Analytical formulae for american exercise with payoff at expiry
@@ -165,7 +166,7 @@ public class AmericanPayoffAtExpiry {
             DXDstrike = 0.0;
         } else {
             y = 1.0;
-            x = Math.pow(strike / spot, 2.0 * mu);
+            x = JQuantMath.pow(strike / spot, 2.0 * mu);
             // Commented out in original C++ code :: DXDstrike_ = ......;
         }
 

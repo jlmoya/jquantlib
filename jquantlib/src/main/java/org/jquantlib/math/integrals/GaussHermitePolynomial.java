@@ -36,7 +36,7 @@ import org.jquantlib.math.transcendental.JQuantMath;
  *   mu_0     = Gamma(mu + 1/2)
  * </pre>
  *
- * <p>{@link #w(double)} uses {@link Math#pow} (C++ {@code std::pow}) and
+ * <p>{@link #w(double)} uses {@link JQuantMath#pow(double,double)} (CORE-MATH cr_pow) and
  * {@link JQuantMath#exp(double)} for the {@code exp(-x*x)} factor.
  */
 public final class GaussHermitePolynomial extends GaussianOrthogonalPolynomial {
@@ -72,6 +72,6 @@ public final class GaussHermitePolynomial extends GaussianOrthogonalPolynomial {
     @Override
     public double w(final double x) {
         // |x|^{2 mu} * exp(-x^2)
-        return Math.pow(Math.abs(x), 2.0 * mu_) * JQuantMath.exp(-x * x);
+        return JQuantMath.pow(Math.abs(x), 2.0 * mu_) * JQuantMath.exp(-x * x);
     }
 }

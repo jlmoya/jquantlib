@@ -44,6 +44,7 @@ package org.jquantlib.experimental.lattices;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.distributions.BinomialDistribution;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.processes.StochasticProcess1D;
 
 /**
@@ -112,7 +113,7 @@ public class ExtendedLeisenReimer extends ExtendedBinomialTree /*<T>*/ {
        final /*@Real*/ double up = ermqdt * pdash / pu;
        final /*@Real*/ double down = (ermqdt - pu * up) / (1.0 - pu);
 
-       return x0 * Math.pow(down, i-index) * Math.pow(up, index);
+       return x0 * JQuantMath.pow(down, i-index) * JQuantMath.pow(up, index);
    }
 
    @Override

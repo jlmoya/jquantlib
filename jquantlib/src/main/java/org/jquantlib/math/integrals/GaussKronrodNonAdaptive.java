@@ -43,6 +43,7 @@ package org.jquantlib.math.integrals;
 import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Integral of a 1-dimensional function using the Gauss-Kronrod methods
@@ -203,7 +204,7 @@ public class GaussKronrodNonAdaptive extends KronrodIntegral {
     static double rescaleError(double err, final double resultAbs, final double resultAsc) {
         err = Math.abs(err);
         if (resultAsc != 0 && err != 0) {
-            final double scale = Math.pow((200 * err / resultAsc), 1.5);
+            final double scale = JQuantMath.pow((200 * err / resultAsc), 1.5);
             if (scale < 1) {
                 err = resultAsc * scale;
             } else {

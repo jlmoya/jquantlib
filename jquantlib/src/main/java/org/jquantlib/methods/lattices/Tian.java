@@ -25,6 +25,7 @@ import org.jquantlib.lang.annotation.NonNegative;
 import org.jquantlib.lang.annotation.Real;
 import org.jquantlib.lang.annotation.Time;
 import org.jquantlib.lang.annotation.Unused;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.processes.StochasticProcess1D;
 
 /**
@@ -72,7 +73,7 @@ public class Tian extends BinomialTree {
 
 	@Override
 	public double underlying(final int i, final int index) {
-		return x0 * Math.pow(down, i - index) * Math.pow(up, index);
+		return x0 * JQuantMath.pow(down, i - index) * JQuantMath.pow(up, index);
 	}
 
 }

@@ -51,6 +51,7 @@ import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.lang.annotation.PackagePrivate;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.pricingengines.BlackCalculator;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
@@ -157,7 +158,7 @@ public class BaroneAdesiWhaleyApproximationEngine extends VanillaOption.EngineIm
                 Q = (-(n-1.0) + Math.sqrt(((n-1.0)*(n-1.0))+4.0*K))/2.0;
                 a =  (Sk/Q) * (1.0 - dividendDiscount * cumNormalDist.op(d1));
                 if (spot<Sk)
-                    r.value = black.value() + a * Math.pow((spot/Sk), Q);
+                    r.value = black.value() + a * JQuantMath.pow((spot/Sk), Q);
                 else
                     r.value = spot - payoff.strike();
                 break;
@@ -165,7 +166,7 @@ public class BaroneAdesiWhaleyApproximationEngine extends VanillaOption.EngineIm
                 Q = (-(n-1.0) - Math.sqrt(((n-1.0)*(n-1.0))+4.0*K))/2.0;
                 a = -(Sk/Q) * (1.0 - dividendDiscount * cumNormalDist.op(-d1));
                 if (spot>Sk)
-                    r.value = black.value() + a * Math.pow((spot/Sk), Q);
+                    r.value = black.value() + a * JQuantMath.pow((spot/Sk), Q);
                 else
                     r.value = payoff.strike() - spot;
                 break;

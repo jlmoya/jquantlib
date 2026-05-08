@@ -186,16 +186,13 @@ public class GsrProcessCore {
             double res2 = 1.0;
             // alpha_k * zeta_k
             if (revZero(k)) {
-                // Phase 2j P2J-5: only Math.pow site in the Gaussian1D family. CORE-MATH cr_pow
-                // not ported this phase (empirical leverage too low for 1 site). If A19 fires —
-                // tier-flooring tests routed through this path — Phase 2j followup mini-phase
-                // ports CORE-MATH cr_pow.
+                // Phase 2n A.2: JQuantMath.pow (CORE-MATH cr_pow) now active here.
                 final double capped = cappedTime(k + 1, t);
                 final double floored = flooredTime(k, w);
                 res2 *= vol(k) * vol(k) / 4.0
-                        * (4.0 * Math.pow(capped - time2(k), 2.0)
-                           - (Math.pow(floored - 2.0 * time2(k) + capped, 2.0)
-                              + Math.pow(capped - floored, 2.0)));
+                        * (4.0 * JQuantMath.pow(capped - time2(k), 2.0)
+                           - (JQuantMath.pow(floored - 2.0 * time2(k) + capped, 2.0)
+                              + JQuantMath.pow(capped - floored, 2.0)));
             } else {
                 res2 *= vol(k) * vol(k) / (2.0 * rev(k) * rev(k))
                         * (JQuantMath.exp(-2.0 * rev(k) * (cappedTime(k + 1, t) - time2(k)))
@@ -268,13 +265,13 @@ public class GsrProcessCore {
             double res3 = 1.0;
             // eta_k * zeta_k
             if (revZero(k)) {
-                // Phase 2j P2J-5: only Math.pow site in the Gaussian1D family (see expectation_rn_part).
+                // Phase 2n A.2: JQuantMath.pow (CORE-MATH cr_pow) now active here (see expectation_rn_part).
                 final double capped_t = cappedTime(k + 1, t);
                 final double capped_T = cappedTime(k + 1, T_);
                 final double floored = flooredTime(k, w);
-                res3 *= (-Math.pow(capped_t - capped_T, 2.0)
-                         - 2.0 * Math.pow(capped_t - floored, 2.0)
-                         + Math.pow(2.0 * floored - capped_T - capped_t, 2.0))
+                res3 *= (-JQuantMath.pow(capped_t - capped_T, 2.0)
+                         - 2.0 * JQuantMath.pow(capped_t - floored, 2.0)
+                         + JQuantMath.pow(2.0 * floored - capped_T - capped_t, 2.0))
                         / 4.0;
             } else {
                 res3 *= (2.0 - JQuantMath.exp(rev(k) * (cappedTime(k + 1, t) - cappedTime(k + 1, T_)))

@@ -27,6 +27,7 @@ import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Factorial;
 import org.jquantlib.math.Ops;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Inverse cumulative Poisson distribution function.
@@ -64,7 +65,7 @@ public class InverseCumulativePoisson implements Ops.DoubleOp {
 
     private double calcSummand(final int index) {
         final Factorial fact = new Factorial();
-        return Math.exp(-lambda) * Math.pow(lambda, index) / fact.get(index);
+        return Math.exp(-lambda) * JQuantMath.pow(lambda, index) / fact.get(index);
     }
 
 

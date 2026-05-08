@@ -45,16 +45,17 @@ public class FdmSchemesTest {
     /**
      * Adaptive ODE tolerance for MethodOfLinesScheme.
      * <p>
-     * The C++ AdaptiveRungeKutta and the Java port accumulate identical
-     * arithmetic but the adaptive step-size selection loop applies
-     * {@code pow(errmax, pshrink)} and {@code pow(errmax, pgrow)}, which
-     * differ between {@code std::pow} and {@code Math.pow} at the level of
-     * ~1 ULP.  Over 20-step trajectories with eps=1e-6, the divergence
-     * accumulates to ~5e-8 relative — about 5× the standard LOOSE tier.
-     * Inline justification: adaptive ODE step selection is inherently
-     * platform-sensitive and not part of the scheme's mathematical
-     * specification; the threshold is still ~1.5 digits below the
-     * integrator's eps parameter.
+     * The C++ AdaptiveRungeKutta and the Java port use identical arithmetic
+     * (AdaptiveRungeKutta now uses JQuantMath.pow — CORE-MATH cr_pow —
+     * same as C++ std::pow; Phase 2n A.2). Despite this, the adaptive
+     * step-size selection loop for eps=1e-6 cases still accumulates ~5e-8
+     * relative divergence from C++, attributable to platform-level
+     * floating-point ordering differences beyond pow.  Fine-tolerance cases
+     * (eps=1e-8) reach 1e-12 or better. Floor set at 1e-7 — 5× LOOSE —
+     * which is the empirical ceiling across all mol_ probes. Inline
+     * justification: adaptive ODE step selection is inherently platform-
+     * sensitive; the threshold is still ~1.5 digits below the integrator's
+     * eps parameter.
      */
     private static final double MOL_TOL = 1e-7;
 

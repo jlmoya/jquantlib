@@ -18,6 +18,7 @@ package org.jquantlib.math;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.distributions.GammaFunction;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Modified Bessel functions of the first and second kind for both real
@@ -107,7 +108,7 @@ public final class ModifiedBesselFunction {
         if (Math.abs(x) < 13.0) {
             // Taylor series. expWeighted's weightSmallX is exp(-x);
             // unweighted is 1.0.
-            final double alpha = Math.pow(0.5 * x, nu)
+            final double alpha = JQuantMath.pow(0.5 * x, nu)
                     / new GammaFunction().value(1.0 + nu);
             final double Y = 0.25 * x * x;
             int k = 1;

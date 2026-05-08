@@ -25,6 +25,7 @@ package org.jquantlib.methods.lattices;
 import org.jquantlib.lang.annotation.NonNegative;
 import org.jquantlib.lang.annotation.Real;
 import org.jquantlib.lang.annotation.Time;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.processes.StochasticProcess1D;
 
 /**
@@ -63,7 +64,7 @@ public class LeisenReimer extends BinomialTree {
     public double underlying(final int i, final int index) {
         final int j =  i - index;
         final double d = j;
-        return x0 * Math.pow(down, d) * Math.pow(up, (index));
+        return x0 * JQuantMath.pow(down, d) * JQuantMath.pow(up, (index));
     }
 
 	@Override

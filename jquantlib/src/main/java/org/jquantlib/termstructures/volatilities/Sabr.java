@@ -29,6 +29,7 @@ import org.jquantlib.lang.annotation.Rate;
 import org.jquantlib.lang.annotation.Real;
 import org.jquantlib.lang.annotation.Time;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 
 /**
@@ -65,7 +66,7 @@ public class Sabr {
             final double rho) {
 
         final double oneMinusBeta = 1.0-beta;
-        final double A = Math.pow(forward*strike, oneMinusBeta);
+        final double A = JQuantMath.pow(forward*strike, oneMinusBeta);
         final double sqrtA= Math.sqrt(A);
         double logM;
         if (!isClose(forward, strike))

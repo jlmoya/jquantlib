@@ -28,6 +28,7 @@ import org.jquantlib.math.distributions.NonCentralCumulativeChiSquaredDistributi
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.distributions.GammaDistribution;
 import org.jquantlib.math.solvers1D.Brent;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Risk-neutral density calculator for the constant elasticity of variance (CEV)
@@ -132,12 +133,12 @@ public class CEVRNDCalculator {
 
     private double X(final double f) {
         final double ab = alpha_ * (1.0 - beta_);
-        return Math.pow(f, 2.0 * (1.0 - beta_)) / (ab * ab);
+        return JQuantMath.pow(f, 2.0 * (1.0 - beta_)) / (ab * ab);
     }
 
     private double invX(final double x) {
         final double ab = alpha_ * (1.0 - beta_);
-        return Math.pow(x * ab * ab, 1.0 / (2.0 * (1.0 - beta_)));
+        return JQuantMath.pow(x * ab * ab, 1.0 / (2.0 * (1.0 - beta_)));
     }
 
     /**
@@ -156,7 +157,7 @@ public class CEVRNDCalculator {
         final double p = (b + 2 * cClamped) / squared(b + cClamped);
         final double m = (h - 1) * (1 - 3 * h);
 
-        final double u = (Math.pow(a / (b + cClamped), h)
+        final double u = (JQuantMath.pow(a / (b + cClamped), h)
                 - (1 + h * p * (h - 1 - 0.5 * (2 - h) * m * p)))
                 / (h * Math.sqrt(2 * p) * (1 + 0.5 * m * p));
 

@@ -181,12 +181,12 @@ public class FdmHestonVarianceMesher extends Fdm1dMesher {
                 @Override public double op(final double p) {
                     return Math.sqrt(Math.max(0.0, linterp.op(p)));
                 }
-            }, pFront, pBack) * Math.pow(skewHint, 1.5);
+            }, pFront, pBack) * JQuantMath.pow(skewHint, 1.5);
         } catch (final Exception e) {
             // fallback: simple average
             double sum = 0.0;
             for (final double v : vGrid) sum += Math.sqrt(Math.max(0.0, v));
-            estimate = (sum / size) * Math.pow(skewHint, 1.5);
+            estimate = (sum / size) * JQuantMath.pow(skewHint, 1.5);
         }
         this.volaEstimate = estimate;
 

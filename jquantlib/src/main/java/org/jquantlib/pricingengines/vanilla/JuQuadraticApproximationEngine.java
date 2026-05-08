@@ -48,6 +48,7 @@ import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
 import org.jquantlib.math.distributions.NormalDistribution;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.pricingengines.BlackCalculator;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
@@ -191,7 +192,7 @@ public class JuQuadraticApproximationEngine extends VanillaOption.EngineImpl {
             final double /* @Real */chi = temp_spot_ratio * (b * temp_spot_ratio + c);
 
             if (phi * (Sk - spot) > 0) {
-                r.value = black.value() + hA * Math.pow((spot / Sk), lambda) / (1 - chi);
+                r.value = black.value() + hA * JQuantMath.pow((spot / Sk), lambda) / (1 - chi);
             } else {
                 r.value = phi * (spot - payoff.strike());
             }
@@ -201,7 +202,7 @@ public class JuQuadraticApproximationEngine extends VanillaOption.EngineImpl {
             final double /* @Real */chi_double_prime = 2 * b / (spot * spot) - temp_chi_prime / spot - c / (spot * spot);
             greeks.delta = phi * dividendDiscount * cumNormalDist.op(phi * d1_Sk)
             + (lambda / (spot * (1 - chi)) + chi_prime / ((1 - chi)*(1 - chi))) *
-            (phi * (Sk - payoff.strike()) - black_Sk) * Math.pow((spot/Sk), lambda);
+            (phi * (Sk - payoff.strike()) - black_Sk) * JQuantMath.pow((spot/Sk), lambda);
 
             greeks.gamma = phi * dividendDiscount * normalDist.op(phi*d1_Sk) /
             (spot * Math.sqrt(variance))
@@ -210,7 +211,7 @@ public class JuQuadraticApproximationEngine extends VanillaOption.EngineImpl {
                     + chi_double_prime / ((1 - chi) * (1 - chi))
                     + lambda * (1 - lambda) / (spot * spot * (1 - chi)))
                     * (phi * (Sk - payoff.strike()) - black_Sk)
-                    * Math.pow((spot/Sk), lambda);
+                    * JQuantMath.pow((spot/Sk), lambda);
         }
 
     } // end of "early exercise can be optimal"

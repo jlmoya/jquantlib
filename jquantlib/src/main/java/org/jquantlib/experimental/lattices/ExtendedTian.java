@@ -43,6 +43,7 @@ FOR A PARTICULAR PURPOSE.  See the license for more details.
 package org.jquantlib.experimental.lattices;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.processes.StochasticProcess1D;
 
 /**
@@ -102,7 +103,7 @@ public class ExtendedTian extends ExtendedBinomialTree /*<T>*/ {
        /*@Real*/ final double up = 0.5 * r * q * (q + 1 + Math.sqrt(q * q + 2 * q - 3));
        /*@Real*/ final double down = 0.5 * r * q * (q + 1 - Math.sqrt(q * q + 2 * q - 3));
 
-       return x0 * Math.pow(down, i-index) * Math.pow(up, index);
+       return x0 * JQuantMath.pow(down, i-index) * JQuantMath.pow(up, index);
    }
 
    @Override

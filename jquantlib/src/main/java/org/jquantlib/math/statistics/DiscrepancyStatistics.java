@@ -44,6 +44,7 @@ import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
 import org.jquantlib.lang.annotation.QualityAssurance.Version;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 @QualityAssurance(quality = Quality.Q4_UNIT, reviewers = { "Richard Gomes" }, version = Version.V097)
 public class DiscrepancyStatistics extends SequenceStatistics {
@@ -210,9 +211,9 @@ public class DiscrepancyStatistics extends SequenceStatistics {
 		super.reset(dimension);
 
 		adiscr_ = 0.0;
-		bdiscr_ = 1.0/Math.pow(2.0, dimension-1);
+		bdiscr_ = 1.0/JQuantMath.pow(2.0, dimension-1);
 		cdiscr_ = 0.0;
-		ddiscr_ = 1.0/Math.pow(3.0, dimension);
+		ddiscr_ = 1.0/JQuantMath.pow(3.0, dimension);
 	}
 
 }

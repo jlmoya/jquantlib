@@ -34,6 +34,7 @@ import org.jquantlib.termstructures.ZeroInflationTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.util.Pair;
 
 /**
@@ -122,7 +123,7 @@ public abstract class ZeroInflationIndex extends InflationIndex {
     	@Rate double zero = zeroInflation.currentLink().zeroRate(d);
     	@Time double t = zeroInflation.currentLink().dayCounter().yearFraction(trueBaseDate, d);
     	
-    	return baseFixing * Math.pow((1.0 + zero), t);
+    	return baseFixing * JQuantMath.pow((1.0 + zero), t);
     }
        
 }

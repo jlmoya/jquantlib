@@ -48,6 +48,7 @@ import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.pricingengines.BlackCalculator;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 
@@ -115,8 +116,8 @@ public class BjerksundStenslandApproximationEngine extends VanillaOption.EngineI
         final double /* @Real */lambda = (-rT + gamma * bT + 0.5 * gamma * (gamma - 1.0) * variance);
         final double /* @Real */d = -(Math.log(S / H) + (bT + (gamma - 0.5) * variance)) / Math.sqrt(variance);
         final double /* @Real */kappa = 2.0 * bT / variance + (2.0 * gamma - 1.0);
-        return Math.exp(lambda) * Math.pow(S, gamma) * (cumNormalDist.op(d)
-                - Math.pow((I / S), kappa) * cumNormalDist.op(d - 2.0 * Math.log(I / S) / Math.sqrt(variance)));
+        return Math.exp(lambda) * JQuantMath.pow(S, gamma) * (cumNormalDist.op(d)
+                - JQuantMath.pow((I / S), kappa) * cumNormalDist.op(d - 2.0 * Math.log(I / S) / Math.sqrt(variance)));
     }
 
     private double /*@Real*/ americanCallApproximation(
@@ -129,7 +130,7 @@ public class BjerksundStenslandApproximationEngine extends VanillaOption.EngineI
         final double /* @Real */bT = Math.log(dD / rfD);
         final double /* @Real */rT = Math.log(1.0 / rfD);
 
-        final double /* @Real */beta = (0.5 - bT / variance) + Math.sqrt(Math.pow((bT / variance - 0.5), (2.0)) + 2.0 * rT / variance);
+        final double /* @Real */beta = (0.5 - bT / variance) + Math.sqrt(JQuantMath.pow((bT / variance - 0.5), (2.0)) + 2.0 * rT / variance);
         final double /* @Real */BInfinity = beta / (beta - 1.0) * x;
         // Real B0 = std::max(X, std::log(rfD) / std::log(dD) * X);
         final double /* @Real */B0 = Math.max(x, rT / (rT - bT) * x);
@@ -144,8 +145,8 @@ public class BjerksundStenslandApproximationEngine extends VanillaOption.EngineI
             return s - x;
         } else {
             // investigate what happen to alpha for dD->0.0
-            final double /*@Real*/ alpha = (i - x) * Math.pow(i, (-beta));
-            return alpha * Math.pow(s, beta)
+            final double /*@Real*/ alpha = (i - x) * JQuantMath.pow(i, (-beta));
+            return alpha * JQuantMath.pow(s, beta)
             - alpha * phi(s, beta, i, i, rT, bT, variance)
             +         phi(s,  1.0, i, i, rT, bT, variance)
             -         phi(s,  1.0, x, i, rT, bT, variance)

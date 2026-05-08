@@ -47,6 +47,7 @@ import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.Option.Type;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Analytic formula for American exercise payoff at-hit options
@@ -179,8 +180,8 @@ public class AmericanPayoffAtHit {
             X           = 1.0;
             DXDstrike   = 0.0;
         } else {
-            forward = Math.pow(strike / spot, muPlusLambda);
-            X       = Math.pow(strike / spot, muMinusLambda);
+            forward = JQuantMath.pow(strike / spot, muPlusLambda);
+            X       = JQuantMath.pow(strike / spot, muMinusLambda);
         }
 
         // binary cash-or-nothing payoff ?

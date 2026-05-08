@@ -48,6 +48,7 @@ import org.jquantlib.instruments.BarrierType;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.InterestRate;
@@ -272,7 +273,7 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
     @SuppressWarnings("PMD.MethodNamingConventions")
     private double  C(final double eta, final double phi)  {
         final double HS = barrier()/underlying();
-        final double powHS0 = Math.pow(HS, 2 * mu());
+        final double powHS0 = JQuantMath.pow(HS, 2 * mu());
         final double powHS1 = powHS0 * HS * HS;
         final double y1 = Math.log(barrier()*HS/strike())/stdDeviation() + muSigma();
         final double N1 = f.op(eta*y1);
@@ -284,7 +285,7 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
     @SuppressWarnings("PMD.MethodNamingConventions")
     private double  D(final double eta, final double phi)  {
         final double HS = barrier()/underlying();
-        final double powHS0 = Math.pow(HS, 2 * mu());
+        final double powHS0 = JQuantMath.pow(HS, 2 * mu());
         final double powHS1 = powHS0 * HS * HS;
         final double y2 = Math.log(barrier()/underlying())/stdDeviation() + muSigma();
         final double N1 = f.op(eta*y2);
@@ -296,7 +297,7 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
     @SuppressWarnings("PMD.MethodNamingConventions")
     private double  E(final double eta)  {
         if (rebate() > 0) {
-            final double powHS0 = Math.pow(barrier()/underlying(), 2 * mu());
+            final double powHS0 = JQuantMath.pow(barrier()/underlying(), 2 * mu());
             final double x2 = Math.log(underlying()/barrier())/stdDeviation() + muSigma();
             final double y2 = Math.log(barrier()/underlying())/stdDeviation() + muSigma();
             final double N1 = f.op(eta*(x2 - stdDeviation()));
@@ -315,8 +316,8 @@ public class AnalyticBarrierEngine extends BarrierOption.EngineImpl {
             final double /*@Volatility*/ vol = volatility();
             final double lambda = Math.sqrt(m*m + 2.0*riskFreeRate()/(vol * vol));
             final double HS = barrier()/underlying();
-            final double powHSplus = Math.pow(HS, m + lambda);
-            final double powHSminus = Math.pow(HS, m - lambda);
+            final double powHSplus = JQuantMath.pow(HS, m + lambda);
+            final double powHSminus = JQuantMath.pow(HS, m - lambda);
 
             final double sigmaSqrtT = stdDeviation();
             final double z = Math.log(barrier()/underlying())/sigmaSqrtT + lambda*sigmaSqrtT;

@@ -55,6 +55,7 @@ import org.jquantlib.math.optimization.EndCriteria;
 import org.jquantlib.math.optimization.NoConstraint;
 import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.pricingengines.BlackFormula;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.termstructures.volatilities.Sabr;
 
 /**
@@ -208,7 +209,7 @@ public class SABRInterpolation extends AbstractInterpolation {
             if (params[0] == Constants.NULL_REAL) {
                 // adapt alpha to beta level
                 params[0] = 0.2 * ((params[1] < 0.9999)
-                        ? Math.pow(forward + shift, 1.0 - params[1])
+                        ? JQuantMath.pow(forward + shift, 1.0 - params[1])
                         : 1.0);
             }
             if (params[2] == Constants.NULL_REAL) {
@@ -236,7 +237,7 @@ public class SABRInterpolation extends AbstractInterpolation {
                 values[0] = (1.0 - 2e-6) * sampleValue[j++] + 1e-6; // lognormal vol guess
                 // adapt this to beta level
                 if (values[1] < 0.999) {
-                    values[0] *= Math.pow(forward + shift, 1.0 - values[1]);
+                    values[0] *= JQuantMath.pow(forward + shift, 1.0 - values[1]);
                 }
             }
             if (!paramIsFixed[2]) {

@@ -22,6 +22,7 @@
 package org.jquantlib.math;
 
 import org.jquantlib.lang.exceptions.LibraryException;
+import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Basic rounding class.
@@ -113,7 +114,7 @@ public class Rounding {
         if (type_ == Rounding.Type.None)
             return value;
 
-        /*Real*/ final double mult = Math.pow(10.0,precision_);
+        /*Real*/ final double mult = JQuantMath.pow(10.0,precision_);
         final boolean neg = (value < 0.0);
         /*Real*/ double lvalue = Math.abs(value)*mult;
         /*Real*/ final double integral = ((int)lvalue);
