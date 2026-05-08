@@ -100,30 +100,38 @@ public abstract class ZeroInflationIndex extends InflationIndex {
     }
     
     private /* @Rate */ double forecastFixing(final Date fixingDate) {
-    	// the term structure is relative to the fixing value at the base date.
-    	Date baseDate = zeroInflation.currentLink().baseDate();
-    	@Real double baseFixing = fixing(baseDate);
-    	
-    	// get the relevant period end
-    	Pair<Date, Date> limBase = InflationTermStructure.inflationPeriod(baseDate, frequency);
-    	Date trueBaseDate = limBase.second();
-    	
-        // if the value is not interpolated, get the value for half
-        // way along the period.
-    	Date d = fixingDate;
-    	if (!interpolated()) {
-    		Pair<Date, Date> lim = InflationTermStructure.inflationPeriod(fixingDate, frequency);
-    		int n = (int)(lim.second().sub(lim.first())) / 2;
-    		
-    		d = lim.first().add(n);
-    	}
-    	
-        // Assume annual compounding (we're using a zero inflation
-        // term structure)
-    	@Rate double zero = zeroInflation.currentLink().zeroRate(d);
-    	@Time double t = zeroInflation.currentLink().dayCounter().yearFraction(trueBaseDate, d);
-    	
-    	return baseFixing * JQuantMath.pow((1.0 + zero), t);
+        // Phase 2p A.2 align: match C++ v1.42.1 ZeroInflationIndex::forecastFixing
+        // (indexes/inflationindex.cpp lines 219-237).
+        //
+        // The pre-2p Java port used (a) period(baseDate).second as the time
+        // anchor and (b) the mid-period date when uninterpolated. v1.42.1
+        // uses (a) period(baseDate).first as anchor and (b) the start of the
+        // fixing's inflation period in both cases — the inflationYearFraction
+        // (NoInterpolation) convention.
+        //
+        // The term structure is relative to the fixing at the base date.
+        final Date baseDate = zeroInflation.currentLink().baseDate();
+        final @Real double baseFixing = fixing(baseDate);
+
+        final Pair<Date, Date> fixingPeriod =
+                InflationTermStructure.inflationPeriod(fixingDate, frequency);
+        final Date firstDateInPeriod = fixingPeriod.first();
+
+        final @Rate double z1 = zeroInflation.currentLink().zeroRate(firstDateInPeriod);
+
+        // inflationYearFraction(NoInterpolation, dc, baseDate, firstDateInPeriod):
+        //   dc.yearFraction(period(baseDate).first, firstDateInPeriod)
+        final Pair<Date, Date> baseLim =
+                InflationTermStructure.inflationPeriod(baseDate, frequency);
+        final @Time double t1 = zeroInflation.currentLink().dayCounter()
+                .yearFraction(baseLim.first(), firstDateInPeriod);
+
+        // During bootstrapping, extrapolated rates can temporarily go below -1.
+        // Guard against pow of a negative base with non-integer exponent.
+        if (z1 <= -1.0) {
+            return 0.0;
+        }
+        return baseFixing * JQuantMath.pow(1.0 + z1, t1);
     }
        
 }

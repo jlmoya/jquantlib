@@ -106,8 +106,12 @@ public abstract class Index implements Observable {
 		final TimeSeries<Double> h = IndexManager.getInstance().getHistory(tag);
 
         validFixing = isValidFixingDate(date);
+        // Phase 2p A.2 align: null = missing (TimeSeries.get returns Double or
+        // null). Short-circuit on null before any unboxing to avoid NPE.
         final Double currentValue = h.get(date);
-        missingFixing = forceOverwrite || Closeness.isClose(currentValue, Constants.NULL_REAL);
+        missingFixing = forceOverwrite
+                || currentValue == null
+                || Closeness.isClose(currentValue, Constants.NULL_REAL);
         if (validFixing) {
             if (missingFixing) {
                 h.put(date, value);
@@ -143,8 +147,15 @@ public abstract class Index implements Observable {
 		for (final Date date : Iterables.unmodifiableIterable(dates)) {
             final double value = values.next();
             validFixing = isValidFixingDate(date);
-            final double currentValue = h.get(date);
-            missingFixing = forceOverwrite || Closeness.isClose(currentValue, Constants.NULL_REAL);
+            // Phase 2p A.2 align: TimeSeries.get(date) returns Double or null
+            // for missing keys. Unboxing to primitive double NPEs whenever the
+            // date isn't already in the history — which is the common case for
+            // a fresh index. Treat null as "missing" (mirrors the singular
+            // addFixing's existing handling at line 109).
+            final Double currentValue = h.get(date);
+            missingFixing = forceOverwrite
+                    || currentValue == null
+                    || Closeness.isClose(currentValue, Constants.NULL_REAL);
             if (validFixing) {
                 if (missingFixing) {
                     h.put(date, value);
