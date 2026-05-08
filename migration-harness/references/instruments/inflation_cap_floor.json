@@ -1,0 +1,220 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "accrualTimes": [
+          1.0010554682236694,
+          0.9989445317763306,
+          1.0,
+          1.0,
+          1.0010554682236694
+        ],
+        "capRates": [
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03
+        ],
+        "fixingDates": [
+          39581,
+          39946,
+          40311,
+          40676,
+          41042
+        ],
+        "maturityDate_serial": 41134,
+        "numCoupons": 5,
+        "payDates": [
+          39673,
+          40038,
+          40403,
+          40770,
+          41134
+        ],
+        "startDate_serial": 39307,
+        "startDates": [
+          39307,
+          39673,
+          40038,
+          40403,
+          40768
+        ]
+      },
+      "inputs": {
+        "nominal": 1000000.0,
+        "strike": 0.03,
+        "type": "Cap"
+      },
+      "name": "inflcf_Cap"
+    },
+    {
+      "expected": {
+        "accrualTimes": [
+          1.0010554682236694,
+          0.9989445317763306,
+          1.0,
+          1.0,
+          1.0010554682236694
+        ],
+        "fixingDates": [
+          39581,
+          39946,
+          40311,
+          40676,
+          41042
+        ],
+        "floorRates": [
+          0.02,
+          0.02,
+          0.02,
+          0.02,
+          0.02
+        ],
+        "maturityDate_serial": 41134,
+        "numCoupons": 5,
+        "payDates": [
+          39673,
+          40038,
+          40403,
+          40770,
+          41134
+        ],
+        "startDate_serial": 39307,
+        "startDates": [
+          39307,
+          39673,
+          40038,
+          40403,
+          40768
+        ]
+      },
+      "inputs": {
+        "nominal": 1000000.0,
+        "strike": 0.03,
+        "type": "Floor"
+      },
+      "name": "inflcf_Floor"
+    },
+    {
+      "expected": {
+        "accrualTimes": [
+          1.0010554682236694,
+          0.9989445317763306,
+          1.0,
+          1.0,
+          1.0010554682236694
+        ],
+        "capRates": [
+          0.03,
+          0.03,
+          0.03,
+          0.03,
+          0.03
+        ],
+        "fixingDates": [
+          39581,
+          39946,
+          40311,
+          40676,
+          41042
+        ],
+        "floorRates": [
+          0.02,
+          0.02,
+          0.02,
+          0.02,
+          0.02
+        ],
+        "maturityDate_serial": 41134,
+        "numCoupons": 5,
+        "payDates": [
+          39673,
+          40038,
+          40403,
+          40770,
+          41134
+        ],
+        "startDate_serial": 39307,
+        "startDates": [
+          39307,
+          39673,
+          40038,
+          40403,
+          40768
+        ]
+      },
+      "inputs": {
+        "nominal": 1000000.0,
+        "strike": 0.03,
+        "type": "Collar"
+      },
+      "name": "inflcf_Collar"
+    },
+    {
+      "expected": {
+        "fixingDate_serial": 41043,
+        "nominal": 1000000.0,
+        "observationLag_months": 3,
+        "option_type": "Call",
+        "payDate_serial": 41134,
+        "strike": 0.03
+      },
+      "inputs": {
+        "baseCPI": 100.0,
+        "nominal": 1000000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "strike": 0.03,
+        "type": "Cap"
+      },
+      "name": "cpicf_cap_AsIndex"
+    },
+    {
+      "expected": {
+        "fixingDate_serial": 41043,
+        "nominal": 1000000.0,
+        "observationLag_months": 3,
+        "option_type": "Put",
+        "payDate_serial": 41134,
+        "strike": 0.01
+      },
+      "inputs": {
+        "baseCPI": 100.0,
+        "nominal": 1000000.0,
+        "observationInterpolation": "AsIndex",
+        "observationLag_months": 3,
+        "strike": 0.01,
+        "type": "Floor"
+      },
+      "name": "cpicf_floor_AsIndex"
+    },
+    {
+      "expected": {
+        "fairRate": -16271097770.956392,
+        "fairSpread": 16067555362.543472,
+        "fixedLegBPS": 424.1524368590857,
+        "fixedLegNPV": 6.901425770032167e+16,
+        "floatLegBPS": -429.5255634234646,
+        "floatLegNPV": -979729.2609027205,
+        "npv": 6.9014257699341944e+16,
+        "numFixedFlows": 6,
+        "numFloatFlows": 11
+      },
+      "inputs": {
+        "baseCPI": 100.0,
+        "fixedRate": 0.025,
+        "nominal": 1000000.0,
+        "observationLag_months": 3,
+        "spread": 0.0,
+        "type": "Payer"
+      },
+      "name": "cpiswap_5y_payer_AsIndex"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T14:50:58Z",
+  "generated_by": "inflation_cap_floor_probe",
+  "test_group": "instruments/inflation_cap_floor"
+}
