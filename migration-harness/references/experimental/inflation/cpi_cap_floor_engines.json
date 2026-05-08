@@ -1,0 +1,121 @@
+{
+  "cases": [
+    {
+      "expected": 0.02276,
+      "inputs": {
+        "baseCPI": 222.8,
+        "engine": "InterpolatingCPICapFloorEngine",
+        "evaluation_date": "2010-06-01",
+        "maturity_years": 3,
+        "observation_interpolation": "AsIndex",
+        "strike": 0.03,
+        "surface_observation_lag_months": 2,
+        "type": "Call"
+      },
+      "name": "cap_3y_s003"
+    },
+    {
+      "expected": 0.034532,
+      "inputs": {
+        "baseCPI": 222.8,
+        "engine": "InterpolatingCPICapFloorEngine",
+        "evaluation_date": "2010-06-01",
+        "maturity_years": 5,
+        "observation_interpolation": "AsIndex",
+        "strike": 0.03,
+        "surface_observation_lag_months": 2,
+        "type": "Call"
+      },
+      "name": "cap_5y_s003"
+    },
+    {
+      "expected": 0.017019,
+      "inputs": {
+        "baseCPI": 222.8,
+        "engine": "InterpolatingCPICapFloorEngine",
+        "evaluation_date": "2010-06-01",
+        "maturity_years": 7,
+        "observation_interpolation": "AsIndex",
+        "strike": 0.04,
+        "surface_observation_lag_months": 2,
+        "type": "Call"
+      },
+      "name": "cap_7y_s004"
+    },
+    {
+      "expected": 0.010762,
+      "inputs": {
+        "baseCPI": 222.8,
+        "engine": "InterpolatingCPICapFloorEngine",
+        "evaluation_date": "2010-06-01",
+        "maturity_years": 10,
+        "observation_interpolation": "AsIndex",
+        "strike": 0.05,
+        "surface_observation_lag_months": 2,
+        "type": "Call"
+      },
+      "name": "cap_10y_s005"
+    },
+    {
+      "expected": 0.005361,
+      "inputs": {
+        "baseCPI": 222.8,
+        "engine": "InterpolatingCPICapFloorEngine",
+        "evaluation_date": "2010-06-01",
+        "maturity_years": 3,
+        "observation_interpolation": "AsIndex",
+        "strike": 0.01,
+        "surface_observation_lag_months": 2,
+        "type": "Put"
+      },
+      "name": "floor_3y_s001"
+    },
+    {
+      "expected": 0.0036729999999999996,
+      "inputs": {
+        "baseCPI": 222.8,
+        "engine": "InterpolatingCPICapFloorEngine",
+        "evaluation_date": "2010-06-01",
+        "maturity_years": 5,
+        "observation_interpolation": "AsIndex",
+        "strike": 0.0,
+        "surface_observation_lag_months": 2,
+        "type": "Put"
+      },
+      "name": "floor_5y_s000"
+    },
+    {
+      "expected": 0.002445,
+      "inputs": {
+        "baseCPI": 222.8,
+        "engine": "InterpolatingCPICapFloorEngine",
+        "evaluation_date": "2010-06-01",
+        "maturity_years": 7,
+        "observation_interpolation": "AsIndex",
+        "strike": -0.01,
+        "surface_observation_lag_months": 2,
+        "type": "Put"
+      },
+      "name": "floor_7y_sm001"
+    },
+    {
+      "expected": 0.023273,
+      "inputs": {
+        "baseCPI": 222.8,
+        "engine": "InterpolatingCPICapFloorEngine",
+        "evaluation_date": "2010-06-01",
+        "maturity_years": 15,
+        "observation_interpolation": "AsIndex",
+        "strike": 0.02,
+        "surface_observation_lag_months": 2,
+        "type": "Put"
+      },
+      "name": "floor_15y_s002"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T16:21:55Z",
+  "generated_by": "cpi_cap_floor_engines_probe",
+  "test_group": "experimental/inflation/cpi_cap_floor_engines"
+}
