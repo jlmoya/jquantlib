@@ -120,22 +120,53 @@ public class YoYInflationIndex extends InflationIndex {
     public double fixing(Date fixingDate, boolean forecastTodaysFixing) {
     	Date today = new Settings().evaluationDate();
     	Date todayMinusLag = today.sub(availabilityLag);
-    	
+
     	Pair<Date,Date> lim = InflationTermStructure.inflationPeriod(todayMinusLag, frequency);
     	todayMinusLag = lim.second().inc();
-    	
+
     	if ((fixingDate.lt(todayMinusLag)) ||
     		(fixingDate.eq(todayMinusLag) && !forecastTodaysFixing)) {
-    		
-    		@Real double pastFixing = IndexManager.getInstance().getHistory(name()).get(fixingDate);
-    		QL.require(!(Double.isNaN(pastFixing)) , "Missing " + name() + " fixing for " + fixingDate);
-    		
-    		Date previousDate = fixingDate.sub(new Period(1,TimeUnit.Years));
-    		@Rate double previousFixing = IndexManager.getInstance().getHistory(name()).get(previousDate);
-    		QL.require(!(Double.isNaN(pastFixing)) , "Missing " + name() + " fixing for " + previousFixing);
 
-    		return pastFixing/previousFixing - 1.0;
-    		
+    		// Mirrors C++ v1.42.1 YoYInflationIndex::pastFixing (inflationindex.cpp).
+    		if (ratio) {
+    		    // ratio==true: underlying is a ZeroInflationIndex; compute YoY
+    		    // as ratio of CPI levels.  This path matches the pre-Phase-2r
+    		    // behavior and is retained unchanged.
+    		    @Real double pastFixing = IndexManager.getInstance().getHistory(name()).get(fixingDate);
+    		    QL.require(!(Double.isNaN(pastFixing)) , "Missing " + name() + " fixing for " + fixingDate);
+
+    		    Date previousDate = fixingDate.sub(new Period(1,TimeUnit.Years));
+    		    @Rate double previousFixing = IndexManager.getInstance().getHistory(name()).get(previousDate);
+    		    QL.require(!(Double.isNaN(previousFixing)) , "Missing " + name() + " fixing for " + previousDate);
+
+    		    return pastFixing / previousFixing - 1.0;
+
+    		} else {
+    		    // ratio==false: genuine YoY index — the stored time series
+    		    // holds the YoY rate directly.  C++ looks up ts[periodStart]
+    		    // and (for interpolated indices) interpolates to ts[periodEnd+1].
+    		    // Phase 2r L0 A.3 — aligns with C++ pastFixing ratio_=false branch.
+    		    Pair<Date,Date> period = InflationTermStructure.inflationPeriod(fixingDate, frequency);
+    		    Date periodStart = period.first();
+    		    Date periodEnd   = period.second();
+
+    		    @Rate double YY0 = IndexManager.getInstance().getHistory(name()).get(periodStart);
+    		    QL.require(!(Double.isNaN(YY0)) , "Missing " + name() + " fixing for " + periodStart);
+
+    		    if (!interpolated || fixingDate.eq(periodStart)) {
+    		        return YY0;
+    		    } else {
+    		        // Linearly interpolate between period start and period end + 1.
+    		        Date periodEndP1 = periodEnd.inc();
+    		        @Rate double YY1 = IndexManager.getInstance().getHistory(name()).get(periodEndP1);
+    		        QL.require(!(Double.isNaN(YY1)) , "Missing " + name() + " fixing for " + periodEndP1);
+
+    		        double dp = periodEnd.inc().serialNumber() - periodStart.serialNumber();
+    		        double dl = fixingDate.serialNumber()     - periodStart.serialNumber();
+    		        return YY0 + (YY1 - YY0) * dl / dp;
+    		    }
+    		}
+
     	} else {
     		return forecastFixing(fixingDate);
     	}
