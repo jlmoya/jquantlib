@@ -1,0 +1,536 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "delta": 0.5872688206765635,
+        "gamma": 0.018967308816267577,
+        "npv": 9.232440287675365
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_atm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": 0.40251413736797487,
+        "gamma": 0.01907381249594909,
+        "npv": 5.1911847466255
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 110.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_otm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": 0.7664803357489914,
+        "gamma": 0.014477623692004931,
+        "npv": 15.133624885953791
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 90.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_itm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": 0.6136367044237376,
+        "gamma": 0.012745406755397797,
+        "npv": 13.531066965866536
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 2.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_atm_2y_v20"
+    },
+    {
+      "expected": {
+        "delta": 0.564932976325288,
+        "gamma": 0.027476363928074562,
+        "npv": 6.320399131057208
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 0.5,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_atm_half_y_v20"
+    },
+    {
+      "expected": {
+        "delta": 0.5873448365060728,
+        "gamma": 0.012646197319743714,
+        "npv": 13.02891389816378
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_atm_1y_v30"
+    },
+    {
+      "expected": {
+        "delta": 0.6245808077808962,
+        "gamma": 0.03681764226519911,
+        "npv": 5.474178959623964
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_atm_1y_v10"
+    },
+    {
+      "expected": {
+        "delta": -0.39352425833183696,
+        "gamma": 0.01895979227756562,
+        "npv": 6.331917969242408
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_put_atm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": -0.21438992745374164,
+        "gamma": 0.014470004341209966,
+        "npv": 2.7148611522665376
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 90.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_put_otm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": -0.578207152723802,
+        "gamma": 0.01906649816718989,
+        "npv": 11.808188303063964
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 110.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_put_itm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": -0.3477966987369019,
+        "gamma": 0.012737739553153134,
+        "npv": 7.928583631407032
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 2.0,
+        "option_type": "Put",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_put_atm_2y_v20"
+    },
+    {
+      "expected": {
+        "delta": -0.393494940809224,
+        "gamma": 0.012638490575804349,
+        "npv": 10.125941574948714
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_put_atm_1y_v30"
+    },
+    {
+      "expected": {
+        "delta": 0.587268825537674,
+        "gamma": 0.018967310112218985,
+        "npv": 9.232440304837514
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_call_atm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": 0.40251414099567434,
+        "gamma": 0.019073813474165244,
+        "npv": 5.191184759298365
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 110.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_call_otm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": 0.7664803440502566,
+        "gamma": 0.014477625888693819,
+        "npv": 15.133624915300446
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 90.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_call_itm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": 0.6136387627574349,
+        "gamma": 0.012745718055258507,
+        "npv": 13.531079190570969
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 2.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_call_atm_2y_v20"
+    },
+    {
+      "expected": {
+        "delta": 0.5873453050902752,
+        "gamma": 0.012646271401946364,
+        "npv": 13.028916587564424
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_call_atm_1y_v30"
+    },
+    {
+      "expected": {
+        "delta": -0.4228084808820839,
+        "gamma": 0.021473690024115515,
+        "npv": 6.655077256333094
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_put_atm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": -0.22533903565034766,
+        "gamma": 0.015578884362891083,
+        "npv": 2.818429994488534
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 90.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_put_otm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": -0.6408002732125877,
+        "gamma": 0.023695663530331253,
+        "npv": 12.603661611419195
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 110.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_put_itm_1y_v20"
+    },
+    {
+      "expected": {
+        "delta": -0.39695188827099664,
+        "gamma": 0.015951842444633844,
+        "npv": 8.679316787843103
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 2.0,
+        "option_type": "Put",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_put_atm_2y_v20"
+    },
+    {
+      "expected": {
+        "delta": -0.41322727600800724,
+        "gamma": 0.013786518828811163,
+        "npv": 10.464542207683463
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_put_atm_1y_v30"
+    },
+    {
+      "expected": {
+        "delta": 0.5872662442249336,
+        "gamma": 0.0189687702515558,
+        "npv": 9.232225638148531
+      },
+      "inputs": {
+        "damping_steps": 2,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_atm_1y_damping2"
+    },
+    {
+      "expected": {
+        "delta": -0.4228122471335174,
+        "gamma": 0.021478966947542106,
+        "npv": 6.653902072615883
+      },
+      "inputs": {
+        "damping_steps": 2,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_put_atm_1y_damping2"
+    },
+    {
+      "expected": {
+        "delta": 0.5885602994613834,
+        "gamma": 0.01901292130434925,
+        "npv": 9.249214232242638
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 50,
+        "x_grid": 50
+      },
+      "name": "eur_call_atm_1y_g50"
+    },
+    {
+      "expected": {
+        "delta": 0.5869542359086884,
+        "gamma": 0.018955446724823317,
+        "npv": 9.22835019247549
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 200,
+        "x_grid": 200
+      },
+      "name": "eur_call_atm_1y_g200"
+    },
+    {
+      "expected": {
+        "delta": 0.587134831738878,
+        "gamma": 0.019043988201604713,
+        "npv": 9.221279260983872
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_atm_1y_ie"
+    },
+    {
+      "expected": {
+        "delta": -0.42260267651229333,
+        "gamma": 0.02154498256023242,
+        "npv": 6.63819838482639
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_put_atm_1y_ie"
+    },
+    {
+      "expected": {
+        "delta": 0.30232800795246795,
+        "gamma": 0.006907330978722646,
+        "npv": 7.607290338126581
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 150.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_call_deepotm_1y_v50"
+    },
+    {
+      "expected": {
+        "delta": -0.67834026070908,
+        "gamma": 0.006900699206711927,
+        "npv": 52.283108990118386
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "European",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 150.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "eur_put_deepitm_1y_v50"
+    },
+    {
+      "expected": {
+        "delta": -0.7274633590682812,
+        "gamma": 0.00835818419023548,
+        "npv": 54.183733913496255
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "exercise_type": "American",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 150.0,
+        "t_grid": 100,
+        "x_grid": 100
+      },
+      "name": "amer_put_deepitm_1y_v50"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T06:24:00Z",
+  "generated_by": "fd_black_scholes_vanilla_engine_probe",
+  "test_group": "pricingengines/vanilla/fd_black_scholes_vanilla_engine"
+}
