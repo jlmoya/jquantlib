@@ -33,6 +33,7 @@ import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.StepCondition;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
+import org.jquantlib.methods.finitedifferences.utilities.FdmDividendHandler;
 import org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator;
 import org.jquantlib.time.Date;
 
@@ -59,19 +60,11 @@ import org.jquantlib.time.Date;
  * standard composite for vanilla payoffs from a dividend schedule plus
  * an exercise type. It dispatches on
  * {@code Exercise.type() ∈ {European, American, Bermudan}} and prepends
- * a dividend handler when the schedule is non-empty.
- * <p>
- * <strong>Phase 2h scope:</strong> the underlying step-condition
- * helpers — {@code FdmDividendHandler}, {@code FdmAmericanStepCondition},
- * {@code FdmBermudanStepCondition} — are not yet ported. The factory
- * therefore supports only the European-with-no-dividends case (returns
- * an empty composite, which is what the C++ factory also does for that
- * input). Other branches throw {@link LibraryException} with a clear
- * pointer to the follow-up. {@code FdHullWhiteSwaptionEngine} /
- * {@code FdG2SwaptionEngine} (Phase 2h WI-2 / WI-3) typically pass a
- * European exercise with no dividends, matching the supported case.
+ * an {@link FdmDividendHandler} when the schedule is non-empty.
+ * American exercise adds {@link FdmAmericanStepCondition};
+ * Bermudan adds {@link FdmBermudanStepCondition}.
  *
- * @author Phase 2h WI-1 port
+ * @author Phase 2h WI-1 port; Phase 2l Track B — American/Bermudan/dividend branches wired
  */
 public class FdmStepConditionComposite implements StepCondition<Array> {
 
@@ -153,10 +146,22 @@ public class FdmStepConditionComposite implements StepCondition<Array> {
 
     /**
      * Build a vanilla-payoff composite covering dividends and the
-     * three exercise types (European, American, Bermudan). See the
-     * class-level scope note for what's currently implemented.
+     * three exercise types (European, American, Bermudan).
+     * <p>
+     * Mirrors C++ v1.42.1 {@code FdmStepConditionComposite::vanillaComposite}.
+     * If the schedule is non-empty, the dividends are filtered to
+     * [{@code refDate}, {@code exercise.lastDate()}] and an
+     * {@link FdmDividendHandler} is prepended. Two sets of stopping-time
+     * offsets are added per the C++ smoother-convergence pattern
+     * ({@code t} and {@code t + 1e-5}, both clamped to maturity).
+     * <p>
+     * American exercise adds an {@link FdmAmericanStepCondition} with
+     * {@code exerciseStart = dayCounter.yearFraction(refDate, exercise.date(0))}.
+     * Bermudan exercise adds an {@link FdmBermudanStepCondition} and
+     * appends its exercise times to the stopping-time list.
+     * European exercise produces no additional condition.
      *
-     * @param schedule    dividend schedule (may be empty).
+     * @param schedule    dividend schedule (may be {@code null} or empty).
      * @param exercise    exercise (European, American, or Bermudan).
      * @param mesher      FDM mesh.
      * @param calculator  inner-value calculator used by exercise
@@ -176,32 +181,50 @@ public class FdmStepConditionComposite implements StepCondition<Array> {
         final Conditions stepConditions = new Conditions();
 
         if (schedule != null && !schedule.isEmpty()) {
-            // C++ builds an FdmDividendHandler here and prepends it to
-            // the conditions list. That class is not yet ported —
-            // surface explicitly so callers know what's missing.
-            throw new LibraryException(
-                    "FdmStepConditionComposite.vanillaComposite: "
-                  + "dividend handling requires FdmDividendHandler "
-                  + "(unported, Phase 2h follow-up).");
+            // Filter dividends to [refDate, maturityDate].
+            final Date maturityDate = exercise.lastDate();
+            final DividendSchedule filteredDivs = new DividendSchedule();
+            for (final org.jquantlib.cashflow.Dividend div : schedule) {
+                final Date d = div.date();
+                if (d.ge(refDate) && d.le(maturityDate)) {
+                    filteredDivs.add(div);
+                }
+            }
+
+            final FdmDividendHandler dividendCondition =
+                    new FdmDividendHandler(filteredDivs, mesher, refDate, dayCounter, 0);
+            stepConditions.add(dividendCondition);
+
+            // C++ adds dividend stopping times twice: at t and at t + 1e-5,
+            // both clamped to maturity — ensures smoother grid alignment.
+            final double maturityTime = dayCounter.yearFraction(refDate, exercise.lastDate());
+            final List<Double> divTimes1 = new ArrayList<>();
+            final List<Double> divTimes2 = new ArrayList<>();
+            for (final double dt : dividendCondition.dividendTimes()) {
+                divTimes1.add(Math.min(maturityTime, dt));
+                divTimes2.add(Math.min(maturityTime, dt + 1e-5));
+            }
+            stoppingTimes.add(divTimes1);
+            stoppingTimes.add(divTimes2);
         }
 
         final Exercise.Type type = exercise.type();
         if (type == Exercise.Type.European) {
-            // Empty composite, matching C++ behaviour for
-            // European-with-no-dividends input.
+            // No additional step condition for European exercise.
         } else if (type == Exercise.Type.American) {
-            throw new LibraryException(
-                    "FdmStepConditionComposite.vanillaComposite: "
-                  + "American exercise requires FdmAmericanStepCondition "
-                  + "(unported, Phase 2h follow-up).");
+            final double exerciseStart =
+                    dayCounter.yearFraction(refDate, exercise.date(0));
+            stepConditions.add(
+                    new FdmAmericanStepCondition(mesher, calculator, exerciseStart));
         } else if (type == Exercise.Type.Bermudan) {
-            throw new LibraryException(
-                    "FdmStepConditionComposite.vanillaComposite: "
-                  + "Bermudan exercise requires FdmBermudanStepCondition "
-                  + "(unported, Phase 2h follow-up).");
+            final FdmBermudanStepCondition bermudanCondition =
+                    new FdmBermudanStepCondition(
+                            exercise.dates(), refDate, dayCounter,
+                            mesher, calculator);
+            stepConditions.add(bermudanCondition);
+            stoppingTimes.add(new ArrayList<>(bermudanCondition.exerciseTimes()));
         } else {
-            throw new LibraryException(
-                    "exercise type is not supported: " + type);
+            throw new LibraryException("exercise type is not supported: " + type);
         }
 
         return new FdmStepConditionComposite(stoppingTimes, stepConditions);
