@@ -81,6 +81,7 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     private final List<ZeroCouponInflationSwapHelper> instruments;
     private final InflationTraits traits;
     private final double accuracy;
+    private final GlobalBootstrap globalBootstrap;
     private boolean validCurve;
     private boolean calculated;
     private boolean calculating;
@@ -107,12 +108,37 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
             final DayCounter dayCounter,
             final List<ZeroCouponInflationSwapHelper> instruments,
             final double accuracy) {
+        this(classI, referenceDate, baseDate, frequency, dayCounter, instruments, accuracy, null);
+    }
+
+    /**
+     * Constructor selecting a {@link GlobalBootstrap} strategy. When
+     * {@code globalBootstrap} is non-null, the curve will solve all pillars
+     * simultaneously via Levenberg-Marquardt at first calculation rather
+     * than running the iterative Brent/FDNewtonSafe loop. Mirrors C++
+     * {@code PiecewiseZeroInflationCurve<Linear, GlobalBootstrap>}
+     * ({@code ql/termstructures/inflation/piecewisezeroinflationcurve.hpp}
+     * with non-default {@code Bootstrap} template parameter).
+     *
+     * @param globalBootstrap non-null to use the global solver strategy;
+     *                        null for the default iterative bootstrap.
+     */
+    public PiecewiseZeroInflationCurve(
+            final Class<I> classI,
+            final Date referenceDate,
+            final Date baseDate,
+            final Frequency frequency,
+            final DayCounter dayCounter,
+            final List<ZeroCouponInflationSwapHelper> instruments,
+            final double accuracy,
+            final GlobalBootstrap globalBootstrap) {
         super(classI, referenceDate, baseDate, frequency, dayCounter);
         QL.require(instruments != null && !instruments.isEmpty(),
                 "no helpers provided to piecewise inflation curve");
         this.instruments = new ArrayList<>(instruments);
         this.traits = new InflationTraits();
         this.accuracy = accuracy;
+        this.globalBootstrap = globalBootstrap;
         this.validCurve = false;
         this.calculated = false;
 
@@ -200,6 +226,14 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     //
 
     private void performCalculations() {
+        // Branch to GlobalBootstrap if configured — mirrors C++
+        // PiecewiseZeroInflationCurve<I, GlobalBootstrap, Traits> path.
+        if (globalBootstrap != null) {
+            globalBootstrap.calculate(this, instruments);
+            validCurve = true;
+            return;
+        }
+
         final int n = instruments.size();
 
         // Sort helpers by latestDate — required so curve nodes are monotonic.
@@ -388,5 +422,48 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
                     new Array(partialT), new Array(partialD)));
             return helper.quoteError();
         }
+    }
+
+    //
+    // package-private helpers for {@link GlobalBootstrap}
+    //
+
+    /**
+     * Install the date / time / data grids prepared by {@link GlobalBootstrap}.
+     * Called once at the start of each global-bootstrap calculation; mirrors
+     * the body of C++ {@code GlobalBootstrap::initialize()}.
+     *
+     * <p>Package-private so {@link GlobalBootstrap} can mutate the curve's
+     * private grids without exposing them on the public surface.
+     */
+    void installGlobalBootstrapState(final Date[] newDates,
+                                      final double[] newTimes,
+                                      final double[] newData) {
+        setDates(newDates);
+        setTimes(newTimes);
+        setData(newData);
+        setMaxDate(newDates[newDates.length - 1]);
+        setInterpolation(interpolator().interpolate(
+                new Array(newTimes), new Array(newData)));
+    }
+
+    /**
+     * Re-create the interpolation from the current {@code times}/{@code data}
+     * grids — called from {@link GlobalBootstrap}'s cost function at every LM
+     * step (after {@code data[i]} mutations).
+     */
+    void refreshInterpolationForGlobalBootstrap() {
+        setInterpolation(interpolator().interpolate(
+                new Array(times()), new Array(data())));
+    }
+
+    /**
+     * Update the curve's base-rate slot — called once at the end of each
+     * global-bootstrap calculation. Mirrors C++ {@code Traits::updateGuess}'s
+     * propagation of {@code data[1]} to {@code data[0]} for the inflation
+     * trait.
+     */
+    void overrideBaseRateForGlobalBootstrap(final double r) {
+        overrideBaseRate(r);
     }
 }
