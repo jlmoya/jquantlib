@@ -104,15 +104,35 @@ public class ZeroInflationIndex extends InflationIndex {
     
     @Override
     public double fixing(Date fixingDate, boolean forecastTodaysFixing) {
+        // Mirrors C++ v1.42.1 ZeroInflationIndex::fixing / needsForecast
+        // (ql/indexes/inflationindex.cpp:170-219).
+        //
+        // C++ needsForecast algorithm:
+        //   latestPossibleHistoricalFixingPeriod = inflationPeriod(today - lag, freq)
+        //   latestNeededDate = inflationPeriod(fixingDate, freq).first    (non-interpolated)
+        //   if latestNeededDate < latestPossibleHistoricalFixingPeriod.first → past (not forecast)
+        //   if latestNeededDate > latestPossibleHistoricalFixingPeriod.second → future (forecast)
+        //   else → check timeSeries (if missing → forecast; if present → past)
+        //
+        // The Java port simplifies: fixingDate < lim.second().inc() means
+        // latestNeededDate = period(fixingDate).first <= period(todayMinusLag).second
+        // i.e. it's at most at the boundary of the historical period → treat as past
+        // (timeSeries lookup; throws if missing just like C++ would forecast+throw).
+        // fixingDate >= lim.second().inc() → strictly future → forecast.
+        // NOTE: the old code also included the eq() case as "past"; C++ treats
+        // latestNeededDate > latestPossibleHistoricalFixingPeriod.second as future,
+        // which means lim.second().inc() is the first *future* fixing date.
     	Date today = new Settings().evaluationDate();
     	Date todayMinusLag = today.sub(availabilityLag);
-    	
+
     	Pair<Date,Date> lim = InflationTermStructure.inflationPeriod(todayMinusLag, frequency);
+    	// lim.second().inc() is the first date that is strictly beyond the
+    	// latest possible historical period — mirrors C++ (latestNeededDate >
+    	// latestPossibleHistoricalFixingPeriod.second).
     	todayMinusLag = lim.second().inc();
-    	
-    	if ((fixingDate.lt(todayMinusLag)) ||
-    		(fixingDate.eq(todayMinusLag) && !forecastTodaysFixing)) {
-    		
+
+    	if (fixingDate.lt(todayMinusLag)) {
+    		// strictly before the boundary: read from stored fixings
     		@Real double pastFixing = IndexManager.getInstance().getHistory(name()).get(fixingDate);
     		QL.require(!(Double.isNaN(pastFixing)) , "Missing " + name() + " fixing for " + fixingDate);
     		return pastFixing;

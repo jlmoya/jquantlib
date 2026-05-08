@@ -189,10 +189,17 @@ public class YoYInflationIndex extends InflationIndex {
     	Date todayMinusLag = today.sub(availabilityLag);
 
     	Pair<Date,Date> lim = InflationTermStructure.inflationPeriod(todayMinusLag, frequency);
+    	// lim.second().inc() is the first date strictly beyond the latest possible
+    	// historical period — mirrors C++ needsForecast (inflationindex.cpp:298-329).
+    	// C++ latestPossibleHistoricalFixingPeriod.second = lim.second().
+    	// latestNeededDate > lim.second() ↔ latestNeededDate >= lim.second().inc().
+    	// So fixingDate.lt(todayMinusLag) = latestNeededDate < lim.second().inc()
+    	// = latestNeededDate <= lim.second() → not strictly future (may be historical).
+    	// Remove the old eq() clause that erroneously treated the boundary as "past"
+    	// — C++ treats it as "future" (needsForecast = true).
     	todayMinusLag = lim.second().inc();
 
-    	if ((fixingDate.lt(todayMinusLag)) ||
-    		(fixingDate.eq(todayMinusLag) && !forecastTodaysFixing)) {
+    	if (fixingDate.lt(todayMinusLag)) {
 
     		// Mirrors C++ v1.42.1 YoYInflationIndex::pastFixing (inflationindex.cpp).
     		if (ratio) {

@@ -60,6 +60,14 @@ public abstract class LazyObject implements Observer, Observable {
     protected boolean calculated;
     protected boolean frozen;
     private   boolean alwaysForwardNotifications_;
+    /**
+     * Re-entrancy guard — mirrors C++ {@code LazyObject::updating_}.
+     * Set to {@code true} while {@link #update()} is executing so that
+     * recursive calls from a downstream {@code notifyObservers()} chain
+     * return immediately, breaking any observer-cycle that would otherwise
+     * cause a {@link StackOverflowError}.
+     */
+    private boolean updating_ = false;
 
     //
     // protected abstract methods
@@ -181,14 +189,34 @@ public abstract class LazyObject implements Observer, Observable {
     @Override
     //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
-        // observers don't expect notifications from frozen objects
-        // LazyObject forwards notifications only once until it has been
-        // recalculated (unless alwaysForwardNotifications_ is set, in which
-        // case every upstream change is forwarded unconditionally).
-        if (!frozen && (calculated || alwaysForwardNotifications_))
-            //XXX::OBS notifyObservers(arg);
-            notifyObservers();
-        calculated = false;
+        // Mirrors C++ LazyObject::update() (ql/patterns/lazyobject.hpp).
+        // Guard against recursive re-entry (observer cycles created during
+        // inflation curve bootstrap). C++ uses an RAII UpdateChecker + updating_
+        // flag; Java uses try/finally.
+        if (updating_) {
+            // recursive call — break the cycle silently (C++ default behaviour,
+            // without QL_THROW_IN_CYCLES defined)
+            return;
+        }
+        updating_ = true;
+        try {
+            // forwards notifications only the first time
+            if (calculated || alwaysForwardNotifications_) {
+                // set to false BEFORE notifyObservers so that:
+                //   1) a downstream calculate() call that re-enters update()
+                //      and checks calculated_ sees false → no double-notification
+                //   2) non-lazy observers get fresh data (not stale cached values)
+                calculated = false;
+                // observers don't expect notifications from frozen objects
+                if (!frozen)
+                    //XXX::OBS notifyObservers(arg);
+                    notifyObservers();
+            } else {
+                calculated = false;
+            }
+        } finally {
+            updating_ = false;
+        }
     }
 
 

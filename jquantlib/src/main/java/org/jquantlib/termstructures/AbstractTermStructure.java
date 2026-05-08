@@ -123,6 +123,18 @@ public abstract class AbstractTermStructure implements TermStructure {
      */
     private boolean updated;
 
+    /**
+     * Re-entrancy guard for {@link #update()} — mirrors C++ LazyObject
+     * {@code updating_} flag (ql/patterns/lazyobject.hpp).
+     *
+     * <p>Set {@code true} during {@link #update()} execution to break
+     * observer-cycles that would otherwise cause a {@link StackOverflowError}.
+     * Most notably, inflation curve bootstrap creates:
+     * {@code pZITS → hz.Link → ii → helpers → pZITS} — without this guard
+     * the recursive notification chain never terminates.
+     */
+    private boolean updating_ = false;
+
 
     //
     // private final fields
@@ -402,10 +414,21 @@ public abstract class AbstractTermStructure implements TermStructure {
     @Override
     //XXX::OBS public void update(final Observable o, final Object arg) {
     public void update() {
-        if (moving) {
-            updated = false;
+        // Re-entrancy guard — mirrors C++ LazyObject::update() updating_ flag.
+        // Breaks circular observer chains created during inflation bootstrap:
+        //   pZITS → hz.Link → ii → helpers → pZITS
+        if (updating_) {
+            return;
         }
-        notifyObservers();
+        updating_ = true;
+        try {
+            if (moving) {
+                updated = false;
+            }
+            notifyObservers();
+        } finally {
+            updating_ = false;
+        }
     }
 
 

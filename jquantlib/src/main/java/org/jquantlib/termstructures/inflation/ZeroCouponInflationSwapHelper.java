@@ -298,6 +298,17 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
     public ZeroInflationIndex inflationIndex() { return zii; }
 
     /**
+     * Return the internal {@link ZeroCouponInflationSwap} built by
+     * {@link #setTermStructure}. Null until the curve is bootstrapped.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code ZeroCouponInflationSwapHelper::swap()}
+     * ({@code ql/termstructures/inflation/inflationhelpers.hpp}).
+     * Exposed so that tests can inspect the helper's representative swap
+     * (e.g. its {@code inflationLeg()} fixing date).
+     */
+    public ZeroCouponInflationSwap swap() { return zciis; }
+
+    /**
      * Pillar date — the curve node that this helper anchors. For the
      * NoInterpolation case this is the inflation-period start of
      * {@code maturity - swapObsLag}.

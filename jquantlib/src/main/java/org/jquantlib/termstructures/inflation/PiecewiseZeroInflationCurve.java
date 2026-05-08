@@ -96,7 +96,7 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
             final Frequency frequency,
             final DayCounter dayCounter,
             final List<ZeroCouponInflationSwapHelper> instruments) {
-        this(classI, referenceDate, baseDate, frequency, dayCounter, instruments, 1.0e-12);
+        this(classI, referenceDate, baseDate, frequency, dayCounter, instruments, 1.0e-14);
     }
 
     public PiecewiseZeroInflationCurve(
@@ -144,6 +144,25 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         } finally {
             calculating = false;
         }
+    }
+
+    /**
+     * Invalidates the bootstrap when any observed input changes (quote, index
+     * fixing, seasonality). Mirrors C++ {@code LazyObject::update()} which sets
+     * {@code calculated_ = false} so that the next access re-triggers
+     * {@link #performCalculations()}.
+     *
+     * <p>The {@code calculating} guard prevents us from resetting
+     * {@code calculated} while a bootstrap is already in progress (which would
+     * cause immediate infinite recursion on the next helper access).
+     */
+    @Override
+    public void update() {
+        if (!calculating) {
+            calculated = false;
+            validCurve = false;
+        }
+        super.update();
     }
 
     @Override

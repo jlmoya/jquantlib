@@ -130,6 +130,19 @@ public class PiecewiseYoYInflationCurve<I extends Interpolator>
         }
     }
 
+    /**
+     * Invalidates the bootstrap when any observed input changes. Mirrors C++
+     * {@code LazyObject::update()} which resets {@code calculated_} to false.
+     */
+    @Override
+    public void update() {
+        if (!calculating) {
+            calculated = false;
+            validCurve = false;
+        }
+        super.update();
+    }
+
     @Override
     public Date maxDate() {
         ensureCalculated();
