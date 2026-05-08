@@ -1,0 +1,69 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv_bachelier": 577645.4951940384,
+        "npv_black": 28937.823638657497,
+        "npv_unitDisplacedBlack": 590263.7592351872
+      },
+      "inputs": {
+        "nominal": 1000000.0,
+        "strikeCap": 0.025,
+        "strikeFloor": 0.0,
+        "type": "Cap",
+        "vol": 0.2
+      },
+      "name": "cap_atm"
+    },
+    {
+      "expected": {
+        "npv_bachelier": 545555.740913984,
+        "npv_black": 6843.3629441227795,
+        "npv_unitDisplacedBlack": 562390.1004818263
+      },
+      "inputs": {
+        "nominal": 1000000.0,
+        "strikeCap": 0.04,
+        "strikeFloor": 0.0,
+        "type": "Cap",
+        "vol": 0.2
+      },
+      "name": "cap_otm"
+    },
+    {
+      "expected": {
+        "npv_bachelier": 555915.6238174492,
+        "npv_black": 7207.952262068367,
+        "npv_unitDisplacedBlack": 568533.8878585976
+      },
+      "inputs": {
+        "nominal": 1000000.0,
+        "strikeCap": 0.0,
+        "strikeFloor": 0.025,
+        "type": "Floor",
+        "vol": 0.2
+      },
+      "name": "floor_atm"
+    },
+    {
+      "expected": {
+        "npv_bachelier": 524558.9562130094,
+        "npv_black": 10.466465468793809,
+        "npv_unitDisplacedBlack": 532917.2429416964
+      },
+      "inputs": {
+        "nominal": 1000000.0,
+        "strikeCap": 0.0,
+        "strikeFloor": 0.01,
+        "type": "Floor",
+        "vol": 0.2
+      },
+      "name": "floor_otm"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T14:51:17Z",
+  "generated_by": "inflation_cap_floor_engines_probe",
+  "test_group": "pricingengines/inflation/inflation_cap_floor_engines"
+}
