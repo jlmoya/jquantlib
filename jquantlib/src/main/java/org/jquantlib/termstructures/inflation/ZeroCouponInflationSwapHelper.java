@@ -15,9 +15,6 @@
  This program is distributed in the hope that it will be useful, but WITHOUT
  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  FOR A PARTICULAR PURPOSE.  See the license for more details.
-
- JQuantLib is based on QuantLib. http://quantlib.org/
- When applicable, the original copyright notice follows this notice.
  */
 /*
  Copyright (C) 2007, 2009 Chris Kenyon
@@ -32,17 +29,22 @@ package org.jquantlib.termstructures.inflation;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.DayCounter;
-import org.jquantlib.indexes.IndexManager;
+import org.jquantlib.indexes.CPI;
 import org.jquantlib.indexes.ZeroInflationIndex;
-import org.jquantlib.math.transcendental.JQuantMath;
+import org.jquantlib.instruments.ZeroCouponInflationSwap;
+import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.BootstrapHelper;
+import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.InflationTermStructure;
+import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.ZeroInflationTermStructure;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
 import org.jquantlib.util.Pair;
 
@@ -50,46 +52,27 @@ import org.jquantlib.util.Pair;
  * Bootstrap helper for {@link PiecewiseZeroInflationCurve}, anchored to a
  * synthetic zero-coupon inflation-indexed swap (ZCIIS).
  *
- * <p>Java port of QuantLib v1.42.1 {@code ZeroCouponInflationSwapHelper},
- * specialized to the NoInterpolation observation case
- * ({@code CPI::AsIndex} when the index is itself non-interpolated, which is
- * the v1.42 default for UK/EU CPI / RPI families).
+ * <p>Java port of QuantLib v1.42.1 {@code ZeroCouponInflationSwapHelper}
+ * (termstructures/inflation/inflationhelpers.cpp:34-206).
  *
- * <h3>Pre-A.3 simplification</h3>
- * <p>The C++ helper internally constructs a {@code ZeroCouponInflationSwap}
- * and queries its {@code fairRate()}. The Java {@code ZeroCouponInflationSwap}
- * instrument is scheduled for Phase 2p sub-layer A.3 and does not yet exist.
+ * <h3>Phase 2q L0 A.3 — delegation to ZeroCouponInflationSwap.fairRate()</h3>
  *
- * <p>For the NoInterpolation observation path with a flat nominal curve
- * (which is what the C++ helper itself uses by default — see
- * {@code inflationhelpers.cpp:48} where {@code FlatForward(0)} is constructed),
- * the swap's {@code fairRate()} reduces algebraically to the closed form
- * implemented here. From the C++ formula in
- * {@code zerocouponinflationswap.cpp::fairRate}:
- * <pre>
- *   growth = I(T) / I(0)
- *   fairRate = growth^(1/T) - 1
- * </pre>
- * where {@code I(T)} is the projected inflation index fixing at the swap's
- * fixing date (= maturity − observation lag, snapped to the inflation period
- * start for NoInterpolation), and {@code T = dayCounter.yearFraction(start, maturity)}.
+ * <p>This helper now mirrors C++ exactly: a private {@code ZeroCouponInflationSwap}
+ * (ZCIIS) instance is constructed when the term structure is bound (via
+ * {@link #setTermStructure(ZeroInflationTermStructure)}), priced through a
+ * {@link DiscountingSwapEngine} on a flat-zero nominal curve (matching the
+ * C++ default-overload behavior in
+ * {@code inflationhelpers.cpp:48} and {@code :69}), and queried for
+ * {@code fairRate()} on each {@link #impliedQuote()} call.
  *
- * <p>The projection {@code I(T)} comes from the index in turn:
- * {@code I(T) = I(baseDate) * (1 + curve.zeroRate(fixingDate))^t}, where
- * {@code t = dayCounter.yearFraction(trueBaseDate, fixingDate)} and
- * {@code trueBaseDate} is the inflation-period end of the curve's baseDate.
- *
- * <p>This matches the C++ semantics bit-by-bit when the bootstrapping
- * constructor's nominal curve is the default {@code FlatForward(0,...,0.0,...)}
- * (yielding equal discount factors that cancel between fixed and inflation
- * legs, as documented in {@code inflationhelpers.cpp:67-69}).
- *
- * <p>When A.3 ports {@code ZeroCouponInflationSwap}, this helper should be
- * refactored to delegate to that instrument's {@code fairRate()} for full
- * generality (custom nominal curves, payment-leg adjustments, etc.).
+ * <p>The helper's index is cloned with a {@link Handle} pointing at the curve
+ * being bootstrapped, so that the ZCIIS routes its inflation-leg forecast
+ * through the live curve. This mirrors the C++ pattern
+ * {@code zii_ = zii->clone(termStructureHandle_)} from
+ * {@code inflationhelpers.cpp:106}.
  *
  * @see PiecewiseZeroInflationCurve
- * @see InflationTraits
+ * @see ZeroCouponInflationSwap
  */
 public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflationTermStructure> {
 
@@ -105,13 +88,29 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
     protected final DayCounter dayCounter;
     protected final ZeroInflationIndex zii;
 
+    /**
+     * Lazily-allocated ZCIIS used to compute {@link #impliedQuote()}. Built in
+     * {@link #setTermStructure(ZeroInflationTermStructure)} once the curve is
+     * known. {@code null} until then.
+     */
+    private ZeroCouponInflationSwap zciis;
+
+    /**
+     * Index cloned to point at the bootstrapping curve handle. Built alongside
+     * {@link #zciis} in {@link #setTermStructure(ZeroInflationTermStructure)}.
+     * {@code null} until the curve is bound.
+     */
+    private ZeroInflationIndex ziiClone;
+
     //
     // public constructors
     //
 
     /**
      * Construct a ZCIIS bootstrap helper with the swap's effective date
-     * defaulted to today's evaluation date.
+     * defaulted to today's evaluation date. Mirrors the C++ overload that
+     * defaults the start date and uses a flat-zero nominal curve internally
+     * ({@code inflationhelpers.cpp:34-49}).
      *
      * @param quote             the swap's fair-rate quote
      * @param swapObsLag        observation lag from index publication (e.g. 3M)
@@ -139,7 +138,8 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
         this.zii = zii;
 
         // Compute pillar / earliest / latest as the inflation-period start of
-        // the fixing date (matches C++ NoInterpolation branch).
+        // the fixing date (matches C++ NoInterpolation branch
+        // inflationhelpers.cpp:158-160).
         final Pair<Date, Date> fixingPeriod = InflationTermStructure.inflationPeriod(
                 maturity.sub(swapObsLag), zii.frequency());
         this.earliestDate = fixingPeriod.first();
@@ -152,74 +152,83 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
     // BootstrapHelper hooks
     //
 
+    /**
+     * Bind the curve being bootstrapped. Mirrors C++
+     * {@code ZeroCouponInflationSwapHelper::setTermStructure}
+     * ({@code inflationhelpers.cpp:197-206}) followed by
+     * {@code initializeDates()} ({@code inflationhelpers.cpp:186-195}).
+     *
+     * <p>On each call we (a) record the curve, (b) clone the helper's index
+     * with a Handle pointing at the curve, and (c) build a fresh
+     * {@link ZeroCouponInflationSwap} priced through a
+     * {@link DiscountingSwapEngine} backed by a flat-zero nominal curve.
+     */
     @Override
     public void setTermStructure(final ZeroInflationTermStructure ts) {
         super.setTermStructure(ts);
-        // Force the helper's index to use the curve being bootstrapped for
-        // forecast fixings.
-        // We rely on the existing Java ZeroInflationIndex API (the C++ port
-        // uses zii->clone(handle) but Java's existing class has no clone()
-        // so we leave the index linked to whatever curve handle the test
-        // provided. For TIGHT match, the test must construct its index
-        // pointing at this curve (or use forecast by hand).
+
+        // C++ wraps the curve in a relinkable handle that the cloned index
+        // observes. Java's BootstrapHelper holds the curve as a direct
+        // reference; the curve mutates in place during bootstrap. Wrapping it
+        // in a non-relinkable Handle is sufficient for the cloned index's
+        // forecastFixing path because each call dereferences the same live
+        // curve object.
+        final Handle<ZeroInflationTermStructure> tsHandle =
+                new Handle<ZeroInflationTermStructure>(ts);
+        this.ziiClone = zii.clone(tsHandle);
+
+        // Build the ZCIIS exactly as C++ does in initializeDates():
+        //   zciis_ = ext::make_shared<ZeroCouponInflationSwap>(
+        //       Swap::Payer, 1.0, startDate, maturity, calendar,
+        //       paymentConvention, dayCounter, 0.0,
+        //       zii_, swapObsLag, observationInterpolation);
+        // observationInterpolation_ is fixed to AsIndex by the C++
+        // single-overload constructor (inflationhelpers.hpp); we mirror that.
+        this.zciis = new ZeroCouponInflationSwap(
+                ZeroCouponInflationSwap.Type.Payer,
+                /*nominal*/ 1.0,
+                startDate,
+                maturity,
+                calendar,
+                paymentConvention,
+                dayCounter,
+                /*fixedRate*/ 0.0,
+                ziiClone,
+                swapObsLag,
+                CPI.InterpolationType.AsIndex);
+
+        // Nominal discount curve: flat zero, matches C++
+        // FlatForward(0, NullCalendar(), 0.0, dayCounter)
+        // (inflationhelpers.cpp:48 and :69). When computing the fair rate the
+        // equal discount factors on the two legs cancel, so any nominal curve
+        // gives the same fair rate.
+        final FlatForward nominalCurve = new FlatForward(
+                ts.referenceDate(), 0.0, dayCounter,
+                Compounding.Continuous, Frequency.Annual);
+        final Handle<YieldTermStructure> nominalHandle =
+                new Handle<YieldTermStructure>(nominalCurve);
+        this.zciis.setPricingEngine(new DiscountingSwapEngine(nominalHandle));
     }
 
     /**
-     * Implied ZCIIS fair-rate quote from the underlying curve.
-     *
-     * <p>Closed-form derivation matching {@code ZeroCouponInflationSwap::fairRate()}
-     * for NoInterpolation observation + flat-zero nominal curve (the helper's
-     * default per C++ {@code inflationhelpers.cpp}):
-     * <pre>
-     *   T          = dayCounter.yearFraction(startDate, maturity)
-     *   fixingDate = inflationPeriod(maturity - swapObsLag, frequency).first
-     *   tCurve     = dayCounter.yearFraction(curve.baseDate, fixingDate)
-     *   growth     = (1 + curve.zeroRate(fixingDate))^tCurve
-     *   fairRate   = growth^(1/T) - 1
-     * </pre>
-     *
-     * <p>Note that the curve's {@code zeroRate(date)} method already snaps the
-     * date to its inflation-period start, so calling it with either {@code maturity}
-     * or {@code fixingDate} produces the same time argument internally. We use
-     * {@code fixingDate} for clarity.
+     * Implied ZCIIS fair-rate quote — delegates to
+     * {@link ZeroCouponInflationSwap#fairRate()} mirroring C++
+     * {@code ZeroCouponInflationSwapHelper::impliedQuote()}
+     * ({@code inflationhelpers.cpp:181-184}).
      */
     @Override
     public double impliedQuote() {
         QL.ensure(termStructure != null, "term structure not set");
-
-        final Date baseDate = termStructure.baseDate();
-
-        // Time from start of swap to maturity (the K^T compounding period).
-        final double bigT = dayCounter.yearFraction(startDate, maturity);
-
-        // The fixing date for the inflation observation. NoInterpolation: snap
-        // (maturity - swapObsLag) to inflation-period start.
-        final Pair<Date, Date> fixingPeriod = InflationTermStructure.inflationPeriod(
-                maturity.sub(swapObsLag), zii.frequency());
-        final Date fixingDate = fixingPeriod.first();
-
-        // Time from curve base date to fixing date, computed using the
-        // C++ {@code inflationYearFraction(NoInterpolation)} convention:
-        // {@code dc.yearFraction(period(baseDate).first, period(fixingDate).first)}.
-        // Note this differs from the existing Java
-        // {@link org.jquantlib.indexes.ZeroInflationIndex#fixing} which uses
-        // {@code period(baseDate).second()} as anchor — that is a Java-side
-        // divergence from C++ v1.42.1 that pre-dates this phase. We use the
-        // v1.42.1 convention here for bit-faithful bootstrap math.
-        final Pair<Date, Date> baseLim = InflationTermStructure.inflationPeriod(
-                baseDate, zii.frequency());
-        final double tCurve = termStructure.dayCounter().yearFraction(
-                baseLim.first(), fixingDate);
-
-        // Curve already snaps the date to its inflation-period start.
-        final double zRate = termStructure.zeroRate(fixingDate, true /* extrapolate */);
-
-        // Guard against pow of negative base with non-integer exponent (matches
-        // C++ ZeroInflationIndex::forecastFixing).
-        if (zRate <= -1.0) return 0.0;
-
-        final double growth = JQuantMath.pow(1.0 + zRate, tCurve);
-        return JQuantMath.pow(growth, 1.0 / bigT) - 1.0;
+        QL.ensure(zciis != null, "ZCIIS not initialized; call setTermStructure first");
+        // C++ calls zciis_->deepUpdate() before fairRate() to force a fresh
+        // calculation. Java's Instrument inherits LazyObject.update() which
+        // simply marks the instrument as not-calculated; the next call to
+        // fairRate() (which itself calls calculate() under the hood) will
+        // re-run the engine. The bootstrap mutates the curve in place between
+        // Brent solver steps without firing observer notifications, so we
+        // invalidate the cache explicitly here.
+        zciis.update();
+        return zciis.fairRate();
     }
 
     //
@@ -232,15 +241,10 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
 
     /**
      * Pillar date — the curve node that this helper anchors. For the
-     * NoInterpolation case (the only case supported in Phase 2p A.1) this is
-     * the inflation-period start of {@code maturity - swapObsLag}.
+     * NoInterpolation case this is the inflation-period start of
+     * {@code maturity - swapObsLag}.
      */
     public Date pillarDate() {
         return latestDate;
     }
-
-    // Suppress unused-import noise: IndexManager is referenced in javadoc comments
-    // about future cloned-handle behavior (kept for context when A.3 lands).
-    @SuppressWarnings("unused")
-    private static final Class<?> __unused_indexmgr = IndexManager.class;
 }
