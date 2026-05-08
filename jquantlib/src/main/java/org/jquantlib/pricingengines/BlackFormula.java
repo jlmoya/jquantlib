@@ -54,6 +54,7 @@ import org.jquantlib.lang.annotation.StdDev;
 import org.jquantlib.math.Closeness;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
 import org.jquantlib.math.distributions.Derivative;
+import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.solvers1D.NewtonSafe;
 
 /**
@@ -554,6 +555,127 @@ public class BlackFormula {
             @Real final double displacement) {
 
         return blackFormulaImpliedStdDev(payoff.optionType(), strike, forward, blackPrice, discount, guess, accuracy, displacement);
+    }
+
+    // -----------------------------------------------------------------------
+    // LiRS (Li-Radovic-Stehlik) implied std-dev solver
+    // Port of C++ blackFormulaImpliedStdDevLiRS (v1.42.1 blackformula.cpp).
+    // Uses a fixed-point iteration based on the F/G functions from the paper.
+    // -----------------------------------------------------------------------
+
+    /**
+     * Implied Black standard deviation using the LiRS fixed-point solver.
+     *
+     * <p>Port of C++ {@code blackFormulaImpliedStdDevLiRS} (v1.42.1).
+     *
+     * @param optionType    Put or Call
+     * @param strike        option strike
+     * @param forward       underlying forward
+     * @param blackPrice    market option price (discounted)
+     * @param discount      discount factor
+     * @param displacement  shift (usually 0)
+     * @param guess         initial guess (NaN → use approximation)
+     * @param w             blending weight ∈ [0,1]; w=1 → pure put/call,
+     *                      w=0 → straddle-like weighting
+     * @param accuracy      convergence tolerance on stdDev
+     * @param maxIterations maximum iterations
+     * @return implied standard deviation
+     */
+    public static double blackFormulaImpliedStdDevLiRS(
+            final Option.Type optionType,
+            final double strike,
+            final double forward,
+            final double blackPrice,
+            final double discount,
+            final double displacement,
+            double guess,
+            final double w,
+            final double accuracy,
+            final int maxIterations) {
+
+        QL.require(discount > 0.0, "discount must be positive");
+        QL.require(blackPrice >= 0.0, "option price must be non-negative");
+
+        if (Double.isNaN(guess)) {
+            guess = blackFormulaImpliedStdDevApproximation(
+                    optionType, strike, forward, blackPrice, discount, displacement);
+        } else {
+            QL.require(guess >= 0.0, "stdDev guess must be non-negative");
+        }
+
+        // Apply displacement after computing the initial guess
+        final double sk = strike + displacement;
+        final double fwd = forward + displacement;
+
+        final double x = Math.log(fwd / sk);
+        double cs;
+        if (optionType == Option.Type.Call) {
+            cs = blackPrice / (fwd * discount);
+        } else {
+            cs = blackPrice / (fwd * discount) + 1.0 - sk / fwd;
+        }
+        QL.require(cs >= 0.0, "normalized call price must be non-negative");
+
+        // If x > 0 apply in-out duality to ensure x <= 0
+        double xAdj = x;
+        double csAdj = cs;
+        if (xAdj > 0.0) {
+            csAdj = fwd / sk * csAdj + 1.0 - fwd / sk;
+            QL.require(csAdj >= 0.0, "negative option price from in-out duality");
+            xAdj = -xAdj;
+        }
+
+        final CumulativeNormalDistribution N = new CumulativeNormalDistribution();
+        final InverseCumulativeNormal invN = new InverseCumulativeNormal();
+
+        int nIter = 0;
+        double vk, vkp1 = guess, dv;
+
+        do {
+            vk = vkp1;
+            final double phiK = lirsPhi(xAdj, vk);
+            final double alphaK = (1.0 + w) / (1.0 + phiK);
+            vkp1 = alphaK * lirsG(vk, xAdj, csAdj, w, N, invN)
+                    + (1.0 - alphaK) * vk;
+            dv = Math.abs(vkp1 - vk);
+        } while (dv > accuracy && ++nIter < maxIterations);
+
+        QL.require(dv <= accuracy, "max iterations exceeded in LiRS solver");
+        QL.require(vk >= 0.0, "stdDev must be non-negative");
+
+        return vk;
+    }
+
+    // --- LiRS helpers ---------------------------------------------------------
+
+    private static double lirsPhi(final double x, final double v) {
+        final double ax = 2.0 * Math.abs(x);
+        final double v2 = v * v;
+        return (v2 - ax) / (v2 + ax);
+    }
+
+    private static double lirsNp(final double x, final double v,
+            final CumulativeNormalDistribution N) {
+        return N.op(x / v + 0.5 * v);
+    }
+
+    private static double lirsNm(final double x, final double v,
+            final CumulativeNormalDistribution N) {
+        return Math.exp(-x) * N.op(x / v - 0.5 * v);
+    }
+
+    private static double lirsF(final double v, final double x, final double cs,
+            final double w, final CumulativeNormalDistribution N) {
+        return cs + lirsNm(x, v, N) + w * lirsNp(x, v, N);
+    }
+
+    private static double lirsG(final double v, final double x, final double cs,
+            final double w, final CumulativeNormalDistribution N,
+            final InverseCumulativeNormal invN) {
+        final double q = lirsF(v, x, cs, w, N) / (1.0 + w);
+        // Acklam's inverse — same accuracy tier as C++ Maddock for this use
+        final double k = invN.op(q);
+        return k + Math.sqrt(k * k + 2.0 * Math.abs(x));
     }
 
     // ---

@@ -79,6 +79,15 @@ public abstract class Option extends Instrument {
         arguments.exercise = exercise;
     }
 
+    /** Returns the exercise object (aligns with v1.42.1 direct field access). */
+    public Exercise exercise() {
+        return exercise;
+    }
+
+    /** Returns the payoff object (aligns with v1.42.1 direct field access). */
+    public Payoff payoff() {
+        return payoff;
+    }
 
 
     //
