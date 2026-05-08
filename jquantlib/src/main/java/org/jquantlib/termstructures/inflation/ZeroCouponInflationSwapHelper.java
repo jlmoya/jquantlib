@@ -87,6 +87,7 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
     protected final BusinessDayConvention paymentConvention;
     protected final DayCounter dayCounter;
     protected final ZeroInflationIndex zii;
+    protected final CPI.InterpolationType observationInterpolation;
 
     /**
      * Lazily-allocated ZCIIS used to compute {@link #impliedQuote()}. Built in
@@ -112,6 +113,32 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
      * defaults the start date and uses a flat-zero nominal curve internally
      * ({@code inflationhelpers.cpp:34-49}).
      *
+     * @param quote                    the swap's fair-rate quote
+     * @param swapObsLag               observation lag from index publication (e.g. 3M)
+     * @param maturity                 swap maturity date (pre-adjustment)
+     * @param calendar                 calendar for payment-date adjustment
+     * @param paymentConvention        business-day convention for payments
+     * @param dayCounter               day counter for time computations
+     * @param zii                      zero-inflation index used for fixings
+     * @param observationInterpolation CPI interpolation convention
+     */
+    public ZeroCouponInflationSwapHelper(
+            final Handle<Quote> quote,
+            final Period swapObsLag,
+            final Date maturity,
+            final Calendar calendar,
+            final BusinessDayConvention paymentConvention,
+            final DayCounter dayCounter,
+            final ZeroInflationIndex zii,
+            final CPI.InterpolationType observationInterpolation) {
+        this(quote, swapObsLag, null, maturity, calendar, paymentConvention,
+             dayCounter, zii, observationInterpolation);
+    }
+
+    /**
+     * Backward-compatible overload — defaults {@code observationInterpolation}
+     * to {@link CPI.InterpolationType#AsIndex}.
+     *
      * @param quote             the swap's fair-rate quote
      * @param swapObsLag        observation lag from index publication (e.g. 3M)
      * @param maturity          swap maturity date (pre-adjustment)
@@ -128,20 +155,53 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
             final BusinessDayConvention paymentConvention,
             final DayCounter dayCounter,
             final ZeroInflationIndex zii) {
+        this(quote, swapObsLag, null, maturity, calendar, paymentConvention,
+             dayCounter, zii, CPI.InterpolationType.AsIndex);
+    }
+
+    /**
+     * Dual-date overload — explicit swap start date and maturity (end) date.
+     * Mirrors the C++ overload introduced in v1.42.1
+     * ({@code inflationhelpers.cpp:55-68}).
+     *
+     * <p>Used for sub-annual helpers where the swap effective date differs
+     * from the evaluation date (e.g. USCPI CPI::Linear bootstrap tests).
+     *
+     * @param quote                    the swap's fair-rate quote
+     * @param swapObsLag               observation lag from index publication
+     * @param startDate                swap effective date ({@code null} ⟹ evaluationDate)
+     * @param endDate                  swap maturity date
+     * @param calendar                 calendar for payment-date adjustment
+     * @param paymentConvention        business-day convention for payments
+     * @param dayCounter               day counter for time computations
+     * @param zii                      zero-inflation index used for fixings
+     * @param observationInterpolation CPI interpolation convention
+     */
+    public ZeroCouponInflationSwapHelper(
+            final Handle<Quote> quote,
+            final Period swapObsLag,
+            final Date startDate,
+            final Date endDate,
+            final Calendar calendar,
+            final BusinessDayConvention paymentConvention,
+            final DayCounter dayCounter,
+            final ZeroInflationIndex zii,
+            final CPI.InterpolationType observationInterpolation) {
         super(quote);
         this.swapObsLag = swapObsLag;
-        this.startDate = new Settings().evaluationDate();
-        this.maturity = maturity;
+        this.startDate = (startDate != null) ? startDate : new Settings().evaluationDate();
+        this.maturity = endDate;
         this.calendar = calendar;
         this.paymentConvention = paymentConvention;
         this.dayCounter = dayCounter;
         this.zii = zii;
+        this.observationInterpolation = observationInterpolation;
 
         // Compute pillar / earliest / latest as the inflation-period start of
         // the fixing date (matches C++ NoInterpolation branch
-        // inflationhelpers.cpp:158-160).
+        // inflationhelpers.cpp:158-165).
         final Pair<Date, Date> fixingPeriod = InflationTermStructure.inflationPeriod(
-                maturity.sub(swapObsLag), zii.frequency());
+                endDate.sub(swapObsLag), zii.frequency());
         this.earliestDate = fixingPeriod.first();
         this.latestDate = fixingPeriod.first();
 
@@ -182,8 +242,6 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
         //       Swap::Payer, 1.0, startDate, maturity, calendar,
         //       paymentConvention, dayCounter, 0.0,
         //       zii_, swapObsLag, observationInterpolation);
-        // observationInterpolation_ is fixed to AsIndex by the C++
-        // single-overload constructor (inflationhelpers.hpp); we mirror that.
         this.zciis = new ZeroCouponInflationSwap(
                 ZeroCouponInflationSwap.Type.Payer,
                 /*nominal*/ 1.0,
@@ -195,7 +253,7 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
                 /*fixedRate*/ 0.0,
                 ziiClone,
                 swapObsLag,
-                CPI.InterpolationType.AsIndex);
+                observationInterpolation);
 
         // Nominal discount curve: flat zero, matches C++
         // FlatForward(0, NullCalendar(), 0.0, dayCounter)
