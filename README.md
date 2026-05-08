@@ -2,8 +2,8 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2q--complete-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-832%2F0%2F0%2F22-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2r--complete-blue)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-853%2F0%2F0%2F22-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
@@ -52,9 +52,10 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 2n | `jquantlib-phase2n-complete` | `JQuantMath.pow` correctly-rounded via CORE-MATH cr_pow — 100% bit-exact (2,763/2,763 oracle cases). Qint64 (256-bit u128-pair) infra. 8 commits including 29-file/57-site Math.pow → JQuantMath.pow swap. JQuantMath now covers all 5 transcendentals: exp/log/sin/cos/pow. | 818/0/0/22 | 2026-05-08 |
 | 2o | `jquantlib-phase2o-complete` | HestonModel rho constraint aligned to C++ v1.42.1 (`BoundaryConstraint(-1,1)`); BlackFormula stdDevDerivative shifted-strike guards relaxed; SABRInterpolation.op + XABRInterpolationImpl pre-apply shift; SabrInterpolatedSmileSection Scenario C activated (21 cases LOOSE). | 818/0/0/22 | 2026-05-08 |
 | 2p | `jquantlib-phase2p-complete` | First subsystem-port phase — Inflation zero family. New package `org.jquantlib.termstructures.inflation` (InflationTraits + Interpolated/PiecewiseZeroInflationCurve + ZeroCouponInflationSwapHelper). New cashflow classes + ZeroCouponInflationSwap. Plus 2 align prereqs. Java inflation coverage 30% → 60%. | 822/0/0/22 | 2026-05-08 |
-| **2q** | **`jquantlib-phase2q-complete`** | **Inflation YoY + CPI + Seasonality + CapFlooredYoY closeout. 10 commits across 3 worktrees (sequential L0 align prereqs + parallel L1 Tracks B/C + Phase 2q D cross-track follow-ups). New: full YoY family (Interpolated/PiecewiseYoYInflationCurve + YoYInflationCoupon + YearOnYearInflationSwap + helper) + CPI cashflow family (CPICoupon + CPICouponPricer + CPICashFlow + CappedFlooredYoYInflationCoupon) + Seasonality (Multiplicative + Kerkhof + InflationTermStructure additive setSeasonality). Java inflation surface coverage 60% → 85%.** | **832/0/0/22** | **2026-05-08** |
+| 2q | `jquantlib-phase2q-complete` | Inflation YoY + CPI + Seasonality + CapFlooredYoY closeout. 10 commits across 3 worktrees. Java inflation surface coverage 60% → 85%. | 832/0/0/22 | 2026-05-08 |
+| **2r** | **`jquantlib-phase2r-complete`** | **Inflation 100% surface coverage. New: YoYOptionletVolatilitySurface family (base + Constant + InterpolatedCurve) + InflationCapFloor + CPICapFloor + CPISwap + MakeYoYInflationCapFloor + InflationCapFloorEngines (Black/UnitDisplaced/Bachelier) + Black/UnitDisplaced/Bachelier YoYInflationCouponPricer + FiniteDifferenceNewtonSafe solver + YoYInflationIndex.fixing past-path align. 8 commits across 3 worktrees. Java inflation surface coverage 85% → 100%.** | **853/0/0/22** | **2026-05-08** |
 
-**Current tip on `main`:** post-Phase 2q. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
+**Current tip on `main`:** post-Phase 2r. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
