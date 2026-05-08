@@ -49,5 +49,18 @@ foreach(src IN LISTS PROBE_SOURCES)
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/probes")
 endforeach()
 
+# --- Probe-specific extensions ---
+# qint64_probe needs the qint64_shim.c compiled as C (to dodge the C++
+# tokenizer rejection of pre-C99 string concatenation in qint.h's
+# print_qint debug helper). Link the shim's .o into qint64_probe.
+if(TARGET qint64_probe)
+    enable_language(C)
+    target_sources(qint64_probe PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/probes/transcendental/qint64_shim.c")
+    set_source_files_properties(
+        "${CMAKE_CURRENT_SOURCE_DIR}/probes/transcendental/qint64_shim.c"
+        PROPERTIES LANGUAGE C COMPILE_FLAGS "-std=c11")
+endif()
+
 message(STATUS "Migration harness: ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "Probes discovered: ${PROBE_SOURCES}")
