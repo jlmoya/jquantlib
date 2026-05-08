@@ -1,0 +1,1228 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 39307
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": false,
+        "observationLag_months": 2,
+        "scenario": "C",
+        "v_input": 0.18
+      },
+      "name": "C_referenceDate_serial"
+    },
+    {
+      "expected": {
+        "value": 39234
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": false,
+        "observationLag_months": 2,
+        "scenario": "C",
+        "v_input": 0.18
+      },
+      "name": "C_baseDate_serial"
+    },
+    {
+      "expected": {
+        "value": -1.0
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": false,
+        "observationLag_months": 2,
+        "scenario": "C",
+        "v_input": 0.18
+      },
+      "name": "C_minStrike"
+    },
+    {
+      "expected": {
+        "value": 100.0
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": false,
+        "observationLag_months": 2,
+        "scenario": "C",
+        "v_input": 0.18
+      },
+      "name": "C_maxStrike"
+    },
+    {
+      "expected": {
+        "value": 2
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": false,
+        "observationLag_months": 2,
+        "scenario": "C",
+        "v_input": 0.18
+      },
+      "name": "C_observationLag_days"
+    },
+    {
+      "expected": {
+        "value": 12
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": false,
+        "observationLag_months": 2,
+        "scenario": "C",
+        "v_input": 0.18
+      },
+      "name": "C_frequency_int"
+    },
+    {
+      "expected": {
+        "value": false
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": false,
+        "observationLag_months": 2,
+        "scenario": "C",
+        "v_input": 0.18
+      },
+      "name": "C_indexIsInterpolated"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": -0.02,
+        "tenor_years": 1
+      },
+      "name": "C_volatility_t0_k0"
+    },
+    {
+      "expected": {
+        "value": 0.032488767123287673
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": -0.02,
+        "tenor_years": 1
+      },
+      "name": "C_totalVariance_t0_k0"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.0,
+        "tenor_years": 1
+      },
+      "name": "C_volatility_t0_k1"
+    },
+    {
+      "expected": {
+        "value": 0.032488767123287673
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.0,
+        "tenor_years": 1
+      },
+      "name": "C_totalVariance_t0_k1"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.02,
+        "tenor_years": 1
+      },
+      "name": "C_volatility_t0_k2"
+    },
+    {
+      "expected": {
+        "value": 0.032488767123287673
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.02,
+        "tenor_years": 1
+      },
+      "name": "C_totalVariance_t0_k2"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.04,
+        "tenor_years": 1
+      },
+      "name": "C_volatility_t0_k3"
+    },
+    {
+      "expected": {
+        "value": 0.032488767123287673
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.04,
+        "tenor_years": 1
+      },
+      "name": "C_totalVariance_t0_k3"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.06,
+        "tenor_years": 1
+      },
+      "name": "C_volatility_t0_k4"
+    },
+    {
+      "expected": {
+        "value": 0.032488767123287673
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.06,
+        "tenor_years": 1
+      },
+      "name": "C_totalVariance_t0_k4"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": -0.02,
+        "tenor_years": 2
+      },
+      "name": "C_volatility_t1_k0"
+    },
+    {
+      "expected": {
+        "value": 0.06488876712328767
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": -0.02,
+        "tenor_years": 2
+      },
+      "name": "C_totalVariance_t1_k0"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.0,
+        "tenor_years": 2
+      },
+      "name": "C_volatility_t1_k1"
+    },
+    {
+      "expected": {
+        "value": 0.06488876712328767
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.0,
+        "tenor_years": 2
+      },
+      "name": "C_totalVariance_t1_k1"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.02,
+        "tenor_years": 2
+      },
+      "name": "C_volatility_t1_k2"
+    },
+    {
+      "expected": {
+        "value": 0.06488876712328767
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.02,
+        "tenor_years": 2
+      },
+      "name": "C_totalVariance_t1_k2"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.04,
+        "tenor_years": 2
+      },
+      "name": "C_volatility_t1_k3"
+    },
+    {
+      "expected": {
+        "value": 0.06488876712328767
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.04,
+        "tenor_years": 2
+      },
+      "name": "C_totalVariance_t1_k3"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.06,
+        "tenor_years": 2
+      },
+      "name": "C_volatility_t1_k4"
+    },
+    {
+      "expected": {
+        "value": 0.06488876712328767
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.06,
+        "tenor_years": 2
+      },
+      "name": "C_totalVariance_t1_k4"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": -0.02,
+        "tenor_years": 5
+      },
+      "name": "C_volatility_t2_k0"
+    },
+    {
+      "expected": {
+        "value": 0.16217753424657533
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": -0.02,
+        "tenor_years": 5
+      },
+      "name": "C_totalVariance_t2_k0"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.0,
+        "tenor_years": 5
+      },
+      "name": "C_volatility_t2_k1"
+    },
+    {
+      "expected": {
+        "value": 0.16217753424657533
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.0,
+        "tenor_years": 5
+      },
+      "name": "C_totalVariance_t2_k1"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.02,
+        "tenor_years": 5
+      },
+      "name": "C_volatility_t2_k2"
+    },
+    {
+      "expected": {
+        "value": 0.16217753424657533
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.02,
+        "tenor_years": 5
+      },
+      "name": "C_totalVariance_t2_k2"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.04,
+        "tenor_years": 5
+      },
+      "name": "C_volatility_t2_k3"
+    },
+    {
+      "expected": {
+        "value": 0.16217753424657533
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.04,
+        "tenor_years": 5
+      },
+      "name": "C_totalVariance_t2_k3"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.06,
+        "tenor_years": 5
+      },
+      "name": "C_volatility_t2_k4"
+    },
+    {
+      "expected": {
+        "value": 0.16217753424657533
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.06,
+        "tenor_years": 5
+      },
+      "name": "C_totalVariance_t2_k4"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": -0.02,
+        "tenor_years": 10
+      },
+      "name": "C_volatility_t3_k0"
+    },
+    {
+      "expected": {
+        "value": 0.32426630136986295
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": -0.02,
+        "tenor_years": 10
+      },
+      "name": "C_totalVariance_t3_k0"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.0,
+        "tenor_years": 10
+      },
+      "name": "C_volatility_t3_k1"
+    },
+    {
+      "expected": {
+        "value": 0.32426630136986295
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.0,
+        "tenor_years": 10
+      },
+      "name": "C_totalVariance_t3_k1"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.02,
+        "tenor_years": 10
+      },
+      "name": "C_volatility_t3_k2"
+    },
+    {
+      "expected": {
+        "value": 0.32426630136986295
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.02,
+        "tenor_years": 10
+      },
+      "name": "C_totalVariance_t3_k2"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.04,
+        "tenor_years": 10
+      },
+      "name": "C_volatility_t3_k3"
+    },
+    {
+      "expected": {
+        "value": 0.32426630136986295
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.04,
+        "tenor_years": 10
+      },
+      "name": "C_totalVariance_t3_k3"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.06,
+        "tenor_years": 10
+      },
+      "name": "C_volatility_t3_k4"
+    },
+    {
+      "expected": {
+        "value": 0.32426630136986295
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.06,
+        "tenor_years": 10
+      },
+      "name": "C_totalVariance_t3_k4"
+    },
+    {
+      "expected": {
+        "value": 39307
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_referenceDate_serial"
+    },
+    {
+      "expected": {
+        "value": 39246
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_baseDate_serial"
+    },
+    {
+      "expected": {
+        "value": 0.14
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_baseLevel"
+    },
+    {
+      "expected": {
+        "value": -0.1
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_minStrike"
+    },
+    {
+      "expected": {
+        "value": 0.5
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_maxStrike"
+    },
+    {
+      "expected": {
+        "value": 2
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_observationLag_months"
+    },
+    {
+      "expected": {
+        "value": 12
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_frequency_int"
+    },
+    {
+      "expected": {
+        "values": [
+          39246,
+          39673,
+          40038,
+          41134,
+          42960,
+          46612
+        ]
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_dates_serials"
+    },
+    {
+      "expected": {
+        "values": [
+          -0.16712328767123288,
+          1.0027397260273974,
+          2.0027397260273974,
+          5.005479452054795,
+          10.008219178082191,
+          20.013698630136986
+        ]
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_times"
+    },
+    {
+      "expected": {
+        "values": [
+          0.14,
+          0.15,
+          0.17,
+          0.2,
+          0.23,
+          0.26
+        ]
+      },
+      "inputs": {
+        "dayCounter": "Actual365Fixed",
+        "frequency": "Monthly",
+        "indexIsInterpolated": true,
+        "interpolator": "Linear",
+        "observationLag_months": 2,
+        "scenario": "I"
+      },
+      "name": "I_data"
+    },
+    {
+      "expected": {
+        "value": 0.14857142857142858
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": -0.02,
+        "tenor_years": 1
+      },
+      "name": "I_volatility_t0_k0"
+    },
+    {
+      "expected": {
+        "value": 0.022133944646351697
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": -0.02,
+        "tenor_years": 1
+      },
+      "name": "I_totalVariance_t0_k0"
+    },
+    {
+      "expected": {
+        "value": 0.14857142857142858
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.0,
+        "tenor_years": 1
+      },
+      "name": "I_volatility_t0_k1"
+    },
+    {
+      "expected": {
+        "value": 0.022133944646351697
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.0,
+        "tenor_years": 1
+      },
+      "name": "I_totalVariance_t0_k1"
+    },
+    {
+      "expected": {
+        "value": 0.14857142857142858
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.02,
+        "tenor_years": 1
+      },
+      "name": "I_volatility_t0_k2"
+    },
+    {
+      "expected": {
+        "value": 0.022133944646351697
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.02,
+        "tenor_years": 1
+      },
+      "name": "I_totalVariance_t0_k2"
+    },
+    {
+      "expected": {
+        "value": 0.14857142857142858
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.04,
+        "tenor_years": 1
+      },
+      "name": "I_volatility_t0_k3"
+    },
+    {
+      "expected": {
+        "value": 0.022133944646351697
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.04,
+        "tenor_years": 1
+      },
+      "name": "I_totalVariance_t0_k3"
+    },
+    {
+      "expected": {
+        "value": 0.14857142857142858
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.06,
+        "tenor_years": 1
+      },
+      "name": "I_volatility_t0_k4"
+    },
+    {
+      "expected": {
+        "value": 0.022133944646351697
+      },
+      "inputs": {
+        "matDate_serial": 39673,
+        "strike": 0.06,
+        "tenor_years": 1
+      },
+      "name": "I_totalVariance_t0_k4"
+    },
+    {
+      "expected": {
+        "value": 0.16665753424657534
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": -0.02,
+        "tenor_years": 2
+      },
+      "name": "I_volatility_t1_k0"
+    },
+    {
+      "expected": {
+        "value": 0.05562556260317673
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": -0.02,
+        "tenor_years": 2
+      },
+      "name": "I_totalVariance_t1_k0"
+    },
+    {
+      "expected": {
+        "value": 0.16665753424657534
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.0,
+        "tenor_years": 2
+      },
+      "name": "I_volatility_t1_k1"
+    },
+    {
+      "expected": {
+        "value": 0.05562556260317673
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.0,
+        "tenor_years": 2
+      },
+      "name": "I_totalVariance_t1_k1"
+    },
+    {
+      "expected": {
+        "value": 0.16665753424657534
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.02,
+        "tenor_years": 2
+      },
+      "name": "I_volatility_t1_k2"
+    },
+    {
+      "expected": {
+        "value": 0.05562556260317673
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.02,
+        "tenor_years": 2
+      },
+      "name": "I_totalVariance_t1_k2"
+    },
+    {
+      "expected": {
+        "value": 0.16665753424657534
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.04,
+        "tenor_years": 2
+      },
+      "name": "I_volatility_t1_k3"
+    },
+    {
+      "expected": {
+        "value": 0.05562556260317673
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.04,
+        "tenor_years": 2
+      },
+      "name": "I_totalVariance_t1_k3"
+    },
+    {
+      "expected": {
+        "value": 0.16665753424657534
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.06,
+        "tenor_years": 2
+      },
+      "name": "I_volatility_t1_k4"
+    },
+    {
+      "expected": {
+        "value": 0.05562556260317673
+      },
+      "inputs": {
+        "matDate_serial": 40038,
+        "strike": 0.06,
+        "tenor_years": 2
+      },
+      "name": "I_totalVariance_t1_k4"
+    },
+    {
+      "expected": {
+        "value": 0.19833029197080293
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": -0.02,
+        "tenor_years": 5
+      },
+      "name": "I_volatility_t2_k0"
+    },
+    {
+      "expected": {
+        "value": 0.1968900572905757
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": -0.02,
+        "tenor_years": 5
+      },
+      "name": "I_totalVariance_t2_k0"
+    },
+    {
+      "expected": {
+        "value": 0.19833029197080293
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.0,
+        "tenor_years": 5
+      },
+      "name": "I_volatility_t2_k1"
+    },
+    {
+      "expected": {
+        "value": 0.1968900572905757
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.0,
+        "tenor_years": 5
+      },
+      "name": "I_totalVariance_t2_k1"
+    },
+    {
+      "expected": {
+        "value": 0.19833029197080293
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.02,
+        "tenor_years": 5
+      },
+      "name": "I_volatility_t2_k2"
+    },
+    {
+      "expected": {
+        "value": 0.1968900572905757
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.02,
+        "tenor_years": 5
+      },
+      "name": "I_totalVariance_t2_k2"
+    },
+    {
+      "expected": {
+        "value": 0.19833029197080293
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.04,
+        "tenor_years": 5
+      },
+      "name": "I_volatility_t2_k3"
+    },
+    {
+      "expected": {
+        "value": 0.1968900572905757
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.04,
+        "tenor_years": 5
+      },
+      "name": "I_totalVariance_t2_k3"
+    },
+    {
+      "expected": {
+        "value": 0.19833029197080293
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.06,
+        "tenor_years": 5
+      },
+      "name": "I_volatility_t2_k4"
+    },
+    {
+      "expected": {
+        "value": 0.1968900572905757
+      },
+      "inputs": {
+        "matDate_serial": 41134,
+        "strike": 0.06,
+        "tenor_years": 5
+      },
+      "name": "I_totalVariance_t2_k4"
+    },
+    {
+      "expected": {
+        "value": 0.22901423877327493
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": -0.02,
+        "tenor_years": 10
+      },
+      "name": "I_volatility_t3_k0"
+    },
+    {
+      "expected": {
+        "value": 0.5250499829685973
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": -0.02,
+        "tenor_years": 10
+      },
+      "name": "I_totalVariance_t3_k0"
+    },
+    {
+      "expected": {
+        "value": 0.22901423877327493
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.0,
+        "tenor_years": 10
+      },
+      "name": "I_volatility_t3_k1"
+    },
+    {
+      "expected": {
+        "value": 0.5250499829685973
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.0,
+        "tenor_years": 10
+      },
+      "name": "I_totalVariance_t3_k1"
+    },
+    {
+      "expected": {
+        "value": 0.22901423877327493
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.02,
+        "tenor_years": 10
+      },
+      "name": "I_volatility_t3_k2"
+    },
+    {
+      "expected": {
+        "value": 0.5250499829685973
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.02,
+        "tenor_years": 10
+      },
+      "name": "I_totalVariance_t3_k2"
+    },
+    {
+      "expected": {
+        "value": 0.22901423877327493
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.04,
+        "tenor_years": 10
+      },
+      "name": "I_volatility_t3_k3"
+    },
+    {
+      "expected": {
+        "value": 0.5250499829685973
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.04,
+        "tenor_years": 10
+      },
+      "name": "I_totalVariance_t3_k3"
+    },
+    {
+      "expected": {
+        "value": 0.22901423877327493
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.06,
+        "tenor_years": 10
+      },
+      "name": "I_volatility_t3_k4"
+    },
+    {
+      "expected": {
+        "value": 0.5250499829685973
+      },
+      "inputs": {
+        "matDate_serial": 42961,
+        "strike": 0.06,
+        "tenor_years": 10
+      },
+      "name": "I_totalVariance_t3_k4"
+    },
+    {
+      "expected": {
+        "value": 0.1566849315068493
+      },
+      "inputs": {
+        "matDate_serial": 39857,
+        "tenor_months": 18
+      },
+      "name": "I_volatility_inter_0"
+    },
+    {
+      "expected": {
+        "value": 0.03692614274234802
+      },
+      "inputs": {
+        "matDate_serial": 39857,
+        "tenor_months": 18
+      },
+      "name": "I_totalVariance_inter_0"
+    },
+    {
+      "expected": {
+        "value": 0.17832116788321167
+      },
+      "inputs": {
+        "matDate_serial": 40403,
+        "tenor_months": 3
+      },
+      "name": "I_volatility_inter_1"
+    },
+    {
+      "expected": {
+        "value": 0.09548243575642436
+      },
+      "inputs": {
+        "matDate_serial": 40403,
+        "tenor_months": 3
+      },
+      "name": "I_totalVariance_inter_1"
+    },
+    {
+      "expected": {
+        "value": 0.21099123767798467
+      },
+      "inputs": {
+        "matDate_serial": 41864,
+        "tenor_months": 7
+      },
+      "name": "I_volatility_inter_2"
+    },
+    {
+      "expected": {
+        "value": 0.31186504706219764
+      },
+      "inputs": {
+        "matDate_serial": 41864,
+        "tenor_months": 7
+      },
+      "name": "I_totalVariance_inter_2"
+    },
+    {
+      "expected": {
+        "value": 0.24451533406352685
+      },
+      "inputs": {
+        "matDate_serial": 44788,
+        "tenor_months": 15
+      },
+      "name": "I_volatility_inter_3"
+    },
+    {
+      "expected": {
+        "value": 0.8977990411885972
+      },
+      "inputs": {
+        "matDate_serial": 44788,
+        "tenor_months": 15
+      },
+      "name": "I_totalVariance_inter_3"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T14:33:03Z",
+  "generated_by": "yoy_optionlet_vol_probe",
+  "test_group": "termstructures/volatility/inflation/yoy_optionlet_vol"
+}
