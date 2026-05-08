@@ -251,7 +251,9 @@ public class BlackFormula {
             @DiscountFactor final double discount,
             @Real final double displacement) {
 
-        QL.require(strike >= 0.0       , "strike must be non-negative"); // TODO: message
+        // strike may be negative when displacement > 0; the shifted strike must be non-negative.
+        // Mirrors C++ QuantLib v1.42.1 blackFormulaImpliedStdDevApproximation check (Phase 2o A.2).
+        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative"); // TODO: message
         QL.require(forward > 0.0       , "forward must be positive"); // TODO: message
         QL.require(displacement >= 0.0 , "displacement must be non-negative"); // TODO: message
         QL.require(blackPrice >= 0.0   , "blackPrice must be non-negative"); // TODO: message
@@ -453,7 +455,9 @@ public class BlackFormula {
         final int maxIterations=100;
         //---
 
-        QL.require(strike >= 0.0       , "strike must be non-negative"); // TODO: message
+        // strike may be negative when displacement > 0; the shifted strike must be non-negative.
+        // Mirrors C++ QuantLib v1.42.1 blackFormulaImpliedStdDev check (Phase 2o A.2).
+        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative"); // TODO: message
         QL.require(forward > 0.0       , "forward must be positive"); // TODO: message
         QL.require(displacement >= 0.0 , "displacement must be non-negative"); // TODO: message
         QL.require(blackPrice >= 0.0   , "blackPrice must be non-negative"); // TODO: message
@@ -805,7 +809,9 @@ public class BlackFormula {
             @DiscountFactor final double discount,
             @Real final double displacement) {
 
-        QL.require(strike >= 0.0       , "strike must be non-negative"); // TODO: message
+        // strike may be negative when displacement > 0; the shifted strike must be non-negative.
+        // Mirrors C++ QuantLib v1.42.1 blackFormulaStdDevDerivative check (Phase 2o A.2).
+        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative"); // TODO: message
         QL.require(forward > 0.0       , "forward must be positive"); // TODO: message
         QL.require(stddev >= 0.0       , "blackPrice must be non-negative"); // TODO: message
         QL.require(discount > 0.0      , "discount must be positive"); // TODO: message

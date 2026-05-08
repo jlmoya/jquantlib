@@ -31,10 +31,10 @@ import static org.junit.Assert.fail;
  * and can land in different local minima at the same RMS error level.
  * Structural outputs (atmLevel, minStrike, maxStrike, endCriteria) use TIGHT/exact tier.
  *
- * <p>Scenario C (shift=0.02) has negative strikes (-0.01, 0.00) that trigger
- * the Java {@code SABRInterpolation.op(x &gt; 0)} guard; these cases are skipped
- * with a SKIP tag. This is a known limitation: Java {@link SABRInterpolation}
- * does not route through {@code shiftedSabrVolatility} yet (deferred to Phase 2k.5).
+ * <p>Scenario C (shift=0.02) has negative strikes (-0.01, 0.00). Phase 2o A.2
+ * relaxed {@code BlackFormula.blackFormulaStdDevDerivative} to allow
+ * {@code strike + displacement >= 0} (matching the blackFormula guard at line 118),
+ * enabling Scenario C calibration to complete without throwing.
  *
  * <p>Evaluation date matches probe: 2020-01-01; expiry: 2021-01-02 (T = 367/365).
  *
@@ -134,16 +134,11 @@ public class SabrInterpolatedSmileSectionTest {
             final double cppVal = expObj.getDouble("value");
             final double strike = expObj.has("strike") ? expObj.getDouble("strike") : Double.NaN;
 
-            // Skip ALL scenario C cases:
-            // Java SABRInterpolation.blackFormulaStdDevDerivative (vega weight) checks
-            // raw strike >= 0 before adding the displacement; for shift=0.02 with strikes
-            // starting at -0.01, the calibration weight computation fails. Fixing requires
-            // updating the weight computation path to pass (strike+shift) to BlackFormula.
-            // This is a known limitation of the Java SABRInterpolation for shifted SABR
-            // surfaces with negative raw strikes. Deferred to Phase 2k.5.
-            if (caseName.startsWith("C_")) {
-                continue;
-            }
+            // Scenario C (shift=0.02, strikes include -0.01 and 0.00) is now active.
+            // Phase 2o A.2 relaxed BlackFormula.blackFormulaStdDevDerivative to check
+            // strike+displacement >= 0 (matching line 118's pattern in blackFormula).
+            // The previously-blocking raw-strike >= 0 guard is gone; negative raw strikes
+            // with displacement=0.02 satisfy strike+displacement >= 0.
 
             double javaVal;
             try {

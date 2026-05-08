@@ -217,9 +217,16 @@ public class XABRInterpolationImpl<S extends XABRSpecs> extends XABRCoeffHolder<
         maxError_ = interpolationMaxError();
     }
 
-    /** Volatility evaluation at a single strike (Java analogue of C++ {@code value(x)}). */
+    /** Volatility evaluation at a single strike (Java analogue of C++ {@code value(x)}).
+     *
+     * <p>For shifted XABR models (addParams_[0] = shift > 0), C++ routes through
+     * {@code shiftedSabrVolatility} which internally calls {@code sabrVolatility(strike+shift,
+     * forward+shift, ...)}. Java pre-applies the shift here so {@link XABRSpecs#volatility}
+     * always receives the shifted (positive) strike, matching C++ semantics (Phase 2o A.2).
+     */
     public double value(final double x) {
-        return specs_.volatility(x, forward_, t_, params_);
+        final double shift = (addParams_ != null && addParams_.length > 0) ? addParams_[0] : 0.0;
+        return specs_.volatility(x + shift, forward_ + shift, t_, params_);
     }
 
     /** Total weighted squared error (C++ {@code interpolationSquaredError()} lines 245-255). */

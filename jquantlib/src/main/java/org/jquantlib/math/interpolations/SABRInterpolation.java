@@ -338,7 +338,13 @@ public class SABRInterpolation extends AbstractInterpolation {
 
         @Override
         public double op(final double x) {
-            QL.require(x > 0.0, "strike must be positive: " + x + " not allowed");
+            // For shifted SABR (addParams_[0] > 0), raw strike may be negative as long as
+            // strike + shift > 0. Mirrors C++ xabrinterpolation.hpp (no explicit positivity
+            // guard; the shifted formula requires strike+shift > 0 for log-normal SABR).
+            // Phase 2o A.2: relax from x > 0 to x + shift > 0 to support negative raw strikes.
+            final double shift = (xabrImpl_.addParams_.length > 0) ? xabrImpl_.addParams_[0] : 0.0;
+            QL.require(x + shift > 0.0, "shifted strike (strike+shift) must be positive: "
+                    + x + " + " + shift + " not allowed");
             return xabrImpl_.value(x);
         }
 
