@@ -45,6 +45,7 @@ import org.jquantlib.lang.annotation.Natural;
 import org.jquantlib.lang.annotation.Rate;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.termstructures.inflation.Seasonality;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
@@ -73,6 +74,16 @@ public abstract class InflationTermStructure extends AbstractTermStructure {
     protected Period lag;
     protected Frequency frequency;
     protected @Rate double  baseRate;
+
+    /**
+     * Optional seasonality correction. When non-null, derived classes
+     * (Zero/YoY) apply it in their {@code zeroRate}/{@code yoyRate} accessor
+     * after computing the raw rate. Mirrors C++ v1.42.1
+     * {@code InflationTermStructure::seasonality_}.
+     *
+     * <p>Phase 2q L1 Track C addition.
+     */
+    protected Seasonality seasonality_;
     
     public InflationTermStructure(final Period lag,
     							  final Frequency frequency,
@@ -167,6 +178,32 @@ public abstract class InflationTermStructure extends AbstractTermStructure {
 
     public /*@Rate*/ double baseRate() {
     	return baseRate;
+    }
+
+    //
+    // Seasonality (Phase 2q L1 Track C). Mirrors C++ v1.42.1
+    // InflationTermStructure::{setSeasonality, seasonality, hasSeasonality}.
+    //
+
+    /**
+     * Install/clear the seasonality correction. Pass {@code null} to clear.
+     * Triggers an observer notification.
+     */
+    public void setSeasonality(final Seasonality seasonality) {
+        this.seasonality_ = seasonality;
+        if (seasonality_ != null) {
+            QL.require(seasonality_.isConsistent(this),
+                    "Seasonality inconsistent with inflation term structure");
+        }
+        update();
+    }
+
+    public Seasonality seasonality() {
+        return seasonality_;
+    }
+
+    public boolean hasSeasonality() {
+        return seasonality_ != null;
     }
     
     //! minimum (base) date

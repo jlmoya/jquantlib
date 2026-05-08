@@ -274,7 +274,13 @@ public class InterpolatedZeroInflationCurve<I extends Interpolator>
             QL.require(dd.first().le(maxDate()),
                     "date " + dd.first() + " past max curve date " + maxDate());
         }
-        return zeroRateImpl(timeFromReference(dd.first()));
+        double rate = zeroRateImpl(timeFromReference(dd.first()));
+        // Phase 2q L1 Track C: apply seasonality correction if installed.
+        // Mirrors C++ ZeroInflationTermStructure::zeroRate(date, ...) tail.
+        if (hasSeasonality()) {
+            rate = seasonality().correctZeroRate(d, rate, this);
+        }
+        return rate;
     }
 
     @Override

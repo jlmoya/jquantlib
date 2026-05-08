@@ -1,0 +1,439 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 12
+      },
+      "inputs": {
+        "factorCount": 12,
+        "frequency": "Monthly",
+        "scenario": "M",
+        "seasonalityBaseDate_serial": 39083
+      },
+      "name": "M_factorCount"
+    },
+    {
+      "expected": {
+        "value": 39083
+      },
+      "inputs": {
+        "factorCount": 12,
+        "frequency": "Monthly",
+        "scenario": "M",
+        "seasonalityBaseDate_serial": 39083
+      },
+      "name": "M_baseDate_serial"
+    },
+    {
+      "expected": {
+        "value": 1.003
+      },
+      "inputs": {
+        "date_serial": 39083
+      },
+      "name": "M_seasonalityFactor_0"
+    },
+    {
+      "expected": {
+        "value": 1.001
+      },
+      "inputs": {
+        "date_serial": 39114
+      },
+      "name": "M_seasonalityFactor_1"
+    },
+    {
+      "expected": {
+        "value": 1.005
+      },
+      "inputs": {
+        "date_serial": 39142
+      },
+      "name": "M_seasonalityFactor_2"
+    },
+    {
+      "expected": {
+        "value": 1.003
+      },
+      "inputs": {
+        "date_serial": 39173
+      },
+      "name": "M_seasonalityFactor_3"
+    },
+    {
+      "expected": {
+        "value": 1.005
+      },
+      "inputs": {
+        "date_serial": 39203
+      },
+      "name": "M_seasonalityFactor_4"
+    },
+    {
+      "expected": {
+        "value": 1.007
+      },
+      "inputs": {
+        "date_serial": 39234
+      },
+      "name": "M_seasonalityFactor_5"
+    },
+    {
+      "expected": {
+        "value": 0.999
+      },
+      "inputs": {
+        "date_serial": 39264
+      },
+      "name": "M_seasonalityFactor_6"
+    },
+    {
+      "expected": {
+        "value": 0.999
+      },
+      "inputs": {
+        "date_serial": 39295
+      },
+      "name": "M_seasonalityFactor_7"
+    },
+    {
+      "expected": {
+        "value": 1.005
+      },
+      "inputs": {
+        "date_serial": 39326
+      },
+      "name": "M_seasonalityFactor_8"
+    },
+    {
+      "expected": {
+        "value": 1.003
+      },
+      "inputs": {
+        "date_serial": 39356
+      },
+      "name": "M_seasonalityFactor_9"
+    },
+    {
+      "expected": {
+        "value": 1.003
+      },
+      "inputs": {
+        "date_serial": 39387
+      },
+      "name": "M_seasonalityFactor_10"
+    },
+    {
+      "expected": {
+        "value": 0.997
+      },
+      "inputs": {
+        "date_serial": 39417
+      },
+      "name": "M_seasonalityFactor_11"
+    },
+    {
+      "expected": {
+        "value": 1.003
+      },
+      "inputs": {
+        "date_serial": 39448
+      },
+      "name": "M_seasonalityFactor_12"
+    },
+    {
+      "expected": {
+        "value": 1.007
+      },
+      "inputs": {
+        "date_serial": 39600
+      },
+      "name": "M_seasonalityFactor_13"
+    },
+    {
+      "expected": {
+        "adjusted": 0.001893143079810967,
+        "unadjusted": 0.025980005238802062
+      },
+      "inputs": {
+        "date_serial": 39295
+      },
+      "name": "M_correctZeroRate_grid_0"
+    },
+    {
+      "expected": {
+        "adjusted": 0.013371428569549416,
+        "unadjusted": 0.027279577403300448
+      },
+      "inputs": {
+        "date_serial": 39417
+      },
+      "name": "M_correctZeroRate_grid_1"
+    },
+    {
+      "expected": {
+        "adjusted": 0.03110944761069704,
+        "unadjusted": 0.02922451177275241
+      },
+      "inputs": {
+        "date_serial": 39600
+      },
+      "name": "M_correctZeroRate_grid_2"
+    },
+    {
+      "expected": {
+        "adjusted": 0.03258372124849787,
+        "unadjusted": 0.03159957736663444
+      },
+      "inputs": {
+        "date_serial": 39965
+      },
+      "name": "M_correctZeroRate_grid_3"
+    },
+    {
+      "expected": {
+        "adjusted": 0.03199884337947235,
+        "unadjusted": 0.03430121090374494
+      },
+      "inputs": {
+        "date_serial": 40513
+      },
+      "name": "M_correctZeroRate_grid_4"
+    },
+    {
+      "expected": {
+        "adjusted": 0.036205573592154754,
+        "unadjusted": 0.03580065165101133
+      },
+      "inputs": {
+        "date_serial": 41061
+      },
+      "name": "M_correctZeroRate_grid_5"
+    },
+    {
+      "expected": {
+        "adjusted": 0.03701068003664734,
+        "unadjusted": 0.03671972974308522
+      },
+      "inputs": {
+        "date_serial": 41791
+      },
+      "name": "M_correctZeroRate_grid_6"
+    },
+    {
+      "expected": {
+        "value": 0.020000000000000018
+      },
+      "inputs": {
+        "date_serial": 39508,
+        "input_rate": 0.02
+      },
+      "name": "M_correctYoYRate_0"
+    },
+    {
+      "expected": {
+        "value": 0.02499999999999991
+      },
+      "inputs": {
+        "date_serial": 39630,
+        "input_rate": 0.025
+      },
+      "name": "M_correctYoYRate_1"
+    },
+    {
+      "expected": {
+        "value": 0.030000000000000027
+      },
+      "inputs": {
+        "date_serial": 39753,
+        "input_rate": 0.03
+      },
+      "name": "M_correctYoYRate_2"
+    },
+    {
+      "expected": {
+        "value": 0.03499999999999992
+      },
+      "inputs": {
+        "date_serial": 39965,
+        "input_rate": 0.035
+      },
+      "name": "M_correctYoYRate_3"
+    },
+    {
+      "expected": {
+        "value": true
+      },
+      "inputs": {
+        "factorCount": 12,
+        "frequency": "Monthly",
+        "scenario": "M",
+        "seasonalityBaseDate_serial": 39083
+      },
+      "name": "M_isConsistent"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "date_serial": 39097
+      },
+      "name": "K_seasonalityFactor_0"
+    },
+    {
+      "expected": {
+        "value": 1.001
+      },
+      "inputs": {
+        "date_serial": 39128
+      },
+      "name": "K_seasonalityFactor_1"
+    },
+    {
+      "expected": {
+        "value": 1.0060049999999998
+      },
+      "inputs": {
+        "date_serial": 39156
+      },
+      "name": "K_seasonalityFactor_2"
+    },
+    {
+      "expected": {
+        "value": 1.0090230149999997
+      },
+      "inputs": {
+        "date_serial": 39187
+      },
+      "name": "K_seasonalityFactor_3"
+    },
+    {
+      "expected": {
+        "value": 1.0140681300749996
+      },
+      "inputs": {
+        "date_serial": 39217
+      },
+      "name": "K_seasonalityFactor_4"
+    },
+    {
+      "expected": {
+        "value": 1.0211666069855245
+      },
+      "inputs": {
+        "date_serial": 39248
+      },
+      "name": "K_seasonalityFactor_5"
+    },
+    {
+      "expected": {
+        "value": 1.020145440378539
+      },
+      "inputs": {
+        "date_serial": 39278
+      },
+      "name": "K_seasonalityFactor_6"
+    },
+    {
+      "expected": {
+        "value": 1.0191252949381604
+      },
+      "inputs": {
+        "date_serial": 39309
+      },
+      "name": "K_seasonalityFactor_7"
+    },
+    {
+      "expected": {
+        "value": 1.024220921412851
+      },
+      "inputs": {
+        "date_serial": 39340
+      },
+      "name": "K_seasonalityFactor_8"
+    },
+    {
+      "expected": {
+        "value": 1.0272935841770894
+      },
+      "inputs": {
+        "date_serial": 39370
+      },
+      "name": "K_seasonalityFactor_9"
+    },
+    {
+      "expected": {
+        "value": 1.0303754649296206
+      },
+      "inputs": {
+        "date_serial": 39401
+      },
+      "name": "K_seasonalityFactor_10"
+    },
+    {
+      "expected": {
+        "value": 1.0272843385348318
+      },
+      "inputs": {
+        "date_serial": 39431
+      },
+      "name": "K_seasonalityFactor_11"
+    },
+    {
+      "expected": {
+        "adjusted": 0.10606571479988074,
+        "unadjusted": 0.025980005238802062
+      },
+      "inputs": {
+        "date_serial": 39295
+      },
+      "name": "K_correctZeroRate_grid_0"
+    },
+    {
+      "expected": {
+        "adjusted": 0.07554440044742046,
+        "unadjusted": 0.027279577403300448
+      },
+      "inputs": {
+        "date_serial": 39417
+      },
+      "name": "K_correctZeroRate_grid_1"
+    },
+    {
+      "expected": {
+        "adjusted": 0.04925791938350807,
+        "unadjusted": 0.02922451177275241
+      },
+      "inputs": {
+        "date_serial": 39600
+      },
+      "name": "K_correctZeroRate_grid_2"
+    },
+    {
+      "expected": {
+        "adjusted": 0.04201549905472093,
+        "unadjusted": 0.03159957736663444
+      },
+      "inputs": {
+        "date_serial": 39965
+      },
+      "name": "K_correctZeroRate_grid_3"
+    },
+    {
+      "expected": {
+        "adjusted": 0.042093878653676815,
+        "unadjusted": 0.03430121090374494
+      },
+      "inputs": {
+        "date_serial": 40513
+      },
+      "name": "K_correctZeroRate_grid_4"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-08T13:05:03Z",
+  "generated_by": "seasonality_probe",
+  "test_group": "termstructures/inflation/seasonality"
+}
