@@ -60,7 +60,23 @@ public class Actual360 extends DayCounter {
 
 
     public Actual360() {
-        super.impl = new Impl();
+        super.impl = new Impl(false);
+    }
+
+    /**
+     * Actual360 with optional inclusion of the last day in the day count
+     * — mirror of C++ {@code Actual360(bool includeLastDay)}
+     * (ql/time/daycounters/actual360.hpp:60-62).
+     *
+     * <p>When {@code includeLastDay = true} the {@code dayCount} formula
+     * adds 1 to the actual difference and {@code yearFraction} divides
+     * {@code (daysBetween + 1) / 360.0}; this is the ISDA-CDS-engine-compatible
+     * variant flagged as "Actual/360 (inc)".
+     *
+     * @since Phase 3d L0 A.2
+     */
+    public Actual360(final boolean includeLastDay) {
+        super.impl = new Impl(includeLastDay);
     }
 
 
@@ -70,13 +86,24 @@ public class Actual360 extends DayCounter {
 
     final private class Impl extends DayCounter.Impl {
 
+        private final boolean includeLastDay;
+
+        Impl(final boolean includeLastDay) {
+            this.includeLastDay = includeLastDay;
+        }
+
         //
         // implements DayCounter
         //
 
         @Override
         public final String name() /* @ReadOnly */{
-            return "Actual/360";
+            return includeLastDay ? "Actual/360 (inc)" : "Actual/360";
+        }
+
+        @Override
+        public final long dayCount(final Date d1, final Date d2) /* @ReadOnly */{
+            return super.dayCount(d1, d2) + (includeLastDay ? 1L : 0L);
         }
 
         @Override

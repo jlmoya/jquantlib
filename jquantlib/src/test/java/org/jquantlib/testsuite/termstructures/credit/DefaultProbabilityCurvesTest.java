@@ -425,12 +425,9 @@ public class DefaultProbabilityCurvesTest {
             final Actual360 dayCounter = new Actual360();
             // Last-period day counter — wired through SpreadCdsHelper into the
             // generated CDS leg via FixedRateLeg.withLastPeriodDayCounter
-            // (Phase 3d L0 A.2). At Phase 3d L0 A.1 the
-            // {@code Actual360(includeLastDay=true)} variant does not exist yet;
-            // the test still exercises the bootstrap retry/fallback path
-            // because the distressed-CDS scenario fails irrespective of the
-            // single-day DC difference.
-            final Actual360 lastPeriodDayCounter = new Actual360();
+            // (Phase 3d L0 A.2). Uses Actual360(true) ("Actual/360 (inc)")
+            // matching C++ test exactly.
+            final Actual360 lastPeriodDayCounter = new Actual360(true);
 
             final List<DefaultProbabilityHelper> helpers = new ArrayList<>();
             for (final java.util.Map.Entry<Period, Double> e : cdsSpreads.entrySet()) {

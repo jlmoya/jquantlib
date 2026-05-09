@@ -387,7 +387,34 @@ public class DayCountersTest {
         
         assertTrue(testSet.contains(thirty360));
         assertFalse(testSet.contains(actualActual));
-        
+
+    }
+
+    /**
+     * Smoke test for the {@code Actual360(includeLastDay)} variant added in
+     * Phase 3d L0 A.2 — mirror of C++ {@code Actual360(bool includeLastDay)}
+     * (ql/time/daycounters/actual360.hpp:60-62). Verifies (a) the alternate
+     * name "Actual/360 (inc)", (b) the +1-day offset on dayCount, and
+     * (c) the proportional yearFraction shift.
+     */
+    @Test
+    public void testActual360IncludeLastDay() {
+        QL.info("Testing Actual360(includeLastDay=true) variant ...");
+        final DayCounter dc = new Actual360();
+        final DayCounter dcInc = new Actual360(true);
+
+        assertEquals("name (default)", "Actual/360", dc.name());
+        assertEquals("name (inc)", "Actual/360 (inc)", dcInc.name());
+
+        // 2026-04-01 -> 2026-05-01 = 30 days actual.
+        final org.jquantlib.time.Date d1 =
+                new org.jquantlib.time.Date(1, org.jquantlib.time.Month.April, 2026);
+        final org.jquantlib.time.Date d2 =
+                new org.jquantlib.time.Date(1, org.jquantlib.time.Month.May, 2026);
+        assertEquals("dayCount default", 30L, dc.dayCount(d1, d2));
+        assertEquals("dayCount inc",     31L, dcInc.dayCount(d1, d2));
+        assertEquals("yearFraction default", 30.0 / 360.0, dc.yearFraction(d1, d2),    1.0e-12);
+        assertEquals("yearFraction inc",     31.0 / 360.0, dcInc.yearFraction(d1, d2), 1.0e-12);
     }
 
 }

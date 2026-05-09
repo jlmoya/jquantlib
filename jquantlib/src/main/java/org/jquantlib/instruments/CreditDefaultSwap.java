@@ -306,18 +306,16 @@ public class CreditDefaultSwap extends Instrument {
         // .withNotionals(notional_).withCouponRates(spread, dayCounter)
         // .withPaymentAdjustment(paymentConvention)
         // .withLastPeriodDayCounter(lastPeriodDayCounter).
-        // Java FixedRateLeg builder doesn't yet expose withLastPeriodDayCounter;
-        // see class-level Javadoc — lastPeriodDayCounter is currently ignored.
-        leg_ = new FixedRateLeg(schedule, dayCounter)
+        // Phase 3d L0 A.2 — withLastPeriodDayCounter is now wired through
+        // FixedRateLeg (was previously accepted but ignored).
+        final FixedRateLeg builder = new FixedRateLeg(schedule, dayCounter)
                 .withNotionals(notional_)
                 .withCouponRates(runningSpread_)
-                .withPaymentAdjustment(paymentConvention)
-                .Leg();
-
-        // Suppress unused-warning for parameter retained for signature parity.
+                .withPaymentAdjustment(paymentConvention);
         if (lastPeriodDayCounter != null) {
-            // intentionally unused; see Javadoc
+            builder.withLastPeriodDayCounter(lastPeriodDayCounter);
         }
+        leg_ = builder.Leg();
 
         // Deduce trade date if not given. C++ creditdefaultswap.cpp:110-116.
         if (tradeDate_ == null || tradeDate_.isNull()) {

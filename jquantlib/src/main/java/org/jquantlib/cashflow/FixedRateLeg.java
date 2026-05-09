@@ -17,6 +17,7 @@ public class FixedRateLeg extends Leg {
     private InterestRate[] couponRates_;
     private final DayCounter paymentDayCounter_;
     private DayCounter firstPeriodDayCounter_;
+    private DayCounter lastPeriodDayCounter_;
     private BusinessDayConvention paymentAdjustment_;
 
     public FixedRateLeg(final Schedule schedule, final DayCounter paymentDayCounter){
@@ -68,6 +69,16 @@ public class FixedRateLeg extends Leg {
 
     public FixedRateLeg withFirstPeriodDayCounter(final DayCounter dayCounter) {
         firstPeriodDayCounter_ = dayCounter;
+        return this;
+    }
+
+    /** Mirror of C++ {@code FixedRateLeg::withLastPeriodDayCounter}
+     *  (ql/cashflows/fixedratecoupon.cpp:148-152). The provided day counter
+     *  overrides the schedule's last-coupon day counter. Phase 3d L0 A.2
+     *  switches this from accept-but-ignore to actually use the parameter
+     *  in {@link #Leg()} construction. */
+    public FixedRateLeg withLastPeriodDayCounter(final DayCounter dayCounter) {
+        lastPeriodDayCounter_ = dayCounter;
         return this;
     }
 
@@ -130,12 +141,20 @@ public class FixedRateLeg extends Leg {
             } else {
                 nominal = notionals_[notionals_.length - 1];
             }
+            // Phase 3d L0 A.2 — wire withLastPeriodDayCounter (mirrors C++
+            // ql/cashflows/fixedratecoupon.cpp:255-272). When non-null this
+            // day counter replaces paymentDayCounter for the last coupon.
+            final DayCounter lastDc =
+                    (lastPeriodDayCounter_ == null) ? paymentDayCounter_ : lastPeriodDayCounter_;
+            final InterestRate lastRate = (lastPeriodDayCounter_ == null)
+                    ? rate
+                    : new InterestRate(rate.rate(), lastDc, rate.compounding());
             if (schedule_.isRegular(N - 1)) {
-                leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end));
+                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, end));
             } else {
                 Date ref = start.add(schedule_.tenor());
                 ref = calendar.adjust(ref, schedule_.businessDayConvention());
-                leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, ref));
+                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, ref));
             }
         }
         return leg;
