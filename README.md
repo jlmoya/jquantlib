@@ -2,8 +2,8 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase3f--complete-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-1024%2F0%2F0%2F41-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase3h--complete-blue)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-1087%2F0%2F0%2F38-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
@@ -64,9 +64,11 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 3c | `jquantlib-phase3c-complete` | IntegralCdsEngine + MakeCreditDefaultSwap + DateGeneration.CDS + Schedule rule + WeekendsOnly + IterativeBootstrap refinement. 7 of 8 deferred tests un-ignored. Drive-by fixes: Settings.TODAYS_PAYMENTS, InterpolatedDiscountCurve 2 bugs. | 1018/0/0/44 | 2026-05-09 |
 | 3d | `jquantlib-phase3d-complete` | IsdaCdsEngine (480 LOC sophisticated) + IterativeBootstrap config + Actual360(true) + 3 of 6 deferred un-ignores. Credit production 100% v1.42.1. | 1024/0/0/41 | 2026-05-09 |
 | 3e | `jquantlib-phase3e-complete` | DONE_WITH_CONCERNS — 4 pre-existing PiecewiseYieldCurve bugs fixed + 3 Markit test bodies fully ported (461 LOC). Tests stay @Ignore'd pending Phase 3f. | 1024/0/0/41 | 2026-05-09 |
-| **3f** | **`jquantlib-phase3f-complete`** | **DONE_WITH_CONCERNS — Array(double[]) copy-vs-reference fix (Path A, 73 LOC matching C++ Array(InputIterator,...) semantics). testIsdaEngine bootstrap drift improved 100× (~1% → 2e-5 to 1.4e-4 fraction). 3 Markit tests still @Ignore'd — residual is orthogonal IsdaCdsEngine accrual debt (Phase 3g).** | **1024/0/0/41** | **2026-05-09** |
+| 3f | `jquantlib-phase3f-complete` | Array(double[]) copy-vs-reference fix (Path A, 73 LOC). testIsdaEngine bootstrap drift improved 100× (~1% → 1.4e-4). | 1024/0/0/41 | 2026-05-09 |
+| 3g | `jquantlib-phase3g-complete` | Discount.maxValueAfter ungated negative-rates fix (key finding: bug was Discount traits, NOT IsdaCdsEngine). 2 EUR Markit tests un-ignored + passing. | 1062/0/0/38 | 2026-05-09 |
+| **3h** | **`jquantlib-phase3h-complete`** | **First marketmodels (LMM) slice — Track A (Utilities + EvolutionDescription + CurveState + 3 curvestates + 4 drift calculators) + Track B (3 correlations + MTBrownianGenerator + AccountingEngine + MarketModelDiscounter + MultiProduct + Evolver align). MersenneTwisterUniformRng latent unsigned-long bug fixed. New packages: `org.jquantlib.model.marketmodels.*`. ~3,600 LOC C++ ported. 7 commits across 2 parallel worktrees.** | **1087/0/0/38** | **2026-05-09** |
 
-**Current tip on `main`:** post-Phase 3f. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
+**Current tip on `main`:** post-Phase 3h. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
