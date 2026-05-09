@@ -2,8 +2,8 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase3c--complete-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-1018%2F0%2F0%2F44-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase3d--complete-blue)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-1024%2F0%2F0%2F41-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
@@ -61,9 +61,10 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 2x | `jquantlib-phase2x-complete` | Small infrastructure aligns + WeakReferenceObservable batched notification. mvn test wall-clock 30+ min → 59.5s (32x speedup). | 951/0/0/38 | 2026-05-08 |
 | 3a | `jquantlib-phase3a-complete` | First Phase-3 subsystem (greenfield credit termstructures): 3 abstract bases + FlatHazardRate + 3 interpolated curves + PiecewiseDefaultCurve + ProbabilityTraits + DefaultProbabilityHelper non-CDS + defaultprobabilitycurves.cpp test port. New package `org.jquantlib.termstructures.credit`. | 973/0/0/45 | 2026-05-08 |
 | 3b | `jquantlib-phase3b-complete` | CreditDefaultSwap instrument + Protection/Claim/FaceValueClaim + MidPointCdsEngine + 3 CDS helpers + creditdefaultswap.cpp test skeleton + 4 of 7 Phase 3a CDS-deferred tests un-ignored. | 1004/0/0/51 | 2026-05-08 |
-| **3c** | **`jquantlib-phase3c-complete`** | **IntegralCdsEngine + MakeCreditDefaultSwap factory + DateGeneration.CDS/CDS2015/OldCDS enum + Schedule rule + WeekendsOnly calendar + PiecewiseDefaultCurve IterativeBootstrap refinement. 7 of 8 deferred tests un-ignored (5 MidPoint Track C + testLogLinearSurvivalConsistency + testAccrualRebateAmounts). Drive-by fixes: Settings.TODAYS_PAYMENTS, InterpolatedDiscountCurve 2 pre-existing bugs.** | **1018/0/0/44** | **2026-05-09** |
+| 3c | `jquantlib-phase3c-complete` | IntegralCdsEngine + MakeCreditDefaultSwap + DateGeneration.CDS + Schedule rule + WeekendsOnly + IterativeBootstrap refinement. 7 of 8 deferred tests un-ignored. Drive-by fixes: Settings.TODAYS_PAYMENTS, InterpolatedDiscountCurve 2 bugs. | 1018/0/0/44 | 2026-05-09 |
+| **3d** | **`jquantlib-phase3d-complete`** | **IsdaCdsEngine production port (480 LOC sophisticated; 5 sanity tests pass) + PiecewiseDefaultCurve IterativeBootstrap config object + Actual360(true) variant + FixedRateLeg.withLastPeriodDayCounter wiring + 3 of 6 deferred un-ignores. Credit production 100% v1.42.1; test-suite 98% (3 Markit-reconciliation tests deferred to Phase 3e for PiecewiseYieldCurve fixture).** | **1024/0/0/41** | **2026-05-09** |
 
-**Current tip on `main`:** post-Phase 3c. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
+**Current tip on `main`:** post-Phase 3d. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
