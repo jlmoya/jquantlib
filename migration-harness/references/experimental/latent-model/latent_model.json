@@ -1,0 +1,168 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "analytical": 3.141592653589793,
+        "value": 107.53254519061863
+      },
+      "inputs": {
+        "dim": 2,
+        "f": "1",
+        "mu": 0.0,
+        "order": 16
+      },
+      "name": "multidim_quadrature_2d_unit"
+    },
+    {
+      "expected": {
+        "analytical": 0.0,
+        "value": 2.3908212318649324e-14
+      },
+      "inputs": {
+        "dim": 2,
+        "f": "x*y",
+        "mu": 0.0,
+        "order": 16
+      },
+      "name": "multidim_quadrature_2d_xy"
+    },
+    {
+      "expected": {
+        "analytical": 0.7853981633974483,
+        "value": 8436.080916253854
+      },
+      "inputs": {
+        "dim": 2,
+        "f": "x^2 y^2",
+        "mu": 0.0,
+        "order": 16
+      },
+      "name": "multidim_quadrature_2d_x2y2"
+    },
+    {
+      "expected": {
+        "analytical": 16.0,
+        "value": 16.0
+      },
+      "inputs": {
+        "a": -2.0,
+        "b": 2.0,
+        "dim": 2,
+        "tol": 1e-06
+      },
+      "name": "multidim_trapezoid_2d_unit"
+    },
+    {
+      "expected": {
+        "correls": [
+          {
+            "i": 0,
+            "j": 0,
+            "value": 0.9999999999999999
+          },
+          {
+            "i": 0,
+            "j": 1,
+            "value": 0.23
+          },
+          {
+            "i": 1,
+            "j": 0,
+            "value": 0.23
+          },
+          {
+            "i": 1,
+            "j": 1,
+            "value": 0.9999999999999999
+          }
+        ],
+        "idiosyncFctrs": [
+          0.8660254037844386,
+          0.8426149773176358
+        ],
+        "numFactors": 2,
+        "numTotalFactors": 4,
+        "size": 2
+      },
+      "inputs": {
+        "weights": [
+          [
+            0.3,
+            0.4
+          ],
+          [
+            0.5,
+            0.2
+          ]
+        ]
+      },
+      "name": "latent_model_2var_2fact"
+    },
+    {
+      "expected": {
+        "y0": 1.069230484541326,
+        "y1": -0.4840919818541087
+      },
+      "inputs": {
+        "allFactors": [
+          0.5,
+          -0.3,
+          1.2,
+          -0.8
+        ],
+        "weights": [
+          [
+            0.3,
+            0.4
+          ],
+          [
+            0.5,
+            0.2
+          ]
+        ]
+      },
+      "name": "latent_model_latentVarValue"
+    },
+    {
+      "expected": {
+        "factorWeights": [
+          {
+            "i": 0,
+            "weights": [
+              0.6
+            ]
+          },
+          {
+            "i": 1,
+            "weights": [
+              0.6
+            ]
+          },
+          {
+            "i": 2,
+            "weights": [
+              0.6
+            ]
+          }
+        ],
+        "idiosyncFctrs": [
+          0.8,
+          0.8,
+          0.8
+        ],
+        "numFactors": 1,
+        "size": 3
+      },
+      "inputs": {
+        "correlSqr": 0.6,
+        "nVariables": 3
+      },
+      "name": "latent_model_correlSqr_ctor"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T20:58:33Z",
+  "generated_by": "latent_model_probe",
+  "test_group": "experimental/latent-model/latent_model"
+}
