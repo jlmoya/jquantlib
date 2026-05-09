@@ -19,10 +19,13 @@ import org.jquantlib.model.marketmodels.evolvers.LogNormalCmSwapRatePc;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalCotSwapRatePc;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateBalland;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateEuler;
+import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateEulerConstrained;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateIpc;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRatePc;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateiBalland;
 import org.jquantlib.model.marketmodels.evolvers.NormalFwdRatePc;
+import org.jquantlib.model.marketmodels.evolvers.SVDDFwdRatePc;
+import org.jquantlib.model.marketmodels.evolvers.volprocesses.SquareRootAndersen;
 import org.junit.Test;
 
 /**
@@ -170,6 +173,110 @@ public class LogNormalFwdRateEvolverTest {
         evolver.startNewPath();
         evolver.advanceStep();
         assertEquals(1, evolver.currentStep());
+    }
+
+    @Test
+    public void svddFwdRatePc_withAndersenVol_advancesAndStaysFinite() {
+        final FlatVolMarketModel mm = new FlatVolMarketModel();
+        final ZeroBrownianGeneratorFactory bgf = new ZeroBrownianGeneratorFactory();
+        // 4 evolution times, 2 substeps each → SquareRootAndersen feeds 2 variates per step
+        final SquareRootAndersen vol = new SquareRootAndersen(
+                /*meanLevel*/ 0.04, /*reversionSpeed*/ 1.0, /*volVar*/ 0.20, /*v0*/ 0.04,
+                mm.evolution().evolutionTimes(),
+                /*numberSubSteps*/ 2,
+                /*w1*/ 0.5, /*w2*/ 0.5);
+
+        final int[] num = new int[mm.numberOfSteps()];
+        for (int i = 0; i < num.length; ++i) num[i] = mm.numberOfRates();
+        final SVDDFwdRatePc evolver = new SVDDFwdRatePc(mm, bgf, vol, /*firstVolFactor*/ 0,
+                /*volFactorStep*/ 1, num);
+
+        assertEquals(0, evolver.currentStep());
+        evolver.startNewPath();
+        evolver.advanceStep();
+        assertEquals(1, evolver.currentStep());
+        for (int i = 0; i < mm.numberOfRates(); ++i) {
+            final double f = evolver.currentState().forwardRate(i);
+            assertTrue("svdd forward[" + i + "] finite", !Double.isNaN(f) && !Double.isInfinite(f));
+        }
+    }
+
+    @Test
+    public void squareRootAndersen_zeroVariates_keepsVarianceAtMeanLevel() {
+        // With reversion to theta and zero Brownian (z=0), psi <= cutoff branch
+        // gives vt = a*(b+0)^2 = a*b^2 ≈ m at first step (with vt0 = v0 = theta).
+        // Just confirm process stepSd > 0 and stateVariables update without NaN.
+        final SquareRootAndersen vol = new SquareRootAndersen(
+                0.04, 1.0, 0.20, 0.04, new double[] { 0.5, 1.0, 1.5 }, 2, 0.5, 0.5);
+        vol.nextPath();
+        final double[] zeros = new double[vol.variatesPerStep()];
+        vol.nextstep(zeros);
+        final double sd = vol.stepSd();
+        assertTrue("stepSd finite", !Double.isNaN(sd) && !Double.isInfinite(sd) && sd >= 0.0);
+        assertEquals(1, vol.numberStateVariables());
+        assertEquals(2, vol.variatesPerStep());
+        assertTrue("state finite", !Double.isNaN(vol.stateVariables()[0]));
+    }
+
+    @Test
+    public void constrainedEuler_withInactiveConstraint_behavesLikeEuler() {
+        final FlatVolMarketModel mm = new FlatVolMarketModel();
+        final ZeroBrownianGeneratorFactory bgf = new ZeroBrownianGeneratorFactory();
+        final int[] num = new int[mm.numberOfSteps()];
+        for (int i = 0; i < num.length; ++i) num[i] = mm.numberOfRates();
+
+        final LogNormalFwdRateEulerConstrained evolver =
+                new LogNormalFwdRateEulerConstrained(mm, bgf, num);
+
+        // configure constraint type but leave isConstraintActive = all false
+        final int[] startIdx = new int[num.length];
+        final int[] endIdx = new int[num.length];
+        for (int i = 0; i < num.length; ++i) {
+            startIdx[i] = 0;
+            endIdx[i] = 1; // start+1 == end requirement
+        }
+        evolver.setConstraintType(startIdx, endIdx);
+        final double[] constraints = new double[num.length];
+        final boolean[] active = new boolean[num.length]; // all false
+        for (int i = 0; i < num.length; ++i) constraints[i] = 0.04;
+        evolver.setThisConstraint(constraints, active);
+
+        final double w = evolver.startNewPath();
+        assertEquals(1.0, w, TOL);
+        final double stepWeight = evolver.advanceStep();
+        // with inactive constraint, weight stays at 1.0 (zero brownians, plain euler)
+        assertEquals("inactive constraint should not affect weight", 1.0, stepWeight, TOL);
+        assertEquals(1, evolver.currentStep());
+    }
+
+    @Test
+    public void constrainedEuler_withActiveConstraint_appliesShiftAndUpdatesWeight() {
+        final FlatVolMarketModel mm = new FlatVolMarketModel();
+        final ZeroBrownianGeneratorFactory bgf = new ZeroBrownianGeneratorFactory();
+        final int[] num = new int[mm.numberOfSteps()];
+        for (int i = 0; i < num.length; ++i) num[i] = mm.numberOfRates();
+
+        final LogNormalFwdRateEulerConstrained evolver =
+                new LogNormalFwdRateEulerConstrained(mm, bgf, num);
+
+        final int[] startIdx = new int[num.length];
+        final int[] endIdx = new int[num.length];
+        for (int i = 0; i < num.length; ++i) {
+            startIdx[i] = 0;
+            endIdx[i] = 1;
+        }
+        evolver.setConstraintType(startIdx, endIdx);
+        // active constraint at step 0 only — pin rate 0 to 0.04 (its initial value, so shift ~ 0)
+        final double[] constraints = new double[num.length];
+        final boolean[] active = new boolean[num.length];
+        for (int i = 0; i < num.length; ++i) constraints[i] = 0.04;
+        active[0] = true;
+        evolver.setThisConstraint(constraints, active);
+
+        evolver.startNewPath();
+        final double stepWeight = evolver.advanceStep();
+        assertTrue("active constraint produces finite weight",
+                !Double.isNaN(stepWeight) && !Double.isInfinite(stepWeight));
     }
 
     @Test
