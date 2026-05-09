@@ -219,6 +219,51 @@ public class MatricesAdditionalTest {
         // C++ test-suite/matrices.cpp:580 — MP-inverse properties.
     }
 
+    private static Matrix filled(final int rows, final int cols, final double v) {
+        final double[][] data = new double[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                data[i][j] = v;
+            }
+        }
+        return new Matrix(data);
+    }
+
+    @Test
+    public void testOperators() {
+        QL.info("Testing matrix operators...");
+
+        // NOTE: Phase 5b align candidate — Matrix.negative() in Java is
+        // implemented via mulAssign(-1), which MUTATES the receiver. C++
+        // unary minus returns a new matrix and leaves the operand unchanged.
+        // We therefore re-construct m before each operator check.
+
+        final Matrix expectedNegative = filled(2, 3, -4.0);
+        if (norm(filled(2, 3, 4.0).negative().sub(expectedNegative)) > 1e-15) {
+            fail("unary minus");
+        }
+
+        final Matrix expectedSum = filled(2, 3, 8.0);
+        if (norm(filled(2, 3, 4.0).add(filled(2, 3, 4.0)).sub(expectedSum)) > 1e-15) {
+            fail("matrix sum");
+        }
+
+        final Matrix expectedDiff = filled(2, 3, 0.0);
+        if (norm(filled(2, 3, 4.0).sub(filled(2, 3, 4.0)).sub(expectedDiff)) > 1e-15) {
+            fail("matrix difference");
+        }
+
+        final Matrix expectedScalarProduct = filled(2, 3, 6.0);
+        if (norm(filled(2, 3, 4.0).mul(1.5).sub(expectedScalarProduct)) > 1e-15) {
+            fail("scalar product");
+        }
+
+        final Matrix expectedScalarQuotient = filled(2, 3, 2.0);
+        if (norm(filled(2, 3, 4.0).div(2.0).sub(expectedScalarQuotient)) > 1e-15) {
+            fail("scalar quotient");
+        }
+    }
+
     @Test
     public void testInitializers() {
         QL.info("Testing matrix initializers...");
