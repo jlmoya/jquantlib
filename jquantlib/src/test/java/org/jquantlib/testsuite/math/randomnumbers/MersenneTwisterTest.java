@@ -427,16 +427,18 @@ public class MersenneTwisterTest {
             0.70694291, 0.85212760, 0.86074305, 0.33163422, 0.85739792, 0.59908488, 0.74566046, 0.72157152
         };
 
+        // Phase 3h Track B align: nextInt32() now returns the unsigned 32-bit
+        // value directly (per C++ v1.42.1 unsigned long). The previous
+        // sign-strip-and-restore workaround was needed to compensate for the
+        // bug; with the bug fixed, expectations are compared as-is.
         for (int i = 0; i < refInt.length; ++i) {
             final long r = mt.nextInt32();
-            assertEquals(refInt[i], (r & 0x7fffffffl) | ((r < 0) ? 0x80000000l : 0x0l));
+            assertEquals(refInt[i], r);
         }
 
         for (int i = 0; i < refDouble.length; ++i) {
             final long r = mt.nextInt32();
-            assertEquals(refDouble[i],
-                         ((r & 0x7fffffffl) | ((r < 0) ? 0x80000000l : 0x0l)) / 4294967296.0,
-                         1.0e-8);
+            assertEquals(refDouble[i], r / 4294967296.0, 1.0e-8);
         }
 
     }

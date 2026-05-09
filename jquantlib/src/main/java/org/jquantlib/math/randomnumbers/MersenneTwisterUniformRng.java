@@ -271,7 +271,12 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
 
     @Override
     public long nextInt32() {
-        return next(32);
+        // C++ v1.42.1 uses unsigned long; mask high 32 bits off the sign-extended
+        // Java long so the value lies in [0, 2^32-1] exactly as in C++.
+        // Fixes negative-uniform bug in next() that surfaced when the inverse
+        // cumulative normal (MTBrownianGenerator path) is fed values outside (0,1).
+        // (Phase 3h Track B align — matches v1.42.1 mt19937uniformrng.hpp.)
+        return next(32) & 0xFFFFFFFFL;
     }
 
     public Sample<Double> next() /* @ReadOnly */{
