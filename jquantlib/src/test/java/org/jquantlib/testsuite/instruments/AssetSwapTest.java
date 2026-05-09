@@ -127,9 +127,88 @@ public class AssetSwapTest {
     public void testConsistency() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-2 — needs AssetSwap port + parAssetSwap flag.")
+    /**
+     * Phase 5e.5-ASW partial port: first sub-case of {@code testImpliedValue}
+     * (assetswap.cpp:676) — exercise the par-asset-swap fair-clean-price ↔
+     * bond-clean-price round-trip for the DBR 4 01/04/37 fixed-rate bond at
+     * spread = 0. Mirrors C++ {@code fixedBond1} block (lines 692-742).
+     *
+     * <p>Per the C++ test, with {@code IborCoupon::Settings::usingAtParCoupons
+     * = true} (the Java default), tolerance is {@code 1e-13}; otherwise
+     * {@code 1e-2}. The Java port currently uses indexed coupons, so we
+     * apply the looser {@code 1e-2} tolerance.
+     *
+     * <p>Remaining sub-cases (fixedBond2, floatingBond1/2, cmsBond1/2) are
+     * Phase 5e.5b carry-forward — they require FloatingRateBond /
+     * CmsRateBond constructors and CommonVars cms pricer wiring.
+     */
     @Test
     public void testImpliedValue() {
+        // Replicate C++ CommonVars (assetswap.cpp:65-111).
+        new Settings().setEvaluationDate(
+                new Date(24, Month.April, 2007));
+        final DayCounter act365 = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                new Date(24, Month.April, 2007), 0.05, act365);
+        final Handle<YieldTermStructure> ts =
+                new Handle<YieldTermStructure>(flat);
+        final Euribor6M iborIndex = new Euribor6M(ts);
+        final double spread = 0.0;
+        final double faceAmount = 100.0;
+
+        final Calendar bondCalendar = new Target();
+        final int settlementDays = 3;
+        final boolean payFixedRate = true;
+        final boolean parAssetSwap = true;
+
+        // Fixed Underlying bond (Isin: DE0001135275 DBR 4 01/04/37)
+        final Schedule fixedBondSchedule1 = new Schedule(
+                new Date(4, Month.January, 2005),
+                new Date(4, Month.January, 2037),
+                new Period(Frequency.Annual),
+                bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward,
+                false /* endOfMonth */);
+        final FixedRateBond fixedBond1 = new FixedRateBond(
+                settlementDays, faceAmount, fixedBondSchedule1,
+                new double[] { 0.04 },
+                new org.jquantlib.daycounters.ActualActual(
+                        org.jquantlib.daycounters.ActualActual.Convention.ISDA),
+                BusinessDayConvention.Following,
+                100.0, new Date(4, Month.January, 2005));
+
+        final DiscountingBondEngine bondEngine =
+                new DiscountingBondEngine(ts);
+        final DiscountingSwapEngine swapEngine =
+                new DiscountingSwapEngine(ts);
+        fixedBond1.setPricingEngine(bondEngine);
+
+        final double fixedBondPrice1 = fixedBond1.cleanPrice();
+        final AssetSwap fixedBondAssetSwap1 = new AssetSwap(
+                payFixedRate,
+                fixedBond1, fixedBondPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedBondAssetSwap1.setPricingEngine(swapEngine);
+        final double fixedBondAssetSwapPrice1 =
+                fixedBondAssetSwap1.fairCleanPrice();
+
+        // C++ tolerance: 1e-2 when not using at-par coupons (Java's
+        // default — IborCoupon uses indexed forward fixings).
+        final double tolerance2 = 1.0e-2;
+        final double error1 = Math.abs(fixedBondAssetSwapPrice1 - fixedBondPrice1);
+
+        if (error1 > tolerance2) {
+            fail("wrong zero spread asset swap price for fixed bond:\n"
+                    + "  bond's clean price:    " + fixedBondPrice1 + "\n"
+                    + "  asset swap fair price: " + fixedBondAssetSwapPrice1 + "\n"
+                    + "  error:                 " + error1 + "\n"
+                    + "  tolerance:             " + tolerance2);
+        }
     }
 
     @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-3 — needs AssetSwap.fairCleanPrice / fairSpread.")

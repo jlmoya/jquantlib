@@ -121,6 +121,27 @@ public class AssetSwap extends Swap {
     }
 
     /**
+     * Convenience constructor (parAssetSwap explicit; defaults gearing = 1,
+     * no nonParRepayment, no dealMaturity truncation). Mirrors common C++
+     * usage where the first 8 arguments are explicit and the last 3 take
+     * their defaults.
+     */
+    public AssetSwap(final boolean payBondCoupon,
+                     final Bond bond,
+                     final /*@Real*/ double bondCleanPrice,
+                     final IborIndex iborIndex,
+                     final /*@Spread*/ double spread,
+                     final Schedule floatSchedule,
+                     final DayCounter floatingDayCount,
+                     final boolean parAssetSwap) {
+        this(payBondCoupon, bond, bondCleanPrice, iborIndex, spread,
+                floatSchedule, floatingDayCount, parAssetSwap,
+                1.0 /* gearing */,
+                Constants.NULL_REAL /* nonParRepayment */,
+                new Date() /* dealMaturity */);
+    }
+
+    /**
      * Full constructor mirroring C++ v1.42.1
      * {@code AssetSwap::AssetSwap}.
      *
