@@ -1,0 +1,153 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 8.483586512655258
+      },
+      "inputs": {
+        "formula": "Forde",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0
+      },
+      "name": "forde_call_atm_1y"
+    },
+    {
+      "expected": {
+        "npv": 5.586661632051109
+      },
+      "inputs": {
+        "formula": "Forde",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0
+      },
+      "name": "forde_put_atm_1y"
+    },
+    {
+      "expected": {
+        "npv": 4.856728238075096
+      },
+      "inputs": {
+        "formula": "Forde",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 110.0
+      },
+      "name": "forde_call_otm_1y"
+    },
+    {
+      "expected": {
+        "npv": 11.472097602478087
+      },
+      "inputs": {
+        "formula": "Forde",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 110.0
+      },
+      "name": "forde_put_itm_1y"
+    },
+    {
+      "expected": {
+        "npv": 11.484647999263819
+      },
+      "inputs": {
+        "formula": "Forde",
+        "maturity_years": 2.0,
+        "option_type": "Call",
+        "strike": 100.0
+      },
+      "name": "forde_call_atm_2y"
+    },
+    {
+      "expected": {
+        "npv": 8.839280699745704
+      },
+      "inputs": {
+        "formula": "LPP2",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0
+      },
+      "name": "lpp2_call_atm_1y"
+    },
+    {
+      "expected": {
+        "npv": 5.942355819141568
+      },
+      "inputs": {
+        "formula": "LPP2",
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0
+      },
+      "name": "lpp2_put_atm_1y"
+    },
+    {
+      "expected": {
+        "npv": 5.1232792353945245
+      },
+      "inputs": {
+        "formula": "LPP2",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 110.0
+      },
+      "name": "lpp2_call_otm_1y"
+    },
+    {
+      "expected": {
+        "npv": 12.90761482632536
+      },
+      "inputs": {
+        "formula": "LPP2",
+        "maturity_years": 2.0,
+        "option_type": "Call",
+        "strike": 100.0
+      },
+      "name": "lpp2_call_atm_2y"
+    },
+    {
+      "expected": {
+        "npv": 8.830391415696443
+      },
+      "inputs": {
+        "formula": "LPP3",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0
+      },
+      "name": "lpp3_call_atm_1y"
+    },
+    {
+      "expected": {
+        "npv": 5.1244780299595645
+      },
+      "inputs": {
+        "formula": "LPP3",
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 110.0
+      },
+      "name": "lpp3_call_otm_1y"
+    },
+    {
+      "expected": {
+        "npv": 12.897820364956056
+      },
+      "inputs": {
+        "formula": "LPP3",
+        "maturity_years": 2.0,
+        "option_type": "Call",
+        "strike": 100.0
+      },
+      "name": "lpp3_call_atm_2y"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T20:34:58Z",
+  "generated_by": "heston_expansion_engine_probe",
+  "test_group": "heston-engines/heston_expansion_engine"
+}
