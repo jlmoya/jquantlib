@@ -94,4 +94,79 @@ public final class FdmSchemeDesc {
     public static FdmSchemeDesc ImplicitEuler() {
         return new FdmSchemeDesc(FdmSchemeType.ImplicitEulerType, 0.0, 0.0);
     }
+
+    /**
+     * Crank-Nicolson scheme defaults: {@code theta = 0.5, mu = 0.0}.
+     * Mirrors C++ {@code FdmSchemeDesc::CrankNicolson()}.
+     */
+    public static FdmSchemeDesc CrankNicolson() {
+        return new FdmSchemeDesc(FdmSchemeType.CrankNicolsonType, 0.5, 0.0);
+    }
+
+    /**
+     * Craig-Sneyd scheme defaults: {@code theta = 0.5, mu = 0.5}.
+     * Mirrors C++ {@code FdmSchemeDesc::CraigSneyd()}.
+     */
+    public static FdmSchemeDesc CraigSneyd() {
+        return new FdmSchemeDesc(FdmSchemeType.CraigSneydType, 0.5, 0.5);
+    }
+
+    /**
+     * Modified Craig-Sneyd scheme defaults: {@code theta = 1/3, mu = 1/3}.
+     * Mirrors C++ {@code FdmSchemeDesc::ModifiedCraigSneyd()}.
+     */
+    public static FdmSchemeDesc ModifiedCraigSneyd() {
+        return new FdmSchemeDesc(FdmSchemeType.ModifiedCraigSneydType,
+                1.0 / 3.0, 1.0 / 3.0);
+    }
+
+    /**
+     * Modified Hundsdorfer scheme defaults:
+     * {@code theta = 1 - sqrt(2)/2, mu = 0.5}. Mirrors C++
+     * {@code FdmSchemeDesc::ModifiedHundsdorfer()}.
+     */
+    public static FdmSchemeDesc ModifiedHundsdorfer() {
+        return new FdmSchemeDesc(FdmSchemeType.HundsdorferType,
+                1.0 - Math.sqrt(2.0) / 2.0, 0.5);
+    }
+
+    /**
+     * Explicit Euler scheme defaults: {@code theta = 0.0, mu = 0.0}.
+     * Mirrors C++ {@code FdmSchemeDesc::ExplicitEuler()}.
+     */
+    public static FdmSchemeDesc ExplicitEuler() {
+        return new FdmSchemeDesc(FdmSchemeType.ExplicitEulerType, 0.0, 0.0);
+    }
+
+    /**
+     * Method-of-Lines scheme defaults: {@code eps = 0.001,
+     * relInitStepSize = 0.01}. Mirrors C++
+     * {@code FdmSchemeDesc::MethodOfLines}. The {@code theta}/{@code mu}
+     * fields are repurposed to hold {@code eps} and
+     * {@code relInitStepSize}.
+     */
+    public static FdmSchemeDesc MethodOfLines() {
+        return MethodOfLines(0.001, 0.01);
+    }
+
+    /**
+     * Method-of-Lines with explicit {@code eps} and
+     * {@code relInitStepSize} parameters. Mirrors C++
+     * {@code FdmSchemeDesc::MethodOfLines(eps, relInitStepSize)}.
+     */
+    public static FdmSchemeDesc MethodOfLines(final double eps,
+                                              final double relInitStepSize) {
+        return new FdmSchemeDesc(FdmSchemeType.MethodOfLinesType,
+                eps, relInitStepSize);
+    }
+
+    /**
+     * TR-BDF2 scheme defaults: {@code theta = 2 - sqrt(2), mu = 1e-8}.
+     * Mirrors C++ {@code FdmSchemeDesc::TrBDF2()}. The {@code mu} field
+     * stores the iterative-solver relative tolerance.
+     */
+    public static FdmSchemeDesc TrBDF2() {
+        return new FdmSchemeDesc(FdmSchemeType.TrBDF2Type,
+                2.0 - Math.sqrt(2.0), 1e-8);
+    }
 }

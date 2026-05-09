@@ -32,13 +32,15 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
  * <p>
  * Java port of v1.42.1
  * {@code ql/methods/finitedifferences/schemes/trbdf2scheme.hpp}
- * (header-only template in C++; non-generic Java class parameterised on an
- * explicit trapezoidal {@link CrankNicolsonScheme}).
+ * (header-only template in C++; the Java port replaces template parameter
+ * {@code TrapezoidalScheme} with the {@link TrapezoidalSubScheme} functional
+ * adapter so callers can plug either {@link CrankNicolsonScheme} or
+ * {@link CraigSneydScheme} as the predictor).
  * <p>
- * The scheme runs a trapezoidal (Crank-Nicolson) predictor step over
- * {@code alpha * dt}, then a BDF2 corrector step over the remainder
- * {@code (1 - alpha) * dt} to remove the Crank-Nicolson oscillation in the
- * Heston model and similar problems.
+ * The scheme runs a trapezoidal predictor step over {@code alpha * dt},
+ * then a BDF2 corrector step over the remainder {@code (1 - alpha) * dt}
+ * to remove the Crank-Nicolson oscillation in the Heston model and
+ * similar problems.
  *
  * <h2>Multi-dimensional path</h2>
  * The C++ template uses BiCGstab / GMRES for multi-dimensional operators
@@ -53,6 +55,18 @@ public class TrBDF2Scheme {
     /** Solver type — kept for API parity; only 1D direct solve is active. */
     public enum SolverType { BiCGstab, GMRES }
 
+    /**
+     * Trapezoidal sub-scheme adapter. Mirrors the {@code TrapezoidalScheme}
+     * template parameter on the C++ side. Either {@link CrankNicolsonScheme}
+     * or {@link CraigSneydScheme} satisfies this contract.
+     */
+    public interface TrapezoidalSubScheme {
+        /** Set the predictor step size. */
+        void setStep(double dt);
+        /** Advance {@code a} from time {@code t} to {@code t-dt}. */
+        void step(Array a, double t);
+    }
+
     /** Time step (NaN until {@link #setStep} is called). */
     protected double dt;
 
@@ -61,7 +75,7 @@ public class TrBDF2Scheme {
 
     private final double alpha;
     private final FdmLinearOpComposite map;
-    private final CrankNicolsonScheme trapezoidalScheme;
+    private final TrapezoidalSubScheme trapezoidalScheme;
     private final BoundaryConditionSchemeHelper bcSet;
     private final double relTol;
     private final SolverType solverType;
@@ -72,19 +86,35 @@ public class TrBDF2Scheme {
     public TrBDF2Scheme(final double alpha,
                         final FdmLinearOpComposite map,
                         final CrankNicolsonScheme trapezoidalScheme) {
-        this(alpha, map, trapezoidalScheme, new FdmBoundaryConditionSet(), 1e-8, SolverType.BiCGstab);
+        this(alpha, map, adapt(trapezoidalScheme),
+             new FdmBoundaryConditionSet(), 1e-8, SolverType.BiCGstab);
     }
 
     public TrBDF2Scheme(final double alpha,
                         final FdmLinearOpComposite map,
                         final CrankNicolsonScheme trapezoidalScheme,
                         final FdmBoundaryConditionSet bcSet) {
-        this(alpha, map, trapezoidalScheme, bcSet, 1e-8, SolverType.BiCGstab);
+        this(alpha, map, adapt(trapezoidalScheme), bcSet, 1e-8, SolverType.BiCGstab);
     }
 
     public TrBDF2Scheme(final double alpha,
                         final FdmLinearOpComposite map,
                         final CrankNicolsonScheme trapezoidalScheme,
+                        final FdmBoundaryConditionSet bcSet,
+                        final double relTol,
+                        final SolverType solverType) {
+        this(alpha, map, adapt(trapezoidalScheme), bcSet, relTol, solverType);
+    }
+
+    /**
+     * Constructor accepting a generic trapezoidal sub-scheme; mirrors
+     * the C++ template instantiation
+     * {@code TrBDF2Scheme<CraigSneydScheme>(alpha, map, csEvolver, bcSet, relTol)}
+     * used by {@code FdmBackwardSolver} for the {@code TrBDF2Type} branch.
+     */
+    public TrBDF2Scheme(final double alpha,
+                        final FdmLinearOpComposite map,
+                        final TrapezoidalSubScheme trapezoidalScheme,
                         final FdmBoundaryConditionSet bcSet,
                         final double relTol,
                         final SolverType solverType) {
@@ -97,6 +127,22 @@ public class TrBDF2Scheme {
         this.relTol = relTol;
         this.solverType = solverType;
         this.iterations = 0;
+    }
+
+    /** Adapt a {@link CrankNicolsonScheme} to the {@link TrapezoidalSubScheme} contract. */
+    private static TrapezoidalSubScheme adapt(final CrankNicolsonScheme cn) {
+        return new TrapezoidalSubScheme() {
+            @Override public void setStep(final double dt) { cn.setStep(dt); }
+            @Override public void step(final Array a, final double t) { cn.step(a, t); }
+        };
+    }
+
+    /** Adapt a {@link CraigSneydScheme} to the {@link TrapezoidalSubScheme} contract. */
+    public static TrapezoidalSubScheme adapt(final CraigSneydScheme cs) {
+        return new TrapezoidalSubScheme() {
+            @Override public void setStep(final double dt) { cs.setStep(dt); }
+            @Override public void step(final Array a, final double t) { cs.step(a, t); }
+        };
     }
 
     /** Set the rollback step size and compute {@code beta}. */

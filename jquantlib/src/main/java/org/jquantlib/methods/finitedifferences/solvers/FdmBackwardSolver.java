@@ -30,10 +30,16 @@ import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.StepCondition;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
+import org.jquantlib.methods.finitedifferences.schemes.CraigSneydScheme;
+import org.jquantlib.methods.finitedifferences.schemes.CrankNicolsonScheme;
 import org.jquantlib.methods.finitedifferences.schemes.DouglasScheme;
+import org.jquantlib.methods.finitedifferences.schemes.ExplicitEulerScheme;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.methods.finitedifferences.schemes.HundsdorferScheme;
 import org.jquantlib.methods.finitedifferences.schemes.ImplicitEulerScheme;
+import org.jquantlib.methods.finitedifferences.schemes.MethodOfLinesScheme;
+import org.jquantlib.methods.finitedifferences.schemes.ModifiedCraigSneydScheme;
+import org.jquantlib.methods.finitedifferences.schemes.TrBDF2Scheme;
 import org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite;
 import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet;
 
@@ -47,18 +53,14 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
  * scheme implementation, then rolls the state from {@code from} down to
  * {@code to} in {@code steps} (+ optional {@code dampingSteps}) increments.
  *
- * <h2>Phase 2h scope (P2H-7)</h2>
+ * <h2>Scheme coverage</h2>
  *
- * Only {@link FdmSchemeDesc.FdmSchemeType#HundsdorferType},
- * {@link FdmSchemeDesc.FdmSchemeType#DouglasType}, and
- * {@link FdmSchemeDesc.FdmSchemeType#ImplicitEulerType} are dispatched —
- * the matching scheme classes ({@link HundsdorferScheme},
- * {@link DouglasScheme}, {@link ImplicitEulerScheme}) are the only schemes
- * ported in this work item. Other types throw {@link LibraryException} with
- * a clear pointer to the follow-up. The HW / G2 swaption engines (Phase 2h
- * WI-2 / WI-3) only consume the supported set.
+ * Phase 2h WI-1 dispatched only Hundsdorfer / Douglas / ImplicitEuler.
+ * Phase 5j.5 wires the remaining six scheme variants now that all the
+ * ported scheme classes exist (CrankNicolson, CraigSneyd, ModifiedCraigSneyd,
+ * ExplicitEuler, MethodOfLines, TrBDF2).
  *
- * @author Phase 2h WI-1 port
+ * @author Phase 2h WI-1 port; Phase 5j.5 — full scheme dispatch
  */
 public class FdmBackwardSolver {
 
@@ -152,15 +154,82 @@ public class FdmBackwardSolver {
                     condition.stoppingTimes(), condition);
             break;
         }
-        case CrankNicolsonType:
-        case CraigSneydType:
-        case ModifiedCraigSneydType:
-        case ExplicitEulerType:
-        case MethodOfLinesType:
-        case TrBDF2Type:
-            throw new LibraryException(
-                    "FdmBackwardSolver: scheme type " + schemeDesc.type
-                  + " not yet ported (Phase 2h follow-up; P2H-7).");
+        case CrankNicolsonType: {
+            final CrankNicolsonScheme cnEvolver =
+                    new CrankNicolsonScheme(schemeDesc.theta, map, bcSet);
+            rollbackImpl(rhs, dampingTo, to, steps,
+                    new Evolver() {
+                        @Override public void setStep(final double dt) { cnEvolver.setStep(dt); }
+                        @Override public void step(final Array a, final double t) { cnEvolver.step(a, t); }
+                    },
+                    condition.stoppingTimes(), condition);
+            break;
+        }
+        case CraigSneydType: {
+            final CraigSneydScheme csEvolver =
+                    new CraigSneydScheme(schemeDesc.theta, schemeDesc.mu, map, bcSet);
+            rollbackImpl(rhs, dampingTo, to, steps,
+                    new Evolver() {
+                        @Override public void setStep(final double dt) { csEvolver.setStep(dt); }
+                        @Override public void step(final Array a, final double t) { csEvolver.step(a, t); }
+                    },
+                    condition.stoppingTimes(), condition);
+            break;
+        }
+        case ModifiedCraigSneydType: {
+            final ModifiedCraigSneydScheme mcsEvolver =
+                    new ModifiedCraigSneydScheme(
+                            schemeDesc.theta, schemeDesc.mu, map, bcSet);
+            rollbackImpl(rhs, dampingTo, to, steps,
+                    new Evolver() {
+                        @Override public void setStep(final double dt) { mcsEvolver.setStep(dt); }
+                        @Override public void step(final Array a, final double t) { mcsEvolver.step(a, t); }
+                    },
+                    condition.stoppingTimes(), condition);
+            break;
+        }
+        case ExplicitEulerType: {
+            final ExplicitEulerScheme expEvolver =
+                    new ExplicitEulerScheme(map, bcSet);
+            rollbackImpl(rhs, dampingTo, to, steps,
+                    new Evolver() {
+                        @Override public void setStep(final double dt) { expEvolver.setStep(dt); }
+                        @Override public void step(final Array a, final double t) { expEvolver.step(a, t); }
+                    },
+                    condition.stoppingTimes(), condition);
+            break;
+        }
+        case MethodOfLinesType: {
+            // FdmSchemeDesc repurposes (theta, mu) as (eps, relInitStepSize).
+            final MethodOfLinesScheme molEvolver =
+                    new MethodOfLinesScheme(
+                            schemeDesc.theta, schemeDesc.mu, map, bcSet);
+            rollbackImpl(rhs, dampingTo, to, steps,
+                    new Evolver() {
+                        @Override public void setStep(final double dt) { molEvolver.setStep(dt); }
+                        @Override public void step(final Array a, final double t) { molEvolver.step(a, t); }
+                    },
+                    condition.stoppingTimes(), condition);
+            break;
+        }
+        case TrBDF2Type: {
+            // C++ uses CraigSneyd as the trapezoidal sub-scheme and
+            // schemeDesc.mu as the iterative-solver relative tolerance.
+            final FdmSchemeDesc trDesc = FdmSchemeDesc.CraigSneyd();
+            final CraigSneydScheme trapezoidal = new CraigSneydScheme(
+                    trDesc.theta, trDesc.mu, map, bcSet);
+            final TrBDF2Scheme trEvolver = new TrBDF2Scheme(
+                    schemeDesc.theta, map,
+                    TrBDF2Scheme.adapt(trapezoidal),
+                    bcSet, schemeDesc.mu, TrBDF2Scheme.SolverType.BiCGstab);
+            rollbackImpl(rhs, dampingTo, to, steps,
+                    new Evolver() {
+                        @Override public void setStep(final double dt) { trEvolver.setStep(dt); }
+                        @Override public void step(final Array a, final double t) { trEvolver.step(a, t); }
+                    },
+                    condition.stoppingTimes(), condition);
+            break;
+        }
         default:
             throw new LibraryException("Unknown scheme type: " + schemeDesc.type);
         }
