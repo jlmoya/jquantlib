@@ -86,6 +86,16 @@ public class NonCentralCumulativeChiSquaredDistribution implements Ops.DoubleOp 
             t = JQuantMath.exp(f2 * JQuantMath.log(x2) - x2 - gammaFunction_.logValue(f2 + 1.0));
         }
 
+        // When the first chi-squared PDF term underflows to 0 but x is
+        // positive and large (far in the right tail), the CDF is effectively
+        // 1.0.  The AS-275 series cannot distinguish this case and incorrectly
+        // returns 0, so we exit early.  This mirrors the behaviour of
+        // boost::math::cdf(non_central_chi_squared_distribution,...) which
+        // QuantLib C++ relies on for the SquareRootCLVModel extreme quantiles.
+        if (t == 0.0) {
+            return 1.0;
+        }
+
         double ans = v * t;
         boolean flag = false;
         int n = 1;
