@@ -57,7 +57,16 @@ public class SwapSpreadIndex extends InterestRateIndex {
     private final SwapIndex swapIndex2_;
     private final double gearing1_;
     private final double gearing2_;
-    private final String name_;
+    /**
+     * Custom display name for the spread, in the form
+     * {@code "S1.name(g1) + S2.name(g2)"}, mirroring the C++
+     * {@code SwapSpreadIndex::name_} override. Stored separately from
+     * {@link #name()} (which falls through to the auto-composed
+     * {@link InterestRateIndex#name()} so that the {@code IndexManager}
+     * registration in the {@code InterestRateIndex} ctor — which runs
+     * <em>before</em> {@code displayName_} is assigned — does not NPE).
+     */
+    private final String displayName_;
 
 
     //
@@ -90,21 +99,23 @@ public class SwapSpreadIndex extends InterestRateIndex {
         this.swapIndex1_.addObserver(this);
         this.swapIndex2_.addObserver(this);
 
-        // Build the synthetic name as in C++ swapspreadindex.cpp:
+        // Build the synthetic display name as in C++ swapspreadindex.cpp:
         //   name_ = swapIndex1->name() + "(g1) + " + swapIndex2->name() + "(g2)"
         // Mirror C++ printf-style formatting (4 digits after decimal, fixed).
+        // NOTE: this is only used by displayName(); we deliberately do NOT
+        // override name() here (see displayName_ field comment).
         final StringBuilder n = new StringBuilder();
         n.append(swapIndex1_.name())
                 .append("(").append(formatGearing(gearing1)).append(") + ")
                 .append(swapIndex2_.name())
                 .append("(").append(formatGearing(gearing2)).append(")");
-        this.name_ = n.toString();
+        this.displayName_ = n.toString();
 
         QL.require(swapIndex1_.fixingDays() == swapIndex2_.fixingDays(),
                 "index1 fixing days (" + swapIndex1_.fixingDays() + ") "
                 + "must be equal to index2 fixing days (" + swapIndex2_.fixingDays() + ")");
 
-        QL.require(swapIndex1_.fixingCalendar().equals(swapIndex2_.fixingCalendar()),
+        QL.require(org.jquantlib.time.Calendar.eq(swapIndex1_.fixingCalendar(), swapIndex2_.fixingCalendar()),
                 "index1 fixingCalendar (" + swapIndex1_.fixingCalendar() + ") "
                 + "must be equal to index2 fixingCalendar (" + swapIndex2_.fixingCalendar() + ")");
 
@@ -127,18 +138,21 @@ public class SwapSpreadIndex extends InterestRateIndex {
 
 
     //
-    // overrides Index
+    // public inspectors / overrides InterestRateIndex
     //
 
-    @Override
-    public String name() {
-        return name_;
+    /**
+     * Custom display name in the form {@code "S1.name(g1) + S2.name(g2)"}.
+     * Mirrors the C++ {@code SwapSpreadIndex::name_} composite. Use this for
+     * UI / logging; the {@link #name()} method (inherited from
+     * {@link InterestRateIndex}) is what's used for {@code IndexManager}
+     * history lookups, and is the auto-composed
+     * {@code familyName + tenor + dayCounter.name()} form.
+     */
+    public String displayName() {
+        return displayName_;
     }
 
-
-    //
-    // overrides InterestRateIndex
-    //
 
     /**
      * SwapSpreadIndex does not provide a single maturity date — the spread is
