@@ -1,0 +1,774 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 47485
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_maxDate_serial"
+    },
+    {
+      "expected": {
+        "value": -1.7976931348623157e+308
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_minStrike"
+    },
+    {
+      "expected": {
+        "value": 1.7976931348623157e+308
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_maxStrike"
+    },
+    {
+      "expected": {
+        "value": 10.0
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_maxSwapLen"
+    },
+    {
+      "expected": {
+        "value": 1.0082191780821919
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_optionTime_i0"
+    },
+    {
+      "expected": {
+        "value": 1.0
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_swapLength_j0"
+    },
+    {
+      "expected": {
+        "value": 5.005479452054795
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_optionTime_i1"
+    },
+    {
+      "expected": {
+        "value": 5.0
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_swapLength_j1"
+    },
+    {
+      "expected": {
+        "value": 10.008219178082191
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_optionTime_i2"
+    },
+    {
+      "expected": {
+        "value": 10.0
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_swapLength_j2"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "i": 0,
+        "j": 0,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 1.0
+      },
+      "name": "A_vol_node_i0j0"
+    },
+    {
+      "expected": {
+        "value": 0.2
+      },
+      "inputs": {
+        "i": 0,
+        "j": 1,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 5.0
+      },
+      "name": "A_vol_node_i0j1"
+    },
+    {
+      "expected": {
+        "value": 0.22
+      },
+      "inputs": {
+        "i": 0,
+        "j": 2,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 10.0
+      },
+      "name": "A_vol_node_i0j2"
+    },
+    {
+      "expected": {
+        "value": 0.16
+      },
+      "inputs": {
+        "i": 1,
+        "j": 0,
+        "optionTime": 5.005479452054795,
+        "swapLen": 1.0
+      },
+      "name": "A_vol_node_i1j0"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "i": 1,
+        "j": 1,
+        "optionTime": 5.005479452054795,
+        "swapLen": 5.0
+      },
+      "name": "A_vol_node_i1j1"
+    },
+    {
+      "expected": {
+        "value": 0.2
+      },
+      "inputs": {
+        "i": 1,
+        "j": 2,
+        "optionTime": 5.005479452054795,
+        "swapLen": 10.0
+      },
+      "name": "A_vol_node_i1j2"
+    },
+    {
+      "expected": {
+        "value": 0.14
+      },
+      "inputs": {
+        "i": 2,
+        "j": 0,
+        "optionTime": 10.008219178082191,
+        "swapLen": 1.0
+      },
+      "name": "A_vol_node_i2j0"
+    },
+    {
+      "expected": {
+        "value": 0.16
+      },
+      "inputs": {
+        "i": 2,
+        "j": 1,
+        "optionTime": 10.008219178082191,
+        "swapLen": 5.0
+      },
+      "name": "A_vol_node_i2j1"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "i": 2,
+        "j": 2,
+        "optionTime": 10.008219178082191,
+        "swapLen": 10.0
+      },
+      "name": "A_vol_node_i2j2"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "optionTime": 3.0068493150684934,
+        "swapLen": 3.0
+      },
+      "name": "A_vol_interior_mid"
+    },
+    {
+      "expected": {
+        "value": 0.09742191780821918
+      },
+      "inputs": {
+        "optionTime": 3.0068493150684934,
+        "swapLen": 3.0
+      },
+      "name": "A_blackVar_interior_mid"
+    },
+    {
+      "expected": {
+        "value": 0.0
+      },
+      "inputs": {
+        "optionTime": 3.0068493150684934,
+        "swapLen": 3.0
+      },
+      "name": "A_shift_interior_mid"
+    },
+    {
+      "expected": {
+        "value": 0
+      },
+      "inputs": {
+        "optionTime": 3.0068493150684934,
+        "swapLen": 3.0
+      },
+      "name": "A_locate_mid_i"
+    },
+    {
+      "expected": {
+        "value": 0
+      },
+      "inputs": {
+        "optionTime": 3.0068493150684934,
+        "swapLen": 3.0
+      },
+      "name": "A_locate_mid_j"
+    },
+    {
+      "expected": {
+        "value": 0
+      },
+      "inputs": {
+        "flatExtrap": false,
+        "optionTenors": "1Y,5Y,10Y",
+        "scenario": "A",
+        "swapTenors": "1Y,5Y,10Y",
+        "type": "ShiftedLognormal"
+      },
+      "name": "A_volatilityType_int"
+    },
+    {
+      "expected": {
+        "value": 0.1
+      },
+      "inputs": {
+        "i": 0,
+        "j": 0,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 1.0
+      },
+      "name": "B_vol_node_i0j0"
+    },
+    {
+      "expected": {
+        "value": 0.01
+      },
+      "inputs": {
+        "i": 0,
+        "j": 0,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 1.0
+      },
+      "name": "B_shift_node_i0j0"
+    },
+    {
+      "expected": {
+        "value": 0.11
+      },
+      "inputs": {
+        "i": 0,
+        "j": 1,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 2.0
+      },
+      "name": "B_vol_node_i0j1"
+    },
+    {
+      "expected": {
+        "value": 0.011
+      },
+      "inputs": {
+        "i": 0,
+        "j": 1,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 2.0
+      },
+      "name": "B_shift_node_i0j1"
+    },
+    {
+      "expected": {
+        "value": 0.12000000000000001
+      },
+      "inputs": {
+        "i": 0,
+        "j": 2,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 5.0
+      },
+      "name": "B_vol_node_i0j2"
+    },
+    {
+      "expected": {
+        "value": 0.012
+      },
+      "inputs": {
+        "i": 0,
+        "j": 2,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 5.0
+      },
+      "name": "B_shift_node_i0j2"
+    },
+    {
+      "expected": {
+        "value": 0.13
+      },
+      "inputs": {
+        "i": 0,
+        "j": 3,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 10.0
+      },
+      "name": "B_vol_node_i0j3"
+    },
+    {
+      "expected": {
+        "value": 0.013000000000000001
+      },
+      "inputs": {
+        "i": 0,
+        "j": 3,
+        "optionTime": 1.0082191780821919,
+        "swapLen": 10.0
+      },
+      "name": "B_shift_node_i0j3"
+    },
+    {
+      "expected": {
+        "value": 0.11
+      },
+      "inputs": {
+        "i": 1,
+        "j": 0,
+        "optionTime": 2.0054794520547947,
+        "swapLen": 1.0
+      },
+      "name": "B_vol_node_i1j0"
+    },
+    {
+      "expected": {
+        "value": 0.011
+      },
+      "inputs": {
+        "i": 1,
+        "j": 0,
+        "optionTime": 2.0054794520547947,
+        "swapLen": 1.0
+      },
+      "name": "B_shift_node_i1j0"
+    },
+    {
+      "expected": {
+        "value": 0.12
+      },
+      "inputs": {
+        "i": 1,
+        "j": 1,
+        "optionTime": 2.0054794520547947,
+        "swapLen": 2.0
+      },
+      "name": "B_vol_node_i1j1"
+    },
+    {
+      "expected": {
+        "value": 0.012
+      },
+      "inputs": {
+        "i": 1,
+        "j": 1,
+        "optionTime": 2.0054794520547947,
+        "swapLen": 2.0
+      },
+      "name": "B_shift_node_i1j1"
+    },
+    {
+      "expected": {
+        "value": 0.13
+      },
+      "inputs": {
+        "i": 1,
+        "j": 2,
+        "optionTime": 2.0054794520547947,
+        "swapLen": 5.0
+      },
+      "name": "B_vol_node_i1j2"
+    },
+    {
+      "expected": {
+        "value": 0.013
+      },
+      "inputs": {
+        "i": 1,
+        "j": 2,
+        "optionTime": 2.0054794520547947,
+        "swapLen": 5.0
+      },
+      "name": "B_shift_node_i1j2"
+    },
+    {
+      "expected": {
+        "value": 0.14
+      },
+      "inputs": {
+        "i": 1,
+        "j": 3,
+        "optionTime": 2.0054794520547947,
+        "swapLen": 10.0
+      },
+      "name": "B_vol_node_i1j3"
+    },
+    {
+      "expected": {
+        "value": 0.013999999999999999
+      },
+      "inputs": {
+        "i": 1,
+        "j": 3,
+        "optionTime": 2.0054794520547947,
+        "swapLen": 10.0
+      },
+      "name": "B_shift_node_i1j3"
+    },
+    {
+      "expected": {
+        "value": 0.12000000000000001
+      },
+      "inputs": {
+        "i": 2,
+        "j": 0,
+        "optionTime": 5.005479452054795,
+        "swapLen": 1.0
+      },
+      "name": "B_vol_node_i2j0"
+    },
+    {
+      "expected": {
+        "value": 0.012
+      },
+      "inputs": {
+        "i": 2,
+        "j": 0,
+        "optionTime": 5.005479452054795,
+        "swapLen": 1.0
+      },
+      "name": "B_shift_node_i2j0"
+    },
+    {
+      "expected": {
+        "value": 0.13
+      },
+      "inputs": {
+        "i": 2,
+        "j": 1,
+        "optionTime": 5.005479452054795,
+        "swapLen": 2.0
+      },
+      "name": "B_vol_node_i2j1"
+    },
+    {
+      "expected": {
+        "value": 0.013000000000000001
+      },
+      "inputs": {
+        "i": 2,
+        "j": 1,
+        "optionTime": 5.005479452054795,
+        "swapLen": 2.0
+      },
+      "name": "B_shift_node_i2j1"
+    },
+    {
+      "expected": {
+        "value": 0.14
+      },
+      "inputs": {
+        "i": 2,
+        "j": 2,
+        "optionTime": 5.005479452054795,
+        "swapLen": 5.0
+      },
+      "name": "B_vol_node_i2j2"
+    },
+    {
+      "expected": {
+        "value": 0.014
+      },
+      "inputs": {
+        "i": 2,
+        "j": 2,
+        "optionTime": 5.005479452054795,
+        "swapLen": 5.0
+      },
+      "name": "B_shift_node_i2j2"
+    },
+    {
+      "expected": {
+        "value": 0.15000000000000002
+      },
+      "inputs": {
+        "i": 2,
+        "j": 3,
+        "optionTime": 5.005479452054795,
+        "swapLen": 10.0
+      },
+      "name": "B_vol_node_i2j3"
+    },
+    {
+      "expected": {
+        "value": 0.015
+      },
+      "inputs": {
+        "i": 2,
+        "j": 3,
+        "optionTime": 5.005479452054795,
+        "swapLen": 10.0
+      },
+      "name": "B_shift_node_i2j3"
+    },
+    {
+      "expected": {
+        "value": 0.13
+      },
+      "inputs": {
+        "i": 3,
+        "j": 0,
+        "optionTime": 10.008219178082191,
+        "swapLen": 1.0
+      },
+      "name": "B_vol_node_i3j0"
+    },
+    {
+      "expected": {
+        "value": 0.013000000000000001
+      },
+      "inputs": {
+        "i": 3,
+        "j": 0,
+        "optionTime": 10.008219178082191,
+        "swapLen": 1.0
+      },
+      "name": "B_shift_node_i3j0"
+    },
+    {
+      "expected": {
+        "value": 0.14
+      },
+      "inputs": {
+        "i": 3,
+        "j": 1,
+        "optionTime": 10.008219178082191,
+        "swapLen": 2.0
+      },
+      "name": "B_vol_node_i3j1"
+    },
+    {
+      "expected": {
+        "value": 0.014000000000000002
+      },
+      "inputs": {
+        "i": 3,
+        "j": 1,
+        "optionTime": 10.008219178082191,
+        "swapLen": 2.0
+      },
+      "name": "B_shift_node_i3j1"
+    },
+    {
+      "expected": {
+        "value": 0.15
+      },
+      "inputs": {
+        "i": 3,
+        "j": 2,
+        "optionTime": 10.008219178082191,
+        "swapLen": 5.0
+      },
+      "name": "B_vol_node_i3j2"
+    },
+    {
+      "expected": {
+        "value": 0.015000000000000001
+      },
+      "inputs": {
+        "i": 3,
+        "j": 2,
+        "optionTime": 10.008219178082191,
+        "swapLen": 5.0
+      },
+      "name": "B_shift_node_i3j2"
+    },
+    {
+      "expected": {
+        "value": 0.16
+      },
+      "inputs": {
+        "i": 3,
+        "j": 3,
+        "optionTime": 10.008219178082191,
+        "swapLen": 10.0
+      },
+      "name": "B_vol_node_i3j3"
+    },
+    {
+      "expected": {
+        "value": 0.016
+      },
+      "inputs": {
+        "i": 3,
+        "j": 3,
+        "optionTime": 10.008219178082191,
+        "swapLen": 10.0
+      },
+      "name": "B_shift_node_i3j3"
+    },
+    {
+      "expected": {
+        "value": 0.16
+      },
+      "inputs": {
+        "optionTime": 15.008219178082191,
+        "swapLen": 15.0
+      },
+      "name": "B_vol_extrap_far"
+    },
+    {
+      "expected": {
+        "value": 0.016
+      },
+      "inputs": {
+        "optionTime": 15.008219178082191,
+        "swapLen": 15.0
+      },
+      "name": "B_shift_extrap_far"
+    },
+    {
+      "expected": {
+        "value": 0.1
+      },
+      "inputs": {
+        "optionTime": 0.5082191780821919,
+        "swapLen": 0.5
+      },
+      "name": "B_vol_extrap_before"
+    },
+    {
+      "expected": {
+        "value": 45659
+      },
+      "inputs": {
+        "ctor": "optionDates",
+        "scenario": "C"
+      },
+      "name": "C_maxDate_serial"
+    },
+    {
+      "expected": {
+        "value": 1.0027397260273974
+      },
+      "inputs": {
+        "ctor": "optionDates",
+        "scenario": "C"
+      },
+      "name": "C_optionTime_i0"
+    },
+    {
+      "expected": {
+        "value": 2.0054794520547947
+      },
+      "inputs": {
+        "ctor": "optionDates",
+        "scenario": "C"
+      },
+      "name": "C_optionTime_i1"
+    },
+    {
+      "expected": {
+        "value": 5.005479452054795
+      },
+      "inputs": {
+        "ctor": "optionDates",
+        "scenario": "C"
+      },
+      "name": "C_optionTime_i2"
+    },
+    {
+      "expected": {
+        "value": 0.2
+      },
+      "inputs": {
+        "optionTime": 1.504109589041096,
+        "swapLen": 3.0
+      },
+      "name": "C_vol_interior"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T20:43:12Z",
+  "generated_by": "swaption_vol_matrix_probe",
+  "test_group": "termstructures/volatility/swaption_vol_matrix"
+}
