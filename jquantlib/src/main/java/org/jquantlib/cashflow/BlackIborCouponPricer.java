@@ -23,138 +23,303 @@ package org.jquantlib.cashflow;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
-import org.jquantlib.indexes.InterestRateIndex;
+import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.instruments.Option;
+import org.jquantlib.math.Constants;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.Date;
 
-/*
- * DONE!
+/**
+ * Black-formula pricer for capped/floored Ibor coupons.
+ * <p>
+ * Mirrors C++ QuantLib v1.42.1 {@code BlackIborCouponPricer} in
+ * {@code ql/cashflows/couponpricer.{hpp,cpp}}. Supports
+ * <ul>
+ *   <li>shifted-lognormal volatility surfaces (via {@link BlackFormula#blackFormula})</li>
+ *   <li>normal volatility surfaces (via {@link BlackFormula#bachelierBlackFormula})</li>
+ *   <li>two timing adjustments: {@link TimingAdjustment#Black76} and
+ *       {@link TimingAdjustment#BivariateLognormal} (see Hull 4th ed., p.550 and
+ *       <a href="http://ssrn.com/abstract=2170721">SSRN 2170721</a>).</li>
+ * </ul>
+ * <p>
+ * Cross-validated against v1.42.1 in
+ * {@code migration-harness/references/cashflows/black_ibor_coupon_pricer.json}
+ * (Phase 5e.5).
  */
-
-
 public class BlackIborCouponPricer extends IborCouponPricer {
 
-    private final static String missing_caplet_volatility = "missing caplet volatility";
+    private final static String missing_caplet_volatility = "missing optionlet volatility";
+    private final static String no_forecast_curve = "no forecast curve provided";
+    private final static String no_correlation = "no correlation given";
+    private final static String unknown_timing_adjustment = "unknown timing adjustment";
 
-    public BlackIborCouponPricer(final Handle<OptionletVolatilityStructure> capletVol) {
-        super(capletVol);
+    /** Mirrors C++ {@code BlackIborCouponPricer::TimingAdjustment}. */
+    public enum TimingAdjustment {
+        Black76,
+        BivariateLognormal
     }
 
+    private final TimingAdjustment timingAdjustment_;
+    private final Handle<Quote> correlation_;
+
+    // Cached on each initialize().
     private IborCoupon coupon_;
-    private double discount_;
+    /** Mirrors C++ {@code discount_}; {@link Constants#NULL_REAL} when no curve. */
+    protected double discount_ = Constants.NULL_REAL;
     private double gearing_;
     private double spread_;
-    private double spreadLegValue_;
+    private double accrualPeriod_;
+    private Date fixingDate_;
+    private Date fixingValueDate_;
+    private Date fixingMaturityDate_;
+    private double spanningTimeIndexMaturity_;
+    private IborIndex iborIndex_;
 
+    //
+    // Constructors
+    //
+
+    /** Default: empty caplet vol, Black76, correlation = 1.0. */
+    public BlackIborCouponPricer() {
+        this(new Handle<OptionletVolatilityStructure>(),
+             TimingAdjustment.Black76,
+             new Handle<Quote>(new SimpleQuote(1.0)));
+    }
+
+    /** Vol-only convenience constructor. */
+    public BlackIborCouponPricer(final Handle<OptionletVolatilityStructure> capletVol) {
+        this(capletVol, TimingAdjustment.Black76,
+             new Handle<Quote>(new SimpleQuote(1.0)));
+    }
+
+    /** Vol + timing-adjustment convenience constructor. */
+    public BlackIborCouponPricer(final Handle<OptionletVolatilityStructure> capletVol,
+                                 final TimingAdjustment timingAdjustment) {
+        this(capletVol, timingAdjustment, new Handle<Quote>(new SimpleQuote(1.0)));
+    }
+
+    /** Full constructor mirroring C++ v1.42.1 signature. */
+    public BlackIborCouponPricer(final Handle<OptionletVolatilityStructure> capletVol,
+                                 final TimingAdjustment timingAdjustment,
+                                 final Handle<Quote> correlation) {
+        super(capletVol);
+        QL.require(timingAdjustment == TimingAdjustment.Black76
+                   || timingAdjustment == TimingAdjustment.BivariateLognormal,
+                   unknown_timing_adjustment);
+        this.timingAdjustment_ = timingAdjustment;
+        this.correlation_ = correlation;
+        if (correlation_ != null) {
+            correlation_.addObserver(this);
+        }
+    }
+
+    //
+    // FloatingRateCouponPricer interface
+    //
 
     @Override
-    public void initialize( final FloatingRateCoupon coupon) {
-        coupon_ =  (IborCoupon)coupon;
+    public void initialize(final FloatingRateCoupon coupon) {
+        coupon_ = (IborCoupon) coupon;
+        iborIndex_ = (IborIndex) coupon_.index();
         gearing_ = coupon_.gearing();
         spread_ = coupon_.spread();
-        final Date paymentDate = coupon_.date();
-        final InterestRateIndex index = coupon_.index();
-        final Handle<YieldTermStructure> rateCurve = index.termStructure();
+        accrualPeriod_ = coupon_.accrualPeriod();
+        QL.require(accrualPeriod_ != 0.0, "null accrual period");
 
-        final Date today = new Settings().evaluationDate();
+        fixingDate_ = coupon_.fixingDate();
 
-        if(paymentDate.gt(today))
-            discount_ = rateCurve.currentLink().discount(paymentDate);
-        else
-            discount_ = 1.0;
-        spreadLegValue_ = spread_ * coupon_.accrualPeriod()* discount_;
+        // Compute cached date helpers locally (C++ caches them on the
+        // coupon via initializeCachedData(); JQL keeps the IborCoupon
+        // surface unchanged and computes per-pricer-initialize).
+        fixingValueDate_ = iborIndex_.fixingCalendar()
+                .advance(fixingDate_, iborIndex_.fixingDays(),
+                         org.jquantlib.time.TimeUnit.Days);
+        fixingMaturityDate_ = iborIndex_.maturityDate(fixingValueDate_);
+        spanningTimeIndexMaturity_ = iborIndex_.dayCounter()
+                .yearFraction(fixingValueDate_, fixingMaturityDate_);
+
+        final Handle<YieldTermStructure> rateCurve = iborIndex_.termStructure();
+        if (rateCurve == null || rateCurve.empty()) {
+            discount_ = Constants.NULL_REAL;
+        } else {
+            final Date paymentDate = coupon_.date();
+            if (paymentDate.gt(rateCurve.currentLink().referenceDate())) {
+                discount_ = rateCurve.currentLink().discount(paymentDate);
+            } else {
+                discount_ = 1.0;
+            }
+        }
     }
 
     @Override
     public double swapletPrice() {
-        // past or future fixing is managed in InterestRateIndex::fixing()
-        final double swapletPrice = adjustedFixing()* coupon_.accrualPeriod()* discount_;
-        return gearing_ * swapletPrice + spreadLegValue_;
+        QL.require(discount_ != Constants.NULL_REAL, no_forecast_curve);
+        return swapletRate() * accrualPeriod_ * discount_;
     }
 
     @Override
-    public double swapletRate()  {
-        return swapletPrice()/(coupon_.accrualPeriod()*discount_);
+    public double swapletRate() {
+        return gearing_ * adjustedFixing(Constants.NULL_REAL) + spread_;
     }
 
     @Override
-    public double capletPrice(final double effectiveCap)  {
-        final double capletPrice = optionletPrice(Option.Type.Call, effectiveCap);
-        return gearing_ * capletPrice;
+    public double capletPrice(final double effectiveCap) {
+        QL.require(discount_ != Constants.NULL_REAL, no_forecast_curve);
+        return capletRate(effectiveCap) * accrualPeriod_ * discount_;
     }
 
     @Override
     public double capletRate(final double effectiveCap) {
-        return capletPrice(effectiveCap)/(coupon_.accrualPeriod()*discount_);
+        return gearing_ * optionletRate(Option.Type.Call, effectiveCap);
     }
 
     @Override
-    public double floorletPrice(final double effectiveFloor)  {
-        final double floorletPrice = optionletPrice(Option.Type.Put, effectiveFloor);
-        return gearing_ * floorletPrice;
+    public double floorletPrice(final double effectiveFloor) {
+        QL.require(discount_ != Constants.NULL_REAL, no_forecast_curve);
+        return floorletRate(effectiveFloor) * accrualPeriod_ * discount_;
     }
 
     @Override
     public double floorletRate(final double effectiveFloor) {
-        return floorletPrice(effectiveFloor)/
-        (coupon_.accrualPeriod()*discount_);
+        return gearing_ * optionletRate(Option.Type.Put, effectiveFloor);
     }
 
-    public double optionletPrice(final Option.Type optionType, final double effStrike)  {
-        final Date fixingDate = coupon_.fixingDate();
-        if (fixingDate.le(new Settings().evaluationDate())) {
-            // the amount is determined
-            double a, b;
-            if (optionType==Option.Type.Call) {
+    //
+    // Black-formula core
+    //
+
+    /**
+     * Mirrors C++ {@code BlackIborCouponPricer::optionletPrice}.
+     * Multiplies {@link #optionletRate} by accrual period and discount.
+     */
+    public double optionletPrice(final Option.Type optionType, final double effStrike) {
+        QL.require(discount_ != Constants.NULL_REAL, no_forecast_curve);
+        return optionletRate(optionType, effStrike) * accrualPeriod_ * discount_;
+    }
+
+    /**
+     * Mirrors C++ {@code BlackIborCouponPricer::optionletRate}.
+     * <p>
+     * If the fixing has occurred (fixing date &le; evaluation date), returns
+     * intrinsic max(a-b,0). Otherwise dispatches to {@link BlackFormula#blackFormula}
+     * (shifted-lognormal vol type) or {@link BlackFormula#bachelierBlackFormula}
+     * (normal vol type).
+     */
+    public double optionletRate(final Option.Type optionType, final double effStrike) {
+        if (fixingDate_.le(new Settings().evaluationDate())) {
+            // determined fixing -> intrinsic
+            double a;
+            double b;
+            if (optionType == Option.Type.Call) {
                 a = coupon_.indexFixing();
                 b = effStrike;
             } else {
                 a = effStrike;
                 b = coupon_.indexFixing();
             }
-            return Math.max(a - b, 0.0)* coupon_.accrualPeriod()*discount_;
-        } else {
-            QL.require(capletVolatility()!=null , missing_caplet_volatility); // TODO: message
-            // not yet determined, use Black model
-            final double fixing =
-                BlackFormula.blackFormula(
-                        optionType,
-                        effStrike,
-                        adjustedFixing(),
-                        Math.sqrt(capletVolatility().currentLink().blackVariance(fixingDate,
-                                effStrike)));
-            return fixing * coupon_.accrualPeriod()*discount_;
+            return Math.max(a - b, 0.0);
         }
+        // not yet fixed: Black model
+        QL.require(capletVolatility() != null && !capletVolatility().empty(),
+                   missing_caplet_volatility);
+        final OptionletVolatilityStructure vol = capletVolatility().currentLink();
+        final double stdDev = Math.sqrt(vol.blackVariance(fixingDate_, effStrike));
+        final double shift = vol.displacement();
+        final boolean shiftedLn = vol.volatilityType() == VolatilityType.ShiftedLognormal;
+        if (shiftedLn) {
+            return BlackFormula.blackFormula(optionType, effStrike,
+                                             adjustedFixing(Constants.NULL_REAL),
+                                             stdDev, 1.0, shift);
+        }
+        return BlackFormula.bachelierBlackFormula(optionType, effStrike,
+                                                  adjustedFixing(Constants.NULL_REAL),
+                                                  stdDev, 1.0);
     }
 
-    public double adjustedFixing() {
+    /**
+     * Mirrors C++ {@code BlackIborCouponPricer::adjustedFixing(Rate)}.
+     * <p>
+     * Pass {@link Constants#NULL_REAL} to use the coupon's intrinsic fixing.
+     */
+    public double adjustedFixing(double fixing) {
+        if (fixing == Constants.NULL_REAL || Double.isNaN(fixing)) {
+            fixing = coupon_.indexFixing();
+        }
+        // No convexity if the pay date equals the index estimation end date,
+        // or if the coupon is not in-arrears under Black76.
+        if (!coupon_.isInArrears() && timingAdjustment_ == TimingAdjustment.Black76) {
+            return fixing;
+        }
+        final Date d1 = fixingDate_;
+        final Date d2 = fixingValueDate_;
+        final Date d3 = fixingMaturityDate_;
+        if (coupon_.date().equals(d3)) {
+            return fixing;
+        }
+        QL.require(capletVolatility() != null && !capletVolatility().empty(),
+                   missing_caplet_volatility);
+        final OptionletVolatilityStructure vol = capletVolatility().currentLink();
+        final Date referenceDate = vol.referenceDate();
+        // No accumulated variance -> zero convexity.
+        if (d1.le(referenceDate)) {
+            return fixing;
+        }
+        final double tau = spanningTimeIndexMaturity_;
+        final double variance = vol.blackVariance(d1, fixing);
+        final double shift = vol.displacement();
+        final boolean shiftedLn =
+                vol.volatilityType() == VolatilityType.ShiftedLognormal;
 
-        double adjustement = 0.0;
+        double adjustment = shiftedLn
+                ? (fixing + shift) * (fixing + shift) * variance * tau
+                  / (1.0 + fixing * tau)
+                : variance * tau / (1.0 + fixing * tau);
 
-        final double fixing = coupon_.indexFixing();
-
-        if (!coupon_.isInArrears())
-            adjustement = 0.0;
-        else {
-            // see Hull, 4th ed., page 550
-            QL.require(capletVolatility() != null , missing_caplet_volatility); // TODO: message
-            final Date d1 = coupon_.fixingDate();
-            final Date referenceDate = capletVolatility().currentLink().referenceDate();
-            if (d1.le(referenceDate))
-                adjustement = 0.0;
-            else {
-                final Date d2 = coupon_.index().maturityDate(d1);
-                final double tau = coupon_.index().dayCounter().yearFraction(d1, d2);
-                final double variance = capletVolatility().currentLink().blackVariance(d1, fixing);
-                adjustement = fixing*fixing*variance*tau/(1.0+fixing*tau);
+        if (timingAdjustment_ == TimingAdjustment.BivariateLognormal) {
+            QL.require(correlation_ != null && !correlation_.empty(), no_correlation);
+            final Date d4 = coupon_.date();
+            final Date d5 = d4.ge(d3) ? d3 : d2;
+            final double tau2 = iborIndex_.dayCounter().yearFraction(d5, d4);
+            if (d4.ge(d3)) {
+                adjustment = 0.0;
+            }
+            // If d4 < d2 (payment before index start), apply Black76 in-arrears.
+            if (tau2 > 0.0) {
+                final double disc1 = iborIndex_.termStructure().currentLink().discount(d5);
+                final double disc2 = iborIndex_.termStructure().currentLink().discount(d4);
+                final double fixing2 = (disc1 / disc2 - 1.0) / tau2;
+                adjustment -= shiftedLn
+                        ? correlation_.currentLink().value() * tau2 * variance
+                          * (fixing + shift) * (fixing2 + shift)
+                          / (1.0 + fixing2 * tau2)
+                        : correlation_.currentLink().value() * tau2 * variance
+                          / (1.0 + fixing2 * tau2);
             }
         }
-        return fixing + adjustement;
+        return fixing + adjustment;
     }
 
+    /** Convenience overload mirroring the C++ default-argument version. */
+    public double adjustedFixing() {
+        return adjustedFixing(Constants.NULL_REAL);
+    }
+
+    //
+    // Accessors
+    //
+
+    public TimingAdjustment timingAdjustment() {
+        return timingAdjustment_;
+    }
+
+    public Handle<Quote> correlation() {
+        return correlation_;
+    }
 
 }

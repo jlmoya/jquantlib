@@ -1,0 +1,233 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "rate": 0.0009969402919186236
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": true,
+        "stdDev": 0.1,
+        "strike": 0.025
+      },
+      "name": "call_atm_lognormal"
+    },
+    {
+      "expected": {
+        "rate": 3.683306581424187e-05
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": true,
+        "stdDev": 0.1,
+        "strike": 0.03
+      },
+      "name": "call_otm_lognormal"
+    },
+    {
+      "expected": {
+        "rate": 0.0009969402919186236
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "forward": 0.025,
+        "optionType": "Put",
+        "shifted": true,
+        "stdDev": 0.1,
+        "strike": 0.025
+      },
+      "name": "put_atm_lognormal"
+    },
+    {
+      "expected": {
+        "rate": 0.000608760180502971
+      },
+      "inputs": {
+        "displacement": 0.03,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": true,
+        "stdDev": 0.1,
+        "strike": 0.03
+      },
+      "name": "call_otm_shifted_3pct"
+    },
+    {
+      "expected": {
+        "rate": 0.0056087601805029684
+      },
+      "inputs": {
+        "displacement": 0.03,
+        "forward": 0.025,
+        "optionType": "Put",
+        "shifted": true,
+        "stdDev": 0.1,
+        "strike": 0.03
+      },
+      "name": "put_itm_shifted_3pct"
+    },
+    {
+      "expected": {
+        "rate": 0.0019947114020071634
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": false,
+        "stdDev": 0.005,
+        "strike": 0.025
+      },
+      "name": "call_atm_normal"
+    },
+    {
+      "expected": {
+        "rate": 0.000416577352938432
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": false,
+        "stdDev": 0.005,
+        "strike": 0.03
+      },
+      "name": "call_otm_normal"
+    },
+    {
+      "expected": {
+        "rate": 0.0019947114020071634
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "forward": 0.025,
+        "optionType": "Put",
+        "shifted": false,
+        "stdDev": 0.005,
+        "strike": 0.025
+      },
+      "name": "put_atm_normal"
+    },
+    {
+      "expected": {
+        "rate": 0.01004245351308415
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "forward": 0.005,
+        "optionType": "Call",
+        "shifted": false,
+        "stdDev": 0.005,
+        "strike": -0.005
+      },
+      "name": "call_neg_strike_norm"
+    },
+    {
+      "expected": {
+        "adjusted": 0.025003086419753087,
+        "adjustment": 3.0864197530864213e-06
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "fixing": 0.025,
+        "shifted": true,
+        "tau": 0.5,
+        "variance": 0.010000000000000002
+      },
+      "name": "adj_lognormal_typical"
+    },
+    {
+      "expected": {
+        "adjusted": 0.04013846153846154,
+        "adjustment": 0.00013846153846153845
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "fixing": 0.04,
+        "shifted": true,
+        "tau": 1.0,
+        "variance": 0.09
+      },
+      "name": "adj_lognormal_high_var"
+    },
+    {
+      "expected": {
+        "adjusted": 0.005000249687890137,
+        "adjustment": 2.4968789013732837e-07
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "fixing": 0.005,
+        "shifted": true,
+        "tau": 0.25,
+        "variance": 0.04000000000000001
+      },
+      "name": "adj_lognormal_low_fixing"
+    },
+    {
+      "expected": {
+        "adjusted": 0.02501493827160494,
+        "adjustment": 1.4938271604938274e-05
+      },
+      "inputs": {
+        "displacement": 0.03,
+        "fixing": 0.025,
+        "shifted": true,
+        "tau": 0.5,
+        "variance": 0.010000000000000002
+      },
+      "name": "adj_shifted_3pct"
+    },
+    {
+      "expected": {
+        "adjusted": 0.025012345679012348,
+        "adjustment": 1.234567901234568e-05
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "fixing": 0.025,
+        "shifted": false,
+        "tau": 0.5,
+        "variance": 2.5e-05
+      },
+      "name": "adj_normal_typical"
+    },
+    {
+      "expected": {
+        "adjusted": -0.0019874874874874875,
+        "adjustment": 1.2512512512512513e-05
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "fixing": -0.002,
+        "shifted": false,
+        "tau": 0.5,
+        "variance": 2.5e-05
+      },
+      "name": "adj_normal_neg_fixing"
+    },
+    {
+      "expected": {
+        "adjusted": 0.030047169811320752,
+        "adjustment": 4.7169811320754715e-05
+      },
+      "inputs": {
+        "displacement": 0.0,
+        "fixing": 0.03,
+        "shifted": false,
+        "tau": 2.0,
+        "variance": 2.5e-05
+      },
+      "name": "adj_normal_long_tau"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T21:03:51Z",
+  "generated_by": "black_ibor_coupon_pricer_probe",
+  "test_group": "cashflows/black_ibor_coupon_pricer"
+}
