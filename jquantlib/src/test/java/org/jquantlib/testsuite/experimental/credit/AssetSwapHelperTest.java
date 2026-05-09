@@ -24,7 +24,6 @@ import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
-import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
@@ -103,11 +102,14 @@ public class AssetSwapHelperTest {
         // After binding a default-probability curve, impliedQuote must succeed.
         // We don't pin a specific number (the C++ test would need full curve
         // generation; this is a smoke test of the bind-recalc-evaluate path).
+        // Use the current Settings.evaluationDate for the curves so the test is
+        // independent of the test-suite ordering (some prior test may mutate
+        // the global eval date).
         final Calendar cal = new Target();
         final DayCounter act360 = new Actual360();
         final DayCounter act365 = new Actual365Fixed();
         final Handle<Quote> spread = new Handle<Quote>(new SimpleQuote(0.005));
-        final Date today = new Date(15, Month.January, 2026);
+        final Date today = new org.jquantlib.Settings().evaluationDate();
         final Handle<YieldTermStructure> yieldTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, 0.04, act365));
 
