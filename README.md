@@ -2,7 +2,7 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase3d--complete-blue)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase3e--complete-blue)](#migration-status)
 [![Tests](https://img.shields.io/badge/tests-1024%2F0%2F0%2F41-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
@@ -62,9 +62,10 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 3a | `jquantlib-phase3a-complete` | First Phase-3 subsystem (greenfield credit termstructures): 3 abstract bases + FlatHazardRate + 3 interpolated curves + PiecewiseDefaultCurve + ProbabilityTraits + DefaultProbabilityHelper non-CDS + defaultprobabilitycurves.cpp test port. New package `org.jquantlib.termstructures.credit`. | 973/0/0/45 | 2026-05-08 |
 | 3b | `jquantlib-phase3b-complete` | CreditDefaultSwap instrument + Protection/Claim/FaceValueClaim + MidPointCdsEngine + 3 CDS helpers + creditdefaultswap.cpp test skeleton + 4 of 7 Phase 3a CDS-deferred tests un-ignored. | 1004/0/0/51 | 2026-05-08 |
 | 3c | `jquantlib-phase3c-complete` | IntegralCdsEngine + MakeCreditDefaultSwap + DateGeneration.CDS + Schedule rule + WeekendsOnly + IterativeBootstrap refinement. 7 of 8 deferred tests un-ignored. Drive-by fixes: Settings.TODAYS_PAYMENTS, InterpolatedDiscountCurve 2 bugs. | 1018/0/0/44 | 2026-05-09 |
-| **3d** | **`jquantlib-phase3d-complete`** | **IsdaCdsEngine production port (480 LOC sophisticated; 5 sanity tests pass) + PiecewiseDefaultCurve IterativeBootstrap config object + Actual360(true) variant + FixedRateLeg.withLastPeriodDayCounter wiring + 3 of 6 deferred un-ignores. Credit production 100% v1.42.1; test-suite 98% (3 Markit-reconciliation tests deferred to Phase 3e for PiecewiseYieldCurve fixture).** | **1024/0/0/41** | **2026-05-09** |
+| 3d | `jquantlib-phase3d-complete` | IsdaCdsEngine (480 LOC sophisticated) + IterativeBootstrap config + Actual360(true) + 3 of 6 deferred un-ignores. Credit production 100% v1.42.1. | 1024/0/0/41 | 2026-05-09 |
+| **3e** | **`jquantlib-phase3e-complete`** | **DONE_WITH_CONCERNS — 4 pre-existing PiecewiseYieldCurve bugs fixed (calendar NPE, Discount.updateGuess clobber, discount() bypass, IterativeBootstrap size mismatch) + 3 Markit reconciliation test bodies fully ported (461 LOC). Tests stay @Ignore'd pending Phase 3f architectural Interpolation copy-vs-reference fix (NPV ~1% off vs 1e-3 budget).** | **1024/0/0/41** | **2026-05-09** |
 
-**Current tip on `main`:** post-Phase 3d. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
+**Current tip on `main`:** post-Phase 3e. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
