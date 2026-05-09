@@ -30,6 +30,7 @@ When applicable, the original copyright notice follows this notice.
 package org.jquantlib.model.marketmodels;
 
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 
 /**
  * Utility functions for mapping between swap rates and forward rates.
@@ -37,10 +38,8 @@ import org.jquantlib.math.matrixutilities.Matrix;
  * <p>Java port of {@code ql/models/marketmodels/swapforwardmappings.{hpp,cpp}}
  * (QuantLib v1.42.1).
  *
- * <p>{@link #swaptionImpliedVolatility} is deferred to Phase 3j (needs
- * PiecewiseConstantVariance) and throws {@link UnsupportedOperationException}.
- *
- * <p>Phase 3h.5 A.8 (partial).
+ * <p>Phase 3j L0.5 — {@link #swaptionImpliedVolatility} now active (depends on
+ * {@link MarketModel}, which lands in Phase 3i).
  */
 public final class SwapForwardMappings {
 
@@ -292,21 +291,53 @@ public final class SwapForwardMappings {
 
     /**
      * Computes the implied volatility of a swaption using the freezing-coefficients
-     * methodology.
+     * methodology of Brace-Gatarek-Musiela.
      *
-     * <p><b>Phase 3j deferred</b> — requires {@code PiecewiseConstantVariance}
-     * which is not yet ported. This method throws unconditionally.
+     * <p>Mirrors {@code SwapForwardMappings::swaptionImpliedVolatility} in C++.
      *
      * @param volStructure market model providing the pseudo-root volatility structure
      * @param startIndex   start index of the underlying swap
      * @param endIndex     end index (one past last forward) of the underlying swap
-     * @throws UnsupportedOperationException always — Phase 3j: needs PiecewiseConstantVariance
+     * @return implied Black volatility
      */
-    public static double swaptionImpliedVolatility(final Object volStructure,
+    public static double swaptionImpliedVolatility(final MarketModel volStructure,
                                                    final int startIndex,
                                                    final int endIndex) {
-        // Phase 3j: needs PiecewiseConstantVariance — deferred from Phase 3h.5
-        throw new UnsupportedOperationException(
-                "swaptionImpliedVolatility deferred to Phase 3j: requires PiecewiseConstantVariance");
+        if (startIndex >= endIndex) {
+            throw new IllegalArgumentException(
+                    "start index must be before end index in swaptionImpliedVolatility");
+        }
+
+        final LMMCurveState cs = new LMMCurveState(
+                volStructure.evolution().rateTimes());
+        cs.setOnForwardRates(volStructure.initialRates());
+        final double displacement = volStructure.displacements()[0];
+
+        final Matrix cmsZed = cmSwapZedMatrix(cs, endIndex - startIndex, displacement);
+
+        double variance = 0.0;
+        int index = 0;
+
+        final EvolutionDescription evolution = volStructure.evolution();
+        final int factors = volStructure.numberOfFactors();
+        final int[] firstAlive = evolution.firstAliveRate();
+
+        while (index < evolution.numberOfSteps()
+                && startIndex >= firstAlive[index]) {
+            final Matrix thisPseudo = volStructure.pseudoRoot(index);
+            double thisVariance = 0.0;
+            for (int f = 0; f < factors; ++f) {
+                double sum = 0.0;
+                for (int j = startIndex; j < endIndex; ++j) {
+                    sum += cmsZed.get(startIndex, j) * thisPseudo.get(j, f);
+                }
+                thisVariance += sum * sum;
+            }
+            variance += thisVariance;
+            ++index;
+        }
+
+        final double expiry = evolution.rateTimes()[startIndex];
+        return Math.sqrt(variance / expiry);
     }
 }

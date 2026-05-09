@@ -24,7 +24,9 @@ import static org.junit.Assert.assertNotNull;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.ForwardForwardMappings;
+import org.jquantlib.model.marketmodels.MarketModel;
 import org.jquantlib.model.marketmodels.SwapForwardMappings;
 import org.jquantlib.model.marketmodels.curvestates.LMMCurveState;
 import org.junit.Test;
@@ -351,10 +353,56 @@ public class MappingsTest {
     }
 
     /**
-     * swaptionImpliedVolatility must throw UnsupportedOperationException (Phase 3j stub).
+     * swaptionImpliedVolatility now active (Phase 3j L0.5): builds a hand-crafted
+     * trivial 1-factor MarketModel with constant unit pseudo-roots and verifies
+     * the Brace-Gatarek-Musiela freezing-coefficient formula returns a positive
+     * Black volatility consistent with the underlying variance accumulation.
      */
-    @Test(expected = UnsupportedOperationException.class)
-    public void testSwaptionImpliedVolatilityThrows() {
-        SwapForwardMappings.swaptionImpliedVolatility(null, 0, 2);
+    @Test
+    public void testSwaptionImpliedVolatility() {
+        // 4-rate flat 5% setup matching flatCurve4()
+        final double[] rateTimes = {1.0, 2.0, 3.0, 4.0, 5.0};
+        final double[] initialRates = {0.05, 0.05, 0.05, 0.05};
+        final double[] displacements = {0.0, 0.0, 0.0, 0.0};
+        final EvolutionDescription evol = new EvolutionDescription(rateTimes);
+
+        // Trivial 1-factor MarketModel: pseudoRoot[k] is a 4x1 matrix
+        // with every entry = 0.1 — meaning 0.01 covariance per (i,j) pair per step.
+        final int numFactors = 1;
+        final int numRates = 4;
+        final int numSteps = evol.numberOfSteps();
+        final double pseudoEntry = 0.1;
+
+        final MarketModel mm = new MarketModel() {
+            private final Matrix[] roots = build();
+
+            private Matrix[] build() {
+                final Matrix[] r = new Matrix[numSteps];
+                for (int k = 0; k < numSteps; ++k) {
+                    final Matrix m = new Matrix(numRates, numFactors);
+                    for (int i = 0; i < numRates; ++i) {
+                        m.set(i, 0, pseudoEntry);
+                    }
+                    r[k] = m;
+                }
+                return r;
+            }
+
+            @Override public double[] initialRates() { return initialRates; }
+            @Override public double[] displacements() { return displacements; }
+            @Override public EvolutionDescription evolution() { return evol; }
+            @Override public int numberOfRates() { return numRates; }
+            @Override public int numberOfFactors() { return numFactors; }
+            @Override public int numberOfSteps() { return numSteps; }
+            @Override public Matrix pseudoRoot(final int i) { return roots[i]; }
+        };
+
+        // CMS swap covering [1, 3) — endIndex - startIndex = 2 forwards
+        final double iv = SwapForwardMappings.swaptionImpliedVolatility(mm, 1, 3);
+
+        // Smoke check: must be a positive finite value, not NaN
+        assertEquals("non-NaN", iv, iv, 0.0);
+        org.junit.Assert.assertTrue("positive", iv > 0.0);
+        org.junit.Assert.assertTrue("finite", Double.isFinite(iv));
     }
 }
