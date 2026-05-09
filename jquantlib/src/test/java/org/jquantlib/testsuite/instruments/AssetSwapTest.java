@@ -22,7 +22,35 @@
 
 package org.jquantlib.testsuite.instruments;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.cashflow.Leg;
+import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.daycounters.Thirty360;
+import org.jquantlib.indexes.Euribor6M;
+import org.jquantlib.instruments.AssetSwap;
+import org.jquantlib.instruments.bonds.FixedRateBond;
+import org.jquantlib.pricingengines.bond.DiscountingBondEngine;
+import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.calendars.Target;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -138,5 +166,202 @@ public class AssetSwapTest {
     @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-9 — needs AssetSwap convenience constructors.")
     @Test
     public void testSpecializedBondVsGenericBondUsingAsw() {
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────
+    // Phase 5e.5-ASW smoke tests
+    // ─────────────────────────────────────────────────────────────────
+    //
+    // The 9 testsuite cases above remain @Ignore'd pending the broader
+    // CommonVars fixture port (Phase 5e.5b). The smoke tests below
+    // exercise the freshly ported AssetSwap directly — verifying it
+    // constructs, prices, and that the par-swap fair-spread roundtrip
+    // is internally consistent.
+
+    private static final Date EVAL = new Date(15, Month.January, 2026);
+
+    @Before
+    public void setUp() {
+        new Settings().setEvaluationDate(EVAL);
+    }
+
+    /** Build a synthetic 6y annual fixed-rate bond (issue 2025, mat 2031). */
+    private FixedRateBond makeBond(final double couponRate) {
+        final Calendar cal = new Target();
+        final Date issue = new Date(15, Month.January, 2025);
+        final Date maturity = new Date(15, Month.January, 2031);
+        final Schedule bondSchedule = new Schedule(
+                issue, maturity,
+                new Period(Frequency.Annual),
+                cal,
+                BusinessDayConvention.Following,
+                BusinessDayConvention.Following,
+                DateGeneration.Rule.Backward,
+                false /* endOfMonth */);
+        return new FixedRateBond(
+                3 /* settlementDays */,
+                100.0 /* faceAmount */,
+                bondSchedule,
+                new double[] { couponRate },
+                new Thirty360(Thirty360.Convention.BondBasis),
+                BusinessDayConvention.Following,
+                100.0 /* redemption */,
+                issue);
+    }
+
+    /** Construct a flat-forward yield curve. */
+    private Handle<YieldTermStructure> makeFlatCurve(final double rate) {
+        final DayCounter dc = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                EVAL, rate, dc, Compounding.Continuous, Frequency.Annual);
+        return new Handle<YieldTermStructure>(flat);
+    }
+
+    @Test
+    public void smokeTest_parAssetSwap_constructsAndPrices() {
+        final Handle<YieldTermStructure> ts = makeFlatCurve(0.04);
+        final FixedRateBond bond = makeBond(0.05);
+
+        // Wire the bond engine so accruedAmount() / cashflows() work.
+        bond.setPricingEngine(new DiscountingBondEngine(ts));
+
+        final Euribor6M idx = new Euribor6M(ts);
+        final double bondCleanPrice = 100.50;
+        final double spread = 0.0025;
+
+        final AssetSwap swap = new AssetSwap(
+                true /* payBondCoupon */,
+                bond,
+                bondCleanPrice,
+                idx,
+                spread);
+
+        swap.setPricingEngine(new DiscountingSwapEngine(ts));
+
+        // ── Structural assertions ────────────────────────────────────
+        final Leg bondLeg = swap.bondLeg();
+        final Leg floatLeg = swap.floatingLeg();
+        assertTrue("bondLeg should not be empty", !bondLeg.isEmpty());
+        assertTrue("floatingLeg should not be empty", !floatLeg.isEmpty());
+
+        // Par swap: floating leg = upfront + IborCoupons + backpayment
+        // (size >= 3, with at least 12 semi-annual ibors over ~5y).
+        assertTrue("par-swap floating leg should have >=3 cashflows "
+                + "(upfront + ibors + backpayment), saw " + floatLeg.size(),
+                floatLeg.size() >= 3);
+
+        // ── Pricing assertions ───────────────────────────────────────
+        final double npv = swap.NPV();
+        final double fairSpread = swap.fairSpread();
+        final double floatingNPV = swap.floatingLegNPV();
+        final double floatingBPS = swap.floatingLegBPS();
+
+        assertTrue("NPV must be finite, got " + npv, Double.isFinite(npv));
+        assertTrue("fairSpread must be finite, got " + fairSpread,
+                Double.isFinite(fairSpread));
+        assertTrue("floatingLegNPV must be finite, got " + floatingNPV,
+                Double.isFinite(floatingNPV));
+        assertTrue("floatingLegBPS must be finite and non-zero, got "
+                + floatingBPS,
+                Double.isFinite(floatingBPS) && floatingBPS != 0.0);
+
+        // ── Inspector roundtrip ──────────────────────────────────────
+        assertTrue("parSwap inspector should report true", swap.parSwap());
+        assertTrue("payBondCoupon inspector should report true",
+                swap.payBondCoupon());
+        if (Math.abs(swap.spread() - spread) > 1e-15) {
+            fail("spread inspector roundtrip failed: " + swap.spread()
+                    + " vs " + spread);
+        }
+        if (Math.abs(swap.cleanPrice() - bondCleanPrice) > 1e-15) {
+            fail("cleanPrice inspector roundtrip failed: "
+                    + swap.cleanPrice() + " vs " + bondCleanPrice);
+        }
+    }
+
+    @Test
+    public void smokeTest_marketAssetSwap_constructsAndPrices() {
+        final Handle<YieldTermStructure> ts = makeFlatCurve(0.04);
+        final FixedRateBond bond = makeBond(0.05);
+        bond.setPricingEngine(new DiscountingBondEngine(ts));
+
+        final Euribor6M idx = new Euribor6M(ts);
+        final double bondCleanPrice = 102.0;
+        final double spread = 0.0025;
+        final DayCounter floatingDc = new Actual360();
+
+        final AssetSwap swap = new AssetSwap(
+                false /* payBondCoupon = receive bond */,
+                bond,
+                bondCleanPrice,
+                idx,
+                spread,
+                null /* floatSchedule (auto-generate) */,
+                floatingDc,
+                false /* parAssetSwap = market */,
+                1.0 /* gearing */,
+                org.jquantlib.math.Constants.NULL_REAL,
+                new Date());
+
+        swap.setPricingEngine(new DiscountingSwapEngine(ts));
+
+        // Market swap: floating leg = IborCoupons + final notional exchange
+        // (one SimpleCashFlow). No upfront/backpayment.
+        final Leg floatLeg = swap.floatingLeg();
+        assertTrue("market-swap floating leg should have >=2 cashflows "
+                + "(ibors + final exchange), saw " + floatLeg.size(),
+                floatLeg.size() >= 2);
+
+        final double npv = swap.NPV();
+        final double fairCleanPrice = swap.fairCleanPrice();
+        assertTrue("NPV must be finite, got " + npv, Double.isFinite(npv));
+        assertTrue("fairCleanPrice must be finite and positive, got "
+                + fairCleanPrice,
+                Double.isFinite(fairCleanPrice) && fairCleanPrice > 0.0);
+
+        assertTrue("parSwap should report false for market swap",
+                !swap.parSwap());
+        assertTrue("payBondCoupon should report false (we receive bond)",
+                !swap.payBondCoupon());
+    }
+
+    @Test
+    public void smokeTest_fairSpread_recoversZeroNpv() {
+        // Build par swap with arbitrary spread, get the fair spread, build
+        // a second swap with the fair spread, verify NPV is now ~ 0
+        // (definition of fair-spread).
+        final Handle<YieldTermStructure> ts = makeFlatCurve(0.035);
+        final FixedRateBond bond = makeBond(0.06);
+        bond.setPricingEngine(new DiscountingBondEngine(ts));
+
+        final Euribor6M idx = new Euribor6M(ts);
+        final double bondCleanPrice = 100.0;
+        final double initialSpread = 0.001;
+
+        final AssetSwap probe = new AssetSwap(true, bond, bondCleanPrice,
+                idx, initialSpread);
+        probe.setPricingEngine(new DiscountingSwapEngine(ts));
+        final double fairSpread = probe.fairSpread();
+        assertTrue("fairSpread must be finite, got " + fairSpread,
+                Double.isFinite(fairSpread));
+
+        // Rebuild with fairSpread (fresh bond/idx instances to avoid stale
+        // observer chains).
+        final FixedRateBond bond2 = makeBond(0.06);
+        bond2.setPricingEngine(new DiscountingBondEngine(ts));
+        final Euribor6M idx2 = new Euribor6M(ts);
+        final AssetSwap fair = new AssetSwap(true, bond2, bondCleanPrice,
+                idx2, fairSpread);
+        fair.setPricingEngine(new DiscountingSwapEngine(ts));
+
+        final double residualNPV = fair.NPV();
+        // Notional 100; we expect machine-precision-zero. LOOSE smoke
+        // tier: 1e-6 absolute. Phase 5e.5b cross-validation against C++
+        // will tighten this.
+        if (Math.abs(residualNPV) > 1e-6) {
+            fail("fairSpread did not recover NPV ~ 0; residualNPV = "
+                    + residualNPV + " (fairSpread=" + fairSpread + ")");
+        }
     }
 }
