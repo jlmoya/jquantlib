@@ -1,0 +1,241 @@
+/*
+ Copyright (C) 2026 JQuantLib migration contributors.
+
+ This source code is release under the BSD License.
+
+ This file is part of JQuantLib, a free-software/open-source library
+ for financial quantitative analysts and developers - http://jquantlib.org/
+
+ JQuantLib is free software: you can redistribute it and/or modify it
+ under the terms of the JQuantLib license.  You should have received a
+ copy of the license along with this program; if not, please email
+ <jquant-devel@lists.sourceforge.net>. The license is also available online at
+ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
+
+ JQuantLib is based on QuantLib. http://quantlib.org/
+ When applicable, the original copyright notice follows this notice.
+ */
+package org.jquantlib.methods.montecarlo;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.jquantlib.QL;
+import org.jquantlib.math.Ops;
+import org.jquantlib.math.integrals.GaussChebyshev2ndPolynomial;
+import org.jquantlib.math.integrals.GaussChebyshevPolynomial;
+import org.jquantlib.math.integrals.GaussHermitePolynomial;
+import org.jquantlib.math.integrals.GaussHyperbolicPolynomial;
+import org.jquantlib.math.integrals.GaussLaguerrePolynomial;
+import org.jquantlib.math.integrals.GaussLegendrePolynomial;
+import org.jquantlib.math.integrals.GaussianOrthogonalPolynomial;
+import org.jquantlib.math.matrixutilities.Array;
+
+/**
+ * Utility class for the Longstaff-Schwartz early-exercise Monte Carlo
+ * regression: provides families of basis functions on the path state.
+ *
+ * <p>Phase 5h.5-MC port of {@code QuantLib::LsmBasisSystem}
+ * (v1.42.1 ql/methods/montecarlo/lsmbasissystem.{hpp,cpp}). Pinned commit
+ * {@code 099987f0ca2c11c505dc4348cdb9ce01a598e1e5}.
+ *
+ * <p>Two families:
+ * <ol>
+ *   <li>{@link #pathBasisSystem(int, PolynomialType)} returns single-state
+ *       basis functions {@code φ_i(x)}, i = 0..order — that is, {@code order+1}
+ *       functions. For Monomial these are {@code 1, x, x², ..., x^order}; for
+ *       the orthogonal polynomial families the {@code i}th basis is
+ *       {@code √(w(x)) · P_i(x)} (the {@code GaussianOrthogonalPolynomial}'s
+ *       {@code weightedValue}).</li>
+ *   <li>{@link #multiPathBasisSystem(int, int, PolynomialType)} returns
+ *       multi-dimensional basis functions {@code φ_{tuple}(a)} obtained as
+ *       products of single-state functions over all {@code dim}-tuples whose
+ *       components sum to {@code k}, for {@code k = 0..order}. Tuples are
+ *       enumerated by repeated unit-bumps starting from the all-zeros tuple,
+ *       deduplicated via a sorted set — mirrors the C++ {@code next_order_tuples}
+ *       routine.</li>
+ * </ol>
+ *
+ * <p>Polynomial types supported (mirrors C++ enum exactly):
+ * Monomial, Laguerre, Hermite, Hyperbolic, Legendre, Chebyshev, Chebyshev2nd.
+ *
+ * <p>Used by {@link org.jquantlib.experimental.mcbasket.LongstaffSchwartzMultiPathPricer}
+ * and (forthcoming) {@code AmericanPathPricer}, {@code MCAmericanEngine}.
+ */
+public final class LsmBasisSystem {
+
+    public enum PolynomialType {
+        Monomial,
+        Laguerre,
+        Hermite,
+        Hyperbolic,
+        Legendre,
+        Chebyshev,
+        Chebyshev2nd
+    }
+
+    private LsmBasisSystem() { /* static utility */ }
+
+    /**
+     * Single-variable basis system of size {@code order + 1}.
+     * <p>Index 0 is the constant 1 (Monomial) or {@code √(w(x))·P_0(x)} (others).
+     * Index {@code i} is {@code x^i} (Monomial) or {@code √(w(x))·P_i(x)}.
+     *
+     * @param order  highest polynomial degree (basis size = order + 1).
+     * @param type   polynomial family.
+     */
+    public static List<Ops.DoubleOp> pathBasisSystem(final int order, final PolynomialType type) {
+        final List<Ops.DoubleOp> ret = new ArrayList<>(order + 1);
+        for (int i = 0; i <= order; ++i) {
+            ret.add(makeBasis(i, type));
+        }
+        return ret;
+    }
+
+    /**
+     * Multi-variate basis system over {@code dim}-dimensional state, generated
+     * by enumerating all tuples {@code (k_1,...,k_{dim})} with
+     * {@code Σ k_j ≤ order} (lex-ordered by tuple), where the corresponding
+     * basis function is the product
+     * {@code Π_j φ_{k_j}(a_j)} of single-variable basis functions of the same
+     * polynomial family.
+     *
+     * @param dim    state dimension (must be {@code &gt; 0}).
+     * @param order  total-degree cap.
+     * @param type   polynomial family.
+     */
+    public static List<Ops.ObjectToDouble<Array>> multiPathBasisSystem(
+            final int dim, final int order, final PolynomialType type) {
+        QL.require(dim > 0, "zero dimension");
+
+        // single-factor basis used to fill MultiDimFct factor lists
+        final List<Ops.DoubleOp> pathBasis = pathBasisSystem(order, type);
+        final List<Ops.ObjectToDouble<Array>> ret = new ArrayList<>();
+
+        // 0-th order term: product of dim copies of the 0th basis function
+        final List<Ops.DoubleOp> term0 = new ArrayList<>(dim);
+        for (int j = 0; j < dim; ++j) {
+            term0.add(pathBasis.get(0));
+        }
+        ret.add(new MultiDimFct(term0));
+
+        // start with all-zero tuple
+        List<int[]> tuples = new ArrayList<>();
+        tuples.add(new int[dim]);
+
+        // for each total-degree k in 1..order, generate all tuples summing to k
+        for (int k = 1; k <= order; ++k) {
+            tuples = nextOrderTuples(tuples);
+            for (final int[] tuple : tuples) {
+                final List<Ops.DoubleOp> term = new ArrayList<>(dim);
+                for (int j = 0; j < dim; ++j) {
+                    term.add(pathBasis.get(tuple[j]));
+                }
+                ret.add(new MultiDimFct(term));
+            }
+        }
+        return ret;
+    }
+
+    // ------------------------------------------------------------------------
+    // Internal helpers — mirror C++ anonymous namespace types/functions
+    // ------------------------------------------------------------------------
+
+    /** Single-variable basis factory; mirrors C++ switch on PolynomialType. */
+    private static Ops.DoubleOp makeBasis(final int i, final PolynomialType type) {
+        switch (type) {
+            case Monomial:    return new MonomialFct(i);
+            case Laguerre:    return new WeightedPoly(i, new GaussLaguerrePolynomial());
+            case Hermite:     return new WeightedPoly(i, new GaussHermitePolynomial());
+            case Hyperbolic:  return new WeightedPoly(i, new GaussHyperbolicPolynomial());
+            case Legendre:    return new WeightedPoly(i, new GaussLegendrePolynomial());
+            case Chebyshev:   return new WeightedPoly(i, new GaussChebyshevPolynomial());
+            case Chebyshev2nd: return new WeightedPoly(i, new GaussChebyshev2ndPolynomial());
+            default:
+                throw new RuntimeException("unknown regression type");
+        }
+    }
+
+    /**
+     * {@code x → x^order}. Iterative product mirrors C++ {@code MonomialFct}
+     * exactly (no {@link Math#pow}, so the i=0 case returns 1.0 for any x).
+     */
+    private static final class MonomialFct implements Ops.DoubleOp {
+        private final int order;
+        MonomialFct(final int order) { this.order = order; }
+        @Override public double op(final double x) {
+            double ret = 1.0;
+            for (int i = 0; i < order; ++i) ret *= x;
+            return ret;
+        }
+    }
+
+    /**
+     * {@code x → √(w(x)) · P_n(x)} = {@code GaussianOrthogonalPolynomial.weightedValue(n, x)}.
+     * Captures both the polynomial and the order index, mirroring C++ lambda
+     * {@code [=](Real x){ return p.weightedValue(i, x); }}.
+     */
+    private static final class WeightedPoly implements Ops.DoubleOp {
+        private final int n;
+        private final GaussianOrthogonalPolynomial p;
+        WeightedPoly(final int n, final GaussianOrthogonalPolynomial p) {
+            this.n = n;
+            this.p = p;
+        }
+        @Override public double op(final double x) {
+            return p.weightedValue(n, x);
+        }
+    }
+
+    /**
+     * {@code a → Π_i b_i(a_i)}. Mirrors C++ {@code MultiDimFct}.
+     */
+    private static final class MultiDimFct implements Ops.ObjectToDouble<Array> {
+        private final List<Ops.DoubleOp> b_;
+        MultiDimFct(final List<Ops.DoubleOp> b) {
+            QL.require(!b.isEmpty(), "zero size basis");
+            this.b_ = b;
+        }
+        @Override public double op(final Array a) {
+            double ret = b_.get(0).op(a.get(0));
+            for (int i = 1; i < b_.size(); ++i) {
+                ret *= b_.get(i).op(a.get(i));
+            }
+            return ret;
+        }
+    }
+
+    /**
+     * Build all {@code dim}-tuples of total-degree {@code k+1} from all tuples
+     * of total-degree {@code k}, by bumping each component by 1 in turn and
+     * deduplicating via a sorted set.
+     *
+     * <p>Mirrors C++ {@code next_order_tuples} including the lexicographic
+     * ordering imposed by {@code std::set<std::vector<Size>>}.
+     */
+    private static List<int[]> nextOrderTuples(final List<int[]> v) {
+        QL.require(!v.isEmpty(), "empty tuple list");
+        final int dim = v.get(0).length;
+
+        // sorted set of tuples to dedupe; lex-order via custom comparator
+        final Set<int[]> tuples = new TreeSet<>(LsmBasisSystem::compareTuples);
+        for (int i = 0; i < dim; ++i) {
+            for (final int[] j : v) {
+                final int[] x = j.clone();
+                x[i] += 1;
+                tuples.add(x);
+            }
+        }
+        return new ArrayList<>(tuples);
+    }
+
+    private static int compareTuples(final int[] a, final int[] b) {
+        final int n = Math.min(a.length, b.length);
+        for (int i = 0; i < n; ++i) {
+            if (a[i] != b[i]) return Integer.compare(a[i], b[i]);
+        }
+        return Integer.compare(a.length, b.length);
+    }
+}
