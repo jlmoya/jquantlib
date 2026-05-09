@@ -81,6 +81,14 @@ public class PricerSetter implements PolymorphicVisitor {
         if (klass == CmsCoupon.class) {
             return (Visitor<CashFlow>) new CmsCouponVisitor();
         }
+        // Phase 5d.5-EQ: FloatingLeg replaces past-fixed coupons with
+        // FixedRateCoupon. PricerSetter must silently skip those — mirrors
+        // the C++ setCouponPricer behaviour, which dynamic_pointer_casts to
+        // FloatingRateCoupon and is a no-op for non-floating cashflows
+        // (ql/cashflows/couponpricer.cpp::setCouponPricer).
+        if (klass == FixedRateCoupon.class) {
+            return (Visitor<CashFlow>) new CashFlowVisitor();
+        }
         
 //        if (klass == CappedFlooredIborCoupon.class) {
 //            return (Visitor<CashFlow>) new CappedFlooredIborCouponVisitor();
