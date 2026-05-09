@@ -58,6 +58,27 @@ struct AdjustedCase {
     bool shifted;          // true => shifted-lognormal adj, false => normal adj
 };
 
+// BivariateLognormal branch needs the full sub-formula:
+//   start with the Black76 adjustment (above)
+//   if d4 >= d3, set adjustment = 0
+//   if tau2 > 0, subtract correlation * tau2 * variance * (...)
+// To keep the probe self-contained, we feed (fixing2, tau2, correlation)
+// directly rather than building a full curve. This validates the inner
+// computation of BlackIborCouponPricer::adjustedFixing lines 213-233.
+struct BivariateCase {
+    const char* name;
+    Real fixing;
+    Real fixing2;          // synthesised; computed from disc1/disc2 in C++ live
+    Real variance;
+    Real tau;
+    Real tau2;
+    Real correlation;
+    Real displacement;
+    bool shifted;
+    bool d4_ge_d3;         // true => adjustment forced to 0 before the
+                           //         tau2 correction
+};
+
 } // namespace
 
 int main() {
@@ -131,6 +152,71 @@ int main() {
             {"tau",          c.tau},
             {"displacement", c.displacement},
             {"shifted",      c.shifted}
+        };
+        json exp{
+            {"adjustment", adjustment},
+            {"adjusted",   adjusted}
+        };
+        out.addCase(c.name, inp, exp);
+    }
+
+    // ----- adjustedFixing cases (BivariateLognormal branch) -----
+    // Mirror BlackIborCouponPricer::adjustedFixing lines 212-233:
+    //   adjustment = (Black76 result above)
+    //   if (d4 >= d3) adjustment = 0
+    //   if (tau2 > 0):
+    //       adjustment -= shifted
+    //           ? rho * tau2 * variance * (f+s)*(f2+s) / (1 + f2*tau2)
+    //           : rho * tau2 * variance / (1 + f2*tau2)
+    std::vector<BivariateCase> bivCases = {
+        {"biv_lognormal_payment_inside",
+            0.025, 0.026, 0.10*0.10, 0.50, 0.10, 0.80, 0.0,  true,  false},
+        {"biv_normal_payment_inside",
+            0.025, 0.026, 0.005*0.005, 0.50, 0.10, 0.80, 0.0, false, false},
+        {"biv_lognormal_d4_ge_d3",
+            0.025, 0.026, 0.10*0.10, 0.50, 0.10, 0.80, 0.0,  true,  true},
+        {"biv_lognormal_corr_zero",
+            0.025, 0.026, 0.10*0.10, 0.50, 0.10, 0.00, 0.0,  true,  false},
+        {"biv_lognormal_corr_negative",
+            0.025, 0.026, 0.10*0.10, 0.50, 0.10,-0.50, 0.0,  true,  false},
+        {"biv_shifted_3pct_corr_pos",
+            0.025, 0.026, 0.10*0.10, 0.50, 0.10, 0.50, 0.03, true,  false},
+    };
+
+    for (const auto& c : bivCases) {
+        // Black76 base
+        Real adjustment;
+        if (c.shifted) {
+            adjustment = (c.fixing + c.displacement)
+                       * (c.fixing + c.displacement)
+                       * c.variance * c.tau / (1.0 + c.fixing * c.tau);
+        } else {
+            adjustment = c.variance * c.tau / (1.0 + c.fixing * c.tau);
+        }
+        if (c.d4_ge_d3) {
+            adjustment = 0.0;
+        }
+        if (c.tau2 > 0.0) {
+            if (c.shifted) {
+                adjustment -= c.correlation * c.tau2 * c.variance
+                            * (c.fixing + c.displacement) * (c.fixing2 + c.displacement)
+                            / (1.0 + c.fixing2 * c.tau2);
+            } else {
+                adjustment -= c.correlation * c.tau2 * c.variance
+                            / (1.0 + c.fixing2 * c.tau2);
+            }
+        }
+        const Real adjusted = c.fixing + adjustment;
+        json inp{
+            {"fixing",       c.fixing},
+            {"fixing2",      c.fixing2},
+            {"variance",     c.variance},
+            {"tau",          c.tau},
+            {"tau2",         c.tau2},
+            {"correlation",  c.correlation},
+            {"displacement", c.displacement},
+            {"shifted",      c.shifted},
+            {"d4_ge_d3",     c.d4_ge_d3}
         };
         json exp{
             {"adjustment", adjustment},

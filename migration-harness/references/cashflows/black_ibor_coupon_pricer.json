@@ -223,11 +223,119 @@
         "variance": 2.5e-05
       },
       "name": "adj_normal_long_tau"
+    },
+    {
+      "expected": {
+        "adjusted": 0.025002567768247004,
+        "adjustment": 2.56776824700224e-06
+      },
+      "inputs": {
+        "correlation": 0.8,
+        "d4_ge_d3": false,
+        "displacement": 0.0,
+        "fixing": 0.025,
+        "fixing2": 0.026,
+        "shifted": true,
+        "tau": 0.5,
+        "tau2": 0.1,
+        "variance": 0.010000000000000002
+      },
+      "name": "biv_lognormal_payment_inside"
+    },
+    {
+      "expected": {
+        "adjusted": 0.025010350865527407,
+        "adjustment": 1.0350865527406522e-05
+      },
+      "inputs": {
+        "correlation": 0.8,
+        "d4_ge_d3": false,
+        "displacement": 0.0,
+        "fixing": 0.025,
+        "fixing2": 0.026,
+        "shifted": false,
+        "tau": 0.5,
+        "tau2": 0.1,
+        "variance": 2.5e-05
+      },
+      "name": "biv_normal_payment_inside"
+    },
+    {
+      "expected": {
+        "adjusted": 0.024999481348493918,
+        "adjustment": -5.186515060841815e-07
+      },
+      "inputs": {
+        "correlation": 0.8,
+        "d4_ge_d3": true,
+        "displacement": 0.0,
+        "fixing": 0.025,
+        "fixing2": 0.026,
+        "shifted": true,
+        "tau": 0.5,
+        "tau2": 0.1,
+        "variance": 0.010000000000000002
+      },
+      "name": "biv_lognormal_d4_ge_d3"
+    },
+    {
+      "expected": {
+        "adjusted": 0.025003086419753087,
+        "adjustment": 3.0864197530864213e-06
+      },
+      "inputs": {
+        "correlation": 0.0,
+        "d4_ge_d3": false,
+        "displacement": 0.0,
+        "fixing": 0.025,
+        "fixing2": 0.026,
+        "shifted": true,
+        "tau": 0.5,
+        "tau2": 0.1,
+        "variance": 0.010000000000000002
+      },
+      "name": "biv_lognormal_corr_zero"
+    },
+    {
+      "expected": {
+        "adjusted": 0.025003410576944392,
+        "adjustment": 3.4105769443890344e-06
+      },
+      "inputs": {
+        "correlation": -0.5,
+        "d4_ge_d3": false,
+        "displacement": 0.0,
+        "fixing": 0.025,
+        "fixing2": 0.026,
+        "shifted": true,
+        "tau": 0.5,
+        "tau2": 0.1,
+        "variance": 0.010000000000000002
+      },
+      "name": "biv_lognormal_corr_negative"
+    },
+    {
+      "expected": {
+        "adjusted": 0.025013402265221536,
+        "adjustment": 1.3402265221535121e-05
+      },
+      "inputs": {
+        "correlation": 0.5,
+        "d4_ge_d3": false,
+        "displacement": 0.03,
+        "fixing": 0.025,
+        "fixing2": 0.026,
+        "shifted": true,
+        "tau": 0.5,
+        "tau2": 0.1,
+        "variance": 0.010000000000000002
+      },
+      "name": "biv_shifted_3pct_corr_pos"
     }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-05-09T21:03:51Z",
+  "generated_at": "2026-05-09T21:32:48Z",
   "generated_by": "black_ibor_coupon_pricer_probe",
   "test_group": "cashflows/black_ibor_coupon_pricer"
 }

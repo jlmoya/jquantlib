@@ -80,20 +80,44 @@ public class BlackIborCouponPricerTest {
                             + expected.getDouble("rate") + " actual=" + rate);
                 }
             } else if (expected.has("adjustment")) {
-                // adjustedFixing (Black76 in-arrears core)
+                // adjustedFixing -- two flavours:
+                //   Black76 base (no fixing2/correlation)
+                //   BivariateLognormal (fixing2, tau2, correlation, d4_ge_d3)
                 final double fixing = inputs.getDouble("fixing");
                 final double variance = inputs.getDouble("variance");
                 final double tau = inputs.getDouble("tau");
                 final double displacement = inputs.getDouble("displacement");
                 final boolean shifted = inputs.getBoolean("shifted");
 
-                final double adjustment;
+                double adjustment;
                 if (shifted) {
                     adjustment = (fixing + displacement) * (fixing + displacement)
                             * variance * tau / (1.0 + fixing * tau);
                 } else {
                     adjustment = variance * tau / (1.0 + fixing * tau);
                 }
+
+                if (inputs.has("fixing2")) {
+                    // BivariateLognormal extension
+                    final double fixing2 = inputs.getDouble("fixing2");
+                    final double tau2 = inputs.getDouble("tau2");
+                    final double correlation = inputs.getDouble("correlation");
+                    final boolean d4GeD3 = inputs.getBoolean("d4_ge_d3");
+                    if (d4GeD3) {
+                        adjustment = 0.0;
+                    }
+                    if (tau2 > 0.0) {
+                        if (shifted) {
+                            adjustment -= correlation * tau2 * variance
+                                    * (fixing + displacement) * (fixing2 + displacement)
+                                    / (1.0 + fixing2 * tau2);
+                        } else {
+                            adjustment -= correlation * tau2 * variance
+                                    / (1.0 + fixing2 * tau2);
+                        }
+                    }
+                }
+
                 final double adjusted = fixing + adjustment;
 
                 if (!Tolerance.tight(adjustment, expected.getDouble("adjustment"))) {
