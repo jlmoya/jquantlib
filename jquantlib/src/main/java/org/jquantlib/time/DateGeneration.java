@@ -67,7 +67,25 @@ public class DateGeneration {
          * All dates but the effective date are taken to be the twentieth of an IMM month (used for CDS schedules.) The termination
          * date is also modified.
          */
-        TwentiethIMM   (6);
+        TwentiethIMM   (6),
+
+        /**
+         * Same as {@link #TwentiethIMM} with unrestricted date ends and long/short stub coupon period (old CDS convention).
+         * Mirrors C++ {@code DateGeneration::OldCDS}.
+         */
+        OldCDS   (7),
+
+        /**
+         * Credit derivatives standard rule since the 'Big Bang' changes in 2009.
+         * Mirrors C++ {@code DateGeneration::CDS}.
+         */
+        CDS   (8),
+
+        /**
+         * Credit derivatives standard rule since December 20th, 2015.
+         * Mirrors C++ {@code DateGeneration::CDS2015}.
+         */
+        CDS2015   (9);
 
 
         //
@@ -112,6 +130,12 @@ public class DateGeneration {
                 return "Twentieth";
             case 6:
                 return "TwentiethIMM";
+            case 7:
+                return "OldCDS";
+            case 8:
+                return "CDS";
+            case 9:
+                return "CDS2015";
             default:
                 throw new LibraryException(UNKNOWN_DATE_GENERATION_RULE);
             }

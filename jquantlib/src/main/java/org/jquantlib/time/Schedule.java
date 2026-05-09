@@ -166,6 +166,9 @@ public class Schedule {
               case Zero:
               case Twentieth:
               case TwentiethIMM:
+              case OldCDS:
+              case CDS:
+              case CDS2015:
             	 String errMsg = "first date incompatible with " + rule_ +
             	 			" date generation rule";
                 throw new LibraryException(errMsg); // TODO: message
@@ -192,6 +195,9 @@ public class Schedule {
               case Zero:
               case Twentieth:
               case TwentiethIMM:
+              case OldCDS:
+              case CDS:
+              case CDS2015:
                 String errMsg = "next to last date incompatible with " + rule_ +
                 		" date generation rule";
                 throw new LibraryException(errMsg); // TODO: message
@@ -261,15 +267,30 @@ public class Schedule {
           case Twentieth:
           case TwentiethIMM:
           case ThirdWednesday:
+          case OldCDS:
+          case CDS:
+          case CDS2015:
             QL.require(!endOfMonth,
                        "endOfMonth convention incompatible with " + rule_ +
                        " date generation rule"); // TODO: message
           // fall through
           case Forward:
 
-            dates_.add(effectiveDate);
+            // Mirrors C++ schedule.cpp lines 263-272: for CDS / CDS2015 rules,
+            // the schedule may begin with the previous 20th of the month.
+            if (rule_ == DateGeneration.Rule.CDS
+                    || rule_ == DateGeneration.Rule.CDS2015) {
+                final Date prev20th = previousTwentieth(effectiveDate, rule_);
+                if (calendar.adjust(prev20th, convention).gt(effectiveDate)) {
+                    dates_.add(prev20th.sub(new Period(3, TimeUnit.Months)));
+                    isRegular_.add(new Boolean(true));
+                }
+                dates_.add(prev20th);
+            } else {
+                dates_.add(effectiveDate);
+            }
 
-            seed = effectiveDate.clone();
+            seed = dates_.get(dates_.size() - 1).clone();
 
             if (firstDate != null && !firstDate.isNull() ) {
                 dates_.add(firstDate);
@@ -281,11 +302,23 @@ public class Schedule {
                 }
                 seed = firstDate.clone();
             } else if (rule_ == DateGeneration.Rule.Twentieth ||
-                       rule_ == DateGeneration.Rule.TwentiethIMM) {
-                final Date next20th = nextTwentieth(effectiveDate, rule_);
+                       rule_ == DateGeneration.Rule.TwentiethIMM ||
+                       rule_ == DateGeneration.Rule.OldCDS ||
+                       rule_ == DateGeneration.Rule.CDS ||
+                       rule_ == DateGeneration.Rule.CDS2015) {
+                Date next20th = nextTwentieth(effectiveDate, rule_);
+                if (rule_ == DateGeneration.Rule.OldCDS) {
+                    // distance rule enforced in natural days
+                    final long stubDays = 30L;
+                    if (next20th.sub(effectiveDate) < stubDays) {
+                        // +1 will skip this one and get the next
+                        next20th = nextTwentieth(next20th.add(1), rule_);
+                    }
+                }
                 if (next20th.ne(effectiveDate)) {
                     dates_.add(next20th);
-                    isRegular_.add(new Boolean(false));
+                    isRegular_.add(rule_ == DateGeneration.Rule.CDS
+                            || rule_ == DateGeneration.Rule.CDS2015);
                     seed = next20th.clone();
                 }
             }
@@ -313,7 +346,10 @@ public class Schedule {
             if (calendar.adjust(dates_.get(dates_.size()-1),terminationDateConvention).ne(
                 calendar.adjust(terminationDate, terminationDateConvention)))
                 if (rule_ == DateGeneration.Rule.Twentieth ||
-                    rule_ == DateGeneration.Rule.TwentiethIMM) {
+                    rule_ == DateGeneration.Rule.TwentiethIMM ||
+                    rule_ == DateGeneration.Rule.OldCDS ||
+                    rule_ == DateGeneration.Rule.CDS ||
+                    rule_ == DateGeneration.Rule.CDS2015) {
                     dates_.add(nextTwentieth(terminationDate, rule_));
                     isRegular_.add(Boolean.valueOf(true));
                 } else {
@@ -337,7 +373,13 @@ public class Schedule {
             }
         }
 
-        for (int i=0; i<dates_.size()-1; ++i) {
+        // first date not adjusted for OldCDS schedules — mirrors C++ schedule.cpp:367
+        if (convention != BusinessDayConvention.Unadjusted
+                && rule_ != DateGeneration.Rule.OldCDS) {
+            dates_.set(0, calendar.adjust(dates_.get(0), convention));
+        }
+
+        for (int i=1; i<dates_.size()-1; ++i) {
             dates_.set(i, calendar.adjust(dates_.get(i), convention));
         }
 
@@ -346,8 +388,8 @@ public class Schedule {
         // confirmation of the deal or unless we're creating a CDS
         // schedule
         if (terminationDateConvention != BusinessDayConvention.Unadjusted
-            || rule_ == DateGeneration.Rule.Twentieth
-            || rule_ == DateGeneration.Rule.TwentiethIMM) {
+                && rule_ != DateGeneration.Rule.CDS
+                && rule_ != DateGeneration.Rule.CDS2015) {
             dates_.set(dates_.size()-1, calendar.adjust(dates_.get(dates_.size()-1),
                                                     terminationDateConvention));
         }
@@ -464,18 +506,54 @@ public class Schedule {
     //TODO :: operator Schedule() const;
 
 
-    private Date nextTwentieth(final Date d, final DateGeneration.Rule rule) {
+    /**
+     * Returns the date on or after {@code d} that is the 20th of the month and
+     * obeys the given date-generation {@code rule} if it is relevant. Mirrors
+     * the C++ free function {@code QuantLib::nextTwentieth(Date,
+     * DateGeneration::Rule)} declared in {@code ql/time/schedule.cpp} (anonymous
+     * namespace) and exposed for parity with the public C++
+     * {@code previousTwentieth} declaration.
+     */
+    public static Date nextTwentieth(final Date d, final DateGeneration.Rule rule) {
         final Date result = new Date(20, d.month(), d.year());
         if (result.lt(d) ) {
             result.addAssign(new Period(1, TimeUnit.Months)); //result +=1*Months
         }
-        if (rule == DateGeneration.Rule.TwentiethIMM) {
+        if (rule == DateGeneration.Rule.TwentiethIMM
+                || rule == DateGeneration.Rule.OldCDS
+                || rule == DateGeneration.Rule.CDS
+                || rule == DateGeneration.Rule.CDS2015) {
             final Month m = result.month();
             final int mVal = m.value();
-            if (mVal % 3 != 0) { // not a main IMM nmonth
+            if (mVal % 3 != 0) { // not a main IMM month
                 final int skip = 3 - mVal % 3;
-//                result += skip*Months;
             	result.addAssign(new Period(skip, TimeUnit.Months));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Returns the date on or before {@code d} that is the 20th of the month and
+     * obeys the given date-generation {@code rule} if it is relevant. Mirrors
+     * C++ {@code QuantLib::previousTwentieth(Date, DateGeneration::Rule)}
+     * declared in {@code ql/time/schedule.hpp} (helper for CDS/CDS2015/OldCDS
+     * schedule construction).
+     */
+    public static Date previousTwentieth(final Date d, final DateGeneration.Rule rule) {
+        final Date result = new Date(20, d.month(), d.year());
+        if (result.gt(d)) {
+            result.subAssign(new Period(1, TimeUnit.Months));
+        }
+        if (rule == DateGeneration.Rule.TwentiethIMM
+                || rule == DateGeneration.Rule.OldCDS
+                || rule == DateGeneration.Rule.CDS
+                || rule == DateGeneration.Rule.CDS2015) {
+            final Month m = result.month();
+            final int mVal = m.value();
+            if (mVal % 3 != 0) { // not a main IMM month
+                final int skip = mVal % 3;
+                result.subAssign(new Period(skip, TimeUnit.Months));
             }
         }
         return result;
