@@ -341,6 +341,39 @@ public class CreditPoolIssuerTest {
         pool.clear();
         assertEquals(0, pool.size());
         assertTrue(pool.names().isEmpty());
+        // After clear, defaultKeys should also be empty (regression Phase 4m.7b).
+        assertTrue(pool.defaultKeys().isEmpty());
+    }
+
+    /**
+     * Regression: {@code defaultKeys()} must align 1:1 with {@code names()} in
+     * insertion order. Prior implementation backed the map with {@code HashMap},
+     * which produced non-deterministic order — basket / latent-model consumers
+     * rely on {@code defaultKeys()[i]} corresponding to {@code names()[i]}.
+     * Phase 4m.7b: switched to {@code LinkedHashMap}.
+     */
+    @Test
+    public void poolDefaultKeysAlignWithNamesInsertionOrder() {
+        final Pool pool = new Pool();
+        final Currency usd = new America.USDCurrency();
+        final Currency eur = new Europe.EURCurrency();
+        // Insert in reverse-alphabetical order to defeat any alphabetical-sort assumption.
+        final NorthAmericaCorpDefaultKey kZ = new NorthAmericaCorpDefaultKey(usd, Seniority.SnrFor);
+        final NorthAmericaCorpDefaultKey kM = new NorthAmericaCorpDefaultKey(eur, Seniority.SubLT2);
+        final NorthAmericaCorpDefaultKey kA = new NorthAmericaCorpDefaultKey(usd, Seniority.SecDom);
+        pool.add("Zeta", new Issuer(), kZ);
+        pool.add("Mu",   new Issuer(), kM);
+        pool.add("Alpha", new Issuer(), kA);
+        // Names in insertion order.
+        assertEquals("Zeta",  pool.names().get(0));
+        assertEquals("Mu",    pool.names().get(1));
+        assertEquals("Alpha", pool.names().get(2));
+        // defaultKeys() in the SAME order — not alphabetical.
+        final List<DefaultProbKey> keys = pool.defaultKeys();
+        assertEquals(3, keys.size());
+        assertEquals(kZ, keys.get(0));
+        assertEquals(kM, keys.get(1));
+        assertEquals(kA, keys.get(2));
     }
 
     @Test

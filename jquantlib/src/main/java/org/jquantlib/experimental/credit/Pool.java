@@ -27,6 +27,7 @@ package org.jquantlib.experimental.credit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +53,15 @@ public class Pool {
     private final Map<String, Issuer> data = new HashMap<>();
     private final Map<String, Double> time = new HashMap<>();
     private final List<String> names = new ArrayList<>();
-    private final Map<String, DefaultProbKey> defaultKeys = new HashMap<>();
+    /*
+     * LinkedHashMap preserves insertion order so {@code defaultKeys()} aligns
+     * 1:1 with {@code names()} — required by basket / latent-model consumers
+     * that index both with the same {@code iName}. (C++ uses {@code std::map}
+     * which is alphabetical-by-key; in Java a {@code HashMap} would yield
+     * non-deterministic order, so we use {@code LinkedHashMap} for explicit
+     * insertion-order semantics matching the {@code names_} vector.)
+     */
+    private final Map<String, DefaultProbKey> defaultKeys = new LinkedHashMap<>();
 
     public Pool() {
         clear();
@@ -66,6 +75,7 @@ public class Pool {
         data.clear();
         time.clear();
         names.clear();
+        defaultKeys.clear();
     }
 
     public boolean has(final String name) {
