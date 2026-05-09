@@ -269,8 +269,9 @@ public abstract class SwaptionVolatilityStructure extends AbstractTermStructure 
         if (!extrapolate && !allowsExtrapolation() && swapTenor.gt(maxSwapTenor())) {
             throw new IllegalArgumentException("swap tenor (" + swapTenor + ") is past max tenor (" + maxSwapTenor() + ")");
         }
-        //TODO: review
-        if (!extrapolate && !allowsExtrapolation() && (k >= minStrike() && k <= maxStrike())) {
+        // Mirrors C++ checkStrike: throw when strike is OUTSIDE the
+        // curve domain. (The Java version had the inequality inverted.)
+        if (!extrapolate && !allowsExtrapolation() && (k < minStrike() || k > maxStrike())) {
             throw new IllegalArgumentException("strike (" + k + ") is outside the curve domain [" + minStrike() + "," + maxStrike()
                     + "]");
         }
