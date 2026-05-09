@@ -193,7 +193,9 @@ public class InterpolatedForwardCurve<I extends Interpolator> extends ForwardRat
             final Calendar calendar,
             final DayCounter dc,
             final Interpolator interpolator) {
-        super(settlementDays, new Calendar(), dc);
+        // Phase 3e: align to v1.42.1 — pass the supplied calendar (was
+        // `new Calendar()`, which left impl==null and broke advance/adjust).
+        super(settlementDays, calendar, dc);
 
 		QL.require(classI!=null, "Generic type for Interpolation is null");
         this.classI = classI;

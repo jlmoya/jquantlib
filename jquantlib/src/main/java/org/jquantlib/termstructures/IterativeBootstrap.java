@@ -219,8 +219,11 @@ public class IterativeBootstrap<Curve extends PiecewiseYieldCurve> implements Bo
 
                 if (! validCurve && iteration == 0) {
                     // extend interpolation a point at a time
+                    // Phase 3e: align to v1.42.1 — use first i+1 entries of
+                    // BOTH times AND data; previous Java code passed full
+                    // `data` array which mismatched the partial times.
                     try {
-                        ts.setInterpolation(interpolator.interpolate (new Array(times, i+1), new Array(data)));
+                        ts.setInterpolation(interpolator.interpolate (new Array(times, i+1), new Array(data, i+1)));
                     } catch (final Exception e) {
                         // no chance to fix it in a later iteration
                         if (ts.interpolator().global()) {
@@ -228,7 +231,7 @@ public class IterativeBootstrap<Curve extends PiecewiseYieldCurve> implements Bo
                         }
 
                         // otherwise, if the target interpolation is not usable yet
-                        ts.setInterpolation(new Linear().interpolate (new Array(times, i+1), new Array(data)));
+                        ts.setInterpolation(new Linear().interpolate (new Array(times, i+1), new Array(data, i+1)));
                     }
                 }
                 // required because we just changed the data

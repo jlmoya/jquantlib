@@ -677,21 +677,28 @@ public class PiecewiseYieldCurve<
 
     @Override
     public double discount(final Date d, final boolean extrapolate) {
+        // Phase 3e: route through calculate() so the bootstrap runs before the
+        // base curve's interpolation is queried (mirrors C++ PiecewiseYieldCurve
+        // overriding discountImpl, which forces the bootstrap on first read).
+        calculate();
         return baseCurve.discount(d, extrapolate);
     }
 
     @Override
     public double discount(final Date d) {
+        calculate();
         return baseCurve.discount(d);
     }
 
     @Override
     public double discount(final double t, final boolean extrapolate) {
+        calculate();
         return baseCurve.discount(t, extrapolate);
     }
 
     @Override
     public double discount(final double t) {
+        calculate();
         return baseCurve.discount(t);
     }
 

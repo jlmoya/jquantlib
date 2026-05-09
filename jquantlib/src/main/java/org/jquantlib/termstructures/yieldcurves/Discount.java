@@ -95,7 +95,11 @@ public class Discount implements Traits {
 
     @Override
     public void updateGuess(final double[] data, final double value, final int i) {
-        Arrays.fill(data, value);
+        // Phase 3e: align to v1.42.1 — C++ Discount::updateGuess sets only
+        // data[i]; the Java port had Arrays.fill which clobbered all earlier
+        // bootstrapped points each iteration, breaking PiecewiseYieldCurve
+        // bootstrap on multi-helper inputs.
+        data[i] = value;
     }
 
 

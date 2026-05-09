@@ -194,7 +194,12 @@ public class InterpolatedDiscountCurve<I extends Interpolator> extends AbstractY
             final Calendar calendar,
             final DayCounter dc,
             final Interpolator interpolator) {
-        super(settlementDays, new Calendar(), dc);
+        // Phase 3e: align to v1.42.1 — C++ passes the supplied Calendar to the
+        // base curve so AbstractTermStructure.advance(...) works. Earlier
+        // Java port passed `new Calendar()` (impl == null), causing NPE in
+        // any callsite that uses settlementDays+calendar instead of an
+        // explicit referenceDate.
+        super(settlementDays, calendar, dc);
 
         QL.require(classI!=null, "Generic type for Interpolation is null");
         this.classI = classI;
