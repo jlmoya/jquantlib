@@ -102,6 +102,52 @@ public class CashFlows {
     }
 
     //
+    // Coupon-pricer leg helpers
+    //
+    // Mirror C++ free functions in ql/cashflows/couponpricer.{hpp,cpp}:
+    //
+    //   void setCouponPricer(const Leg&, const ext::shared_ptr<FloatingRateCouponPricer>&);
+    //   void setCouponPricers(const Leg&, const std::vector<ext::shared_ptr<FloatingRateCouponPricer> >&);
+    //
+    // JQL keeps the visitor implementation in PricerSetter; these statics
+    // are thin facades so callers can use the C++-style API surface.
+    //
+
+    /**
+     * Apply {@code pricer} to every coupon in {@code leg}.
+     * <p>
+     * Mirrors C++ {@code QuantLib::setCouponPricer(const Leg&, const ext::shared_ptr<FloatingRateCouponPricer>&)}.
+     */
+    public static void setCouponPricer(final Leg leg,
+                                       final FloatingRateCouponPricer pricer) {
+        PricerSetter.setCouponPricer(leg, pricer);
+    }
+
+    /**
+     * Apply pricers element-wise to {@code leg}; the last pricer is
+     * re-used for any trailing coupons when {@code pricers.size() < leg.size()}.
+     * <p>
+     * Mirrors C++ {@code QuantLib::setCouponPricers(const Leg&, const std::vector<...> &)}
+     * in ql/cashflows/couponpricer.cpp lines 468-484.
+     */
+    public static void setCouponPricers(final Leg leg,
+                                        final java.util.List<FloatingRateCouponPricer> pricers) {
+        final int nCashFlows = leg.size();
+        QL.require(nCashFlows > 0, "no cashflows");
+        final int nPricers = pricers.size();
+        QL.require(nCashFlows >= nPricers,
+                "mismatch between leg size (" + nCashFlows +
+                ") and number of pricers (" + nPricers + ")");
+        for (int i = 0; i < nCashFlows; i++) {
+            final FloatingRateCouponPricer p =
+                    i < nPricers ? pricers.get(i) : pricers.get(nPricers - 1);
+            final PricerSetter setter = new PricerSetter(p);
+            leg.get(i).accept(setter);
+        }
+    }
+
+
+    //
     // public methods
     //
 
