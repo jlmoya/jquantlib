@@ -1,0 +1,179 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 14.231726499081923
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 1.0,
+        "lookback_end_years": 0.5,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "vol": 0.2
+      },
+      "name": "call_partial_l1_min100_e0.5_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 4.676565764605355
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 1.2,
+        "lookback_end_years": 0.5,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "vol": 0.2
+      },
+      "name": "call_partial_l1.2_min100_e0.5_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 2.2339159640487423
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 1.5,
+        "lookback_end_years": 0.7,
+        "maturity_years": 1.0,
+        "minmax": 90.0,
+        "option_type": "Call",
+        "q": 0.01,
+        "r": 0.04,
+        "vol": 0.25
+      },
+      "name": "call_partial_l1.5_min90_e0.7_T1_v25"
+    },
+    {
+      "expected": {
+        "npv": 15.97590976690287
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 1.0,
+        "lookback_end_years": 1.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "vol": 0.2
+      },
+      "name": "call_full_l1_min100_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 4.861535603896784
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 1.2,
+        "lookback_end_years": 1.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "vol": 0.2
+      },
+      "name": "call_full_l1.2_min100_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 12.142956665539135
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 1.0,
+        "lookback_end_years": 0.5,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "vol": 0.2
+      },
+      "name": "put_partial_l1_max100_e0.5_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 1.8049786551271134
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 0.8,
+        "lookback_end_years": 0.5,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "vol": 0.2
+      },
+      "name": "put_partial_l0.8_max100_e0.5_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 1.564185279876208
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 0.7,
+        "lookback_end_years": 0.7,
+        "maturity_years": 1.0,
+        "minmax": 110.0,
+        "option_type": "Put",
+        "q": 0.01,
+        "r": 0.04,
+        "vol": 0.25
+      },
+      "name": "put_partial_l0.7_max110_e0.7_T1_v25"
+    },
+    {
+      "expected": {
+        "npv": 15.010268140034805
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 1.0,
+        "lookback_end_years": 1.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "vol": 0.2
+      },
+      "name": "put_full_l1_max100_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 6.249762713918602
+      },
+      "inputs": {
+        "S": 100.0,
+        "lambda": 0.9,
+        "lookback_end_years": 1.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "vol": 0.2
+      },
+      "name": "put_full_l0.9_max100_T1_v20"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T21:45:39Z",
+  "generated_by": "analytic_continuous_partial_floating_lookback_probe",
+  "test_group": "lookback/analytic_continuous_partial_floating_lookback"
+}
