@@ -1,0 +1,221 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "G": 0.20502921158509965,
+        "G1": 0.5058258853789919,
+        "G2": 0.5776412843896992
+      },
+      "inputs": {
+        "delta": 0.5,
+        "q": 2,
+        "swapLength": 5,
+        "variant": "Standard",
+        "x": 0.01
+      },
+      "name": "standard_q2_d0.5_n5_x0.01"
+    },
+    {
+      "expected": {
+        "G": 0.21268101973436074,
+        "G1": 0.5143772723091973,
+        "G2": 0.562470632771479
+      },
+      "inputs": {
+        "delta": 0.5,
+        "q": 2,
+        "swapLength": 5,
+        "variant": "Standard",
+        "x": 0.025
+      },
+      "name": "standard_q2_d0.5_n5_x0.025"
+    },
+    {
+      "expected": {
+        "G": 0.22571352413327636,
+        "G1": 0.5281140140496157,
+        "G2": 0.5362990012692919
+      },
+      "inputs": {
+        "delta": 0.5,
+        "q": 2,
+        "swapLength": 5,
+        "variant": "Standard",
+        "x": 0.05
+      },
+      "name": "standard_q2_d0.5_n5_x0.05"
+    },
+    {
+      "expected": {
+        "G": 0.25276704831191577,
+        "G1": 0.5535700676818542,
+        "G2": 0.4815037707637604
+      },
+      "inputs": {
+        "delta": 0.5,
+        "q": 2,
+        "swapLength": 5,
+        "variant": "Standard",
+        "x": 0.1
+      },
+      "name": "standard_q2_d0.5_n5_x0.1"
+    },
+    {
+      "expected": {
+        "G": 0.10503048572649415,
+        "G1": 0.511570550958439,
+        "G2": 1.135567378753527
+      },
+      "inputs": {
+        "variant": "ExactYield",
+        "x": 0.01
+      },
+      "name": "exact_yield_x0.01"
+    },
+    {
+      "expected": {
+        "G": 0.11282947672640446,
+        "G1": 0.5281384103336271,
+        "G2": 1.072979459088666
+      },
+      "inputs": {
+        "variant": "ExactYield",
+        "x": 0.025
+      },
+      "name": "exact_yield_x0.025"
+    },
+    {
+      "expected": {
+        "G": 0.12635696161029622,
+        "G1": 0.5536032372421805,
+        "G2": 0.9633272134265046
+      },
+      "inputs": {
+        "variant": "ExactYield",
+        "x": 0.05
+      },
+      "name": "exact_yield_x0.05"
+    },
+    {
+      "expected": {
+        "G": 0.15514708767351879,
+        "G1": 0.5961110961874222,
+        "G2": 0.7368467253027651
+      },
+      "inputs": {
+        "variant": "ExactYield",
+        "x": 0.1
+      },
+      "name": "exact_yield_x0.1"
+    },
+    {
+      "expected": {
+        "G": 0.10718564167257552,
+        "G1": 0.5220620876454038,
+        "G2": 1.1586730399087077
+      },
+      "inputs": {
+        "meanReversion": 0.0,
+        "variant": "WithShifts",
+        "x": 0.01
+      },
+      "name": "with_shifts_mr0_x0.01"
+    },
+    {
+      "expected": {
+        "G": 0.11514455836663205,
+        "G1": 0.5389671446417168,
+        "G2": 1.0948234402349613
+      },
+      "inputs": {
+        "meanReversion": 0.0,
+        "variant": "WithShifts",
+        "x": 0.025
+      },
+      "name": "with_shifts_mr0_x0.025"
+    },
+    {
+      "expected": {
+        "G": 0.1289493604488397,
+        "G1": 0.5649506631788621,
+        "G2": 0.9829606597456131
+      },
+      "inputs": {
+        "meanReversion": 0.0,
+        "variant": "WithShifts",
+        "x": 0.05
+      },
+      "name": "with_shifts_mr0_x0.05"
+    },
+    {
+      "expected": {
+        "G": 0.15832949897534215,
+        "G1": 0.6083259915628607,
+        "G2": 0.7519069253244707
+      },
+      "inputs": {
+        "meanReversion": 0.0,
+        "variant": "WithShifts",
+        "x": 0.1
+      },
+      "name": "with_shifts_mr0_x0.1"
+    },
+    {
+      "expected": {
+        "G": 0.10665575072845139,
+        "G1": 0.540173354809955,
+        "G2": 1.0912046693231972
+      },
+      "inputs": {
+        "meanReversion": 0.03,
+        "variant": "WithShifts",
+        "x": 0.01
+      },
+      "name": "with_shifts_mr0.03_x0.01"
+    },
+    {
+      "expected": {
+        "G": 0.11487807035339191,
+        "G1": 0.5559330269578133,
+        "G2": 1.0100610463307094
+      },
+      "inputs": {
+        "meanReversion": 0.03,
+        "variant": "WithShifts",
+        "x": 0.025
+      },
+      "name": "with_shifts_mr0.03_x0.025"
+    },
+    {
+      "expected": {
+        "G": 0.12907800175041315,
+        "G1": 0.5795026541981807,
+        "G2": 0.8760042601562805
+      },
+      "inputs": {
+        "meanReversion": 0.03,
+        "variant": "WithShifts",
+        "x": 0.05
+      },
+      "name": "with_shifts_mr0.03_x0.05"
+    },
+    {
+      "expected": {
+        "G": 0.15904035493990767,
+        "G1": 0.6168927578437486,
+        "G2": 0.624442513277194
+      },
+      "inputs": {
+        "meanReversion": 0.03,
+        "variant": "WithShifts",
+        "x": 0.1
+      },
+      "name": "with_shifts_mr0.03_x0.1"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T22:18:42Z",
+  "generated_by": "g_function_probe",
+  "test_group": "cashflows/g_function"
+}
