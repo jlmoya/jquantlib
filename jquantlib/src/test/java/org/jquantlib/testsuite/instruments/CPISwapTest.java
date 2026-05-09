@@ -35,6 +35,7 @@ import java.util.List;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.CPICoupon;
 import org.jquantlib.cashflow.CashFlow;
+import org.jquantlib.cashflow.IborCoupon;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
@@ -58,6 +59,7 @@ import org.jquantlib.termstructures.ZeroInflationTermStructure;
 import org.jquantlib.termstructures.inflation.PiecewiseZeroInflationCurve;
 import org.jquantlib.termstructures.inflation.ZeroCouponInflationSwapHelper;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
@@ -94,16 +96,18 @@ import static org.junit.Assert.fail;
  *
  * <h3>Yield curve note</h3>
  * <p>The C++ test builds a 29-pillar nominal curve via
- * {@code InterpolatedZeroCurve<Linear>(nomD, nomR, dcNominal)}. The Java
- * {@link org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve} has
- * a long-standing copy-paste bug ({@code data[0] == 1.0} assertion intended
- * for discount factors but applied to zero rates) that prevents using it
- * here. As a stand-in (mirroring the convention established in
- * {@code CPICapFloorTest}, {@code CPICapFloorTermPriceSurfaceTest} etc.) we
- * use a {@link FlatForward} 5%/Annual curve for the nominal handle. The
- * substitution is benign for self-consistency tests
- * ({@code zciisconsistency}) but invalidates the C++ stored-value test
- * ({@code consistency}) — which is therefore @Ignore'd.
+ * {@code InterpolatedZeroCurve<Linear>(nomD, nomR, dcNominal)}.
+ *
+ * <p>Phase 2x A.1 removed the stale {@code data[0] == 1.0} assertion (a
+ * copy-paste from InterpolatedDiscountCurve) from
+ * {@link org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve},
+ * unblocking use of raw zero-rate arrays. The {@code consistency} test
+ * (Phase 2y A.1) now uses the exact 29-pillar C++ nominal data.
+ *
+ * <p>For the self-consistency tests ({@code zciisconsistency},
+ * {@code cpiSwap_*}) where the exact nominal curve does not matter, we still
+ * use a {@link FlatForward} 5%/Annual curve for the nominal handle — this is
+ * simpler and exercises the same production paths.
  *
  * <h3>Observer-cycle workaround</h3>
  * <p>The C++ test uses a {@code RelinkableHandle<ZeroInflationTermStructure>}
@@ -118,22 +122,15 @@ import static org.junit.Assert.fail;
  * UKRPI fixings are stored in the {@code IndexManager} and shared across
  * instances, so {@code ii2} sees the same historical fixings as {@code ii}.
  *
- * <h3>Phase 2v / 2x deferred items</h3>
+ * <h3>Remaining deferred items</h3>
  * <ul>
- *   <li><b>{@code consistency}</b> — requires {@code InterpolatedZeroCurve}
- *       constructor accepting raw zero rates (currently asserts
- *       {@code yields[0] == 1.0}, treating the input as discount factors).
- *       The nominalData table (29 pillars 2009-11-26..2079-11-27) cannot be
- *       loaded until this constraint is removed. Without that exact nominal
- *       curve the C++ stored value 4191797.54 cannot be reproduced.
- *       Phase 2x align candidate. Also requires
- *       {@code IborCoupon::Settings::usingAtParCoupons()} static accessor
- *       (Phase 2x).</li>
  *   <li><b>{@code cpibondconsistency}</b> — requires {@code CPIBond}, which
  *       is not ported (no {@code org.jquantlib.instruments.bonds.CPIBond}
  *       class exists yet). Phase 2u inflation deferral list explicitly
  *       puts inflationcpibond.cpp + CPIBond instrument port out of scope;
  *       Phase 2v candidate.</li>
+ *   <li><b>{@code consistency}</b> — un-ignored by Phase 2y A.1. Uses the
+ *       29-pillar C++ nominal curve; passes at 1e-5 / 3e-5 tolerance.</li>
  * </ul>
  */
 public class CPISwapTest {
@@ -320,35 +317,224 @@ public class CPISwapTest {
     // ===================================================================
     // BOOST_AUTO_TEST_CASE(consistency) — inflationcpiswap.cpp:249-355
     // ===================================================================
+
+    /**
+     * Port of {@code inflationcpiswap.cpp:249-355} (QuantLib v1.42.1).
+     *
+     * <p>Builds a 29-pillar {@link InterpolatedZeroCurve} nominal term
+     * structure (the C++ nominal curve, rates in percent / 100), prices a
+     * CPISwap through it, and asserts:
+     * <ol>
+     *   <li>Manual inflation-leg NPV accumulation agrees with
+     *       {@code swap.legNPV(0)} within 1e-5.</li>
+     *   <li>Per-CPICoupon rate reconstruction: {@code rate == fixedRate *
+     *       indexFixing / baseCPI} within 1e-8.</li>
+     *   <li>Swap NPV agrees with the C++ stored value 4191797.54 within
+     *       1e-5 (atParCoupons) or 3e-5 (indexed coupons).</li>
+     * </ol>
+     *
+     * <p>Blockers cleared by Phase 2x: InterpolatedZeroCurve
+     * {@code yields[0]==1.0} assertion removed (Phase 2x A.1);
+     * {@code IborCoupon.Settings.usingAtParCoupons()} added (Phase 2x A.3).
+     * Un-ignored by Phase 2y A.1.
+     */
     @Test
-    @Ignore("Phase 2y: test body is intentionally empty (documentation"
-            + " stub mirroring inflationcpiswap.cpp:249-355). Phase 2x A.1"
-            + " removed the InterpolatedZeroCurve yields[0]==1.0 assertion"
-            + " and Phase 2x A.3 added IborCoupon.Settings.usingAtParCoupons(),"
-            + " unblocking the production-side prerequisites. Implementation"
-            + " of the actual fixture wiring (CommonVars + 29-pillar nominal"
-            + " curve + UKRPI seeding + DiscountingSwapEngine + 1e-5/3e-5"
-            + " tolerance branch) deferred to Phase 2y or beyond.")
     public void consistency() {
-        // C++ flow (paraphrased):
-        //   1. Build CommonVars (full UK calendar, UKRPI fixings, ZCIIS curve).
-        //   2. Build a CPISwap (Payer, 1e6, subtractInfNominal=true) with:
-        //      - GBPLibor 6M float index (linked to common.nominalTS)
-        //      - fixedRate=0.1, baseCPI=206.1, observationLag=3M, CPI::Flat
-        //      - 45-year schedule 2007-10-02 .. 2052-10-02 (90 semi-annual periods)
-        //   3. Seed past floating-leg fixings (floatFix[5]) and CPI fixings.
-        //   4. Set DiscountingSwapEngine(common.nominalTS) and price.
-        //   5. Manually accumulate inflation-leg NPV by iterating cashflows
-        //      and compare to swap.legNPV(0); enforce |diff| < 1e-5.
-        //   6. For each CPICoupon, check rate() == fixedRate * indexFixing/baseCPI
-        //      (1e-8). [Java equivalent exercised by
-        //      cpiSwap_multiPeriodSchedule_buildsExpectedLegShape below.]
-        //   7. Compare swap.NPV() against stored value 4191797.54 with
-        //      tolerance 1e-5 (atParCoupons) or 3e-5 (otherwise).
+        final CommonVars common = new CommonVars();
+
+        // --- 29-pillar nominal curve (inflationcpiswap.cpp:147-188) ---
+        // C++ builds InterpolatedZeroCurve<Linear>(nomD, nomR, dcNominal)
+        // with rates expressed as percent/100. Reference date = nomD[0] =
+        // 2009-11-26 (one day after the evaluation date 2009-11-25).
         //
-        // Java blockers (see class-javadoc):
-        //   - InterpolatedZeroCurve<Linear>(nomD, nomR, dcNominal) constructor.
-        //   - IborCoupon::Settings::usingAtParCoupons() static accessor.
+        // Java's AbstractTermStructure.checkRange(Date) unconditionally
+        // requires d >= referenceDate. Since CashFlows.bps has been aligned
+        // to pass npvDate = new Date() (null, per C++ default) in Phase 2y
+        // A.1, discount(evalDate) is no longer called from bps, so the
+        // 29-pillar array exactly matches C++ without a prepended pillar.
+        final Date[] nomD = {
+            new Date(26, Month.November, 2009),
+            new Date(2, Month.December, 2009),
+            new Date(29, Month.December, 2009),
+            new Date(25, Month.February, 2010),
+            new Date(18, Month.March, 2010),
+            new Date(25, Month.May, 2010),
+            new Date(16, Month.September, 2010),
+            new Date(16, Month.December, 2010),
+            new Date(17, Month.March, 2011),
+            new Date(16, Month.June, 2011),
+            new Date(22, Month.September, 2011),
+            new Date(25, Month.November, 2011),
+            new Date(26, Month.November, 2012),
+            new Date(25, Month.November, 2013),
+            new Date(25, Month.November, 2014),
+            new Date(25, Month.November, 2015),
+            new Date(25, Month.November, 2016),
+            new Date(27, Month.November, 2017),
+            new Date(26, Month.November, 2018),
+            new Date(25, Month.November, 2019),
+            new Date(25, Month.November, 2021),
+            new Date(25, Month.November, 2024),
+            new Date(26, Month.November, 2029),
+            new Date(27, Month.November, 2034),
+            new Date(25, Month.November, 2039),
+            new Date(25, Month.November, 2049),
+            new Date(25, Month.November, 2059),
+            new Date(25, Month.November, 2069),
+            new Date(27, Month.November, 2079)
+        };
+        final double[] nomR = {
+            0.475   / 100.0,
+            0.47498 / 100.0,
+            0.49988 / 100.0,
+            0.59955 / 100.0,
+            0.65361 / 100.0,
+            0.82830 / 100.0,
+            0.78960 / 100.0,
+            0.93762 / 100.0,
+            1.12037 / 100.0,
+            1.31308 / 100.0,
+            1.52011 / 100.0,
+            1.78399 / 100.0,
+            2.41170 / 100.0,
+            2.83935 / 100.0,
+            3.12888 / 100.0,
+            3.34298 / 100.0,
+            3.50632 / 100.0,
+            3.63666 / 100.0,
+            3.74723 / 100.0,
+            3.83988 / 100.0,
+            4.00508 / 100.0,
+            4.16042 / 100.0,
+            4.15577 / 100.0,
+            4.04933 / 100.0,
+            3.95217 / 100.0,
+            3.80932 / 100.0,
+            3.80849 / 100.0,
+            3.72677 / 100.0,
+            3.63082 / 100.0
+        };
+        final InterpolatedZeroCurve<Linear> nomCurve =
+                new InterpolatedZeroCurve<>(Linear.class, nomD, nomR,
+                        common.dcNominal);
+        final Handle<YieldTermStructure> nominalTS =
+                new Handle<YieldTermStructure>(nomCurve);
+
+        // --- CPISwap parameters (inflationcpiswap.cpp:258-302) ---
+        final CPISwap.Type type = CPISwap.Type.Payer;
+        final double nominal = 1_000_000.0;
+        final boolean subtractInflationNominal = true;
+        final double spread = 0.0;
+        final DayCounter floatDayCount = new Actual365Fixed();
+        final BusinessDayConvention floatPaymentConvention =
+                BusinessDayConvention.ModifiedFollowing;
+        final int fixingDays = 0;
+        final IborIndex floatIndex = new GBPLibor(
+                new Period(6, TimeUnit.Months), nominalTS);
+
+        final double fixedRate = 0.1;
+        final double baseCPI = 206.1;
+        final DayCounter fixedDayCount = new Actual365Fixed();
+        final BusinessDayConvention fixedPaymentConvention =
+                BusinessDayConvention.ModifiedFollowing;
+        final Period contractObservationLag = common.contractObservationLag;
+        final CPI.InterpolationType observationInterpolation =
+                common.contractObservationInterpolation;
+
+        final Date startDate = new Date(2, Month.October, 2007);
+        final Date endDate = new Date(2, Month.October, 2052);
+        final Schedule floatSchedule = new org.jquantlib.time.MakeSchedule(
+                startDate, endDate, new Period(6, TimeUnit.Months),
+                new UnitedKingdom(), floatPaymentConvention)
+                .withTerminationDateConvention(floatPaymentConvention)
+                .backwards()
+                .schedule();
+        final Schedule fixedSchedule = new org.jquantlib.time.MakeSchedule(
+                startDate, endDate, new Period(6, TimeUnit.Months),
+                new UnitedKingdom(), BusinessDayConvention.Unadjusted)
+                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+                .backwards()
+                .schedule();
+
+        final CPISwap zisV = new CPISwap(type, nominal, subtractInflationNominal,
+                spread, floatDayCount, floatSchedule, floatPaymentConvention,
+                fixingDays, floatIndex, fixedRate, baseCPI, fixedDayCount,
+                fixedSchedule, fixedPaymentConvention, contractObservationLag,
+                common.ii2, observationInterpolation, Constants.NULL_REAL);
+
+        final Date asofDate = new Settings().evaluationDate();
+
+        // --- Seed past fixings (inflationcpiswap.cpp:305-319) ---
+        final double[] floatFix = {
+                0.06255, 0.05975, 0.0637, 0.018425, 0.0073438, -1.0, -1.0
+        };
+        final double[] cpiFix = { 211.4, 217.2, 211.4, 213.4, -2.0, -2.0 };
+        for (int i = 0; i < floatSchedule.size(); ++i) {
+            if (floatSchedule.date(i).lt(common.evaluationDate)) {
+                floatIndex.addFixing(floatSchedule.date(i),
+                        (i < floatFix.length ? floatFix[i] : -1.0), true);
+            }
+            if (i < zisV.cpiLeg().size()) {
+                final CashFlow cf = zisV.cpiLeg().get(i);
+                if (cf instanceof CPICoupon) {
+                    final CPICoupon zic = (CPICoupon) cf;
+                    if (zic.fixingDate().lt(
+                            common.evaluationDate.sub(new Period(1, TimeUnit.Months)))) {
+                        common.ii2.addFixing(zic.fixingDate(),
+                                (i < cpiFix.length ? cpiFix[i] : -2.0), true);
+                    }
+                }
+            }
+        }
+
+        // --- Price (inflationcpiswap.cpp:321-323) ---
+        final DiscountingSwapEngine dse =
+                new DiscountingSwapEngine(nominalTS);
+        zisV.setPricingEngine(dse);
+
+        // --- Manual inflation-leg NPV (inflationcpiswap.cpp:325-347) ---
+        double testInfLegNPV = 0.0;
+        for (int i = 0; i < zisV.cpiLeg().size(); ++i) {
+            final CashFlow cf = zisV.cpiLeg().get(i);
+            final Date zicPayDate = cf.date();
+            if (zicPayDate.gt(asofDate)) {
+                testInfLegNPV += cf.amount()
+                        * nomCurve.discount(zicPayDate);
+            }
+            if (cf instanceof CPICoupon) {
+                final CPICoupon zicV = (CPICoupon) cf;
+                final double diff = Math.abs(
+                        zicV.rate()
+                        - (fixedRate * (zicV.indexFixing() / baseCPI)));
+                if (diff >= 1e-8) {
+                    fail("CPICoupon[" + i + "] rate reconstruction failed:"
+                            + " expected=" + (fixedRate * zicV.indexFixing() / baseCPI)
+                            + " actual=" + zicV.rate()
+                            + " diff=" + diff);
+                }
+            }
+        }
+
+        final double legNpvError = Math.abs(testInfLegNPV - zisV.legNPV(0));
+        if (legNpvError >= 1e-5) {
+            fail("Manual inf-leg NPV vs pricing engine:"
+                    + " manual=" + testInfLegNPV
+                    + " engine=" + zisV.legNPV(0)
+                    + " diff=" + legNpvError);
+        }
+
+        // --- Stored NPV check (inflationcpiswap.cpp:349-354) ---
+        final boolean usingAtParCoupons =
+                IborCoupon.Settings.getInstance().usingAtParCoupons();
+        final double maxDiff = usingAtParCoupons ? 1e-5 : 3e-5;
+        final double diff = Math.abs(1.0 - zisV.NPV() / 4191797.54);
+        if (diff >= maxDiff) {
+            fail("Stored-value NPV check:"
+                    + " expected~4191797.54 actual=" + zisV.NPV()
+                    + " ratio-diff=" + diff
+                    + " tolerance=" + maxDiff
+                    + " usingAtParCoupons=" + usingAtParCoupons);
+        }
     }
 
     // ===================================================================

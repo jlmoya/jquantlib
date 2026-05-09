@@ -313,8 +313,14 @@ public class CashFlows {
     public double bps (final Leg cashflows, final Handle <YieldTermStructure> discountCurve,
                        final Date settlementDate)
     {
-        // default variable of npv date
-        return bps (cashflows, discountCurve, settlementDate, settlementDate);
+        // C++ default: npvDate = Date() (null) — no NPV-date normalization.
+        // Previously passed settlementDate as npvDate, which caused
+        // BPSCalculator.result() to divide by discount(settlementDate). When
+        // the curve reference date is after the settlementDate (e.g. one-day
+        // offset for InterpolatedZeroCurve) this threw "date before reference
+        // date". Matches C++ CashFlows::bps(leg, curve, settlementDate) which
+        // defaults npvDate = Date(). Phase 2y A.1 align.
+        return bps (cashflows, discountCurve, settlementDate, new Date());
     }
 
     public double bps (final Leg cashflows, final Handle <YieldTermStructure> discountCurve,
