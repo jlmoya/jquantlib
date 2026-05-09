@@ -1,0 +1,801 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 955.1636762574369
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5550.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_5550"
+    },
+    {
+      "expected": {
+        "npv": 922.7529273478816
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5600.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_5600"
+    },
+    {
+      "expected": {
+        "npv": 890.9871996449841
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5650.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_5650"
+    },
+    {
+      "expected": {
+        "npv": 859.8739354910151
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5700.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_5700"
+    },
+    {
+      "expected": {
+        "npv": 829.4197188831052
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5750.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_5750"
+    },
+    {
+      "expected": {
+        "npv": 799.6302609534471
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5800.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_5800"
+    },
+    {
+      "expected": {
+        "npv": 770.5103890625495
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5850.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_5850"
+    },
+    {
+      "expected": {
+        "npv": 742.0640394991834
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5900.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_5900"
+    },
+    {
+      "expected": {
+        "npv": 714.2942537574568
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5950.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_5950"
+    },
+    {
+      "expected": {
+        "npv": 687.2031783405195
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6000.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6000"
+    },
+    {
+      "expected": {
+        "npv": 660.7920680181894
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6050.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6050"
+    },
+    {
+      "expected": {
+        "npv": 635.0612924464507
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6100.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6100"
+    },
+    {
+      "expected": {
+        "npv": 610.0103460399315
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6150.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6150"
+    },
+    {
+      "expected": {
+        "npv": 585.6378609684391
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6200.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6200"
+    },
+    {
+      "expected": {
+        "npv": 561.9416231375242
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6250.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6250"
+    },
+    {
+      "expected": {
+        "npv": 538.9185909939312
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6300.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6300"
+    },
+    {
+      "expected": {
+        "npv": 516.5649169894003
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6350.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6350"
+    },
+    {
+      "expected": {
+        "npv": 494.875971522931
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6400.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6400"
+    },
+    {
+      "expected": {
+        "npv": 473.8463691733736
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6450.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6450"
+    },
+    {
+      "expected": {
+        "npv": 453.46999702783455
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6500.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6500"
+    },
+    {
+      "expected": {
+        "npv": 433.7400449042696
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 6550.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p0_call_strike_6550"
+    },
+    {
+      "expected": {
+        "npv": 234.48698224253323
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.05,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.2,
+        "spot": 6000.0,
+        "strike": 5550.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Put"
+      },
+      "name": "p0_put_strike_5550"
+    },
+    {
+      "expected": {
+        "npv": 732.8711463772876
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5550.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_5550"
+    },
+    {
+      "expected": {
+        "npv": 698.5547572182099
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5600.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_5600"
+    },
+    {
+      "expected": {
+        "npv": 665.1409687098258
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5650.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_5650"
+    },
+    {
+      "expected": {
+        "npv": 632.6502702685408
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5700.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_5700"
+    },
+    {
+      "expected": {
+        "npv": 601.1006049189566
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5750.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_5750"
+    },
+    {
+      "expected": {
+        "npv": 570.5072663042893
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5800.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_5800"
+    },
+    {
+      "expected": {
+        "npv": 540.8828205719273
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5850.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_5850"
+    },
+    {
+      "expected": {
+        "npv": 512.237053442896
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5900.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_5900"
+    },
+    {
+      "expected": {
+        "npv": 484.57694239433073
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5950.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_5950"
+    },
+    {
+      "expected": {
+        "npv": 457.9066535233062
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6000.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6000"
+    },
+    {
+      "expected": {
+        "npv": 432.2275623247901
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6050.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6050"
+    },
+    {
+      "expected": {
+        "npv": 407.53829731129656
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6100.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6100"
+    },
+    {
+      "expected": {
+        "npv": 383.8348051311732
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6150.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6150"
+    },
+    {
+      "expected": {
+        "npv": 361.11043560948275
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6200.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6200"
+    },
+    {
+      "expected": {
+        "npv": 339.3560449421204
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6250.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6250"
+    },
+    {
+      "expected": {
+        "npv": 318.5601151211634
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6300.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6300"
+    },
+    {
+      "expected": {
+        "npv": 298.70888755747217
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6350.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6350"
+    },
+    {
+      "expected": {
+        "npv": 279.78650879449043
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6400.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6400"
+    },
+    {
+      "expected": {
+        "npv": 261.77518617316605
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6450.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6450"
+    },
+    {
+      "expected": {
+        "npv": 244.65535130997037
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6500.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6500"
+    },
+    {
+      "expected": {
+        "npv": 228.40582928493006
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 6550.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Call"
+      },
+      "name": "p1_call_strike_6550"
+    },
+    {
+      "expected": {
+        "npv": 131.00241260301485
+      },
+      "inputs": {
+        "days_to_maturity": 360,
+        "nu": 0.01,
+        "q": 0.02,
+        "r": 0.05,
+        "sigma": 0.15,
+        "spot": 6000.0,
+        "strike": 5550.0,
+        "t": 1.0,
+        "theta": -0.5,
+        "type": "Put"
+      },
+      "name": "p1_put_strike_5550"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T12:43:54Z",
+  "generated_by": "variance_gamma_engine_probe",
+  "test_group": "experimental/variancegamma/variance_gamma_engine"
+}

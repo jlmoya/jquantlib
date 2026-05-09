@@ -1,0 +1,26 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 1.8057445397474439
+      },
+      "inputs": {
+        "kappa": 0.2,
+        "maturity": "2017-01-10",
+        "mu": -0.14,
+        "q": 0.0,
+        "r": 0.05,
+        "sigma": 0.12,
+        "spot": 100.0,
+        "strike": 98.0,
+        "valuation": "2017-01-01"
+      },
+      "name": "singularity_call_98"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T12:43:58Z",
+  "generated_by": "variance_gamma_singularity_probe",
+  "test_group": "experimental/variancegamma/variance_gamma_singularity"
+}
