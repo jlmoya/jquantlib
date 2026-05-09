@@ -90,10 +90,13 @@ public class CrankNicolsonScheme {
         }
     }
 
-    /** Number of iterative-solver iterations consumed by the implicit step. */
+    /**
+     * Number of iterative-solver iterations consumed by the implicit step.
+     * Mirrors C++ {@code CrankNicolsonScheme::numberOfIterations()} —
+     * delegates to the underlying {@link ImplicitEulerScheme}, which now
+     * (Phase 5j.5) tracks BiCGStab/GMRES iterations on the multi-d path.
+     */
     public int numberOfIterations() {
-        // ImplicitEulerScheme currently uses only the 1D (direct solve) path,
-        // which has no iterative-solver iteration count. Return 0 consistently.
-        return 0;
+        return implicit_.numberOfIterations();
     }
 }
