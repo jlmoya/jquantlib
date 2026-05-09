@@ -88,6 +88,59 @@ public class TimeGrid {
 
 
     /**
+     * Time grid with mandatory time points only.
+     * <p>
+     * Mandatory points are guaranteed to belong to the grid. No additional
+     * points are added. Mirrors C++ v1.42.1 {@code TimeGrid(Iterator begin,
+     * Iterator end)} (timegrid.hpp:54-78). Adds {@code 0.0} at the front if
+     * the smallest mandatory time is positive.
+     *
+     * @param mandatoryPoints mandatory time points (sorted and de-duplicated)
+     */
+    public TimeGrid(final List</*@Time*/ Double> mandatoryPoints) {
+        QL.require(!mandatoryPoints.isEmpty(), "empty time sequence");
+
+        // Sort + dedup using close_enough.
+        final List<Double> sorted = new ArrayList<Double>(mandatoryPoints);
+        java.util.Collections.sort(sorted);
+        QL.require(sorted.get(0) >= 0.0, "negative times not allowed");
+        final List<Double> mts = new ArrayList<Double>();
+        mts.add(sorted.get(0));
+        for (int i = 1; i < sorted.size(); i++) {
+            if (!Closeness.isCloseEnough(sorted.get(i), mts.get(mts.size() - 1))) {
+                mts.add(sorted.get(i));
+            }
+        }
+
+        // Build times: prepend 0 if not already present.
+        final List<Double> tList = new ArrayList<Double>();
+        if (mts.get(0) > 0.0) {
+            tList.add(0.0);
+        }
+        tList.addAll(mts);
+
+        this.times = new Array(tList.size());
+        for (int i = 0; i < tList.size(); i++) {
+            this.times.set(i, tList.get(i));
+        }
+
+        this.mandatoryTimes = new Array(mts.size());
+        for (int i = 0; i < mts.size(); i++) {
+            this.mandatoryTimes.set(i, mts.get(i));
+        }
+
+        if (this.times.size() > 1) {
+            this.dt = new Array(this.times.size() - 1);
+            for (int i = 0; i < this.dt.size(); i++) {
+                this.dt.set(i, this.times.get(i + 1) - this.times.get(i));
+            }
+        } else {
+            this.dt = new Array(0);
+        }
+    }
+
+
+    /**
      * Time grid with mandatory time points.
      * <p>
      * Mandatory points are guaranteed to belong to the grid. No additional points are added.
