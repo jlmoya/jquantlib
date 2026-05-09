@@ -1,0 +1,164 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 8.85914427762094
+      },
+      "inputs": {
+        "L": 16.0,
+        "N": 200,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0
+      },
+      "name": "call_atm_1y"
+    },
+    {
+      "expected": {
+        "npv": 5.962219397016795
+      },
+      "inputs": {
+        "L": 16.0,
+        "N": 200,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0
+      },
+      "name": "put_atm_1y"
+    },
+    {
+      "expected": {
+        "npv": 5.142986488876529
+      },
+      "inputs": {
+        "L": 16.0,
+        "N": 200,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 110.0
+      },
+      "name": "call_otm_1y"
+    },
+    {
+      "expected": {
+        "npv": 2.316466159594999
+      },
+      "inputs": {
+        "L": 16.0,
+        "N": 200,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 90.0
+      },
+      "name": "put_otm_1y"
+    },
+    {
+      "expected": {
+        "npv": 12.976548437650353
+      },
+      "inputs": {
+        "L": 16.0,
+        "N": 200,
+        "maturity_years": 2.0,
+        "option_type": "Call",
+        "strike": 100.0
+      },
+      "name": "call_atm_2y"
+    },
+    {
+      "expected": {
+        "npv": 7.381346326013989
+      },
+      "inputs": {
+        "L": 16.0,
+        "N": 200,
+        "maturity_years": 2.0,
+        "option_type": "Put",
+        "strike": 100.0
+      },
+      "name": "put_atm_2y"
+    },
+    {
+      "expected": {
+        "npv": 6.126421507776387
+      },
+      "inputs": {
+        "L": 16.0,
+        "N": 200,
+        "maturity_years": 0.5,
+        "option_type": "Call",
+        "strike": 100.0
+      },
+      "name": "call_atm_05y"
+    },
+    {
+      "expected": {
+        "c1": -0.02,
+        "c2": 0.038826916128434925,
+        "c3": 0.0029971051697563573,
+        "c4": 0.0019658450813120868,
+        "kurtosis": 1.3040177262146584,
+        "mu": -0.02,
+        "skew": 0.3917442552151553,
+        "var": 0.038826916128434925
+      },
+      "inputs": {
+        "t": 1.0
+      },
+      "name": "cumulants_t_1"
+    },
+    {
+      "expected": {
+        "c1": -0.04,
+        "c2": 0.07659815445267416,
+        "c3": 0.007863548555570074,
+        "c4": 0.008510807189277908,
+        "kurtosis": 1.4505547980902853,
+        "mu": -0.04,
+        "skew": 0.37092927777139195,
+        "var": 0.07659815445267416
+      },
+      "inputs": {
+        "t": 2.0
+      },
+      "name": "cumulants_t_2"
+    },
+    {
+      "expected": {
+        "c1": -0.01,
+        "c2": 0.019642699063990104,
+        "c3": 0.0009805439817727423,
+        "c4": 0.0003530283771812607,
+        "kurtosis": 0.9149709174519531,
+        "mu": -0.01,
+        "skew": 0.35617655896032313,
+        "var": 0.019642699063990104
+      },
+      "inputs": {
+        "t": 0.5
+      },
+      "name": "cumulants_t_05"
+    },
+    {
+      "expected": {
+        "c1": -0.005000000000000001,
+        "c2": 0.00990021979360079,
+        "c3": 0.00028564327451005957,
+        "c4": 5.378383516423341e-05,
+        "kurtosis": 0.5487342831721435,
+        "mu": -0.005000000000000001,
+        "skew": 0.2899724569600497,
+        "var": 0.00990021979360079
+      },
+      "inputs": {
+        "t": 0.25
+      },
+      "name": "cumulants_t_025"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T20:35:16Z",
+  "generated_by": "cos_heston_engine_probe",
+  "test_group": "heston-engines/cos_heston_engine"
+}
