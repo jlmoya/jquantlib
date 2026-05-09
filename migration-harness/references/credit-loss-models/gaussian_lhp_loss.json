@@ -1,0 +1,163 @@
+{
+  "cases": [
+    {
+      "expected": 2.856452431826141,
+      "inputs": {
+        "attach": 0.0,
+        "correl": 0.2,
+        "detach": 0.1,
+        "prob": 0.05,
+        "recovery": 0.4,
+        "remNot": 100.0
+      },
+      "name": "etl_equity_5pct_prob_20pct_corr"
+    },
+    {
+      "expected": 0.14321189295822545,
+      "inputs": {
+        "attach": 0.1,
+        "correl": 0.2,
+        "detach": 0.3,
+        "prob": 0.05,
+        "recovery": 0.4,
+        "remNot": 100.0
+      },
+      "name": "etl_mezz_5pct_prob_20pct_corr"
+    },
+    {
+      "expected": 0.00033568646434098377,
+      "inputs": {
+        "attach": 0.3,
+        "correl": 0.2,
+        "detach": 1.0,
+        "prob": 0.05,
+        "recovery": 0.4,
+        "remNot": 100.0
+      },
+      "name": "etl_senior_5pct_prob_20pct_corr"
+    },
+    {
+      "expected": 26.108329389025013,
+      "inputs": {
+        "attach": 0.05,
+        "correl": 0.5,
+        "detach": 0.2,
+        "prob": 0.1,
+        "recovery": 0.4,
+        "remNot": 1000.0
+      },
+      "name": "etl_mezz_10pct_prob_50pct_corr"
+    },
+    {
+      "expected": 0.0,
+      "inputs": {
+        "attach": 0.2,
+        "correl": 0.2,
+        "detach": 0.1,
+        "prob": 0.05,
+        "recovery": 0.4,
+        "remNot": 100.0
+      },
+      "name": "etl_attach_ge_detach_zero"
+    },
+    {
+      "expected": 0.0,
+      "inputs": {
+        "attach": 0.0,
+        "correl": 0.2,
+        "detach": 0.1,
+        "prob": 0.0,
+        "recovery": 0.4,
+        "remNot": 100.0
+      },
+      "name": "etl_prob_zero"
+    },
+    {
+      "expected": 4.919881804225025,
+      "inputs": {
+        "attach": 0.0,
+        "correl": 0.01,
+        "detach": 0.05,
+        "prob": 0.1,
+        "recovery": 0.4,
+        "remNot": 100.0
+      },
+      "name": "etl_low_correl"
+    },
+    {
+      "expected": 0.09280663182422498,
+      "inputs": {
+        "avgProb": 0.05,
+        "correl": 0.2,
+        "perctl": 0.95,
+        "recovery": 0.4
+      },
+      "name": "pctl_5pct_prob_95th_q_20pct_corr"
+    },
+    {
+      "expected": 0.1497448951558496,
+      "inputs": {
+        "avgProb": 0.05,
+        "correl": 0.2,
+        "perctl": 0.99,
+        "recovery": 0.4
+      },
+      "name": "pctl_5pct_prob_99th_q_20pct_corr"
+    },
+    {
+      "expected": 0.020977898108155778,
+      "inputs": {
+        "avgProb": 0.1,
+        "correl": 0.5,
+        "perctl": 0.5,
+        "recovery": 0.4
+      },
+      "name": "pctl_10pct_prob_50th_q_50pct_corr"
+    },
+    {
+      "expected": 0.0,
+      "inputs": {
+        "avgProb": 0.05,
+        "correl": 0.2,
+        "perctl": 0.0,
+        "recovery": 0.4
+      },
+      "name": "pctl_perctl_zero"
+    },
+    {
+      "expected": 0.18088007803249034,
+      "inputs": {
+        "avgProb": 0.05,
+        "correl": 0.2,
+        "portfFract": 0.05,
+        "recovery": 0.4
+      },
+      "name": "pol_avg5pct_pf5pct_20pct_corr"
+    },
+    {
+      "expected": 0.04065271420938388,
+      "inputs": {
+        "avgProb": 0.05,
+        "correl": 0.2,
+        "portfFract": 0.1,
+        "recovery": 0.4
+      },
+      "name": "pol_avg5pct_pf10pct_20pct_corr"
+    },
+    {
+      "expected": 0.0835380142493401,
+      "inputs": {
+        "avgProb": 0.1,
+        "correl": 0.5,
+        "portfFract": 0.2,
+        "recovery": 0.4
+      },
+      "name": "pol_avg10pct_pf20pct_50pct_corr"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T21:51:56Z",
+  "generated_by": "gaussian_lhp_loss_probe.cpp (Phase 4m.7)",
+  "test_group": "credit-loss-models/gaussian_lhp_loss"
+}
