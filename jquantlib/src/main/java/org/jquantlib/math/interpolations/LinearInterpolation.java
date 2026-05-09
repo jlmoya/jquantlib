@@ -113,9 +113,16 @@ public class LinearInterpolation extends AbstractInterpolation {
 
         @Override
         public double primitive(final double x) {
+            // Phase 3a align: indices were off by one — C++
+            // (math/interpolations/linearinterpolation.hpp) uses
+            //   primitiveConst_[i] + dx*(yBegin_[i] + 0.5*dx*s_[i])
+            // where i = locate(x). The Java port previously used i-1 across
+            // the board, which crashes on the first interval (locate returns
+            // 0, and vp.get(-1) is OOB) and gives wrong values elsewhere.
+            // Fix matches v1.42.1 exactly.
             final int i = locate(x);
             final double dx = x - vx.get(i);
-            return vp.get(i-1) + dx*(vy.get(i-1) + 0.5*dx*vs.get(i-1));
+            return vp.get(i) + dx*(vy.get(i) + 0.5*dx*vs.get(i));
         }
 
         @Override
