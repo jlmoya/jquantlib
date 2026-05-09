@@ -225,12 +225,17 @@ public abstract class LazyObject implements Observer, Observable {
     //
 
     /**
-     * Implements multiple inheritance via delegate pattern to an inner class
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link WeakReferenceObservable} so
+     * that observers from completed tests don't accumulate on the
+     * lazy object's observer list and cascade on every
+     * {@code Settings.setEvaluationDate}.
      *
      * @see Observable
      * @see DefaultObservable
      */
-    private final Observable delegatedObservable = new DefaultObservable(this);
+    private final Observable delegatedObservable = new WeakReferenceObservable(this);
 
     @Override
     public final void addObserver(final Observer observer) {

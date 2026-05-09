@@ -110,12 +110,17 @@ public abstract class GenericEngine
     //
 
     /**
-     * Implements multiple inheritance via delegate pattern to an inner class
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link
+     * org.jquantlib.util.WeakReferenceObservable} so that instruments
+     * from completed tests don't accumulate on the engine's observer
+     * list and cascade on every Settings.setEvaluationDate.
      *
      * @see Observable
      * @see DefaultObservable
      */
-    private final Observable delegatedObservable = new DefaultObservable(this);
+    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     @Override
     public final void addObserver(final Observer observer) {

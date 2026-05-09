@@ -572,9 +572,21 @@ public class Date implements Observable, Comparable<Date>, Serializable, Cloneab
     //
 
     /**
-     * Implements multiple inheritance via delegate pattern to an inner class
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link
+     * org.jquantlib.util.WeakReferenceObservable} to break the test-suite
+     * cascade slowdown — prior tests' term structures / helpers / etc.
+     * register strong-ref observers on the {@code Settings.evaluationDate()}
+     * proxy and never get GC'd between tests, growing the observer list
+     * unbounded. With weak refs the dead observers are reclaimed lazily.
+     *
+     * <p>This is API-equivalent for any caller that holds its own strong
+     * reference to the registered observer (the standard pattern); only
+     * "register-and-forget" observers see a behaviour change, and those
+     * are not legitimate users of the observer pattern.
      */
-    private final Observable delegatedObservable = new DefaultObservable(this);
+    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     @Override
 	public final void addObserver(final Observer observer) {
@@ -609,6 +621,18 @@ public class Date implements Observable, Comparable<Date>, Serializable, Cloneab
     @Override
 	public final List<Observer> getObservers() {
         return delegatedObservable.getObservers();
+    }
+
+    /**
+     * Phase 2x A.4: lets {@link org.jquantlib.Settings.DateProxy} (and
+     * tests) explicitly drop GC-cleared observer wrappers before fanning
+     * out a notification. No-op for non-{@link
+     * org.jquantlib.util.WeakReferenceObservable} delegates.
+     */
+    protected final void compactObservers() {
+        if (delegatedObservable instanceof org.jquantlib.util.WeakReferenceObservable) {
+            ((org.jquantlib.util.WeakReferenceObservable) delegatedObservable).compact();
+        }
     }
 
 

@@ -122,7 +122,9 @@ public abstract class BootstrapHelper <TS extends TermStructure> implements Obse
      *
      * @see Observable
      */
-    private final Observable delegatedObservable = new DefaultObservable(this);
+    // Phase 2x A.4: WeakReferenceObservable to break cumulative
+    // observer-list bleed across tests.
+    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     @Override
     public final void addObserver(final Observer observer) {

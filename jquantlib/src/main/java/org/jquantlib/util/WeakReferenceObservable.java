@@ -73,6 +73,44 @@ public class WeakReferenceObservable extends DefaultObservable {
         }
     }
 
+    /**
+     * Phase 2x A.4: notification-time compaction. Before fanning out the
+     * notification, sweep the observer list and remove any
+     * {@link WeakReferenceObserver} whose referent has been GC'd. Without
+     * this sweep a hot notify loop (e.g.,
+     * {@code Settings.setEvaluationDate} called many times per inner
+     * iteration) would visit every dead weak ref on every cycle —
+     * O(notify-cycles * dead-observer-count). The C++ ObservableSettings
+     * model has analogous lazy compaction.
+     */
+    @Override
+    public void notifyObservers() {
+        compact();
+        super.notifyObservers();
+    }
+
+    @Override
+    public void notifyObservers(final Object arg) {
+        compact();
+        super.notifyObservers(arg);
+    }
+
+    /**
+     * Removes any wrapped {@link WeakReferenceObserver} whose underlying
+     * referent has already been GC'd. Idempotent and cheap when the list
+     * is small or has no dead entries.
+     */
+    public void compact() {
+        for (final Observer weakObserver : getObservers()) {
+            if (weakObserver instanceof WeakReferenceObserver) {
+                final WeakReferenceObserver wro = (WeakReferenceObserver) weakObserver;
+                if (wro.get() == null) {
+                    deleteWeakReference(wro);
+                }
+            }
+        }
+    }
+
     private void deleteWeakReference(final WeakReferenceObserver observer){
         super.deleteObserver(observer);
     }

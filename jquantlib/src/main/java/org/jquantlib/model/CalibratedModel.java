@@ -219,7 +219,9 @@ public abstract class CalibratedModel implements Observer, Observable {
     // implements Observable
     //
 
-    private final DefaultObservable delegatedObservable = new DefaultObservable(this);
+    // Phase 2x A.4: WeakReferenceObservable to break cumulative
+    // observer-list bleed across tests.
+    private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     @Override
     public void addObserver(final org.jquantlib.util.Observer observer) {

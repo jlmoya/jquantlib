@@ -437,12 +437,18 @@ public abstract class AbstractTermStructure implements TermStructure {
     //
 
     /**
-     * Implements multiple inheritance via delegate pattern to an inner class
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link
+     * org.jquantlib.util.WeakReferenceObservable} — engines / coupons /
+     * other observers from completed tests would otherwise pile up on
+     * the term structure's observer list (strong refs) and cascade on
+     * every {@code Settings.setEvaluationDate} call.
      *
      * @see Observable
      * @see DefaultObservable
      */
-    private final Observable delegatedObservable = new DefaultObservable(this);
+    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     @Override
     public void addObserver(final Observer observer) {

@@ -43,7 +43,9 @@ import org.jquantlib.util.Observer;
  */
 public class TermStructureConsistentModelClass implements Observable {
     
-    private DefaultObservable delegatedObservable = new DefaultObservable(this);
+    // Phase 2x A.4: WeakReferenceObservable to break cumulative
+    // observer-list bleed across tests.
+    private DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     public TermStructureConsistentModelClass(final Handle<YieldTermStructure> termStructure) {
         termStructure_ = (termStructure);

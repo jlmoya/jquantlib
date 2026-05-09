@@ -66,7 +66,9 @@ public abstract class InflationCouponPricer implements Observer, Observable {
     /** Payment date of the coupon being priced (initialized in {@link #initialize}). */
     protected Date paymentDate_;
 
-    private final DefaultObservable delegatedObservable = new DefaultObservable(this);
+    // Phase 2x A.4: WeakReferenceObservable to break cumulative
+    // observer-list bleed across tests.
+    private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     //
     // public abstract methods

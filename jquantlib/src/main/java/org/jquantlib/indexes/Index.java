@@ -193,10 +193,15 @@ public abstract class Index implements Observable {
 	//
 
 	/**
-	 * Implements multiple inheritance via delegate pattern to an inner class
+	 * Implements multiple inheritance via delegate pattern to an inner class.
 	 *
+	 * <p>Phase 2x A.4: switched to {@link
+	 * org.jquantlib.util.WeakReferenceObservable} — inflation/IBOR coupons
+	 * from completed tests would otherwise pile up on the index's
+	 * observer list (strong refs) and cascade on every
+	 * {@code Settings.setEvaluationDate} call.
 	 */
-	private final Observable delegatedObservable = new DefaultObservable(this);
+	private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
 	@Override
 	public void addObserver(final Observer observer) {

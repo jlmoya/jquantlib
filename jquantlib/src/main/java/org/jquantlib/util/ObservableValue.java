@@ -103,9 +103,14 @@ public class ObservableValue<T> implements Observable {
     //
 
     /**
-     * Implements multiple inheritance via delegate pattern to an inner class
+     * Implements multiple inheritance via delegate pattern to an inner class.
+     *
+     * <p>Phase 2x A.4: switched to {@link WeakReferenceObservable} so
+     * that observers from completed tests don't accumulate on the
+     * observable value's observer list and cascade on every
+     * {@code Settings.setEvaluationDate}.
      */
-    private final Observable delegatedObservable = new DefaultObservable(this);
+    private final Observable delegatedObservable = new WeakReferenceObservable(this);
 
     @Override
     public void addObserver(final Observer observer) {

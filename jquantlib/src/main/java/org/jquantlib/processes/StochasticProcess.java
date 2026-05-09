@@ -226,7 +226,10 @@ public abstract class StochasticProcess implements Observable, Observer {
      * @see Observable
      * @see DefaultObservable
      */
-    private final Observable delegatedObservable = new DefaultObservable(this);
+    // Phase 2x A.4: WeakReferenceObservable to break cumulative
+    // observer-list bleed across tests (engines / pricers from
+    // completed tests would otherwise stay attached strongly).
+    private final Observable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     @Override
     public void addObserver(final Observer observer) {

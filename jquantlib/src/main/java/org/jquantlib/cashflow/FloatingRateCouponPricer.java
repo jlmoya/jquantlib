@@ -29,7 +29,9 @@ import org.jquantlib.util.Observer;
 
 public abstract class FloatingRateCouponPricer implements Observer, Observable {
 
-    private final DefaultObservable delegatedObservable = new DefaultObservable(this);
+    // Phase 2x A.4: WeakReferenceObservable to break cumulative
+    // observer-list bleed across tests.
+    private final DefaultObservable delegatedObservable = new org.jquantlib.util.WeakReferenceObservable(this);
 
     public abstract double swapletPrice();
     public abstract double swapletRate();
