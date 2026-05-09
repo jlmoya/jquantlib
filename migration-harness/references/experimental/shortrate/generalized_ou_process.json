@@ -1,0 +1,144 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "diffusion": 0.1,
+        "drift": -0.010000000000000002,
+        "expectation": 0.04764993805169191,
+        "level": 0.03,
+        "speed_t": 0.5,
+        "std_dev": 0.04703182081618733,
+        "variance": 0.0022119921692859514,
+        "vol_t": 0.1,
+        "x0": 0.04
+      },
+      "inputs": {
+        "a": 0.5,
+        "dt": 0.25,
+        "level": 0.03,
+        "profile": "constant",
+        "sigma": 0.1,
+        "t": 1.0,
+        "x": 0.05,
+        "x0": 0.04
+      },
+      "name": "constant_a_0.5_sigma_0.1"
+    },
+    {
+      "expected": {
+        "diffusion": 0.060000000000000005,
+        "drift": -0.00375,
+        "expectation": 0.03823745353876893,
+        "speed_t": 0.25,
+        "std_dev": 0.03990782331681202,
+        "variance": 0.0015926343618858853,
+        "vol_t": 0.060000000000000005
+      },
+      "inputs": {
+        "dt": 0.5,
+        "level": 0.025,
+        "profile": "linear",
+        "speed_c0": 0.2,
+        "speed_c1": 0.1,
+        "t": 0.5,
+        "vol_c0": 0.05,
+        "vol_c1": 0.02,
+        "x": 0.04,
+        "x0": 0.0
+      },
+      "name": "linear_t_0.50"
+    },
+    {
+      "expected": {
+        "diffusion": 0.07,
+        "drift": -0.0045000000000000005,
+        "expectation": 0.03791061964637587,
+        "speed_t": 0.30000000000000004,
+        "std_dev": 0.04600707769208962,
+        "variance": 0.0021166511977659705,
+        "vol_t": 0.07
+      },
+      "inputs": {
+        "dt": 0.5,
+        "level": 0.025,
+        "profile": "linear",
+        "speed_c0": 0.2,
+        "speed_c1": 0.1,
+        "t": 1.0,
+        "vol_c0": 0.05,
+        "vol_c1": 0.02,
+        "x": 0.04,
+        "x0": 0.0
+      },
+      "name": "linear_t_1.00"
+    },
+    {
+      "expected": {
+        "diffusion": 0.09,
+        "drift": -0.006,
+        "expectation": 0.03728096129616973,
+        "speed_t": 0.4,
+        "std_dev": 0.05777550981072475,
+        "variance": 0.0033380095338891515,
+        "vol_t": 0.09
+      },
+      "inputs": {
+        "dt": 0.5,
+        "level": 0.025,
+        "profile": "linear",
+        "speed_c0": 0.2,
+        "speed_c1": 0.1,
+        "t": 2.0,
+        "vol_c0": 0.05,
+        "vol_c1": 0.02,
+        "x": 0.04,
+        "x0": 0.0
+      },
+      "name": "linear_t_2.00"
+    },
+    {
+      "expected": {
+        "diffusion": 0.11,
+        "drift": -0.0075,
+        "expectation": 0.03668201174607107,
+        "speed_t": 0.5,
+        "std_dev": 0.06899984795256534,
+        "variance": 0.0047609790174771354,
+        "vol_t": 0.11
+      },
+      "inputs": {
+        "dt": 0.5,
+        "level": 0.025,
+        "profile": "linear",
+        "speed_c0": 0.2,
+        "speed_c1": 0.1,
+        "t": 3.0,
+        "vol_c0": 0.05,
+        "vol_c1": 0.02,
+        "x": 0.04,
+        "x0": 0.0
+      },
+      "name": "linear_t_3.00"
+    },
+    {
+      "expected": {
+        "std_dev": 0.04949747468305833,
+        "variance": 0.0024500000000000004
+      },
+      "inputs": {
+        "a": 1e-09,
+        "dt": 0.5,
+        "profile": "small_speed_limit",
+        "sigma": 0.07,
+        "t": 1.0,
+        "x": 0.0
+      },
+      "name": "small_speed_limit"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T12:54:03Z",
+  "generated_by": "generalized_ou_process_probe",
+  "test_group": "experimental/shortrate/generalized_ou_process"
+}

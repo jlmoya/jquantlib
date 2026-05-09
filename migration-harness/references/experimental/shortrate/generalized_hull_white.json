@@ -1,0 +1,111 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "ghw_discount_bond": 0.9605525828579184,
+        "hw_discount_bond": 0.9605532245791287
+      },
+      "inputs": {
+        "T": 1.0,
+        "a": 0.05,
+        "r": 0.04,
+        "sigma": 0.01,
+        "t": 0.0
+      },
+      "name": "classical_disc_t0.0_T1.0"
+    },
+    {
+      "expected": {
+        "ghw_discount_bond": 0.8140258256250456,
+        "hw_discount_bond": 0.8140282921734974
+      },
+      "inputs": {
+        "T": 5.0,
+        "a": 0.05,
+        "r": 0.04,
+        "sigma": 0.01,
+        "t": 0.0
+      },
+      "name": "classical_disc_t0.0_T5.0"
+    },
+    {
+      "expected": {
+        "ghw_discount_bond": 0.8484247121796171,
+        "hw_discount_bond": 0.8484267462124092
+      },
+      "inputs": {
+        "T": 5.0,
+        "a": 0.05,
+        "r": 0.04,
+        "sigma": 0.01,
+        "t": 1.0
+      },
+      "name": "classical_disc_t1.0_T5.0"
+    },
+    {
+      "expected": {
+        "ghw_discount_bond": 0.7131880100945349,
+        "hw_discount_bond": 0.713192150424667
+      },
+      "inputs": {
+        "T": 10.0,
+        "a": 0.05,
+        "r": 0.04,
+        "sigma": 0.01,
+        "t": 2.0
+      },
+      "name": "classical_disc_t2.0_T10.0"
+    },
+    {
+      "expected": {
+        "call": 0.20806312837097654,
+        "put": 1.967214305839917e-21
+      },
+      "inputs": {
+        "a": 0.05,
+        "bondMaturity": 5.0,
+        "maturity": 1.0,
+        "sigma": 0.01,
+        "strike": 0.6
+      },
+      "name": "classical_dbo_strike_0.6_T_1_to_5"
+    },
+    {
+      "expected": {
+        "call": 0.15287015592755646,
+        "discount_bond": 0.8607079764253595
+      },
+      "inputs": {
+        "T": 3.0,
+        "a": 0.07,
+        "bondMaturity": 4.0,
+        "maturity": 1.0,
+        "r": 0.05,
+        "sigma": 0.012,
+        "strike": 0.7,
+        "t": 0.0
+      },
+      "name": "piecewise_single_segment"
+    },
+    {
+      "expected": {
+        "call": 0.1074559513696749
+      },
+      "inputs": {
+        "bondMaturity": 6.0,
+        "maturity": 2.0,
+        "speed_t0": 0.05,
+        "speed_t5": 0.1,
+        "strike": 0.7,
+        "vol_t0": 0.01,
+        "vol_t5": 0.02
+      },
+      "name": "piecewise_two_segments"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T13:02:54Z",
+  "generated_by": "generalized_hull_white_probe",
+  "test_group": "experimental/shortrate/generalized_hull_white"
+}
