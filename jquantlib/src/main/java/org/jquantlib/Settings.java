@@ -214,6 +214,12 @@ public class Settings {
         }
 
         private Date assign(final Date date) {
+            // Align with C++ QuantLib v1.42.1 (settings.hpp:141-145):
+            // 'if (value() != d) ObservableValue<Date>::operator=(d);'
+            // — suppress notifications when assigning the same date.
+            if (super.serialNumber() == date.serialNumber()) {
+                return this;
+            }
             super.assign(date.serialNumber());
             super.notifyObservers();
             return this;
