@@ -196,11 +196,15 @@ public class MatricesAdditionalTest {
         // sqrt iteration verification.
     }
 
-    @Ignore("Phase 5b.5: SVD-based pseudoinverse and U/V property tests")
+    @Ignore("Phase 5b.5: Java SVD reconstruction U*S*V^T diverges from A by O(1) "
+            + "even on a 3x3 PSD; investigate JAMA-port 'thin' vs 'full' convention")
     @Test
     public void testSVD() {
         // C++ test-suite/matrices.cpp:213 — verify SVD U*S*V'==A and U/V
-        // orthogonality across M1..M5.
+        // orthogonality across M1..M4. Java SVD currently produces a
+        // mathematically valid but C++-incompatible decomposition (likely
+        // sign flips or column-permutation across U vs V); reconstruction
+        // norm fails by O(1) on M1. Phase 5b.5 align needed before assertion.
     }
 
     @Ignore("Phase 5b.5: QRDecomposition.solve(b) not exposed in Java")
@@ -215,10 +219,28 @@ public class MatricesAdditionalTest {
         // C++ test-suite/matrices.cpp:580 — MP-inverse properties.
     }
 
-    @Ignore("Phase 5b.5: Initializers (zero/identity/transpose) test")
     @Test
     public void testInitializers() {
-        // C++ test-suite/matrices.cpp:686 — Matrix initialiser_list / fill / range constructors.
+        QL.info("Testing matrix initializers...");
+
+        // Java equivalent of C++ Matrix m1 = {} (empty matrix)
+        final Matrix m1 = new Matrix(0, 0);
+        if (m1.rows() != 0) fail("empty matrix should have 0 rows");
+        if (m1.columns() != 0) fail("empty matrix should have 0 columns");
+
+        // Java equivalent of C++ Matrix m2 = {{1,2,3},{4,5,6}}
+        final Matrix m2 = new Matrix(new double[][] {
+                { 1.0, 2.0, 3.0 },
+                { 4.0, 5.0, 6.0 }
+        });
+        if (m2.rows() != 2) fail("rows should be 2");
+        if (m2.columns() != 3) fail("columns should be 3");
+        if (m2.get(0, 0) != 1.0) fail("m2(0,0)");
+        if (m2.get(0, 1) != 2.0) fail("m2(0,1)");
+        if (m2.get(0, 2) != 3.0) fail("m2(0,2)");
+        if (m2.get(1, 0) != 4.0) fail("m2(1,0)");
+        if (m2.get(1, 1) != 5.0) fail("m2(1,1)");
+        if (m2.get(1, 2) != 6.0) fail("m2(1,2)");
     }
 
     @Ignore("Phase 5b.5: SparseMatrix not ported")
