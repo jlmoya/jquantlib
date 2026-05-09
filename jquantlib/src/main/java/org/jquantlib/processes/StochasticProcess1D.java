@@ -144,7 +144,7 @@ public abstract class StochasticProcess1D extends StochasticProcess {
      * where {@latex$ E } is the expectation and {@latex$ S } the
      * standard deviation.
      */
-    public final /*@Real*/ double evolve(final /*@Time*/ double t0, final /*@Real*/ double x0, final /*@Time*/ double dt, final double dw) {
+    public /*@Real*/ double evolve(final /*@Time*/ double t0, final /*@Real*/ double x0, final /*@Time*/ double dt, final double dw) {
         return apply(expectation(t0,x0,dt), stdDeviation(t0,x0,dt) * dw);
     }
 
