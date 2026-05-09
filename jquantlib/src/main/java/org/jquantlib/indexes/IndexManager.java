@@ -33,8 +33,9 @@ import org.jquantlib.util.ObservableValue;
 public class IndexManager {
 
     private static final long serialVersionUID = -9204254124065694863L;
-    
+
     private static Map<String, TimeSeries<Double>> data;
+    private static Map<String, Observable> notifiers;
     private static volatile IndexManager instance;
 
     
@@ -60,6 +61,7 @@ public class IndexManager {
     
     private IndexManager() {
 	    this.data = new ConcurrentHashMap<String, TimeSeries<Double>>();
+	    this.notifiers = new ConcurrentHashMap<String, Observable>();
 	}
 
 	public TimeSeries<Double> getHistory(final String name) {
@@ -78,13 +80,31 @@ public class IndexManager {
 		data.clear();
 	}
 
+	/**
+	 * Returns the per-name notifier shared across all index instances with the
+	 * same name. Mirrors C++ v1.42.1 ql/indexes/indexmanager.cpp:44-50, which
+	 * caches notifiers in a map so that observers registered through any
+	 * index instance fire when {@code addFixing}/{@code clearHistory} is
+	 * invoked through any other instance with the same name.
+	 *
+	 * Phase 5c align: previously this returned a new {@code ObservableValue}
+	 * on every call, breaking observer notifications across index instances.
+	 */
 	public Observable notifier(final String name) {
-	    TimeSeries<Double> value = data.get(name);
-		if (value == null){
-			value = new TimeSeries<Double>(Double.class);
-			data.put(name, value);
+		Observable n = notifiers.get(name);
+		if (n == null) {
+			// ObservableValue<String> wraps the index name as a stable carrier;
+			// what matters is that the same Observable instance is returned on
+			// every call so observers registered via any instance fire on
+			// notifyObservers() invoked from any other.
+			n = new ObservableValue<String>(name);
+			notifiers.put(name, n);
 		}
-		return new ObservableValue<TimeSeries<Double>>(value);
+		// Ensure history exists for backward compatibility.
+		if (data.get(name) == null) {
+			data.put(name, new TimeSeries<Double>(Double.class));
+		}
+		return n;
 	}
 
 }

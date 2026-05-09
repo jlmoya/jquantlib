@@ -64,8 +64,13 @@ public abstract class InterestRateIndex extends Index implements Observer {
         this.fixingCalendar = fixingCalendar;
         this.currency = currency;
         this.dayCounter = dayCounter;
-        
-        this.tenor.normalize();
+
+        // C++ v1.42.1 ql/indexes/interestrateindex.cpp:38-40 explicitly avoids
+        // Period::normalize() ("does too much; we want to leave days alone")
+        // and only collapses 12N*Months -> N*Years. Match that behavior.
+        if (tenor.units() == TimeUnit.Months && tenor.length() % 12 == 0) {
+            this.tenor = new Period(tenor.length() / 12, TimeUnit.Years);
+        }
 
         new Settings().evaluationDate().addObserver(this);
         IndexManager.getInstance().notifier(name()).addObserver(this);

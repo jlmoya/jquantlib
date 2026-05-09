@@ -126,10 +126,15 @@ public abstract class Index implements Observable {
 
 		IndexManager.getInstance().setHistory(tag, h);
 
+		// Phase 5c align: notify the per-name notifier so observers registered
+		// with any other index instance sharing the same name fire as in C++
+		// v1.42.1 (ql/indexes/indexmanager.hpp:104).
+		IndexManager.getInstance().notifier(tag).notifyObservers();
+
 		QL.ensure(noInvalidFixing , "at least one invalid fixing provided");  // TODO: message
 		QL.ensure(noDuplicatedFixing , "at least one duplicated fixing provided");  // TODO: message
 	}
-	
+
 	/**
 	 * Stores historical fixings at the given dates
 	 * <p>
@@ -171,6 +176,9 @@ public abstract class Index implements Observable {
 
 		IndexManager.getInstance().setHistory(tag, h);
 
+		// Phase 5c align: see addFixing(date, value, forceOverwrite).
+		IndexManager.getInstance().notifier(tag).notifyObservers();
+
 		QL.ensure(noInvalidFixing , "at least one invalid fixing provided");  // TODO: message
 		QL.ensure(noDuplicatedFixing , "at least one duplicated fixing provided");  // TODO: message
 	}
@@ -181,6 +189,9 @@ public abstract class Index implements Observable {
 	 */
 	public final void clearFixings() {
 		IndexManager.getInstance().clearHistory(name());
+		// Phase 5c align: notify observers when fixings cleared (mirrors
+		// C++ v1.42.1 ql/indexes/indexmanager.cpp:62).
+		IndexManager.getInstance().notifier(name()).notifyObservers();
 	}
 
 	public double fixing(final Date fixingDate){
