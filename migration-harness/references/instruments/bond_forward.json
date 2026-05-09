@@ -1,0 +1,39 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "accruedAtDelivery": 1.4109589041095827,
+        "bondDirtyPrice": 160.89806181890347,
+        "bondNPV": 160897.62303065046,
+        "cleanForwardPrice": 159.4877610994171,
+        "forwardPrice": 160.89872000352668,
+        "forwardValue": 160.89872000352668,
+        "impliedFuturesPrice": 207.47454969938872,
+        "spotIncome": 0.0,
+        "spotValue": 160.89806181890347
+      },
+      "inputs": {
+        "calendar": "TARGET",
+        "conversionFactor": 0.76871,
+        "coupon": 0.025,
+        "dayCounter": "ActualActual.ISDA",
+        "delivery_serial": 44630,
+        "faceAmount": 100000.0,
+        "flatRate": 0.0004977,
+        "flatRateDayCounter": "Actual365Fixed",
+        "issue_serial": 42231,
+        "maturity_serial": 53554,
+        "position": "Long",
+        "settlementDays": 2,
+        "strike": 0.0,
+        "today_serial": 44627
+      },
+      "name": "flat_curve_long_position"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T22:47:19Z",
+  "generated_by": "bond_forward_probe",
+  "test_group": "instruments/bond_forward"
+}
