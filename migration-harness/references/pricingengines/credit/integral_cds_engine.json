@@ -1,0 +1,249 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "accrual_rebate_npv": 0.0,
+        "coupon_leg_npv": -661427.0046368506,
+        "default_leg_npv": 663897.1042477789,
+        "fair_spread": 0.015056017510479887,
+        "fair_spread_valid": true,
+        "fair_upfront": 0.0,
+        "fair_upfront_valid": false,
+        "npv": 2470.0996109283296,
+        "upfront_npv": -0.0
+      },
+      "inputs": {
+        "calendar": "NullCalendar",
+        "day_counter": "Actual/360",
+        "eval_date": "2026-05-15",
+        "flat_rate": 0.03,
+        "frequency": "Quarterly",
+        "has_upfront": false,
+        "hazard_rate": 0.025,
+        "notional": 10000000.0,
+        "recovery_rate": 0.4,
+        "side": "Buyer",
+        "spread": 0.015,
+        "step_days": 1,
+        "upfront": 0.0,
+        "years": 5
+      },
+      "name": "buyer_5y_running_only_at_par_step1d"
+    },
+    {
+      "expected": {
+        "accrual_rebate_npv": 0.0,
+        "coupon_leg_npv": -661563.0939770865,
+        "default_leg_npv": 663733.163948602,
+        "fair_spread": 0.015049203242848763,
+        "fair_spread_valid": true,
+        "fair_upfront": 0.0,
+        "fair_upfront_valid": false,
+        "npv": 2170.0699715155642,
+        "upfront_npv": -0.0
+      },
+      "inputs": {
+        "calendar": "NullCalendar",
+        "day_counter": "Actual/360",
+        "eval_date": "2026-05-15",
+        "flat_rate": 0.03,
+        "frequency": "Quarterly",
+        "has_upfront": false,
+        "hazard_rate": 0.025,
+        "notional": 10000000.0,
+        "recovery_rate": 0.4,
+        "side": "Buyer",
+        "spread": 0.015,
+        "step_days": 7,
+        "upfront": 0.0,
+        "years": 5
+      },
+      "name": "buyer_5y_running_only_at_par_step7d"
+    },
+    {
+      "expected": {
+        "accrual_rebate_npv": -0.0,
+        "coupon_leg_npv": 661427.0046368506,
+        "default_leg_npv": -663897.1042477789,
+        "fair_spread": 0.015056017510479887,
+        "fair_spread_valid": true,
+        "fair_upfront": 0.0,
+        "fair_upfront_valid": false,
+        "npv": -2470.0996109283296,
+        "upfront_npv": 0.0
+      },
+      "inputs": {
+        "calendar": "NullCalendar",
+        "day_counter": "Actual/360",
+        "eval_date": "2026-05-15",
+        "flat_rate": 0.03,
+        "frequency": "Quarterly",
+        "has_upfront": false,
+        "hazard_rate": 0.025,
+        "notional": 10000000.0,
+        "recovery_rate": 0.4,
+        "side": "Seller",
+        "spread": 0.015,
+        "step_days": 1,
+        "upfront": 0.0,
+        "years": 5
+      },
+      "name": "seller_5y_running_only_at_par_step1d"
+    },
+    {
+      "expected": {
+        "accrual_rebate_npv": 0.0,
+        "coupon_leg_npv": -70916.09273759041,
+        "default_leg_npv": 170665.30417206054,
+        "fair_spread": 0.012032903786984598,
+        "fair_spread_valid": true,
+        "fair_upfront": 0.0,
+        "fair_upfront_valid": false,
+        "npv": 99749.21143447013,
+        "upfront_npv": -0.0
+      },
+      "inputs": {
+        "calendar": "NullCalendar",
+        "day_counter": "Actual/360",
+        "eval_date": "2026-05-15",
+        "flat_rate": 0.025,
+        "frequency": "Quarterly",
+        "has_upfront": false,
+        "hazard_rate": 0.02,
+        "notional": 5000000.0,
+        "recovery_rate": 0.4,
+        "side": "Buyer",
+        "spread": 0.005,
+        "step_days": 7,
+        "upfront": 0.0,
+        "years": 3
+      },
+      "name": "buyer_3y_running_only_offmarket_step7d"
+    },
+    {
+      "expected": {
+        "accrual_rebate_npv": 277.70834201276494,
+        "coupon_leg_npv": -446324.05357973836,
+        "default_leg_npv": 537593.1547368453,
+        "fair_spread": 0.012052405775241332,
+        "fair_spread_valid": true,
+        "fair_upfront": 0.00915696990625707,
+        "fair_upfront_valid": true,
+        "npv": -158390.69831272928,
+        "upfront_npv": -249937.50781184898
+      },
+      "inputs": {
+        "calendar": "NullCalendar",
+        "day_counter": "Actual/360",
+        "eval_date": "2026-05-15",
+        "flat_rate": 0.03,
+        "frequency": "Quarterly",
+        "has_upfront": true,
+        "hazard_rate": 0.02,
+        "notional": 10000000.0,
+        "recovery_rate": 0.4,
+        "side": "Buyer",
+        "spread": 0.01,
+        "step_days": 1,
+        "upfront": 0.025,
+        "years": 5
+      },
+      "name": "buyer_5y_upfront_plus_running_step1d"
+    },
+    {
+      "expected": {
+        "accrual_rebate_npv": -22.218518827066898,
+        "coupon_leg_npv": 15643.145498956144,
+        "default_leg_npv": -17637.322183775486,
+        "fair_spread": 0.009032663532048468,
+        "fair_spread_valid": true,
+        "fair_upfront": 0.002016731297520728,
+        "fair_upfront_valid": true,
+        "npv": 7981.938268568098,
+        "upfront_npv": 9998.333472214506
+      },
+      "inputs": {
+        "calendar": "NullCalendar",
+        "day_counter": "Actual/360",
+        "eval_date": "2026-05-15",
+        "flat_rate": 0.02,
+        "frequency": "Quarterly",
+        "has_upfront": true,
+        "hazard_rate": 0.015,
+        "notional": 1000000.0,
+        "recovery_rate": 0.4,
+        "side": "Seller",
+        "spread": 0.008,
+        "step_days": 7,
+        "upfront": 0.01,
+        "years": 2
+      },
+      "name": "seller_2y_upfront_plus_running_step7d"
+    },
+    {
+      "expected": {
+        "accrual_rebate_npv": 0.0,
+        "coupon_leg_npv": -661427.0046368506,
+        "default_leg_npv": 331948.5521238895,
+        "fair_spread": 0.0075280087552399445,
+        "fair_spread_valid": true,
+        "fair_upfront": 0.0,
+        "fair_upfront_valid": false,
+        "npv": -329478.45251296106,
+        "upfront_npv": -0.0
+      },
+      "inputs": {
+        "calendar": "NullCalendar",
+        "day_counter": "Actual/360",
+        "eval_date": "2026-05-15",
+        "flat_rate": 0.03,
+        "frequency": "Quarterly",
+        "has_upfront": false,
+        "hazard_rate": 0.025,
+        "notional": 10000000.0,
+        "recovery_rate": 0.7,
+        "side": "Buyer",
+        "spread": 0.015,
+        "step_days": 1,
+        "upfront": 0.0,
+        "years": 5
+      },
+      "name": "buyer_5y_high_recovery_step1d"
+    },
+    {
+      "expected": {
+        "accrual_rebate_npv": 0.0,
+        "coupon_leg_npv": -701363.9570580481,
+        "default_leg_npv": 28153.182820710652,
+        "fair_spread": 0.0006021092730257144,
+        "fair_spread_valid": true,
+        "fair_upfront": 0.0,
+        "fair_upfront_valid": false,
+        "npv": -673210.7742373374,
+        "upfront_npv": -0.0
+      },
+      "inputs": {
+        "calendar": "NullCalendar",
+        "day_counter": "Actual/360",
+        "eval_date": "2026-05-15",
+        "flat_rate": 0.03,
+        "frequency": "Quarterly",
+        "has_upfront": false,
+        "hazard_rate": 0.001,
+        "notional": 10000000.0,
+        "recovery_rate": 0.4,
+        "side": "Buyer",
+        "spread": 0.015,
+        "step_days": 7,
+        "upfront": 0.0,
+        "years": 5
+      },
+      "name": "buyer_5y_low_hazard_step7d"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T05:59:34Z",
+  "generated_by": "integral_cds_engine_probe",
+  "test_group": "pricingengines/credit/integral_cds_engine"
+}
