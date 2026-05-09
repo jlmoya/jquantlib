@@ -321,15 +321,14 @@ public class CPISwapTest {
     // BOOST_AUTO_TEST_CASE(consistency) — inflationcpiswap.cpp:249-355
     // ===================================================================
     @Test
-    @Ignore("Phase 2v: requires the InterpolatedZeroCurve nominal curve from"
-            + " the cpp:147-178 nominalData table (29 pillars). Java's"
-            + " InterpolatedZeroCurve constructor enforces yields[0]==1.0"
-            + " (a stale check treating raw zero rates as discount factors)."
-            + " Without that exact curve the C++ stored value 4191797.54 cannot"
-            + " be reproduced (FlatForward 5% stand-in produces a different"
-            + " NPV). Phase 2x align: also requires"
-            + " IborCoupon::Settings::usingAtParCoupons() to choose the"
-            + " 1e-5 vs 3e-5 tolerance branch.")
+    @Ignore("Phase 2y: test body is intentionally empty (documentation"
+            + " stub mirroring inflationcpiswap.cpp:249-355). Phase 2x A.1"
+            + " removed the InterpolatedZeroCurve yields[0]==1.0 assertion"
+            + " and Phase 2x A.3 added IborCoupon.Settings.usingAtParCoupons(),"
+            + " unblocking the production-side prerequisites. Implementation"
+            + " of the actual fixture wiring (CommonVars + 29-pillar nominal"
+            + " curve + UKRPI seeding + DiscountingSwapEngine + 1e-5/3e-5"
+            + " tolerance branch) deferred to Phase 2y or beyond.")
     public void consistency() {
         // C++ flow (paraphrased):
         //   1. Build CommonVars (full UK calendar, UKRPI fixings, ZCIIS curve).

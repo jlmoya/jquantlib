@@ -49,13 +49,12 @@ import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.pricingengines.inflation.YoYInflationUnitDisplacedBlackCapFloorEngine;
 import org.jquantlib.quotes.Handle;
-import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.InflationTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.YoYInflationTermStructure;
 import org.jquantlib.termstructures.inflation.InterpolatedYoYInflationCurve;
 import org.jquantlib.termstructures.volatility.inflation.YoYOptionletVolatilitySurface;
-import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve;
 import org.jquantlib.testsuite.util.Tolerance;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
@@ -167,20 +166,59 @@ public class InflationVolatilityTest {
         yoyIndexEU = new YoYInflationIndex(
                 new EUHICP(Frequency.Monthly, false, false), yoyEU);
 
-        // Nominal yield curves.
-        // C++ uses InterpolatedZeroCurve<Cubic> with 25 (EUR) / 29 (GBP)
-        // tenors. Java's InterpolatedZeroCurve has a known Phase 2x bug
-        // (treats yields[0] as discount factor and requires it == 1.0)
-        // that prevents direct use. Substitute FlatForward at 4.5% (EUR)
-        // and 5.0% (GBP) — same workaround used by Phase 2s C.1
-        // YoYCapFloorTermPriceSurfaceTest.
+        // Nominal yield curves — mirror C++ inflationvolatility.cpp:101-155
+        // InterpolatedZeroCurve<Cubic> construction. The Phase 2x A.1 fix
+        // removes the stale yields[0]==1.0 assertion that previously forced
+        // a FlatForward substitution.
         final DayCounter dc = new Actual365Fixed();
-        final FlatForward euriborTS = new FlatForward(eval, 0.045, dc,
-                Compounding.Continuous, Frequency.Annual);
+
+        final double[] timesEUR = {0.0109589, 0.0684932, 0.263014, 0.317808,
+                0.567123, 0.816438, 1.06575, 1.31507, 1.56438, 2.0137,
+                3.01918, 4.01644, 5.01644, 6.01644, 7.01644, 8.01644,
+                9.02192, 10.0192, 12.0192, 15.0247, 20.0301, 25.0356,
+                30.0329, 40.0384, 50.0466};
+        final double[] ratesEUR = {0.0415600, 0.0426840, 0.0470980, 0.0458506,
+                0.0449550, 0.0439784, 0.0431887, 0.0426604, 0.0422925,
+                0.0424591, 0.0421477, 0.0421853, 0.0424016, 0.0426969,
+                0.0430804, 0.0435011, 0.0439368, 0.0443825, 0.0452589,
+                0.0463389, 0.0472636, 0.0473401, 0.0470629, 0.0461092,
+                0.0450794};
+
+        final double[] timesGBP = {0.008219178, 0.010958904, 0.01369863,
+                0.019178082, 0.073972603, 0.323287671, 0.57260274,
+                0.821917808, 1.071232877, 1.320547945, 1.506849315,
+                2.002739726, 3.002739726, 4.002739726, 5.005479452,
+                6.010958904, 7.008219178, 8.005479452, 9.008219178,
+                10.00821918, 12.01369863, 15.0109589, 20.01369863,
+                25.01917808, 30.02191781, 40.03287671, 50.03561644,
+                60.04109589, 70.04931507};
+        final double[] ratesGBP = {0.0577363, 0.0582314, 0.0585265, 0.0587165,
+                0.0596598, 0.0612506, 0.0589676, 0.0570512, 0.0556147,
+                0.0546082, 0.0549492, 0.053801, 0.0529333, 0.0524068,
+                0.0519712, 0.0516615, 0.0513711, 0.0510433, 0.0507974,
+                0.0504833, 0.0498998, 0.0490464, 0.04768, 0.0464862,
+                0.045452, 0.0437699, 0.0425311, 0.0420073, 0.041151};
+
+        final Date[] dEUR = new Date[timesEUR.length];
+        for (int i = 0; i < timesEUR.length; i++) {
+            final int ys = (int) Math.floor(timesEUR[i]);
+            final int ds = (int) ((timesEUR[i] - ys) * 365);
+            dEUR[i] = eval.add(new Period(ys, TimeUnit.Years))
+                    .add(new Period(ds, TimeUnit.Days));
+        }
+        final InterpolatedZeroCurve<Cubic> euriborTS =
+                new InterpolatedZeroCurve<>(Cubic.class, dEUR, ratesEUR, dc);
         nominalEUR = new Handle<>(euriborTS);
 
-        final FlatForward gbpLiborTS = new FlatForward(eval, 0.05, dc,
-                Compounding.Continuous, Frequency.Annual);
+        final Date[] dGBP = new Date[timesGBP.length];
+        for (int i = 0; i < timesGBP.length; i++) {
+            final int ys = (int) Math.floor(timesGBP[i]);
+            final int ds = (int) ((timesGBP[i] - ys) * 365);
+            dGBP[i] = eval.add(new Period(ys, TimeUnit.Years))
+                    .add(new Period(ds, TimeUnit.Days));
+        }
+        final InterpolatedZeroCurve<Cubic> gbpLiborTS =
+                new InterpolatedZeroCurve<>(Cubic.class, dGBP, ratesGBP, dc);
         nominalGBP = new Handle<>(gbpLiborTS);
 
         // YoY EU rates curve (mirrors C++ yoyEUrates[] — 31 values from
@@ -453,26 +491,24 @@ public class InflationVolatilityTest {
      * <p>Tier: {@link Tolerance#within} with {@code 2e-5} per C++
      * {@code eps = 2e-5}.
      *
-     * <p>{@code @Ignore}d because the C++ probe uses
-     * {@code InterpolatedZeroCurve<Cubic>} for the nominal yield curve,
-     * but Java's {@link
-     * org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve}
-     * has a known Phase 2x bug ({@code yields[0] == 1.0} discount-factor
-     * check) that prevents direct use. Substituting {@link FlatForward}
-     * shifts the put/call-parity-derived ATM swap rates enough that the
-     * downstream {@link
-     * org.jquantlib.termstructures.inflation.PiecewiseYoYInflationCurve}
-     * bootstrap (called by
-     * {@link InterpolatedYoYCapFloorTermPriceSurface#performCalculations()})
-     * fails — leaving the surface's {@code yoy_} field {@code null} and
-     * making the {@code ayoy} branch unreachable. Phase 2x: fix
-     * InterpolatedZeroCurve so the C++ probe configuration becomes
-     * portable and this test re-enables.
+     * <p>Phase 2x A.1 removed the stale {@code yields[0] == 1.0} assertion
+     * in {@link
+     * org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve},
+     * unblocking the nominal-curve construction. However the deeper
+     * issue persists: the surface's internal
+     * {@link org.jquantlib.termstructures.inflation.PiecewiseYoYInflationCurve}
+     * bootstrap throws "date before reference date" inside
+     * {@code DiscountingSwapEngine.calculate} → {@code CashFlows.bps}
+     * → {@code AbstractYieldTermStructure.discount}. The bootstrap
+     * leaves {@code yoy_} {@code null} and the third loop's
+     * {@code atmYoYRate(d)} NPEs. Defer to Phase 2y after
+     * {@code PiecewiseYoYInflationCurve} bootstrap is fixed.
      */
-    @Ignore("Phase 2x: InterpolatedZeroCurve discount-factor bug forces "
-            + "FlatForward substitution; substitution causes the surface's "
-            + "PiecewiseYoYInflationCurve bootstrap to fail (yoy_ == null), "
-            + "making the third loop's atmYoYRate(d) NPE")
+    @Ignore("Phase 2y: PiecewiseYoYInflationCurve bootstrap throws "
+            + "'date before reference date' inside CashFlows.bps; "
+            + "yoy_ stays null. Phase 2x A.1 fixed the InterpolatedZeroCurve "
+            + "discount-factor assertion (now using the real C++ Cubic "
+            + "curve) but the bootstrap-side regression is independent.")
     @Test
     public void testYoYPriceSurfaceToATM() {
         setup();
