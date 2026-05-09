@@ -1,0 +1,135 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "price": 0.0009969402919186236
+      },
+      "inputs": {
+        "deflator": 1.0,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": true,
+        "strike": 0.025,
+        "variance": 0.010000000000000002
+      },
+      "name": "call_atm_lognormal_unit"
+    },
+    {
+      "expected": {
+        "price": 3.683306581424187e-05
+      },
+      "inputs": {
+        "deflator": 1.0,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": true,
+        "strike": 0.03,
+        "variance": 0.010000000000000002
+      },
+      "name": "call_otm_lognormal_unit"
+    },
+    {
+      "expected": {
+        "price": 0.0009969402919186236
+      },
+      "inputs": {
+        "deflator": 1.0,
+        "forward": 0.025,
+        "optionType": "Put",
+        "shifted": true,
+        "strike": 0.025,
+        "variance": 0.010000000000000002
+      },
+      "name": "put_atm_lognormal_unit"
+    },
+    {
+      "expected": {
+        "price": 0.004486231313633806
+      },
+      "inputs": {
+        "deflator": 4.5,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": true,
+        "strike": 0.025,
+        "variance": 0.010000000000000002
+      },
+      "name": "call_atm_lognormal_annuity"
+    },
+    {
+      "expected": {
+        "price": 0.0019947114020071634
+      },
+      "inputs": {
+        "deflator": 1.0,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": false,
+        "strike": 0.025,
+        "variance": 2.5e-05
+      },
+      "name": "call_atm_normal_unit"
+    },
+    {
+      "expected": {
+        "price": 0.008976201309032235
+      },
+      "inputs": {
+        "deflator": 4.5,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": false,
+        "strike": 0.025,
+        "variance": 2.5e-05
+      },
+      "name": "call_atm_normal_annuity"
+    },
+    {
+      "expected": {
+        "price": 0.0018745980882229412
+      },
+      "inputs": {
+        "deflator": 4.5,
+        "forward": 0.025,
+        "optionType": "Put",
+        "shifted": false,
+        "strike": 0.02,
+        "variance": 2.5e-05
+      },
+      "name": "put_otm_normal_annuity"
+    },
+    {
+      "expected": {
+        "price": 0.045191040808878674
+      },
+      "inputs": {
+        "deflator": 4.5,
+        "forward": 0.005,
+        "optionType": "Call",
+        "shifted": false,
+        "strike": -0.005,
+        "variance": 2.5e-05
+      },
+      "name": "call_neg_strike_normal"
+    },
+    {
+      "expected": {
+        "price": 0.005000000000000001
+      },
+      "inputs": {
+        "deflator": 1.0,
+        "forward": 0.025,
+        "optionType": "Call",
+        "shifted": true,
+        "strike": 0.02,
+        "variance": 0.0
+      },
+      "name": "call_atm_variance_zero"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T21:40:35Z",
+  "generated_by": "market_quoted_option_pricer_probe",
+  "test_group": "cashflows/market_quoted_option_pricer"
+}
