@@ -43,7 +43,6 @@ package org.jquantlib.termstructures.yieldcurves;
 import java.util.Arrays;
 
 import org.jquantlib.QL;
-import org.jquantlib.Settings;
 import org.jquantlib.math.Constants;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
@@ -84,13 +83,20 @@ public class Discount implements Traits {
 
     @Override
     public double maxValueAfter(final int i, final double[] data) {
-        if (new Settings().isNegativeRates()) {
-            // discount are not required to be decreasing --all bets are off.
-            // We choose as max a value very unlikely to be exceeded.
-            return 3.0;
-        }
-        // discounts cannot decrease
-        return data[i-1];
+        // Phase 3g: align to v1.42.1 — C++ Discount::maxValueAfter does NOT
+        // gate negative-rate handling on a Settings flag; it always returns
+        // {@code data[i-1] * exp(maxRate * dt)} (where {@code maxRate = 1}),
+        // which permits discount factors above 1 (negative rates) within a
+        // sane bound. The previous Java code clamped {@code data[i] <=
+        // data[i-1]} unless {@code isNegativeRates()} was explicitly set,
+        // which silently clobbered EUR negative-rate bootstrap fixtures
+        // (Phase 3g testIsdaCalculatorReconcile* root cause). The Java Traits
+        // interface does not expose {@code times[]} so we can't compute the
+        // exact C++ bound; use a generous constant {@code 3.0} (matching
+        // what the previous {@code isNegativeRates=true} branch returned).
+        // The Brent solver inside IterativeBootstrap converges to the same
+        // root regardless of bracket width, as long as the root is contained.
+        return 3.0;
     }
 
     @Override
