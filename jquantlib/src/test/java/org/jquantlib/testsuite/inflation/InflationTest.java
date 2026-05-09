@@ -714,36 +714,221 @@ public class InflationTest {
     // testRatioYYIndex — inflation.cpp:1023-1145
     // ===================================================================
     @Test
-    @Ignore("Phase 2v: YoYInflationIndex(ZeroInflationIndex, bool interpolated) overload"
-            + " not ported. C++ deprecated ctor 'YoYInflationIndex(euhicp, true)' creates an"
-            + " interpolated ratio index; Java's ZII-based YoYInflationIndex constructor"
-            + " always sets interpolated=false. The ratio logic itself is ported"
-            + " (see YoYInflationIndex.fixing ratio=true branch); only the interpolated=true"
-            + " variant is blocked.")
     public void testRatioYYIndex() {
-        // C++ inflation.cpp:1023-1145.
-        //   YoYInflationIndex yyukrpir(ukrpi);         // non-interpolated ratio
-        //   YoYInflationIndex yyeuhicpr(euhicp, true); // interpolated ratio (deprecated ctor)
-        //
-        // Non-interpolated ratio path (YoYInflationIndex(underlying)) IS ported.
-        // Interpolated ratio path requires the deprecated (underlying, true) constructor
-        // which sets interpolated_=true — not yet in the Java port.
-        // Add when the deprecated overload is ported in a future Phase 2v pass.
+        // Faithful port of C++ inflation.cpp:1023-1145.
+        // Phase 2y A.3: both YoYInflationIndex(ZeroInflationIndex, bool) constructors
+        // are now ported; the ratio=true + interpolated=true path is now exercised.
+
+        // Clear stale fixings (JVM singleton IndexManager).
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("EU HICP");
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
+
+        final EUHICP euhicp = new EUHICP(Frequency.Monthly, false, false);
+        final UKRPI ukrpi = new UKRPI(Frequency.Monthly, false, false);
+
+        // C++: YoYInflationIndex yyeuhicpr(euhicp, true)  // deprecated interpolated=true ctor
+        final YoYInflationIndex yyeuhicpr = new YoYInflationIndex(euhicp, /*interpolated=*/ true);
+        // C++: YoYInflationIndex yyukrpir(ukrpi)           // non-interpolated ratio
+        final YoYInflationIndex yyukrpir = new YoYInflationIndex(ukrpi);
+
+        // --- Metadata checks (inflation.cpp:1032-1060) ---
+        assertEquals("yyeuhicpr name",       "EU YYR_HICP",        yyeuhicpr.name());
+        assertEquals("yyeuhicpr frequency",  Frequency.Monthly,     yyeuhicpr.frequency());
+        assertTrue("yyeuhicpr not revised",  !yyeuhicpr.revised());
+        assertTrue("yyeuhicpr interpolated", yyeuhicpr.interpolated());
+        assertTrue("yyeuhicpr ratio",        yyeuhicpr.ratio());
+        assertEquals("yyeuhicpr lag",
+                new Period(1, TimeUnit.Months), yyeuhicpr.availabilityLag());
+
+        assertEquals("yyukrpir name",       "UK YYR_RPI",         yyukrpir.name());
+        assertEquals("yyukrpir frequency",  Frequency.Monthly,     yyukrpir.frequency());
+        assertTrue("yyukrpir not revised",  !yyukrpir.revised());
+        assertTrue("yyukrpir not interpolated", !yyukrpir.interpolated());
+        assertTrue("yyukrpir ratio",         yyukrpir.ratio());
+        assertEquals("yyukrpir lag",
+                new Period(1, TimeUnit.Months), yyukrpir.availabilityLag());
+
+        // --- Retrieval test (inflation.cpp:1064-1144) ---
+        final Date evaluationDate =
+                new UnitedKingdom().adjust(new Date(13, Month.August, 2007));
+        new Settings().setEvaluationDate(evaluationDate);
+
+        // Seed 31 UKRPI fixings 2005-01..2007-07 (indices 0..30).
+        InflationCommonVars.addCanonicalUkRpiFixings(ukrpi, 31);
+        final double[] fixData = InflationCommonVars.ukRpiFixData();
+        final List<Date> rpiSchedule = InflationCommonVars.ukRpiFixDates(); // 32 dates
+
+        // Build ratio-style YoY index (non-interpolated) and interpolated variant.
+        final YoYInflationIndex iir    = new YoYInflationIndex(ukrpi);
+        final YoYInflationIndex iirYES = new YoYInflationIndex(ukrpi, /*interpolated=*/ true);
+
+        // C++ todayMinusLag = lim.second + 1 - 2*Period(iir->frequency())
+        // Used as iteration guard (only check dates strictly before this boundary).
+        // Date.inc() mutates in place — use serial number to avoid aliasing.
+        final Date todayMinusLagInit = evaluationDate.sub(iir.availabilityLag());
+        final Pair<Date, Date> limInit =
+                InflationTermStructure.inflationPeriod(todayMinusLagInit, iir.frequency());
+        // lim.second + 1 - 2M = 2007-07-31 + 1 - 2M = 2007-08-01 - 2M = 2007-06-01
+        // Build lim.second+1 without mutating limInit.second(): use new Date(sn+1).
+        final Date limSecP1 = new Date(limInit.second().serialNumber() + 1);
+        final Date testBoundary = limSecP1.sub(new Period(2, TimeUnit.Months));
+
+        final double eps = 1.0e-8;
+
+        // C++ loop: for i=13; i<rpiSchedule.size(); i++
+        // rpiSchedule has 32 entries (indices 0..31); fixData[i] for i=0..31
+        // (but addCanonicalUkRpiFixings seeds only 31 entries 0..30, so i=31 is unneeded).
+        for (int i = 13; i < rpiSchedule.size() && i + 1 < fixData.length; i++) {
+            final Pair<Date, Date> lim =
+                    InflationTermStructure.inflationPeriod(rpiSchedule.get(i), iir.frequency());
+            final Pair<Date, Date> limBef =
+                    InflationTermStructure.inflationPeriod(rpiSchedule.get(i - 12), iir.frequency());
+
+            // Snapshot serial numbers BEFORE any inc() calls (Date.inc() mutates in place).
+            // dp = lim.second + 1 - lim.first  (days in period)
+            // dpBef = limBef.second + 1 - limBef.first
+            final long limFirstSN    = lim.first().serialNumber();
+            final long limSecondSN   = lim.second().serialNumber();
+            final long limBefFirstSN = limBef.first().serialNumber();
+            final long limBefSecSN   = limBef.second().serialNumber();
+            final double dp    = (limSecondSN + 1L) - limFirstSN;
+            final double dpBef = (limBefSecSN  + 1L) - limBefFirstSN;
+
+            // Iterate every day in the period [lim.first, lim.second].
+            // Use serial-number loop to avoid aliasing via Date.inc().
+            for (long sn = limFirstSN; sn <= limSecondSN; sn++) {
+                final Date d = new Date(sn);
+                if (d.lt(testBoundary)) {
+                    // --- flat (non-interpolated) ratio check ---
+                    final double expected = fixData[i] / fixData[i - 12] - 1.0;
+                    final double calculated = iir.fixing(d);
+                    assertEquals("Non-interpolated fixing at " + d,
+                            expected, calculated, eps);
+
+                    // --- interpolated ratio check ---
+                    // C++: linearNow = fixData[i] + (fixData[i+1]-fixData[i])*dl/dp
+                    //      linearBef = fixData[i-12] + (fixData[i+1-12]-fixData[i-12])*dlBef/dpBef
+                    //      where dl = d - lim.first,
+                    //            dlBef = NullCalendar().advance(d, -1Y, MF) - limBef.first
+                    //                  = d.sub(1Y) - limBef.first  (NullCalendar = no holidays)
+                    final double dl     = sn - limFirstSN;
+                    // d.sub(1Y) gives a new Date (non-mutating)
+                    final long dMinus1YSN = d.sub(new Period(1, TimeUnit.Years)).serialNumber();
+                    final double dlBef  = dMinus1YSN - limBefFirstSN;
+
+                    final double linearNow = fixData[i]      + (fixData[i + 1]      - fixData[i])      * dl    / dp;
+                    final double linearBef = fixData[i - 12] + (fixData[i + 1 - 12] - fixData[i - 12]) * dlBef / dpBef;
+                    final double expectedYES = linearNow / linearBef - 1.0;
+                    final double calculatedYES = iirYES.fixing(d);
+                    assertEquals("Interpolated fixing at " + d,
+                            expectedYES, calculatedYES, eps);
+                }
+            }
+        }
     }
 
     // ===================================================================
     // testRatioYYIndexFutureFixing — inflation.cpp:1147-1202
     // ===================================================================
     @Test
-    @Ignore("Phase 2v: YoYInflationIndex(ZeroInflationIndex, bool interpolated) overload"
-            + " not ported. C++ deprecated ctor 'YoYInflationIndex(euhicp, true)' creates an"
-            + " interpolated ratio index; same blocker as testRatioYYIndex.")
     public void testRatioYYIndexFutureFixing() {
-        // C++ inflation.cpp:1147-1202.
-        // Tests future-fixing boundary logic for ratio-style YoY indices
-        // (both flat and interpolated variants).
-        // Interpolated variant uses deprecated (underlying, true) ctor — same
-        // blocker as testRatioYYIndex. Port together in Phase 2v.
+        // Faithful port of C++ inflation.cpp:1147-1202.
+        // Phase 2y A.3: both constructors now ported; interpolated variant exercisable.
+
+        // Clear stale EUHICP fixings.
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("EU HICP");
+
+        final EUHICP euhicp = new EUHICP(Frequency.Monthly, false, false);
+        final YoYInflationIndex ratioFlat   = new YoYInflationIndex(euhicp);
+        final YoYInflationIndex ratioLinear = new YoYInflationIndex(euhicp, /*interpolated=*/ true);
+
+        // Evaluation date: 10 April 2024.
+        new Settings().setEvaluationDate(new Date(10, Month.April, 2024));
+
+        // Seed EUHICP fixings through February 2024; March not yet available.
+        euhicp.addFixing(new Date(1, Month.December,  2022),  98.0, true);
+        euhicp.addFixing(new Date(1, Month.January,   2023),  98.1, true);
+        euhicp.addFixing(new Date(1, Month.February,  2023),  98.2, true);
+        euhicp.addFixing(new Date(1, Month.March,     2023),  98.3, true);
+        euhicp.addFixing(new Date(1, Month.December,  2023), 100.0, true);
+        euhicp.addFixing(new Date(1, Month.January,   2024), 100.1, true);
+        euhicp.addFixing(new Date(1, Month.February,  2024), 100.2, true);
+
+        // lastFixingDate() for both: inflationPeriod(2024-02-01, Monthly).first = 2024-02-01.
+        assertEquals("ratioFlat lastFixingDate",
+                new Date(1, Month.February, 2024), ratioFlat.lastFixingDate());
+        assertEquals("ratioLinear lastFixingDate",
+                new Date(1, Month.February, 2024), ratioLinear.lastFixingDate());
+
+        // Mid-January fixing: historical for both (Jan 2024/2023 available).
+        try {
+            ratioFlat.fixing(new Date(15, Month.January, 2024));
+        } catch (final RuntimeException ex) {
+            fail("ratioFlat Jan-15 fixing should not throw: " + ex.getMessage());
+        }
+        try {
+            ratioLinear.fixing(new Date(15, Month.January, 2024));
+        } catch (final RuntimeException ex) {
+            fail("ratioLinear Jan-15 fixing should not throw: " + ex.getMessage());
+        }
+
+        // Mid-February: flat ok (uses period start = Feb-01); interpolated needs March.
+        try {
+            ratioFlat.fixing(new Date(15, Month.February, 2024));
+        } catch (final RuntimeException ex) {
+            fail("ratioFlat Feb-15 fixing should not throw: " + ex.getMessage());
+        }
+        try {
+            ratioLinear.fixing(new Date(15, Month.February, 2024));
+            fail("ratioLinear Feb-15 fixing should throw (March 2024 unavailable)");
+        } catch (final RuntimeException ex) {
+            // expected — March 2024 needed for linear interpolation
+        }
+
+        // Feb-01 is a special case: period start → no interpolation even for interpolated index.
+        try {
+            ratioLinear.fixing(new Date(1, Month.February, 2024));
+        } catch (final RuntimeException ex) {
+            fail("ratioLinear Feb-01 fixing should not throw (period-start special case): "
+                    + ex.getMessage());
+        }
+
+        // After March 2024 is published, both succeed for mid-February.
+        euhicp.addFixing(new Date(1, Month.March, 2024), 100.3, true);
+
+        assertEquals("ratioFlat lastFixingDate after March",
+                new Date(1, Month.March, 2024), ratioFlat.lastFixingDate());
+        assertEquals("ratioLinear lastFixingDate after March",
+                new Date(1, Month.March, 2024), ratioLinear.lastFixingDate());
+
+        try {
+            ratioFlat.fixing(new Date(15, Month.February, 2024));
+        } catch (final RuntimeException ex) {
+            fail("ratioFlat Feb-15 after March published should not throw: " + ex.getMessage());
+        }
+        try {
+            ratioLinear.fixing(new Date(15, Month.February, 2024));
+        } catch (final RuntimeException ex) {
+            fail("ratioLinear Feb-15 after March published should not throw: " + ex.getMessage());
+        }
+
+        // April 2024 fixing — even if stored, the availability lag means it cannot
+        // be used as a historical fixing from evaluation date 2024-04-10 (1M lag).
+        // todayMinusLag = 2024-03-10 → latestPossible = [2024-03-01, 2024-03-31]
+        // latestNeededDate for April-01 = 2024-04-01 > 2024-03-31 → needsForecast=true.
+        euhicp.addFixing(new Date(1, Month.April, 2024), 100.4, true);
+        try {
+            ratioFlat.fixing(new Date(1, Month.April, 2024));
+            fail("ratioFlat Apr-01 should throw (April not yet available per lag)");
+        } catch (final RuntimeException ex) {
+            // expected
+        }
+        try {
+            ratioLinear.fixing(new Date(1, Month.April, 2024));
+            fail("ratioLinear Apr-01 should throw (April not yet available per lag)");
+        } catch (final RuntimeException ex) {
+            // expected
+        }
     }
 
     // ===================================================================
@@ -1222,33 +1407,176 @@ public class InflationTest {
     // testCpiYoYRatioFlatInterpolation — inflation.cpp:1632-1676
     // ===================================================================
     @Test
-    @Ignore("Phase 2v: YoYInflationIndex(ZeroInflationIndex, bool interpolated) overload"
-            + " not ported. C++ 'new YoYInflationIndex(underlying, true)' creates an"
-            + " interpolated ratio index (testIndex2). testIndex1 (non-interpolated) is"
-            + " ported but testIndex2's interpolated=true path cannot be constructed."
-            + " The ratio-derivation logic in YoYInflationIndex.fixing() is already ported.")
     public void testCpiYoYRatioFlatInterpolation() {
-        // C++ inflation.cpp:1632-1676.
-        //   underlying = UKRPI (zero-inflation index)
-        //   testIndex1 = YoYInflationIndex(underlying)         // non-interpolated ratio
-        //   testIndex2 = YoYInflationIndex(underlying, true)   // interpolated ratio (deprecated)
-        //   underlying->addFixing for 2019-11..2021-03
-        //   CPI::laggedYoYRate(testIndex1, 2021-02-10, 3M, Flat) == 293.5/291.0 - 1
-        // Non-interpolated testIndex1 is testable; interpolated testIndex2 requires
-        // the (underlying, true) deprecated constructor, not yet ported. Port together
-        // with testRatioYYIndex in Phase 2v.
+        // Faithful port of C++ inflation.cpp:1632-1676.
+        // Phase 2y A.3: YoYInflationIndex(underlying, true) now ported.
+
+        // Clear stale UKRPI fixings.
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
+
+        new Settings().setEvaluationDate(new Date(10, Month.February, 2022));
+
+        final UKRPI underlying = new UKRPI(Frequency.Monthly, false, false);
+        final YoYInflationIndex testIndex1 = new YoYInflationIndex(underlying);
+        final YoYInflationIndex testIndex2 = new YoYInflationIndex(underlying, /*interpolated=*/ true);
+
+        underlying.addFixing(new Date(1, Month.November, 2019), 291.0, true);
+        underlying.addFixing(new Date(1, Month.December, 2019), 291.9, true);
+        underlying.addFixing(new Date(1, Month.January,  2020), 290.6, true);
+        underlying.addFixing(new Date(1, Month.February, 2020), 292.0, true);
+        underlying.addFixing(new Date(1, Month.March,    2020), 292.6, true);
+
+        underlying.addFixing(new Date(1, Month.November, 2020), 293.5, true);
+        underlying.addFixing(new Date(1, Month.December, 2020), 295.4, true);
+        underlying.addFixing(new Date(1, Month.January,  2021), 294.6, true);
+        underlying.addFixing(new Date(1, Month.February, 2021), 296.0, true);
+        underlying.addFixing(new Date(1, Month.March,    2021), 296.9, true);
+
+        final double tol = 1e-8;
+
+        // CPI::laggedYoYRate(testIndex1, 2021-02-10, 3M, Flat)
+        //   fixingPeriod = inflationPeriod(2021-02-10 - 3M = 2020-11-10, Monthly)
+        //                = [2020-11-01, 2020-11-30]
+        //   index.fixing(2020-11-01) for non-interp ratio = 293.5/291.0 - 1
+        double calculated = CPI.laggedYoYRate(testIndex1,
+                new Date(10, Month.February, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Flat);
+        double expected = 293.5 / 291.0 - 1.0;
+        assertEquals("testIndex1 2021-02-10 Flat", expected, calculated, tol);
+
+        // Same for interpolated index (Flat ignores interpolation flag).
+        calculated = CPI.laggedYoYRate(testIndex2,
+                new Date(10, Month.February, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Flat);
+        assertEquals("testIndex2 2021-02-10 Flat", expected, calculated, tol);
+
+        // CPI::laggedYoYRate(testIndex1, 2021-06-25, 3M, Flat)
+        //   fixingPeriod = inflationPeriod(2021-03-25, Monthly) = [2021-03-01, 2021-03-31]
+        //   index.fixing(2021-03-01) for non-interp ratio = 296.9/292.6 - 1
+        calculated = CPI.laggedYoYRate(testIndex1,
+                new Date(25, Month.June, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Flat);
+        expected = 296.9 / 292.6 - 1.0;
+        assertEquals("testIndex1 2021-06-25 Flat", expected, calculated, tol);
+
+        calculated = CPI.laggedYoYRate(testIndex2,
+                new Date(25, Month.June, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Flat);
+        assertEquals("testIndex2 2021-06-25 Flat", expected, calculated, tol);
     }
 
     // ===================================================================
     // testCpiYoYRatioLinearInterpolation — inflation.cpp:1678-1741
     // ===================================================================
     @Test
-    @Ignore("Phase 2v: YoYInflationIndex(ZeroInflationIndex, bool interpolated) overload"
-            + " not ported. Same blocker as testCpiYoYRatioFlatInterpolation.")
     public void testCpiYoYRatioLinearInterpolation() {
-        // C++ inflation.cpp:1678-1741.
-        // Same structure as testCpiYoYRatioFlatInterpolation but uses CPI::Linear.
-        // Blocked by missing (underlying, true) deprecated constructor. Port in Phase 2v.
+        // Faithful port of C++ inflation.cpp:1678-1741.
+        // Phase 2y A.3: YoYInflationIndex(underlying, true) now ported;
+        // CPI.laggedYoYRate Linear+ratio branch now implements the correct
+        // "interpolate underlying fixings first, then ratio" semantics.
+
+        // Clear stale UKRPI fixings.
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
+
+        new Settings().setEvaluationDate(new Date(10, Month.February, 2022));
+
+        final UKRPI underlying = new UKRPI(Frequency.Monthly, false, false);
+        final YoYInflationIndex testIndex1 = new YoYInflationIndex(underlying);
+        final YoYInflationIndex testIndex2 = new YoYInflationIndex(underlying, /*interpolated=*/ true);
+
+        underlying.addFixing(new Date(1, Month.November, 2019), 291.0, true);
+        underlying.addFixing(new Date(1, Month.December, 2019), 291.9, true);
+        underlying.addFixing(new Date(1, Month.January,  2020), 290.6, true);
+        underlying.addFixing(new Date(1, Month.February, 2020), 292.0, true);
+        underlying.addFixing(new Date(1, Month.March,    2020), 292.6, true);
+
+        underlying.addFixing(new Date(1, Month.November, 2020), 293.5, true);
+        underlying.addFixing(new Date(1, Month.December, 2020), 295.4, true);
+        underlying.addFixing(new Date(1, Month.January,  2021), 294.6, true);
+        underlying.addFixing(new Date(1, Month.February, 2021), 296.0, true);
+        underlying.addFixing(new Date(1, Month.March,    2021), 296.9, true);
+
+        final double tol = 1e-8;
+
+        // CPI::laggedYoYRate(testIndex1, 2021-02-10, 3M, Linear):
+        //   ratio+Linear branch applies (not forecast).
+        //   Z1 = CPI::laggedFixing(underlying, 2021-02-10, 3M, Linear)
+        //      = interp between Nov-2020 and Dec-2020:
+        //        fixingPeriod(2021-02-10 - 3M = 2020-11-10, Monthly) = [2020-11-01, 2020-11-30]
+        //        interpolation: factor (19/28) Nov + (9/28) Dec = 293.5*(19/28) + 295.4*(9/28)
+        //   Z0 = CPI::laggedFixing(underlying, 2021-02-10 - 1Y = 2020-02-10, 3M, Linear)
+        //      = interp between Nov-2019 and Dec-2019:
+        //        fixingPeriod(2020-02-10 - 3M = 2019-11-10, Monthly) = [2019-11-01, 2019-11-30]
+        //        interpolation: factor (20/29) Nov + (9/29) Dec = 291.0*(20/29) + 291.9*(9/29)
+        double calculated = CPI.laggedYoYRate(testIndex1,
+                new Date(10, Month.February, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Linear);
+        double expected = (293.5 * (19.0 / 28.0) + 295.4 * (9.0 / 28.0))
+                        / (291.0 * (20.0 / 29.0) + 291.9 * (9.0 / 29.0)) - 1.0;
+        assertEquals("testIndex1 2021-02-10 Linear", expected, calculated, tol);
+
+        calculated = CPI.laggedYoYRate(testIndex2,
+                new Date(10, Month.February, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Linear);
+        assertEquals("testIndex2 2021-02-10 Linear", expected, calculated, tol);
+
+        // CPI::laggedYoYRate(testIndex1, 2021-05-12, 3M, Linear):
+        //   Z1 = laggedFixing(underlying, 2021-05-12, 3M, Linear)
+        //      fixingPeriod(2021-05-12 - 3M = 2021-02-12, Monthly) = [2021-02-01, 2021-02-28]
+        //      interpolation period = [2021-05-01, 2021-05-31]
+        //      factor = (12-1)/(31) * (Mar - Feb) = (11/31), weight Feb = (20/31)
+        //      = 296.0*(20/31) + 296.9*(11/31)
+        //   Z0 = laggedFixing(underlying, 2021-05-12 - 1Y = 2020-05-12, 3M, Linear)
+        //      fixingPeriod(2020-05-12 - 3M = 2020-02-12, Monthly) = [2020-02-01, 2020-02-29]
+        //      interpolation period = [2020-05-01, 2020-05-31]
+        //      factor = (11/31), weight Feb = (20/31)
+        //      = 292.0*(20/31) + 292.6*(11/31)
+        calculated = CPI.laggedYoYRate(testIndex1,
+                new Date(12, Month.May, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Linear);
+        expected = (296.0 * (20.0 / 31.0) + 296.9 * (11.0 / 31.0))
+                 / (292.0 * (20.0 / 31.0) + 292.6 * (11.0 / 31.0)) - 1.0;
+        assertEquals("testIndex1 2021-05-12 Linear", expected, calculated, tol);
+
+        calculated = CPI.laggedYoYRate(testIndex2,
+                new Date(12, Month.May, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Linear);
+        assertEquals("testIndex2 2021-05-12 Linear", expected, calculated, tol);
+
+        // 2021-06-25 with 3M lag → fixingPeriod = [2021-03-01, 2021-03-31],
+        // interpolation period = [2021-06-01, 2021-06-30].
+        // laggedFixing(Linear) needs underlying at 2021-03-01 AND 2021-04-01.
+        // April 2021 not seeded → throws "Missing UK RPI fixing for 2021-04-01".
+        try {
+            CPI.laggedYoYRate(testIndex1,
+                    new Date(25, Month.June, 2021),
+                    new Period(3, TimeUnit.Months), CPI.InterpolationType.Linear);
+            fail("testIndex1 2021-06-25 Linear should throw (April 2021 underlying not available)");
+        } catch (final RuntimeException ex) {
+            // expected
+        }
+        try {
+            CPI.laggedYoYRate(testIndex2,
+                    new Date(25, Month.June, 2021),
+                    new Period(3, TimeUnit.Months), CPI.InterpolationType.Linear);
+            fail("testIndex2 2021-06-25 Linear should throw (April 2021 underlying not available)");
+        } catch (final RuntimeException ex) {
+            // expected
+        }
+
+        // Special case: 2021-06-01 is the period start of June → CPI::laggedFixing
+        // returns period start value without interpolation: underlying[Mar-01] = 296.9;
+        // similarly for June-2020-01: underlying[Mar-2020-01] = 292.6.
+        calculated = CPI.laggedYoYRate(testIndex1,
+                new Date(1, Month.June, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Linear);
+        expected = 296.9 / 292.6 - 1.0;
+        assertEquals("testIndex1 2021-06-01 Linear special case", expected, calculated, tol);
+
+        calculated = CPI.laggedYoYRate(testIndex2,
+                new Date(1, Month.June, 2021),
+                new Period(3, TimeUnit.Months), CPI.InterpolationType.Linear);
+        assertEquals("testIndex2 2021-06-01 Linear special case", expected, calculated, tol);
     }
 
     // ===================================================================

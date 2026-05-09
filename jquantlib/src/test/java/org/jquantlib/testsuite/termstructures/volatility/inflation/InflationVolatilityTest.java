@@ -89,28 +89,27 @@ import static org.junit.Assert.fail;
  *       {@code \bug Tests currently fail}, so this test is faithfully
  *       ported but {@code @Ignore}d.</li>
  *   <li>{@code testYoYPriceSurfaceToATM} — exercises ATM YoY swap-rate
- *       extraction from the price surface. The first two cached arrays
- *       ({@code crv}, {@code swaps}) are reachable via Phase 2s C.1's
- *       working code path; the third ({@code ayoy}) requires the
- *       surface's internal {@link
- *       org.jquantlib.termstructures.inflation.PiecewiseYoYInflationCurve}
- *       bootstrap which fails under the FlatForward substitution forced
- *       by the Phase 2x InterpolatedZeroCurve bug. {@code @Ignore}d
- *       pending the InterpolatedZeroCurve fix.</li>
+ *       extraction via {@code atmYoYRate()} which internally bootstraps a
+ *       {@code PiecewiseYoYInflationCurve}. Phase 2y A.1 fixed the
+ *       {@code CashFlows.bps} npvDate bug that was the prior blocker;
+ *       however the bootstrap still fails: a ratio-based {@code YoYInflationIndex}
+ *       enters the past-fixing branch for a date before {@code todayMinusLag}
+ *       and calls {@code ZeroInflationIndex.fixing()} which returns {@code null}
+ *       (no EUHICP fixings seeded, NPE). Root cause: Java's past-branch
+ *       threshold for ratio-based indices does not fully mirror C++
+ *       {@code YoYInflationIndex::needsForecast(ratio)} which delegates to
+ *       {@code underlyingIndex::needsForecast}. {@code @Ignore}d pending
+ *       that alignment (Phase 2z or later).</li>
  * </ul>
  *
  * <p>Notes on Java vs C++ divergence in this fixture:
  * <ul>
  *   <li>C++ uses {@code InterpolatedZeroCurve<Cubic>} for the nominal
- *       yield curve. Java's {@link
- *       org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve}
- *       has a known Phase 2x bug ({@code yields[0] == 1.0} discount-factor
- *       check) that prevents it from being used here. We substitute
- *       {@link FlatForward} at 4.5% to make construction feasible — the
- *       same substitution Phase 2s C.1's
- *       {@code YoYCapFloorTermPriceSurfaceTest} adopted. This may shift
- *       absolute reference values; C++-cached numbers therefore use a
- *       slightly looser tolerance.</li>
+ *       yield curve. Phase 2x A.1 removed the stale {@code yields[0]==1.0}
+ *       assertion from Java's {@link
+ *       org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve}, so
+ *       this test now uses the actual C++ EUR/GBP zero-rate arrays directly
+ *       (no FlatForward substitution needed for the nominal curve).</li>
  *   <li>Concrete {@link InterpolatedYoYCapFloorTermPriceSurface} does not
  *       implement {@link YoYCapFloorTermPriceSurfaceLike}; we wrap it in
  *       an inline adapter for the K-surface integration test (see
@@ -504,11 +503,21 @@ public class InflationVolatilityTest {
      * {@code atmYoYRate(d)} NPEs. Defer to Phase 2y after
      * {@code PiecewiseYoYInflationCurve} bootstrap is fixed.
      */
-    @Ignore("Phase 2y: PiecewiseYoYInflationCurve bootstrap throws "
-            + "'date before reference date' inside CashFlows.bps; "
-            + "yoy_ stays null. Phase 2x A.1 fixed the InterpolatedZeroCurve "
-            + "discount-factor assertion (now using the real C++ Cubic "
-            + "curve) but the bootstrap-side regression is independent.")
+    @Ignore("Phase 2y: PiecewiseYoYInflationCurve bootstrap still fails after"
+            + " CashFlows.bps npvDate=null fix (Phase 2y A.1). New diagnosis:"
+            + " the bootstrap's YearOnYearInflationSwap pricing calls"
+            + " CPI.laggedYoYRate (Linear branch) which reaches"
+            + " YoYInflationIndex.fixing() in the past-fixing branch for"
+            + " some date before todayMinusLag (2007-11-01). This triggers"
+            + " ZeroInflationIndex.fixing() line 136: TimeSeries.get() returns"
+            + " null (no EUHICP fixings seeded) → NPE. The C++ test works"
+            + " without seeding fixings; root cause is that Java's past-branch"
+            + " threshold for ratio-based YoY index does not fully mirror C++"
+            + " YoYInflationIndex::needsForecast (which delegates to"
+            + " underlyingIndex::needsForecast for the ratio_ branch). A full"
+            + " fix requires aligning YoYInflationIndex.needsForecast for the"
+            + " ratio=true case to match C++ exactly — architectural change"
+            + " deferred to Phase 2z or later.")
     @Test
     public void testYoYPriceSurfaceToATM() {
         setup();
