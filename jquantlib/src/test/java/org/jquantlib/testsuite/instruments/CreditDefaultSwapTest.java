@@ -663,27 +663,20 @@ public class CreditDefaultSwapTest {
      * engine deferred to Phase 3c; {@code MakeCreditDefaultSwap} factory
      * is Phase 3b Track B / 3c.
      */
-    @Ignore("Phase 3e A.2: full body ported, fixture wires up "
-            + "PiecewiseYieldCurve<Discount,LogLinear,IterativeBootstrap> + "
-            + "MakeCreditDefaultSwap + IsdaCdsEngine end-to-end, but the "
-            + "bootstrap converges to discount factors ~1% off C++ Markit "
-            + "values. Phase 3e investigation surfaced four pre-existing "
-            + "Java-port bugs (now fixed as align commits): "
-            + "(1) InterpolatedDiscount/Zero/ForwardCurve(settlementDays,Calendar,...) "
-            + "ignored the supplied calendar (impl=null NPE); "
-            + "(2) Discount.updateGuess used Arrays.fill(data,value) instead "
-            + "of data[i]=value, clobbering all earlier bootstrap nodes; "
-            + "(3) PiecewiseYieldCurve.discount(t) bypassed calculate() so "
-            + "bootstrap never ran on direct discount queries; "
-            + "(4) IterativeBootstrap.calculate passed full data[] to "
-            + "interpolate() while only first i+1 times[]. After fixes, the "
-            + "remaining ~1% drift traces to interpolation.update() reading "
-            + "from a COPY of data[] (Array(double[]) constructor uses "
-            + "System.arraycopy) so updateGuess writes to the curve's data "
-            + "but the LogLinear interpolation evaluates against stale "
-            + "values — a deeper Phase 3f alignment task. Tolerance per "
-            + "C++: usingAtParCoupons ? 1e-6 : 1e-3 (PERCENT, not fraction). "
-            + "Carry-forward to Phase 3f.")
+    @Ignore("Phase 3f A.2: Phase 3f A.1 architectural fix landed (Array(double[]) "
+            + "now wraps source instead of System.arraycopy → IterativeBootstrap "
+            + "data[] and AbstractInterpolation.Impl.vy share storage, mirroring "
+            + "C++ data.begin() iterator semantics). This reduced the testIsdaEngine "
+            + "drift from ~1% (Phase 3e baseline) to 2e-5 - 1.4e-4 fraction "
+            + "(best at long-tenor terms, worst at June 2010 1-year term), a "
+            + "~100x improvement that confirms the bootstrap is now propagating "
+            + "guesses correctly through the LogLinear interpolation. Residual "
+            + "drift correlates inversely with trade maturity (1-yr ~1.4e-4, "
+            + "10-yr ~2e-5) which suggests the remaining gap is in IsdaCdsEngine's "
+            + "short-tenor accrual / day-count handling, NOT the bootstrap. "
+            + "C++ tolerance is 1e-6 PERCENT (1e-8 fraction), so even the best "
+            + "Java result (2e-5 fraction) is ~200x over tolerance. Carry-forward "
+            + "to Phase 3g for IsdaCdsEngine alignment investigation.")
     @Test
     public void testIsdaEngine() {
         // C++ creditdefaultswap.cpp:567-722.
@@ -945,14 +938,16 @@ public class CreditDefaultSwapTest {
      *
      * <p><b>Java status:</b> Requires IsdaCdsEngine (Phase 3c).
      */
-    @Ignore("Phase 3e A.2: full body ported (EUR Markit fixture: 4 deposit "
-            + "+ 13 swap helpers w/ negative rates). Same Phase 3f blocker "
-            + "as testIsdaEngine — bootstrap data[] / interpolation vy[] "
-            + "are out of sync after Phase 3e bug fixes (4 fixes landed; "
-            + "see testIsdaEngine @Ignore for inventory). Current run "
-            + "produces NPV -15897.6 vs Markit -16070.7 (1.07% off); "
-            + "C++ tolerance is 1e-3 PERCENT (1e-5 fraction). "
-            + "Carry-forward to Phase 3f.")
+    @Ignore("Phase 3f A.2: Phase 3f A.1 architectural fix (Array(double[]) reference "
+            + "semantics) did NOT improve this test — diff remains exactly -173.06 "
+            + "absolute (-15897.642 vs Markit -16070.7 = 1.07% off). Identical "
+            + "magnitude on testIsdaCalculatorReconcileSingleWithIssueDateInThePast "
+            + "(diff -173.13) confirms a SAME-rooted bug independent of the "
+            + "bootstrap. The 173 magnitude (~6.3 days × ~27.4/day) corresponds "
+            + "to T+3 settlement-date accrual handling in IsdaCdsEngine, not the "
+            + "discount-curve bootstrap. C++ tolerance is 1e-3 PERCENT (1e-5 "
+            + "fraction). Carry-forward to Phase 3g for IsdaCdsEngine accrual-"
+            + "rebate alignment.")
     @Test
     public void testIsdaCalculatorReconcileSingleQuote() {
         // C++ creditdefaultswap.cpp:759-861.
@@ -1099,11 +1094,14 @@ public class CreditDefaultSwapTest {
      *
      * <p><b>Java status:</b> Requires IsdaCdsEngine (Phase 3c).
      */
-    @Ignore("Phase 3e A.2: full body ported (same EUR Markit fixture as "
-            + "testIsdaCalculatorReconcileSingleQuote, with tradeDate in "
-            + "the past so accrual rebate should be 0). Same Phase 3f "
-            + "blocker. Current run produces NPV -16897.6 vs Markit "
-            + "-17070.77 (1.01% off). Carry-forward to Phase 3f.")
+    @Ignore("Phase 3f A.2: same Phase 3f A.1 fix outcome as "
+            + "testIsdaCalculatorReconcileSingleQuote — bootstrap drift is "
+            + "unaffected (diff stays at -173.13 absolute, -16897.642 vs Markit "
+            + "-17070.77 = 1.01% off). The constant-magnitude diff across both "
+            + "EUR-fixture tests confirms the gap is a SAME-rooted IsdaCdsEngine "
+            + "accrual / settlement-date issue independent of the bootstrap "
+            + "infrastructure (which Phase 3f A.1 demonstrably fixed for "
+            + "testIsdaEngine). Carry-forward to Phase 3g.")
     @Test
     public void testIsdaCalculatorReconcileSingleWithIssueDateInThePast() {
         // C++ creditdefaultswap.cpp:863-960.
