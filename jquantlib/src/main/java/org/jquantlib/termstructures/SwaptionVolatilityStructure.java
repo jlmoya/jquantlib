@@ -2,12 +2,14 @@ package org.jquantlib.termstructures;
 
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.math.Rounding;
 import org.jquantlib.model.VolatilityType;
 import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
 import org.jquantlib.util.Pair;
 
 public abstract class SwaptionVolatilityStructure extends AbstractTermStructure {
@@ -199,15 +201,63 @@ public abstract class SwaptionVolatilityStructure extends AbstractTermStructure 
         }
     }
 
+    /**
+     * Largest swap length (in years) for which the term structure can return vols.
+     * Mirrors C++ {@code SwaptionVolatilityStructure::maxSwapLength()}
+     * (ql/termstructures/volatility/swaption/swaptionvolstructure.hpp lines
+     * 485-487): delegates to {@link #swapLength(Period)} so that the result is
+     * the (rounded) tenor length in years rather than a day-count year fraction.
+     */
     public double maxSwapLength() {
-        return timeFromReference(referenceDate().add(maxSwapTenor()));
+        return swapLength(maxSwapTenor());
+    }
+
+    /**
+     * Convert a swap-tenor {@link Period} into a tenor-length in years.
+     * <p>
+     * Mirrors C++ {@code SwaptionVolatilityStructure::swapLength(const Period&)}
+     * (ql/termstructures/volatility/swaption/swaptionvolstructure.cpp lines 47-58):
+     * Months → length/12, Years → length, anything else → fail. This is
+     * intentionally NOT day-count driven (it is the convention used to index
+     * the vol matrix's swap axis), so we deliberately do not call
+     * {@code dayCounter().yearFraction(...)} here.
+     */
+    public double swapLength(final Period p) {
+        QL.require(p.length() > 0, "non-positive swap tenor (" + p + ") given");
+        switch (p.units()) {
+        case Months:
+            return p.length() / 12.0;
+        case Years:
+            return p.length();
+        default:
+            throw new IllegalArgumentException("invalid TimeUnit (" + p.units() + ") for swap length");
+        }
+    }
+
+    /**
+     * Convert a (start, end) swap-date pair into a tenor length in years.
+     * <p>
+     * Mirrors C++ {@code SwaptionVolatilityStructure::swapLength(const Date&, const Date&)}
+     * (ql/termstructures/volatility/swaption/swaptionvolstructure.cpp lines 60-68):
+     * computes (end-start)/365.25*12, rounds to the nearest integer (number of
+     * months), then divides by 12 to obtain tenor length in years.
+     */
+    public double swapLength(final Date start, final Date end) {
+        QL.require(end.gt(start),
+                "swap end date (" + end + ") must be greater than start (" + start + ")");
+        double result = (end.sub(start)) / 365.25 * 12.0; // month unit
+        result = new Rounding(0).operator(result);
+        result /= 12.0;
+        return result;
     }
 
     public Pair<Double, Double> convertDates(final Date optionDate, final Period swapTenor) {
         final Date end = optionDate.add(swapTenor);
         QL.require(end.gt(optionDate) , "negative swap tenorgiven"); // TODO: message
         final double optionTime = timeFromReference(optionDate);
-        final double timeLength = dayCounter().yearFraction(optionDate, end);
+        // Use the C++ tenor-length convention rather than day-count year fraction
+        // so that the swap-axis lookup matches SwaptionVolatilityMatrix.
+        final double timeLength = swapLength(swapTenor);
         return new Pair<Double, Double>(optionTime, timeLength);
     }
 
