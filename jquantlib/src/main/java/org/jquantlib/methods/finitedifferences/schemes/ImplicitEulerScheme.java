@@ -24,6 +24,8 @@ package org.jquantlib.methods.finitedifferences.schemes;
 import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.matrixutilities.BiCGStab;
+import org.jquantlib.math.matrixutilities.GMRES;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
 import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet;
 
@@ -33,41 +35,65 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet
  * Java port of v1.42.1
  * {@code ql/methods/finitedifferences/schemes/impliciteulerscheme.{hpp,cpp}}.
  *
- * <h2>Phase 2h scope</h2>
+ * <h2>Phase 5j.5 update</h2>
  * The C++ scheme falls back to BiCGStab / GMRES for {@code map.size() != 1}.
- * BiCGStab and GMRES are not yet ported to Java. This implementation
- * supports the {@code map.size() == 1} fast path (used by
+ * BiCGStab and GMRES are now available (Phase 2l Track A); this implementation
+ * wires both solvers into the multi-dimensional fallback path, mirroring C++
+ * {@code ImplicitEulerScheme::step}. The 1-D fast path (used by
  * {@link org.jquantlib.methods.finitedifferences.operators.FdmHullWhiteOp})
- * and throws a clear {@link LibraryException} for higher-dimensional input.
- * That covers {@code FdHullWhiteSwaptionEngine} and the
- * {@code dampingSteps == 0} default of {@code FdG2SwaptionEngine}; multi-d
- * damping is a Phase 2h follow-up.
+ * remains the direct tri-diagonal solve.
  *
- * @author Phase 2h WI-1 port
+ * @author Phase 2h WI-1 port; Phase 5j.5 multi-d damping path
  */
 public class ImplicitEulerScheme {
+
+    /** Solver type for the multi-dimensional iterative path. */
+    public enum SolverType { BiCGstab, GMRES }
 
     /** Time step (set by {@link #setStep}). NaN until first {@code setStep}. */
     protected double dt;
 
     protected final FdmLinearOpComposite map;
     protected final BoundaryConditionSchemeHelper bcSet;
+    private final double relTol;
+    private final SolverType solverType;
+    private int iterations;
 
-    /** Constructor with empty boundary-condition set (mirrors C++ default arg). */
+    /** Constructor with empty boundary-condition set + BiCGstab default (mirrors C++ default args). */
     public ImplicitEulerScheme(final FdmLinearOpComposite map) {
-        this(map, new FdmBoundaryConditionSet());
+        this(map, new FdmBoundaryConditionSet(), 1e-8, SolverType.BiCGstab);
     }
 
     public ImplicitEulerScheme(final FdmLinearOpComposite map,
                                final FdmBoundaryConditionSet bcSet) {
+        this(map, bcSet, 1e-8, SolverType.BiCGstab);
+    }
+
+    public ImplicitEulerScheme(final FdmLinearOpComposite map,
+                               final FdmBoundaryConditionSet bcSet,
+                               final double relTol,
+                               final SolverType solverType) {
         this.dt = Double.NaN;
         this.map = map;
         this.bcSet = new BoundaryConditionSchemeHelper(bcSet);
+        this.relTol = relTol;
+        this.solverType = solverType;
+        this.iterations = 0;
     }
 
     /** Set the rollback step size (called by the solver between steps). */
     public void setStep(final double dt) {
         this.dt = dt;
+    }
+
+    /** Total iterative-solver iterations consumed (0 for 1-D direct path). */
+    public int numberOfIterations() {
+        return iterations;
+    }
+
+    /** Apply the operator {@code (I - theta * dt * L)} to {@code r}. */
+    private Array apply(final Array r, final double theta) {
+        return r.sub(map.apply(r).mulAssign(theta * dt));
     }
 
     /** Default step: theta = 1.0 (full implicit). */
@@ -79,9 +105,10 @@ public class ImplicitEulerScheme {
      * Advance {@code a} from time {@code t} to {@code t-dt} in-place with
      * implicitness weight {@code theta}.
      * <p>
-     * Mirrors C++ {@code ImplicitEulerScheme::step(a, t, theta)} for the
-     * {@code map.size() == 1} fast path. Higher-dimensional input throws
-     * {@link LibraryException} (BiCGStab/GMRES not yet ported).
+     * Mirrors C++ {@code ImplicitEulerScheme::step(a, t, theta)}. For
+     * {@code map.size() == 1} uses the direct tri-diagonal solve. For
+     * higher-dimensional input dispatches to BiCGStab or GMRES according
+     * to {@link SolverType}.
      */
     public void step(final Array a, final double t, final double theta) {
         QL.require(t - dt > -1e-8, "a step towards negative time given");
@@ -95,11 +122,25 @@ public class ImplicitEulerScheme {
         if (map.size() == 1) {
             final Array result = map.solveSplitting(0, a, -theta * dt);
             a.fill(result);
+        } else if (solverType == SolverType.BiCGstab) {
+            final BiCGStab.MatrixMult applyOp = r -> apply(r, theta);
+            final BiCGStab.MatrixMult precond = r -> map.preconditioner(r, -theta * dt);
+            final BiCGStab solver = new BiCGStab(applyOp,
+                    Math.max(10, a.size()), relTol, precond);
+            final BiCGStab.Result result = solver.solve(a, a);
+            iterations += result.iterations;
+            a.fill(result.x);
+        } else if (solverType == SolverType.GMRES) {
+            final GMRES.MatrixMult applyOp = r -> apply(r, theta);
+            final GMRES.MatrixMult precond = r -> map.preconditioner(r, -theta * dt);
+            final GMRES solver = new GMRES(applyOp,
+                    Math.max(10, a.size() / 10), relTol, precond);
+            final GMRES.Result result = solver.solve(a, a);
+            iterations += result.errors.size();
+            a.fill(result.x);
         } else {
             throw new LibraryException(
-                    "ImplicitEulerScheme: BiCGStab/GMRES path not yet ported "
-                  + "(map.size() = " + map.size() + "). Use dampingSteps = 0 "
-                  + "with multi-dimensional operators (Phase 2h follow-up).");
+                    "ImplicitEulerScheme: unknown solver type " + solverType);
         }
 
         bcSet.applyAfterSolving(a);
