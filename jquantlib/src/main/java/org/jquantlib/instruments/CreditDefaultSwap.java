@@ -40,14 +40,22 @@ import org.jquantlib.cashflow.Leg;
 import org.jquantlib.cashflow.SimpleCashFlow;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.Ops;
+import org.jquantlib.math.solvers1D.Brent;
 import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.credit.MidPointCdsEngine;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.DefaultProbabilityTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.credit.FlatHazardRate;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
 
 /**
  * Credit default swap.
@@ -464,11 +472,11 @@ public class CreditDefaultSwap extends Instrument {
      * Implied hazard rate. Mirrors C++ {@code CreditDefaultSwap::impliedHazardRate}
      * ({@code creditdefaultswap.cpp:340-381}).
      *
-     * <p>The C++ implementation builds a transient
-     * {@code MidPointCdsEngine} (or {@code IsdaCdsEngine}) and uses Brent
-     * to solve for the hazard rate that produces the target NPV. Phase 3b
-     * Track B delivers {@code MidPointCdsEngine}; Phase 3c delivers
-     * {@code IsdaCdsEngine}. Until Track B lands this method throws.
+     * <p>Builds a transient flat-hazard-rate term structure backed by a
+     * {@link SimpleQuote}, attaches a {@link MidPointCdsEngine} to it, and
+     * uses {@link Brent} to solve for the hazard rate that makes the
+     * engine's NPV equal {@code targetNPV}. The {@link PricingModel#ISDA}
+     * branch is Phase 3c.
      */
     public double impliedHazardRate(
             final double targetNPV,
@@ -477,10 +485,44 @@ public class CreditDefaultSwap extends Instrument {
             final double recoveryRate,
             final double accuracy,
             final PricingModel model) {
-        throw new UnsupportedOperationException(
-                "CreditDefaultSwap.impliedHazardRate requires a CDS pricing engine; "
-                + "MidPointCdsEngine is delivered by Phase 3b Track B and "
-                + "IsdaCdsEngine by Phase 3c.");
+
+        final SimpleQuote flatRate = new SimpleQuote(0.0);
+
+        final Handle<DefaultProbabilityTermStructure> probability =
+                new Handle<DefaultProbabilityTermStructure>(
+                        new FlatHazardRate(0, new NullCalendar(),
+                                new Handle<Quote>(flatRate), dayCounter));
+
+        final PricingEngine engine;
+        switch (model) {
+          case Midpoint:
+            engine = new MidPointCdsEngine(probability, recoveryRate, discountCurve);
+            break;
+          case ISDA:
+            throw new UnsupportedOperationException(
+                    "CreditDefaultSwap.impliedHazardRate ISDA branch requires "
+                    + "IsdaCdsEngine; deferred to Phase 3c.");
+          default:
+            throw new IllegalArgumentException("unknown CDS pricing model: " + model);
+        }
+
+        setupArguments(engine.getArguments());
+        final CreditDefaultSwap.ResultsImpl res =
+                (CreditDefaultSwap.ResultsImpl) engine.getResults();
+
+        final Ops.DoubleOp f = new Ops.DoubleOp() {
+            @Override
+            public double op(final double guess) {
+                flatRate.setValue(guess);
+                engine.calculate();
+                return res.value - targetNPV;
+            }
+        };
+
+        // Very close guess if targetNPV = 0 (mirrors C++ comment).
+        final double guess = runningSpread_ / (1.0 - recoveryRate) * 365.0 / 360.0;
+        final double step = 0.1 * guess;
+        return new Brent().solve(f, accuracy, guess, step);
     }
 
     /** Convenience overload defaulting to recoveryRate=0.4, accuracy=1e-8,
@@ -496,18 +538,52 @@ public class CreditDefaultSwap extends Instrument {
     /**
      * Conventional / standard upfront-to-spread conversion. Mirrors C++
      * {@code CreditDefaultSwap::conventionalSpread}
-     * ({@code creditdefaultswap.cpp:383-423}). Same Phase 3b Track B
-     * deferral as {@link #impliedHazardRate}.
+     * ({@code creditdefaultswap.cpp:383-423}). The {@link PricingModel#ISDA}
+     * branch is Phase 3c.
      */
     public double conventionalSpread(
             final double conventionalRecovery,
             final Handle<YieldTermStructure> discountCurve,
             final DayCounter dayCounter,
             final PricingModel model) {
-        throw new UnsupportedOperationException(
-                "CreditDefaultSwap.conventionalSpread requires a CDS pricing engine; "
-                + "MidPointCdsEngine is delivered by Phase 3b Track B and "
-                + "IsdaCdsEngine by Phase 3c.");
+
+        final SimpleQuote flatRate = new SimpleQuote(0.0);
+
+        final Handle<DefaultProbabilityTermStructure> probability =
+                new Handle<DefaultProbabilityTermStructure>(
+                        new FlatHazardRate(0, new NullCalendar(),
+                                new Handle<Quote>(flatRate), dayCounter));
+
+        final PricingEngine engine;
+        switch (model) {
+          case Midpoint:
+            engine = new MidPointCdsEngine(
+                    probability, conventionalRecovery, discountCurve);
+            break;
+          case ISDA:
+            throw new UnsupportedOperationException(
+                    "CreditDefaultSwap.conventionalSpread ISDA branch requires "
+                    + "IsdaCdsEngine; deferred to Phase 3c.");
+          default:
+            throw new IllegalArgumentException("unknown CDS pricing model: " + model);
+        }
+
+        setupArguments(engine.getArguments());
+        final CreditDefaultSwap.ResultsImpl res =
+                (CreditDefaultSwap.ResultsImpl) engine.getResults();
+
+        final Ops.DoubleOp f = new Ops.DoubleOp() {
+            @Override
+            public double op(final double guess) {
+                flatRate.setValue(guess);
+                engine.calculate();
+                return res.value - 0.0;
+            }
+        };
+        final double guess = runningSpread_ / (1.0 - conventionalRecovery) * 365.0 / 360.0;
+        final double step = guess * 0.1;
+        new Brent().solve(f, 1.0e-9, guess, step);
+        return res.fairSpread;
     }
 
     /** Convenience overload defaulting to model=Midpoint. */

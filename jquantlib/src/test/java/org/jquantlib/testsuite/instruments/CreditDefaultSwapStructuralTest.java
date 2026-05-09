@@ -289,9 +289,11 @@ public class CreditDefaultSwapStructuralTest {
     }
 
     @Test
-    public void testImpliedHazardRateThrowsUntilEngineLands() {
-        // Phase 3b Track B carry-forward — impliedHazardRate / conventionalSpread
-        // depend on MidPointCdsEngine which isn't ported in L0.
+    public void testImpliedHazardRateAndConventionalSpreadWired() {
+        // Phase 3b Track B follow-up — impliedHazardRate / conventionalSpread
+        // are wired through MidPointCdsEngine and now require a non-empty
+        // discount curve handle. Without one, they propagate the engine's
+        // "no discount term structure set" error, not UnsupportedOperationException.
         final Calendar calendar = new UnitedStates(UnitedStates.Market.SETTLEMENT);
         final DayCounter dc = new Actual360();
         final Schedule schedule = cdsSchedule(calendar);
@@ -304,16 +306,31 @@ public class CreditDefaultSwapStructuralTest {
                 BusinessDayConvention.Following,
                 dc);
 
+        // null discount curve handle → engine throws "no discount term
+        // structure set" (LibraryException), no longer UnsupportedOperationException.
         try {
             cds.impliedHazardRate(0.0, null, dc);
-            fail("expected UnsupportedOperationException until MidPointCdsEngine lands");
-        } catch (final UnsupportedOperationException expected) {
-            // pass
+            fail("expected exception with null discount curve");
+        } catch (final UnsupportedOperationException uoe) {
+            fail("impliedHazardRate should now be wired (Phase 3b Track B), not UOE");
+        } catch (final RuntimeException expected) {
+            // pass — engine rejects null discount curve
         }
 
         try {
             cds.conventionalSpread(0.4, null, dc);
-            fail("expected UnsupportedOperationException until MidPointCdsEngine lands");
+            fail("expected exception with null discount curve");
+        } catch (final UnsupportedOperationException uoe) {
+            fail("conventionalSpread should now be wired (Phase 3b Track B), not UOE");
+        } catch (final RuntimeException expected) {
+            // pass — engine rejects null discount curve
+        }
+
+        // ISDA branch is still Phase 3c — should explicitly throw UnsupportedOperationException.
+        try {
+            cds.impliedHazardRate(0.0, null, dc, 0.4, 1.0e-8,
+                    CreditDefaultSwap.PricingModel.ISDA);
+            fail("expected UnsupportedOperationException for ISDA branch");
         } catch (final UnsupportedOperationException expected) {
             // pass
         }

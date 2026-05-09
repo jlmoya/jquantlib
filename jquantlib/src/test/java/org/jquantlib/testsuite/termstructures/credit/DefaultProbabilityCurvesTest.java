@@ -1,22 +1,45 @@
 /*
  Copyright (C) 2026 JQuantLib migration contributors.
  Java port of QuantLib v1.42.1 test-suite/defaultprobabilitycurves.cpp.
- Phase 3a L2.
+ Phase 3a L2 + Phase 3b Track B re-enable.
 */
 package org.jquantlib.testsuite.termstructures.credit;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.daycounters.Thirty360;
+import org.jquantlib.instruments.CreditDefaultSwap;
+import org.jquantlib.instruments.Protection;
+import org.jquantlib.math.interpolations.factories.BackwardFlat;
+import org.jquantlib.math.interpolations.factories.Linear;
+import org.jquantlib.math.interpolations.factories.LogLinear;
+import org.jquantlib.pricingengines.credit.MidPointCdsEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.DefaultProbabilityTermStructure;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.credit.DefaultProbabilityHelper;
 import org.jquantlib.termstructures.credit.FlatHazardRate;
+import org.jquantlib.termstructures.credit.PiecewiseDefaultCurve;
+import org.jquantlib.termstructures.credit.SpreadCdsHelper;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
 import org.junit.Ignore;
@@ -27,32 +50,32 @@ import org.junit.Test;
  * {@code BOOST_AUTO_TEST_SUITE(DefaultProbabilityCurveTests)} (533 LOC).
  *
  * <p>Per binding rigor directive 2026-05-08: every {@code BOOST_AUTO_TEST_CASE}
- * is mapped to a faithful Java {@code @Test}. CDS-dependent cases (which
- * require {@code CreditDefaultSwap} and its pricing engines) are
- * {@code @Ignore}'d with the rationale "Phase 3b: needs CreditDefaultSwap";
- * they remain present as unimplemented placeholders so the C++ → Java
- * test-case lineage is auditable.
+ * is mapped to a faithful Java {@code @Test}.
  *
- * <h3>Active cases (CDS-free, Phase 3a)</h3>
+ * <h3>Active cases</h3>
  * <ul>
- *   <li>{@code testDefaultProbability} — date/time accessor consistency on
- *       {@link FlatHazardRate}.
- *   <li>{@code testFlatHazardRate} — {@code S(t) = exp(-h t)} via the
- *       {@code FlatHazardRate} curve.
+ *   <li>{@code testDefaultProbability} — Phase 3a, no CDS dependency</li>
+ *   <li>{@code testFlatHazardRate} — Phase 3a, no CDS dependency</li>
+ *   <li>{@code testFlatHazardConsistency} — Phase 3b, spread half only
+ *       (upfront half ignored — needs DateGeneration.CDS)</li>
+ *   <li>{@code testFlatDensityConsistency} — Phase 3b, spread half only</li>
+ *   <li>{@code testLinearDensityConsistency} — Phase 3b, spread half only</li>
+ *   <li>{@code testLogLinearSurvivalConsistency} — Phase 3b, spread half only</li>
+ *   <li>{@code testSingleInstrumentBootstrap} — Phase 3b</li>
  * </ul>
  *
- * <h3>Deferred cases (Phase 3b)</h3>
+ * <h3>Deferred cases</h3>
  * <ul>
- *   <li>{@code testFlatHazardConsistency}
- *   <li>{@code testFlatDensityConsistency}
- *   <li>{@code testLinearDensityConsistency}
- *   <li>{@code testLogLinearSurvivalConsistency}
- *   <li>{@code testSingleInstrumentBootstrap}
- *   <li>{@code testUpfrontBootstrap}
- *   <li>{@code testIterativeBootstrapRetries}
+ *   <li>{@code testUpfrontBootstrap} — needs DateGeneration.CDS / cdsMaturity</li>
+ *   <li>{@code testIterativeBootstrapRetries} — needs IterativeBootstrap retries
+ *       + DateGeneration.CDS2015 + InterpolatedDiscountCurve constructor</li>
  * </ul>
  */
 public class DefaultProbabilityCurvesTest {
+
+    public DefaultProbabilityCurvesTest() {
+        QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+    }
 
     //
     // testDefaultProbability — CDS-free
@@ -60,11 +83,6 @@ public class DefaultProbabilityCurvesTest {
 
     /**
      * Java port of {@code BOOST_AUTO_TEST_CASE(testDefaultProbability)}.
-     *
-     * <p>Tests that the default-probability term-structure surface is
-     * internally consistent: {@code p(d1,d2) == p(d2) - p(d1)},
-     * {@code p(t) == p(d)} when {@code t = yearFraction(today, d)},
-     * {@code p(t1,t2) == p(d1,d2)} likewise.
      */
     @Test
     public void testDefaultProbability() {
@@ -108,9 +126,6 @@ public class DefaultProbabilityCurvesTest {
 
     /**
      * Java port of {@code BOOST_AUTO_TEST_CASE(testFlatHazardRate)}.
-     *
-     * <p>Tests that {@code FlatHazardRate.defaultProbability(t) ==
-     * 1 - exp(-h t)} at annual intervals.
      */
     @Test
     public void testFlatHazardRate() {
@@ -138,52 +153,164 @@ public class DefaultProbabilityCurvesTest {
     }
 
     //
-    // CDS-dependent cases — deferred to Phase 3b. All implemented as @Ignore'd
-    // placeholders so the lineage with the C++ test suite is auditable.
+    // CDS-spread bootstrap consistency — Phase 3b Track B
     //
 
-    /** Phase 3b: needs CreditDefaultSwap + SpreadCdsHelper + UpfrontCdsHelper + MidPointCdsEngine. */
-    @Ignore("Phase 3b: needs CreditDefaultSwap")
+    /**
+     * Equivalent of C++ {@code testBootstrapFromSpread<T,I>} where
+     * {@code (T, I)} parameterise the curve flavor and interpolator.
+     *
+     * <p>Builds a {@link PiecewiseDefaultCurve} from a few CDS spread quotes,
+     * then re-prices each generating CDS via {@link MidPointCdsEngine} on the
+     * resulting curve and verifies the recovered fair spread equals the input.
+     */
+    private static <I extends org.jquantlib.math.interpolations.Interpolation.Interpolator>
+    void testBootstrapFromSpread(final PiecewiseDefaultCurve.Flavor flavor,
+                                 final Class<I> interpClass) {
+        final Calendar calendar = new Target();
+        final Date today = new Settings().evaluationDate();
+
+        final int settlementDays = 1;
+        final double[] quote = {0.005, 0.006, 0.007, 0.009};
+        final int[] n = {1, 2, 3, 5};
+
+        final Frequency frequency = Frequency.Quarterly;
+        final BusinessDayConvention convention = BusinessDayConvention.Following;
+        final DateGeneration.Rule rule = DateGeneration.Rule.TwentiethIMM;
+        final DayCounter dayCounter = new Thirty360(Thirty360.Convention.BondBasis);
+        final double recoveryRate = 0.4;
+
+        final Handle<YieldTermStructure> discountCurve =
+                new Handle<YieldTermStructure>(new FlatForward(today, 0.06, new Actual360()));
+
+        final List<DefaultProbabilityHelper> helpers = new ArrayList<>();
+        for (int i = 0; i < n.length; ++i) {
+            helpers.add(new SpreadCdsHelper(
+                    quote[i], new Period(n[i], TimeUnit.Years),
+                    settlementDays, calendar, frequency, convention, rule,
+                    dayCounter, recoveryRate, discountCurve));
+        }
+
+        final PiecewiseDefaultCurve<I> piecewiseCurve = new PiecewiseDefaultCurve<I>(
+                flavor, interpClass, today, helpers,
+                new Thirty360(Thirty360.Convention.BondBasis));
+        final Handle<DefaultProbabilityTermStructure> probabilityHandle =
+                new Handle<DefaultProbabilityTermStructure>(piecewiseCurve);
+
+        final double notional = 1.0;
+        final double tolerance = 1.0e-6;
+
+        final Settings s = new Settings();
+        final boolean prevTodaysPayments = s.isTodaysPayments();
+        s.setTodaysPayments(true);
+        try {
+            for (int i = 0; i < n.length; ++i) {
+                final Date protectionStart = today.add(settlementDays);
+                final Date startDate = calendar.adjust(protectionStart, convention);
+                final Date endDate = today.add(new Period(n[i], TimeUnit.Years));
+
+                final Schedule schedule = new Schedule(
+                        startDate, endDate, new Period(frequency), calendar,
+                        convention, BusinessDayConvention.Unadjusted,
+                        rule, false);
+
+                final CreditDefaultSwap cds = new CreditDefaultSwap(
+                        Protection.Side.Buyer, notional, quote[i],
+                        schedule, convention, dayCounter,
+                        true, true, protectionStart);
+                cds.setPricingEngine(new MidPointCdsEngine(
+                        probabilityHandle, recoveryRate, discountCurve));
+
+                final double inputRate = quote[i];
+                final double computedRate = cds.fairSpread();
+                if (Math.abs(inputRate - computedRate) > tolerance) {
+                    fail("Failed to reproduce fair spread for " + n[i]
+                            + "Y CDS\n  computed=" + computedRate
+                            + "\n  input=" + inputRate);
+                }
+            }
+        } finally {
+            s.setTodaysPayments(prevTodaysPayments);
+        }
+    }
+
+    /** Java port of {@code BOOST_AUTO_TEST_CASE(testFlatHazardConsistency)}. */
     @Test
     public void testFlatHazardConsistency() {
         // C++: testBootstrapFromSpread<HazardRate, BackwardFlat>();
         //      testBootstrapFromUpfront<HazardRate, BackwardFlat>();
+        // Java: spread half only — upfront half needs DateGeneration.CDS.
+        testBootstrapFromSpread(
+                PiecewiseDefaultCurve.Flavor.HAZARD_RATE, BackwardFlat.class);
     }
 
-    /** Phase 3b: needs CreditDefaultSwap + SpreadCdsHelper + UpfrontCdsHelper + MidPointCdsEngine. */
-    @Ignore("Phase 3b: needs CreditDefaultSwap")
+    /** Java port of {@code BOOST_AUTO_TEST_CASE(testFlatDensityConsistency)}. */
     @Test
     public void testFlatDensityConsistency() {
-        // C++: testBootstrapFromSpread<DefaultDensity, BackwardFlat>();
-        //      testBootstrapFromUpfront<DefaultDensity, BackwardFlat>();
+        testBootstrapFromSpread(
+                PiecewiseDefaultCurve.Flavor.DEFAULT_DENSITY, BackwardFlat.class);
     }
 
-    /** Phase 3b: needs CreditDefaultSwap + SpreadCdsHelper + UpfrontCdsHelper + MidPointCdsEngine. */
-    @Ignore("Phase 3b: needs CreditDefaultSwap")
+    /** Java port of {@code BOOST_AUTO_TEST_CASE(testLinearDensityConsistency)}. */
     @Test
     public void testLinearDensityConsistency() {
-        // C++: testBootstrapFromSpread<DefaultDensity, Linear>();
-        //      testBootstrapFromUpfront<DefaultDensity, Linear>();
+        testBootstrapFromSpread(
+                PiecewiseDefaultCurve.Flavor.DEFAULT_DENSITY, Linear.class);
     }
 
-    /** Phase 3b: needs CreditDefaultSwap + SpreadCdsHelper + UpfrontCdsHelper + MidPointCdsEngine. */
-    @Ignore("Phase 3b: needs CreditDefaultSwap")
+    /** Java port of {@code BOOST_AUTO_TEST_CASE(testLogLinearSurvivalConsistency)}.
+     *
+     *  <p>Phase 3c: the C++ test relies on {@code IterativeBootstrap}'s
+     *  initial-guess refinement (multiple solver passes with progressively
+     *  expanded value bounds) to converge a log-linear interpolated survival
+     *  probability through the spread quotes. The Phase 3a Java
+     *  {@link PiecewiseDefaultCurve} runs a single Brent solve with
+     *  {@code traits.guess()}'s default initial guess, which rejects the
+     *  intermediate iterate as a "negative hazard rate". Porting the
+     *  retry/initial-guess machinery is deferred to Phase 3c.
+     */
+    @Ignore("Phase 3c: needs IterativeBootstrap initial-guess refinement for LogLinear")
     @Test
     public void testLogLinearSurvivalConsistency() {
-        // C++: testBootstrapFromSpread<SurvivalProbability, LogLinear>();
-        //      testBootstrapFromUpfront<SurvivalProbability, LogLinear>();
+        testBootstrapFromSpread(
+                PiecewiseDefaultCurve.Flavor.SURVIVAL_PROBABILITY,
+                LogLinear.class);
     }
 
-    /** Phase 3b: needs CreditDefaultSwap + SpreadCdsHelper + MidPointCdsEngine. */
-    @Ignore("Phase 3b: needs CreditDefaultSwap")
+    /** Java port of {@code BOOST_AUTO_TEST_CASE(testSingleInstrumentBootstrap)}. */
     @Test
     public void testSingleInstrumentBootstrap() {
-        // C++: builds PiecewiseDefaultCurve<HazardRate, BackwardFlat> from
-        // a single SpreadCdsHelper and calls recalculate().
+        final Calendar calendar = new Target();
+        final Date today = new Settings().evaluationDate();
+        final int settlementDays = 0;
+        final double quote = 0.005;
+        final Period tenor = new Period(2, TimeUnit.Years);
+        final Frequency frequency = Frequency.Quarterly;
+        final BusinessDayConvention convention = BusinessDayConvention.Following;
+        final DateGeneration.Rule rule = DateGeneration.Rule.TwentiethIMM;
+        final DayCounter dayCounter = new Thirty360(Thirty360.Convention.BondBasis);
+        final double recoveryRate = 0.4;
+
+        final Handle<YieldTermStructure> discountCurve =
+                new Handle<YieldTermStructure>(new FlatForward(today, 0.06, new Actual360()));
+
+        final List<DefaultProbabilityHelper> helpers = new ArrayList<>();
+        helpers.add(new SpreadCdsHelper(
+                quote, tenor, settlementDays, calendar, frequency, convention,
+                rule, dayCounter, recoveryRate, discountCurve));
+
+        final PiecewiseDefaultCurve<BackwardFlat> defaultCurve =
+                new PiecewiseDefaultCurve<BackwardFlat>(
+                        PiecewiseDefaultCurve.Flavor.HAZARD_RATE,
+                        BackwardFlat.class,
+                        today, helpers, dayCounter);
+        // Force calculation; if the bootstrap throws, the test fails.
+        assertTrue("bootstrap should produce a positive max date",
+                defaultCurve.maxDate().gt(today));
     }
 
-    /** Phase 3b: needs CreditDefaultSwap + UpfrontCdsHelper + MidPointCdsEngine. */
-    @Ignore("Phase 3b: needs CreditDefaultSwap")
+    /** Phase 3c: needs DateGeneration.CDS rule + cdsMaturity helper. */
+    @Ignore("Phase 3c: testBootstrapFromUpfront needs DateGeneration.CDS rule")
     @Test
     public void testUpfrontBootstrap() {
         // C++: testBootstrapFromUpfront<HazardRate, BackwardFlat>(); after
@@ -191,8 +318,10 @@ public class DefaultProbabilityCurvesTest {
         // UpfrontCdsHelper::impliedQuote() flips it.
     }
 
-    /** Phase 3b: needs CreditDefaultSwap + SpreadCdsHelper + IterativeBootstrap with retries. */
-    @Ignore("Phase 3b: needs CreditDefaultSwap")
+    /** Phase 3c: needs DateGeneration.CDS2015 + IterativeBootstrap retries +
+     *  InterpolatedDiscountCurve constructor that takes
+     *  (dates, discountFactors, dayCounter). */
+    @Ignore("Phase 3c: needs DateGeneration.CDS2015 + IterativeBootstrap retries")
     @Test
     public void testIterativeBootstrapRetries() {
         // C++: 1 Apr 2020 distressed-CDS scenario testing IterativeBootstrap
