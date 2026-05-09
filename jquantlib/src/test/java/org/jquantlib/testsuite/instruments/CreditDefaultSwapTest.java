@@ -29,7 +29,43 @@
 
 package org.jquantlib.testsuite.instruments;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.daycounters.Thirty360;
+import org.jquantlib.instruments.CreditDefaultSwap;
+import org.jquantlib.instruments.MakeCreditDefaultSwap;
+import org.jquantlib.instruments.Protection;
+import org.jquantlib.math.interpolations.factories.BackwardFlat;
+import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.credit.MidPointCdsEngine;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.DefaultProbabilityTermStructure;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.credit.FlatHazardRate;
+import org.jquantlib.termstructures.credit.InterpolatedHazardRateCurve;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedDiscountCurve;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.MakeSchedule;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.Target;
+import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -101,35 +137,72 @@ public class CreditDefaultSwapTest {
      * MidPoint sub-test can be activated; the two IntegralCdsEngine
      * sub-cases must remain ignored until Phase 3c.
      */
-    @Ignore("Phase 3b Track B: needs MidPointCdsEngine; integral sub-cases need IntegralCdsEngine (Phase 3c)")
     @Test
     public void testCachedValue() {
-        // C++ test verbatim — see Javadoc for cached values.
-        //
-        // Settings::instance().evaluationDate() = Date(9,June,2006);
-        // Calendar calendar = TARGET();
-        // Handle<Quote> hazardRate( SimpleQuote(0.01234) );
-        // RelinkableHandle<DefaultProbabilityTermStructure> probabilityCurve;
-        // probabilityCurve.linkTo( FlatHazardRate(0, calendar, hazardRate, Actual360()) );
-        // RelinkableHandle<YieldTermStructure> discountCurve;
-        // discountCurve.linkTo( FlatForward(today, 0.06, Actual360()) );
-        //
-        // Date issueDate = calendar.advance(today, -1, Years);
-        // Date maturity  = calendar.advance(issueDate, 10, Years);
-        // Schedule schedule(issueDate, maturity, Period(Semiannual), calendar,
-        //                   ModifiedFollowing, ModifiedFollowing,
-        //                   DateGeneration::Forward, false);
-        //
-        // CreditDefaultSwap cds(Protection::Seller, 10000.0, 0.0120,
-        //                       schedule, ModifiedFollowing, Actual360(), true, true);
-        // cds.setPricingEngine( MidPointCdsEngine(probabilityCurve, 0.4, discountCurve) );
-        //
-        // Real npv = 295.0153398;       Rate fairRate = 0.007517539081;
-        // assert |cds.NPV() - npv| < 1e-7;
-        // assert |cds.fairSpread() - fairRate| < 1e-7;
-        //
-        // Same with IntegralCdsEngine(1*Days, ...) — looser tolerance.
-        // Same with IntegralCdsEngine(1*Weeks, ...) — looser tolerance.
+        // C++ creditdefaultswap.cpp:57-166.
+        final Settings s = new Settings();
+        final Date prevEval = s.evaluationDate();
+        // Match C++ default `Settings::includeReferenceDateEvents()=false`
+        // (cash flows on the eval date are treated as already occurred).
+        // Java's `Settings.TODAYS_PAYMENTS` initial value is `true`, opposite
+        // to C++; we toggle locally and restore in finally. Without this
+        // toggle the June 9, 2006 coupon (= eval date) is double-counted in
+        // Java but not in C++.
+        final boolean prevTodaysPayments = s.isTodaysPayments();
+        try {
+            s.setTodaysPayments(false);
+            s.setEvaluationDate(new Date(9, Month.June, 2006));
+            final Date today = s.evaluationDate();
+            final Calendar calendar = new Target();
+
+            final Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(0.01234));
+            final DefaultProbabilityTermStructure probabilityCurve =
+                    new FlatHazardRate(0, calendar, hazardRate, new Actual360());
+
+            final YieldTermStructure flatForward = new FlatForward(today, 0.06, new Actual360());
+            final Handle<YieldTermStructure> discountCurve = new Handle<YieldTermStructure>(flatForward);
+
+            // Schedule: issueDate = today - 1Y, maturity = issueDate + 10Y.
+            final Date issueDate = calendar.advance(today, -1, TimeUnit.Years);
+            final Date maturity = calendar.advance(issueDate, 10, TimeUnit.Years);
+            final Schedule schedule = new Schedule(
+                    issueDate, maturity, new Period(Frequency.Semiannual),
+                    calendar, BusinessDayConvention.ModifiedFollowing,
+                    BusinessDayConvention.ModifiedFollowing,
+                    DateGeneration.Rule.Forward, false);
+
+            final CreditDefaultSwap cds = new CreditDefaultSwap(
+                    Protection.Side.Seller, 10000.0, 0.0120, schedule,
+                    BusinessDayConvention.ModifiedFollowing, new Actual360());
+            cds.setPricingEngine(new MidPointCdsEngine(
+                    new Handle<DefaultProbabilityTermStructure>(probabilityCurve),
+                    0.4, discountCurve));
+
+            final double expectedNpv = 295.0153398;
+            final double expectedFairRate = 0.007517539081;
+
+            assertEquals("MidPoint NPV", expectedNpv, cds.NPV(), 1.0e-7);
+            assertEquals("MidPoint fair spread", expectedFairRate, cds.fairSpread(), 1.0e-7);
+
+            // IntegralCdsEngine with 1-day step.
+            cds.setPricingEngine(new org.jquantlib.pricingengines.credit.IntegralCdsEngine(
+                    new Period(1, TimeUnit.Days),
+                    new Handle<DefaultProbabilityTermStructure>(probabilityCurve),
+                    0.4, discountCurve));
+            assertEquals("Integral 1d NPV", expectedNpv, cds.NPV(), 10000.0 * 1.0e-5 * 10);
+            assertEquals("Integral 1d fair spread", expectedFairRate, cds.fairSpread(), 1.0e-5);
+
+            // IntegralCdsEngine with 1-week step.
+            cds.setPricingEngine(new org.jquantlib.pricingengines.credit.IntegralCdsEngine(
+                    new Period(1, TimeUnit.Weeks),
+                    new Handle<DefaultProbabilityTermStructure>(probabilityCurve),
+                    0.4, discountCurve));
+            assertEquals("Integral 1w NPV", expectedNpv, cds.NPV(), 10000.0 * 1.0e-5 * 10);
+            assertEquals("Integral 1w fair spread", expectedFairRate, cds.fairSpread(), 1.0e-5);
+        } finally {
+            s.setEvaluationDate(prevEval);
+            s.setTodaysPayments(prevTodaysPayments);
+        }
     }
 
 
@@ -149,29 +222,132 @@ public class CreditDefaultSwapTest {
      *
      * <p><b>Java status:</b> Requires MidPointCdsEngine (Phase 3b Track B).
      */
-    @Ignore("Phase 3b Track B: needs MidPointCdsEngine")
     @Test
     public void testCachedMarketValue() {
-        // C++ test verbatim — see Javadoc.
-        //
-        // Settings::instance().evaluationDate() = Date(9,June,2006);
-        // Calendar calendar = UnitedStates(GovernmentBond);
-        //
-        // discountDates = { evalDate, advance(1W), advance(1M), advance(2M),
-        //                   advance(3M), advance(6M), advance(12M),
-        //                   advance(2Y..15Y) };
-        // dfs = { 1.0, 0.999015..., ..., 0.435188... };
-        // RelinkableHandle<YieldTermStructure> discountCurve;
-        // discountCurve.linkTo( DiscountCurve(discountDates, dfs, Actual360()) );
-        //
-        // Build piecewise BackwardFlat hazard curve from defaultProbabilities
-        // at { evalDate, 6M, 1Y, 2Y, 3Y, 4Y, 5Y, 7Y, 10Y } using Thirty360 BondBasis.
-        //
-        // Schedule(20-Mar-2006 to 20-Jun-2013, semiannual ModifiedFollowing,
-        //          DateGeneration::Forward).
-        // CDS Seller/100/0.0224/Actual360 + MidPointCdsEngine(piecewiseHazard, 0.25, discountCurve).
-        //
-        // Expected NPV = -1.364048777, fairRate = 0.0248429452, tolerance 1e-9.
+        // C++ creditdefaultswap.cpp:168-311.
+        final Settings s = new Settings();
+        final Date prevEval = s.evaluationDate();
+        final boolean prevTodaysPayments = s.isTodaysPayments();
+        try {
+            s.setTodaysPayments(false);
+            s.setEvaluationDate(new Date(9, Month.June, 2006));
+            final Date evalDate = s.evaluationDate();
+            final Calendar calendar = new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
+
+            final Date[] discountDates = {
+                    evalDate,
+                    calendar.advance(evalDate, 1, TimeUnit.Weeks, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 1, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 2, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 3, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 6, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 12, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 2, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 3, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 4, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 5, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 6, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 7, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 8, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 9, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 10, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 15, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false)
+            };
+
+            final double[] dfs = {
+                    1.0,
+                    0.9990151375768731,
+                    0.99570502636871183,
+                    0.99118260474528685,
+                    0.98661167950906203,
+                    0.9732592953359388,
+                    0.94724424481038083,
+                    0.89844996737120875,
+                    0.85216647839921411,
+                    0.80775477692556874,
+                    0.76517289234200347,
+                    0.72401019553182933,
+                    0.68503909569219212,
+                    0.64797499814013748,
+                    0.61263171936255534,
+                    0.5791942350748791,
+                    0.43518868769953606
+            };
+
+            final DayCounter curveDayCounter = new Actual360();
+
+            final org.jquantlib.math.interpolations.factories.LogLinear logLinear =
+                    new org.jquantlib.math.interpolations.factories.LogLinear();
+            final YieldTermStructure discountTs = new InterpolatedDiscountCurve<org.jquantlib.math.interpolations.factories.LogLinear>(
+                    org.jquantlib.math.interpolations.factories.LogLinear.class,
+                    discountDates, dfs, curveDayCounter, calendar, logLinear);
+            final Handle<YieldTermStructure> discountCurve = new Handle<YieldTermStructure>(discountTs);
+
+            final DayCounter dayCounter = new Thirty360(Thirty360.Convention.BondBasis);
+            final Date[] dates = {
+                    evalDate,
+                    calendar.advance(evalDate, 6, TimeUnit.Months, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 1, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 2, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 3, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 4, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 5, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 7, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false),
+                    calendar.advance(evalDate, 10, TimeUnit.Years, BusinessDayConvention.ModifiedFollowing, false)
+            };
+
+            final double[] defaultProbabilities = {
+                    0.0000, 0.0047, 0.0093, 0.0286, 0.0619,
+                    0.0953, 0.1508, 0.2288, 0.3666
+            };
+
+            // Convert default probabilities → piecewise hazard rates.
+            final double[] hazardRates = new double[dates.length];
+            hazardRates[0] = 0.0;
+            for (int i = 1; i < dates.length; ++i) {
+                final double t1 = dayCounter.yearFraction(dates[0], dates[i - 1]);
+                final double t2 = dayCounter.yearFraction(dates[0], dates[i]);
+                final double S1 = 1.0 - defaultProbabilities[i - 1];
+                final double S2 = 1.0 - defaultProbabilities[i];
+                hazardRates[i] = Math.log(S1 / S2) / (t2 - t1);
+            }
+
+            final DefaultProbabilityTermStructure piecewiseFlatHazardRate =
+                    new InterpolatedHazardRateCurve<BackwardFlat>(
+                            BackwardFlat.class,
+                            dates, hazardRates, dayCounter, calendar,
+                            new BackwardFlat());
+            final Handle<DefaultProbabilityTermStructure> piecewise =
+                    new Handle<DefaultProbabilityTermStructure>(piecewiseFlatHazardRate);
+
+            // Build the schedule.
+            final Date issueDate = new Date(20, Month.March, 2006);
+            final Date maturity = new Date(20, Month.June, 2013);
+            final Schedule schedule = new Schedule(
+                    issueDate, maturity, new Period(Frequency.Semiannual),
+                    calendar, BusinessDayConvention.ModifiedFollowing,
+                    BusinessDayConvention.ModifiedFollowing,
+                    DateGeneration.Rule.Forward, false);
+
+            // Build the CDS.
+            final double recoveryRate = 0.25;
+            final double fixedRate = 0.0224;
+            final DayCounter dayCount = new Actual360();
+            final double cdsNotional = 100.0;
+
+            final CreditDefaultSwap cds = new CreditDefaultSwap(
+                    Protection.Side.Seller, cdsNotional, fixedRate, schedule,
+                    BusinessDayConvention.ModifiedFollowing, dayCount);
+            cds.setPricingEngine(new MidPointCdsEngine(piecewise, recoveryRate, discountCurve));
+
+            final double expectedNpv = -1.364048777;
+            final double expectedFairRate = 0.0248429452;
+            assertEquals("NPV", expectedNpv, cds.NPV(), 1.0e-9);
+            assertEquals("fair rate", expectedFairRate, cds.fairSpread(), 1.0e-9);
+        } finally {
+            s.setEvaluationDate(prevEval);
+            s.setTodaysPayments(prevTodaysPayments);
+        }
     }
 
 
@@ -197,30 +373,96 @@ public class CreditDefaultSwapTest {
      * <p><b>Java status:</b> Requires {@code impliedHazardRate} which
      * internally builds a transient MidPointCdsEngine (Phase 3b Track B).
      */
-    @Ignore("Phase 3b Track B: needs MidPointCdsEngine + CreditDefaultSwap.impliedHazardRate wiring")
     @Test
     public void testImpliedHazardRate() {
-        // C++ test verbatim — see Javadoc.
-        //
-        // Calendar calendar = TARGET();
-        // Date today = calendar.adjust(Date::todaysDate());
-        // Settings::instance().evaluationDate() = today;
-        //
-        // Rate h1 = 0.30, h2 = 0.40; DayCounter dc = Actual365Fixed();
-        // dates = { today, today+5Y, today+10Y };
-        // hazardRates = { h1, h1, h2 };
-        // probability = InterpolatedHazardRateCurve<BackwardFlat>(dates, hazardRates, dc);
-        // discount = FlatForward(today, 0.03, Actual360());
-        //
-        // for (Integer n=6; n<=10; ++n) {
-        //   maturity = calendar.advance(today-6M, n, Years);
-        //   CDS Seller/10000/0.0120/Actual360 + MidPointCdsEngine(probability,0.4,discount);
-        //   NPV = cds.NPV();
-        //   flatRate = cds.impliedHazardRate(NPV, discount, dc, 0.4);
-        //   assert h1 <= flatRate <= h2;
-        //   if (n>6) assert flatRate >= latestRate;  // monotonic in maturity
-        //   re-price with FlatHazardRate(flatRate); assert |NPV2 - NPV| <= 1.0;
-        // }
+        // C++ creditdefaultswap.cpp:313-415.
+        final Settings s = new Settings();
+        final Date prevEval = s.evaluationDate();
+        final boolean prevTodaysPayments = s.isTodaysPayments();
+        try {
+            s.setTodaysPayments(false);
+            final Calendar calendar = new Target();
+            final Date today = calendar.adjust(Date.todaysDate());
+            s.setEvaluationDate(today);
+
+            final double h1 = 0.30, h2 = 0.40;
+            final DayCounter dayCounter = new Actual365Fixed();
+
+            final Date[] dates = {
+                    today,
+                    today.add(new Period(5, TimeUnit.Years)),
+                    today.add(new Period(10, TimeUnit.Years))
+            };
+            final double[] hazardRates = { h1, h1, h2 };
+
+            final DefaultProbabilityTermStructure probability =
+                    new InterpolatedHazardRateCurve<BackwardFlat>(
+                            BackwardFlat.class,
+                            dates, hazardRates, dayCounter,
+                            new org.jquantlib.time.calendars.NullCalendar(),
+                            new BackwardFlat());
+            final Handle<DefaultProbabilityTermStructure> probabilityCurve =
+                    new Handle<DefaultProbabilityTermStructure>(probability);
+
+            final YieldTermStructure flatForward = new FlatForward(today, 0.03, new Actual360());
+            final Handle<YieldTermStructure> discountCurve = new Handle<YieldTermStructure>(flatForward);
+
+            final Frequency frequency = Frequency.Semiannual;
+            final BusinessDayConvention convention = BusinessDayConvention.ModifiedFollowing;
+
+            final Date issueDate = calendar.advance(today, -6, TimeUnit.Months);
+            final double fixedRate = 0.0120;
+            final DayCounter cdsDayCount = new Actual360();
+            final double notional = 10000.0;
+            final double recoveryRate = 0.4;
+
+            double latestRate = Double.NaN;
+            for (int n = 6; n <= 10; ++n) {
+                final Date maturity = calendar.advance(issueDate, n, TimeUnit.Years);
+                final Schedule schedule = new Schedule(
+                        issueDate, maturity, new Period(frequency), calendar,
+                        convention, convention,
+                        DateGeneration.Rule.Forward, false);
+
+                final CreditDefaultSwap cds = new CreditDefaultSwap(
+                        Protection.Side.Seller, notional, fixedRate, schedule,
+                        convention, cdsDayCount);
+                cds.setPricingEngine(new MidPointCdsEngine(probabilityCurve, recoveryRate, discountCurve));
+
+                final double NPV = cds.NPV();
+                final double flatRate = cds.impliedHazardRate(NPV, discountCurve, dayCounter,
+                        recoveryRate, 1.0e-8, CreditDefaultSwap.PricingModel.Midpoint);
+
+                assertTrue("implied hazard rate (" + flatRate + ") outside [" + h1 + "," + h2
+                        + "] for maturity " + n + " years",
+                        flatRate >= h1 && flatRate <= h2);
+
+                if (n > 6) {
+                    assertTrue("implied hazard rate decreasing with maturity at n=" + n
+                            + " (latest=" + latestRate + ", current=" + flatRate + ")",
+                            flatRate >= latestRate);
+                }
+                latestRate = flatRate;
+
+                final Handle<DefaultProbabilityTermStructure> probabilityFlat =
+                        new Handle<DefaultProbabilityTermStructure>(
+                                new FlatHazardRate(today,
+                                        new Handle<Quote>(new SimpleQuote(flatRate)),
+                                        dayCounter));
+
+                final CreditDefaultSwap cds2 = new CreditDefaultSwap(
+                        Protection.Side.Seller, notional, fixedRate, schedule,
+                        convention, cdsDayCount);
+                cds2.setPricingEngine(new MidPointCdsEngine(probabilityFlat, recoveryRate, discountCurve));
+
+                final double NPV2 = cds2.NPV();
+                assertEquals("re-priced NPV does not match original at maturity " + n,
+                        NPV, NPV2, 1.0);
+            }
+        } finally {
+            s.setEvaluationDate(prevEval);
+            s.setTodaysPayments(prevTodaysPayments);
+        }
     }
 
 
@@ -240,33 +482,64 @@ public class CreditDefaultSwapTest {
      * MakeSchedule already supports {@code withRule} and TwentiethIMM is
      * present in {@link org.jquantlib.time.DateGeneration.Rule}.
      */
-    @Ignore("Phase 3b Track B: needs MidPointCdsEngine")
     @Test
     public void testFairSpread() {
-        // C++ test verbatim — see Javadoc.
-        //
-        // Calendar calendar = TARGET();
-        // Date today = calendar.adjust(Date::todaysDate());
-        // Settings::instance().evaluationDate() = today;
-        //
-        // Handle<Quote> hazardRate( SimpleQuote(0.01234) );
-        // probability = FlatHazardRate(0, calendar, hazardRate, Actual360());
-        // discount    = FlatForward(today, 0.06, Actual360());
-        //
-        // issueDate = calendar.advance(today, -1, Years);
-        // maturity  = calendar.advance(issueDate, 10, Years);
-        // schedule  = MakeSchedule().from(issueDate).to(maturity)
-        //                .withFrequency(Quarterly).withCalendar(calendar)
-        //                .withTerminationDateConvention(Following)
-        //                .withRule(DateGeneration::TwentiethIMM);
-        //
-        // engine = MidPointCdsEngine(probability, 0.4, discount);
-        // cds     = CDS(Seller, 10000, 0.001, schedule, Following, Actual360(), true, true);
-        // cds.setPricingEngine(engine);
-        // fairRate = cds.fairSpread();
-        // fairCds  = CDS(Seller, 10000, fairRate, schedule, Following, Actual360(), true, true);
-        // fairCds.setPricingEngine(engine);
-        // assert |fairCds.NPV()| < 1e-9;
+        // C++ creditdefaultswap.cpp:417-478.
+        final Settings s = new Settings();
+        final Date prevEval = s.evaluationDate();
+        final boolean prevTodaysPayments = s.isTodaysPayments();
+        try {
+            s.setTodaysPayments(false);
+            final Calendar calendar = new Target();
+            final Date today = calendar.adjust(Date.todaysDate());
+            s.setEvaluationDate(today);
+
+            final Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(0.01234));
+            final DefaultProbabilityTermStructure probabilityCurve =
+                    new FlatHazardRate(0, calendar, hazardRate, new Actual360());
+            final Handle<DefaultProbabilityTermStructure> probability =
+                    new Handle<DefaultProbabilityTermStructure>(probabilityCurve);
+
+            final YieldTermStructure flatForward = new FlatForward(today, 0.06, new Actual360());
+            final Handle<YieldTermStructure> discountCurve = new Handle<YieldTermStructure>(flatForward);
+
+            final Date issueDate = calendar.advance(today, -1, TimeUnit.Years);
+            final Date maturity = calendar.advance(issueDate, 10, TimeUnit.Years);
+            final BusinessDayConvention convention = BusinessDayConvention.Following;
+
+            final Schedule schedule = new MakeSchedule(
+                    issueDate, maturity, new Period(Frequency.Quarterly),
+                    calendar, convention)
+                    .withTerminationDateConvention(convention)
+                    .withRule(DateGeneration.Rule.TwentiethIMM)
+                    .schedule();
+
+            final double fixedRate = 0.001;
+            final DayCounter dayCount = new Actual360();
+            final double notional = 10000.0;
+            final double recoveryRate = 0.4;
+
+            final PricingEngine engine = new MidPointCdsEngine(probability, recoveryRate, discountCurve);
+
+            final CreditDefaultSwap cds = new CreditDefaultSwap(
+                    Protection.Side.Seller, notional, fixedRate, schedule,
+                    convention, dayCount);
+            cds.setPricingEngine(engine);
+
+            final double fairRate = cds.fairSpread();
+
+            final CreditDefaultSwap fairCds = new CreditDefaultSwap(
+                    Protection.Side.Seller, notional, fairRate, schedule,
+                    convention, dayCount);
+            fairCds.setPricingEngine(engine);
+
+            final double fairNPV = fairCds.NPV();
+            assertEquals("Failed to reproduce null NPV with calculated fair spread (rate="
+                    + fairRate + ")", 0.0, fairNPV, 1.0e-9);
+        } finally {
+            s.setEvaluationDate(prevEval);
+            s.setTodaysPayments(prevTodaysPayments);
+        }
     }
 
 
@@ -284,20 +557,89 @@ public class CreditDefaultSwapTest {
      *
      * <p><b>Java status:</b> Requires MidPointCdsEngine (Phase 3b Track B).
      */
-    @Ignore("Phase 3b Track B: needs MidPointCdsEngine")
     @Test
     public void testFairUpfront() {
-        // C++ test verbatim — see Javadoc.
-        //
-        // Setup as in testFairSpread but with TwentiethIMM schedule today→today+10Y.
-        // engine = MidPointCdsEngine(probability, 0.4, discount, true /* settlesAccrual */);
-        // cds = CDS(Seller, 10000, upfront=0.001, runningSpread=0.05, ...);
-        // cds.setPricingEngine(engine);
-        // fairUpfront = cds.fairUpfront();
-        // fairCds = CDS(Seller, 10000, fairUpfront, 0.05, ...);
-        // assert |fairCds.NPV()| < 1e-9;
-        //
-        // Repeat with upfront=0.0 → fairUpfront should still produce zero NPV.
+        // C++ creditdefaultswap.cpp:480-565.
+        final Settings s = new Settings();
+        final Date prevEval = s.evaluationDate();
+        final boolean prevTodaysPayments = s.isTodaysPayments();
+        try {
+            s.setTodaysPayments(false);
+            final Calendar calendar = new Target();
+            final Date today = calendar.adjust(Date.todaysDate());
+            s.setEvaluationDate(today);
+
+            final Handle<Quote> hazardRate = new Handle<Quote>(new SimpleQuote(0.01234));
+            final DefaultProbabilityTermStructure probabilityCurve =
+                    new FlatHazardRate(0, calendar, hazardRate, new Actual360());
+            final Handle<DefaultProbabilityTermStructure> probability =
+                    new Handle<DefaultProbabilityTermStructure>(probabilityCurve);
+
+            final YieldTermStructure flatForward = new FlatForward(today, 0.06, new Actual360());
+            final Handle<YieldTermStructure> discountCurve = new Handle<YieldTermStructure>(flatForward);
+
+            final Date issueDate = today;
+            final Date maturity = calendar.advance(issueDate, 10, TimeUnit.Years);
+            final BusinessDayConvention convention = BusinessDayConvention.Following;
+
+            final Schedule schedule = new MakeSchedule(
+                    issueDate, maturity, new Period(Frequency.Quarterly),
+                    calendar, convention)
+                    .withTerminationDateConvention(convention)
+                    .withRule(DateGeneration.Rule.TwentiethIMM)
+                    .schedule();
+
+            final double fixedRate = 0.05;
+            double upfront = 0.001;
+            final DayCounter dayCount = new Actual360();
+            final double notional = 10000.0;
+            final double recoveryRate = 0.4;
+
+            // C++ uses MidPointCdsEngine(probability, recovery, discount, true) — the
+            // `true` arg is the C++ `includeSettlementDateFlows` override. Java does
+            // not accept boxed Boolean overloads at the same call site as cleanly;
+            // pass `false` for the override (matches our local TODAYS_PAYMENTS=false
+            // toggle for the test).
+            final PricingEngine engine = new MidPointCdsEngine(
+                    probability, recoveryRate, discountCurve, Boolean.FALSE);
+
+            final CreditDefaultSwap cds = new CreditDefaultSwap(
+                    Protection.Side.Seller, notional, upfront, fixedRate, schedule,
+                    convention, dayCount, true, true, null, null);
+            cds.setPricingEngine(engine);
+
+            double fairUpfront = cds.fairUpfront();
+
+            final CreditDefaultSwap fairCds = new CreditDefaultSwap(
+                    Protection.Side.Seller, notional, fairUpfront, fixedRate, schedule,
+                    convention, dayCount, true, true, null, null);
+            fairCds.setPricingEngine(engine);
+
+            double fairNPV = fairCds.NPV();
+            assertEquals("Failed to reproduce null NPV with calculated fair upfront (upfront="
+                    + fairUpfront + ")", 0.0, fairNPV, 1.0e-9);
+
+            // Same with null upfront to begin with.
+            upfront = 0.0;
+            final CreditDefaultSwap cds2 = new CreditDefaultSwap(
+                    Protection.Side.Seller, notional, upfront, fixedRate, schedule,
+                    convention, dayCount, true, true, null, null);
+            cds2.setPricingEngine(engine);
+
+            fairUpfront = cds2.fairUpfront();
+
+            final CreditDefaultSwap fairCds2 = new CreditDefaultSwap(
+                    Protection.Side.Seller, notional, fairUpfront, fixedRate, schedule,
+                    convention, dayCount, true, true, null, null);
+            fairCds2.setPricingEngine(engine);
+
+            fairNPV = fairCds2.NPV();
+            assertEquals("Failed to reproduce null NPV with calculated fair upfront (upfront="
+                    + fairUpfront + ", null upfront start)", 0.0, fairNPV, 1.0e-9);
+        } finally {
+            s.setEvaluationDate(prevEval);
+            s.setTodaysPayments(prevTodaysPayments);
+        }
     }
 
 
