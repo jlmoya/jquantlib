@@ -43,7 +43,6 @@ import java.lang.reflect.Constructor;
 
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
-import org.jquantlib.experimental.lattices.ExtendedTian;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.VanillaOption;
@@ -132,13 +131,10 @@ public class BinomialVanillaEngine<T extends Tree> extends VanillaOption.EngineI
             final int timeSteps,
             final /*@Real*/ double strike) {
         try {
-            if (this.classT == ExtendedTian.class) {
-                final Constructor<T> c = (Constructor<T>) classT.getConstructor(StochasticProcess1D.class, double.class, int.class);
-                return classT.cast(c.newInstance(bs, maturity, timeSteps));
-            } else {
-                final Constructor<T> c = (Constructor<T>) classT.getConstructor(StochasticProcess1D.class, double.class, int.class, double.class);
-                return classT.cast(c.newInstance(bs, maturity, timeSteps, strike));
-            }
+            // Phase 4a A.1: ExtendedTian aligned with C++ (4-arg ctor incl. unused strike),
+            // so all extended-binomial trees share a single reflection path.
+            final Constructor<T> c = (Constructor<T>) classT.getConstructor(StochasticProcess1D.class, double.class, int.class, double.class);
+            return classT.cast(c.newInstance(bs, maturity, timeSteps, strike));
         } catch (final Exception e) {
             throw new LibraryException(e); // QA:[RG]::verified
         }

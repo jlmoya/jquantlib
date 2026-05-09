@@ -76,13 +76,13 @@ import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
 import org.junit.Test;
 
-public class ExtendedTrees {
+public class ExtendedTreesTest {
 
     private enum EngineType {
         Analytic, JR, CRR, EQP, TGEO, TIAN, LR, JOSHI
     };
 
-    public ExtendedTrees() {
+    public ExtendedTreesTest() {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 

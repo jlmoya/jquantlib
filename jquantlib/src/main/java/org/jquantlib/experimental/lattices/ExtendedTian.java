@@ -73,7 +73,8 @@ public class ExtendedTian extends ExtendedBinomialTree /*<T>*/ {
    public ExtendedTian(
            final StochasticProcess1D process,
            final /* @Time */ double end,
-           final int steps) {
+           final int steps,
+           final double strike) {
 
        super(process, end, steps);
        final /*@Real*/ double q = Math.exp(process.variance(0.0, x0, dt));
