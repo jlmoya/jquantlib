@@ -88,7 +88,9 @@ public class HestonExpansionEngineTest {
             final JSONObject exp = (JSONObject) ref.expectedRaw();
 
             final String formula = in.getString("formula");
-            if (!"Forde".equals(formula)) {
+            // Skip LPP3 (deferred to Phase 5h.5b — formulas are ~600 LOC of
+            // Mathematica output across z0..z3, distinct risk profile).
+            if ("LPP3".equals(formula)) {
                 continue;
             }
 
@@ -98,27 +100,31 @@ public class HestonExpansionEngineTest {
                     ? Option.Type.Call : Option.Type.Put;
             final double expectedNpv = exp.getDouble("npv");
 
+            final HestonExpansionEngine.Formula javaFormula =
+                    "Forde".equals(formula) ? HestonExpansionEngine.Formula.Forde
+                                            : HestonExpansionEngine.Formula.LPP2;
+
             final Date exerciseDate = eval.add((int) Math.round(maturityYrs * 365.0));
             final PlainVanillaPayoff payoff = new PlainVanillaPayoff(type, strike);
             final Exercise exercise = new EuropeanExercise(exerciseDate);
 
             final VanillaOption option = new VanillaOption(payoff, exercise);
             option.setPricingEngine(new HestonExpansionEngine(
-                    model, process, HestonExpansionEngine.Formula.Forde));
+                    model, process, javaFormula));
 
             final double npv = option.NPV();
             assertEquals(
-                    "Forde Heston expansion NPV mismatch (case=" + ref.name() + ")",
+                    formula + " Heston expansion NPV mismatch (case=" + ref.name() + ")",
                     expectedNpv, npv, TIGHT_ABS);
         }
     }
 
     /**
-     * LPP2 placeholder — verifies the expected-deferred behavior.
-     * Remove this test (or replace) when LPP2 is ported in Phase 5h.5b.
+     * LPP3 placeholder — verifies the expected-deferred behavior.
+     * Remove this test (or replace) when LPP3 is ported in Phase 5h.5b.
      */
     @Test
-    public void lpp2ThrowsUnsupportedOperation() {
+    public void lpp3ThrowsUnsupportedOperation() {
         final Date eval = new Date(15, Month.January, 2026);
         new Settings().setEvaluationDate(eval);
         final DayCounter dc = new Actual365Fixed();
@@ -140,11 +146,11 @@ public class HestonExpansionEngineTest {
         final Exercise exercise = new EuropeanExercise(eval.add(365));
         final VanillaOption option = new VanillaOption(payoff, exercise);
         option.setPricingEngine(new HestonExpansionEngine(
-                model, process, HestonExpansionEngine.Formula.LPP2));
+                model, process, HestonExpansionEngine.Formula.LPP3));
 
         try {
             option.NPV();
-            fail("LPP2 should throw UnsupportedOperationException pending Phase 5h.5b port");
+            fail("LPP3 should throw UnsupportedOperationException pending Phase 5h.5b port");
         } catch (final RuntimeException e) {
             // Expected: thrown either directly or wrapped through the option engine.
             Throwable cause = e;

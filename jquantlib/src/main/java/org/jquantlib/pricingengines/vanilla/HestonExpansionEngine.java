@@ -141,10 +141,14 @@ public class HestonExpansionEngine
                 vol = expansion.impliedVolatility(strikePrice, forward);
                 break;
             }
-            case LPP2:
-                throw new UnsupportedOperationException(
-                        "LPP2 Heston expansion deferred to Phase 5h.5b "
-                        + "(requires porting ~600 LOC of Mathematica-emitted formulas)");
+            case LPP2: {
+                final LPP2HestonExpansion expansion = new LPP2HestonExpansion(
+                        model.kappa(), model.theta(),
+                        model.sigma(), model.v0(),
+                        model.rho(), term);
+                vol = expansion.impliedVolatility(strikePrice, forward);
+                break;
+            }
             case LPP3:
                 throw new UnsupportedOperationException(
                         "LPP3 Heston expansion deferred to Phase 5h.5b "
