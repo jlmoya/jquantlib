@@ -663,11 +663,18 @@ public class CreditDefaultSwapTest {
      * engine deferred to Phase 3c; {@code MakeCreditDefaultSwap} factory
      * is Phase 3b Track B / 3c.
      */
-    @Ignore("Phase 3c: needs IsdaCdsEngine + MakeCreditDefaultSwap + DepositRateHelper + SwapRateHelper")
+    @Ignore("Phase 3d L1: IsdaCdsEngine + impliedHazardRate(ISDA) wired, " +
+            "but the 5*2*2 termDate/spread/recovery sweep against 20 cached " +
+            "Markit values (1e-3 tolerance, 1e-6 with usingAtParCoupons=true) " +
+            "depends on a USD PiecewiseYieldCurve bootstrap from 6 deposit + " +
+            "14 swap helpers + the IborCoupon at-par-coupon settings the " +
+            "C++ test toggles. Same rate-helper-bootstrap fixture blocker " +
+            "as testIsdaCalculatorReconcileSingleQuote. Carry-forward to " +
+            "Phase 3e.")
     @Test
     public void testIsdaEngine() {
-        // C++ test body too long for comment-trace — see C++ source
-        // creditdefaultswap.cpp:567-722. Not active until Phase 3c.
+        // C++ test body — see C++ source creditdefaultswap.cpp:567-722.
+        // Not active in Phase 3d — see @Ignore rationale.
     }
 
 
@@ -748,11 +755,20 @@ public class CreditDefaultSwapTest {
      *
      * <p><b>Java status:</b> Requires IsdaCdsEngine (Phase 3c).
      */
-    @Ignore("Phase 3c: needs IsdaCdsEngine + MakeCreditDefaultSwap")
+    @Ignore("Phase 3d L1: IsdaCdsEngine ported and impliedHazardRate(ISDA) " +
+            "wired, but single-quote Markit reconciliation (1e-3 tolerance " +
+            "against published Markit NPV) depends on PiecewiseYieldCurve" +
+            "<Discount,LogLinear,IterativeBootstrap> bootstrap from 4 EUR " +
+            "deposit + 13 swap helpers with negative rates and the precise " +
+            "IborCoupon at-par-coupon settings the C++ test relies on. " +
+            "Bootstrap path is exercised in PiecewiseYieldCurveTest with " +
+            "Euribor; this case adds EURCurrency + IsdaIbor wiring and " +
+            "needs a controlled at-par toggle. Carry-forward to Phase 3e " +
+            "(or Phase 3+ when a Markit-rate-helper bootstrap fixture lands).")
     @Test
     public void testIsdaCalculatorReconcileSingleQuote() {
-        // C++ test body too long for comment-trace — see C++ source
-        // creditdefaultswap.cpp:759-861. Not active until Phase 3c.
+        // C++ creditdefaultswap.cpp:759-861. Not active in Phase 3d — see
+        // @Ignore rationale.
     }
 
 
@@ -768,11 +784,15 @@ public class CreditDefaultSwapTest {
      *
      * <p><b>Java status:</b> Requires IsdaCdsEngine (Phase 3c).
      */
-    @Ignore("Phase 3c: needs IsdaCdsEngine + MakeCreditDefaultSwap.withTradeDate")
+    @Ignore("Phase 3d L1: same as testIsdaCalculatorReconcileSingleQuote — " +
+            "IsdaCdsEngine ported, but Markit-1e-3 reconciliation requires " +
+            "PiecewiseYieldCurve bootstrap from EUR deposit/swap helpers " +
+            "with the at-par-coupon IborCoupon setting. Carry-forward to " +
+            "Phase 3e.")
     @Test
     public void testIsdaCalculatorReconcileSingleWithIssueDateInThePast() {
-        // C++ test body too long for comment-trace — see C++ source
-        // creditdefaultswap.cpp:863-960. Not active until Phase 3c.
+        // C++ test body — see C++ source creditdefaultswap.cpp:863-960.
+        // Not active in Phase 3d — see @Ignore rationale.
     }
 
 
@@ -795,54 +815,153 @@ public class CreditDefaultSwapTest {
      * enum does not yet expose CDS / CDS2015 (see Phase 3b L0 Javadoc on
      * {@code CreditDefaultSwap}). Phase 3c work-item.
      */
-    @Ignore("Phase 3c: needs MakeCreditDefaultSwap + cdsMaturity + DateGeneration.CDS / CDS2015 rules")
     @Test
     public void testDefaultConventions() {
-        // C++ test verbatim — see Javadoc.
-        //
-        // Date today(6, March, 2026); // a Friday
-        // Settings::instance().evaluationDate() = today;
-        //
-        // cds = MakeCreditDefaultSwap(5*Years, 0.01);
-        // assert cds.runningSpread() == 0.01;
-        // assert cds.notional() == 1.0;
-        // assert cds.upfront().has_value() && *cds.upfront() == 0.0;
-        // assert cds.tradeDate() == today;
-        // assert cds.cashSettlementDays() == 3;
-        // assert cds.upfrontPayment().date() == today + 5; // 3 days + weekend
-        // assert cds.protectionStartDate() == today;
-        // assert cds.protectionEndDate() == cdsMaturity(today, 5*Years, DateGeneration::CDS);
-        //
-        // assert cds.coupons().size() == 21; // 5Y quarterly modulo CDS conv
-        // assert cds.settlesAccrual() && cds.paysAtDefaultTime() && cds.rebatesAccrual();
-        //
-        // first / last day-counter checks:
-        //   first.dayCounter().name() == "Actual/360"
-        //   last .dayCounter().name() == "Actual/360 (inc)"
-        //
-        // termDate = cdsMaturity(today, 3*Years, DateGeneration::CDS2015);
-        // cds = MakeCreditDefaultSwap(termDate, 0.01);
-        // assert cds.protectionEndDate() == termDate;
-        //
-        // termDate = cdsMaturity(today-4, 10*Years, DateGeneration::CDS2015);
-        // schedule = Schedule(today-4, termDate, 3*Months, WeekendsOnly(),
-        //                     Following, Unadjusted, DateGeneration::CDS2015, false);
-        // cds = MakeCreditDefaultSwap(schedule, 0.01);
-        // assert cds.protectionStartDate() == schedule.front();
-        // assert cds.protectionEndDate()   == schedule.back();
-        //
-        // Override checks:
-        //   .withNominal(10000.0) → notional == 10000, first.nominal() == 10000
-        //   .withUpfrontRate(0.02) → *upfront() == 0.02, upfrontPayment.amount() == 200
-        //   .withCashSettlementDays(2) → cashSettlementDays == 2, upfrontPayment date == today+4
-        //   .withCashSettlementDays(2).withUpfrontDate(today+7) → date == today+7
-        //   .withProtectionStart(today+2) → protectionStartDate == today+2
-        //   .withCouponTenor(6*Months) → coupons.size == 11
-        //   .withTradeDate(today+3) → tradeDate == today+3, cashSettlement == today+6
-        //   .settleAccrual(false)   → settlesAccrual == false
-        //   .payAtDefaultTime(false) → paysAtDefaultTime == false
-        //   .rebateAccrual(false)   → rebatesAccrual == false
-        //   .withDayCounter(Actual365Fixed()) → first dc == "Actual/365 (Fixed)", last unchanged
-        //   .withLastPeriodDayCounter(Actual365Fixed()) → last dc == "Actual/365 (Fixed)"
+        // C++ creditdefaultswap.cpp:962-1078.
+        final Date today = new Date(6, Month.March, 2026); // a Friday
+        final Settings s = new Settings();
+        final Date prevEval = s.evaluationDate();
+        try {
+            s.setEvaluationDate(today);
+
+            CreditDefaultSwap cds = new MakeCreditDefaultSwap(
+                    new Period(5, TimeUnit.Years), 0.01).build();
+
+            assertEquals("runningSpread", 0.01, cds.runningSpread(), 0.0);
+            assertEquals("notional", 1.0, cds.notional(), 0.0);
+            assertTrue("upfront has value", cds.upfront() != null);
+            assertEquals("upfront == 0.0", 0.0, cds.upfront().doubleValue(), 0.0);
+            assertEquals("tradeDate == today", today, cds.tradeDate());
+            assertEquals("cashSettlementDays == 3", 3, cds.cashSettlementDays());
+            assertEquals("upfrontPayment.date == today+5",
+                    today.add(5), cds.upfrontPayment().date());
+            assertEquals("protectionStart == today", today, cds.protectionStartDate());
+            assertEquals("protectionEnd == cdsMaturity(today, 5y, CDS)",
+                    CreditDefaultSwap.cdsMaturity(today,
+                            new Period(5, TimeUnit.Years),
+                            DateGeneration.Rule.CDS),
+                    cds.protectionEndDate());
+
+            assertEquals("coupons.size == 21", 21, cds.coupons().size());
+
+            assertTrue("settlesAccrual", cds.settlesAccrual());
+            assertTrue("paysAtDefaultTime", cds.paysAtDefaultTime());
+            assertTrue("rebatesAccrual", cds.rebatesAccrual());
+
+            assertEquals("first dc == Actual/360",
+                    "Actual/360",
+                    ((org.jquantlib.cashflow.Coupon) cds.coupons().get(0))
+                            .dayCounter().name());
+            assertEquals("last dc == Actual/360 (inc)",
+                    "Actual/360 (inc)",
+                    ((org.jquantlib.cashflow.Coupon) cds.coupons()
+                            .get(cds.coupons().size() - 1)).dayCounter().name());
+
+            // termDate = cdsMaturity(today, 3y, CDS2015)
+            Date termDate = CreditDefaultSwap.cdsMaturity(today,
+                    new Period(3, TimeUnit.Years),
+                    DateGeneration.Rule.CDS2015);
+            cds = new MakeCreditDefaultSwap(termDate, 0.01).build();
+            assertEquals("protectionEnd == termDate", termDate, cds.protectionEndDate());
+
+            // schedule-based MakeCDS — verify protectionStart/End come from
+            // the supplied schedule's front/back.
+            termDate = CreditDefaultSwap.cdsMaturity(today.sub(4),
+                    new Period(10, TimeUnit.Years),
+                    DateGeneration.Rule.CDS2015);
+            final Schedule schedule = new Schedule(
+                    today.sub(4), termDate,
+                    new Period(3, TimeUnit.Months),
+                    new org.jquantlib.time.calendars.WeekendsOnly(),
+                    BusinessDayConvention.Following,
+                    BusinessDayConvention.Unadjusted,
+                    DateGeneration.Rule.CDS2015, false);
+            cds = new MakeCreditDefaultSwap(schedule, 0.01).build();
+            assertEquals("protectionStart == schedule.front",
+                    schedule.date(0), cds.protectionStartDate());
+            assertEquals("protectionEnd == schedule.back",
+                    schedule.date(schedule.size() - 1), cds.protectionEndDate());
+
+            // override sweep
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .withNominal(10000.0).withUpfrontRate(0.02).build();
+            assertEquals("notional override", 10000.0, cds.notional(), 0.0);
+            assertEquals("first nominal == 10000",
+                    10000.0,
+                    ((org.jquantlib.cashflow.Coupon) cds.coupons().get(0)).nominal(),
+                    0.0);
+            assertTrue("upfront has value", cds.upfront() != null);
+            assertEquals("upfront == 0.02", 0.02, cds.upfront().doubleValue(), 0.0);
+            assertEquals("upfrontPayment.amount == 200.0",
+                    200.0, cds.upfrontPayment().amount(), 1.0e-12);
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .withCashSettlementDays(2).build();
+            assertEquals("cashSettlementDays == 2", 2, cds.cashSettlementDays());
+            assertEquals("upfrontPayment.date == today+4",
+                    today.add(4), cds.upfrontPayment().date());
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .withCashSettlementDays(2)
+                    .withUpfrontDate(today.add(7)).build();
+            assertEquals("cashSettlementDays still 2", 2, cds.cashSettlementDays());
+            assertEquals("upfrontPayment.date == today+7",
+                    today.add(7), cds.upfrontPayment().date());
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .withProtectionStart(today.add(2)).build();
+            assertEquals("protectionStart override",
+                    today.add(2), cds.protectionStartDate());
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .withCouponTenor(new Period(6, TimeUnit.Months)).build();
+            assertEquals("coupons.size with semiannual == 11",
+                    11, cds.coupons().size());
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .withTradeDate(today.add(3)).build();
+            assertEquals("tradeDate override", today.add(3), cds.tradeDate());
+            assertEquals("cashSettlementDays == 3", 3, cds.cashSettlementDays());
+            assertEquals("upfrontPayment.date == today+6",
+                    today.add(6), cds.upfrontPayment().date());
+            assertEquals("protectionStart == today+3",
+                    today.add(3), cds.protectionStartDate());
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .settleAccrual(false).build();
+            assertTrue("settlesAccrual override", !cds.settlesAccrual());
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .payAtDefaultTime(false).build();
+            assertTrue("paysAtDefaultTime override", !cds.paysAtDefaultTime());
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .rebateAccrual(false).build();
+            assertTrue("rebatesAccrual override", !cds.rebatesAccrual());
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .withDayCounter(new Actual365Fixed()).build();
+            assertEquals("first dc == Actual/365 (Fixed) override",
+                    "Actual/365 (Fixed)",
+                    ((org.jquantlib.cashflow.Coupon) cds.coupons().get(0))
+                            .dayCounter().name());
+            assertEquals("last dc unchanged == Actual/360 (inc)",
+                    "Actual/360 (inc)",
+                    ((org.jquantlib.cashflow.Coupon) cds.coupons()
+                            .get(cds.coupons().size() - 1)).dayCounter().name());
+
+            cds = new MakeCreditDefaultSwap(new Period(5, TimeUnit.Years), 0.01)
+                    .withLastPeriodDayCounter(new Actual365Fixed()).build();
+            assertEquals("first dc == Actual/360",
+                    "Actual/360",
+                    ((org.jquantlib.cashflow.Coupon) cds.coupons().get(0))
+                            .dayCounter().name());
+            assertEquals("last dc == Actual/365 (Fixed) override",
+                    "Actual/365 (Fixed)",
+                    ((org.jquantlib.cashflow.Coupon) cds.coupons()
+                            .get(cds.coupons().size() - 1)).dayCounter().name());
+        } finally {
+            s.setEvaluationDate(prevEval);
+        }
     }
 }

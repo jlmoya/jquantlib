@@ -79,7 +79,9 @@ public class Actual365Fixed extends DayCounter {
 
         @Override
         public final String name() /* @ReadOnly */{
-            return "Actual/365 (fixed)";
+            // Phase 3d L1 — align to C++ ql/time/daycounters/actual365fixed.hpp
+            // ("Actual/365 (Fixed)"); was lowercase "(fixed)" historically.
+            return "Actual/365 (Fixed)";
         }
 
         @Override

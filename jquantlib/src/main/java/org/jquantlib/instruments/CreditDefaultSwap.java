@@ -508,9 +508,14 @@ public class CreditDefaultSwap extends Instrument {
             engine = new MidPointCdsEngine(probability, recoveryRate, discountCurve);
             break;
           case ISDA:
-            throw new UnsupportedOperationException(
-                    "CreditDefaultSwap.impliedHazardRate ISDA branch requires "
-                    + "IsdaCdsEngine; deferred to Phase 3c.");
+            // Phase 3d L1: wire IsdaCdsEngine with C++ defaults (Taylor /
+            // HalfDayBias / Piecewise, includeSettlementDateFlows=false).
+            engine = new org.jquantlib.pricingengines.credit.IsdaCdsEngine(
+                    probability, recoveryRate, discountCurve, Boolean.FALSE,
+                    org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
+                    org.jquantlib.pricingengines.credit.IsdaCdsEngine.AccrualBias.HalfDayBias,
+                    org.jquantlib.pricingengines.credit.IsdaCdsEngine.ForwardsInCouponPeriod.Piecewise);
+            break;
           default:
             throw new IllegalArgumentException("unknown CDS pricing model: " + model);
         }
@@ -570,9 +575,13 @@ public class CreditDefaultSwap extends Instrument {
                     probability, conventionalRecovery, discountCurve);
             break;
           case ISDA:
-            throw new UnsupportedOperationException(
-                    "CreditDefaultSwap.conventionalSpread ISDA branch requires "
-                    + "IsdaCdsEngine; deferred to Phase 3c.");
+            // Phase 3d L1: wire IsdaCdsEngine with C++ defaults.
+            engine = new org.jquantlib.pricingengines.credit.IsdaCdsEngine(
+                    probability, conventionalRecovery, discountCurve, Boolean.FALSE,
+                    org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
+                    org.jquantlib.pricingengines.credit.IsdaCdsEngine.AccrualBias.HalfDayBias,
+                    org.jquantlib.pricingengines.credit.IsdaCdsEngine.ForwardsInCouponPeriod.Piecewise);
+            break;
           default:
             throw new IllegalArgumentException("unknown CDS pricing model: " + model);
         }

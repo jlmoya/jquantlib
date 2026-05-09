@@ -326,13 +326,17 @@ public class CreditDefaultSwapStructuralTest {
             // pass — engine rejects null discount curve
         }
 
-        // ISDA branch is still Phase 3c — should explicitly throw UnsupportedOperationException.
+        // Phase 3d L1 — ISDA branch wires IsdaCdsEngine. With a null discount
+        // curve handle the engine throws "no discount term structure set"
+        // (LibraryException), no longer UnsupportedOperationException.
         try {
             cds.impliedHazardRate(0.0, null, dc, 0.4, 1.0e-8,
                     CreditDefaultSwap.PricingModel.ISDA);
-            fail("expected UnsupportedOperationException for ISDA branch");
-        } catch (final UnsupportedOperationException expected) {
-            // pass
+            fail("expected exception with null discount curve");
+        } catch (final UnsupportedOperationException uoe) {
+            fail("ISDA branch should now be wired (Phase 3d L1), not UOE");
+        } catch (final RuntimeException expected) {
+            // pass — engine rejects null discount curve
         }
     }
 

@@ -223,8 +223,16 @@ public class UpfrontCdsHelper extends CdsHelper {
                     Boolean.TRUE));
             break;
           case ISDA:
-            throw new UnsupportedOperationException(
-                    "UpfrontCdsHelper ISDA branch needs IsdaCdsEngine; deferred to Phase 3c");
+            // Phase 3d L1: wire IsdaCdsEngine with C++ defaults (Taylor / HalfDayBias /
+            // Piecewise, includeSettlementDateFlows=false).
+            swap_.setPricingEngine(
+                    new org.jquantlib.pricingengines.credit.IsdaCdsEngine(
+                            probability_, recoveryRate_, discountCurve_,
+                            Boolean.FALSE,
+                            org.jquantlib.pricingengines.credit.IsdaCdsEngine.NumericalFix.Taylor,
+                            org.jquantlib.pricingengines.credit.IsdaCdsEngine.AccrualBias.HalfDayBias,
+                            org.jquantlib.pricingengines.credit.IsdaCdsEngine.ForwardsInCouponPeriod.Piecewise));
+            break;
           default:
             throw new IllegalArgumentException("unknown CDS pricing model: " + model_);
         }

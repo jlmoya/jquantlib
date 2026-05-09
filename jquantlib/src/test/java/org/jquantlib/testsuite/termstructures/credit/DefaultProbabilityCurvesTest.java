@@ -312,13 +312,107 @@ public class DefaultProbabilityCurvesTest {
                 defaultCurve.maxDate().gt(today));
     }
 
-    /** Phase 3c: needs DateGeneration.CDS rule + cdsMaturity helper. */
-    @Ignore("Phase 3c: testBootstrapFromUpfront needs DateGeneration.CDS rule")
+    /** Java port of {@code BOOST_AUTO_TEST_CASE(testUpfrontBootstrap)}.
+     *
+     *  <p>Verifies that {@link org.jquantlib.termstructures.credit.UpfrontCdsHelper}
+     *  bootstraps an upfront-quoted curve while temporarily setting
+     *  {@code includeTodaysCashFlows = true} and then restoring the prior value
+     *  (here {@code false}). Without the flip the upfront cash flow on the
+     *  evaluation date would be excluded from the implied quote.
+     */
     @Test
     public void testUpfrontBootstrap() {
-        // C++: testBootstrapFromUpfront<HazardRate, BackwardFlat>(); after
-        // toggling Settings::includeTodaysCashFlows() to false to verify
-        // UpfrontCdsHelper::impliedQuote() flips it.
+        // C++: includeTodaysCashFlows = false; testBootstrapFromUpfront<HR,BF>();
+        // assert flag is back to false.
+        final Settings s = new Settings();
+        final boolean prevTodaysPayments = s.isTodaysPayments();
+        try {
+            s.setTodaysPayments(false);
+
+            // C++ testBootstrapFromUpfront<HazardRate, BackwardFlat>().
+            final Calendar calendar = new Target();
+            final Date today = s.evaluationDate();
+            final int settlementDays = 1;
+            final double[] quote = {0.01, 0.02, 0.04, 0.06};
+            final int[] n = {2, 3, 5, 7};
+            final double fixedRate = 0.05;
+            final Frequency frequency = Frequency.Quarterly;
+            final BusinessDayConvention convention =
+                    BusinessDayConvention.ModifiedFollowing;
+            final DateGeneration.Rule rule = DateGeneration.Rule.CDS;
+            final DayCounter dayCounter = new Actual360();
+            final double recoveryRate = 0.4;
+            final int upfrontSettlementDays = 3;
+
+            final Handle<YieldTermStructure> discountCurve =
+                    new Handle<YieldTermStructure>(
+                            new FlatForward(today, 0.06, new Actual360()));
+
+            final List<DefaultProbabilityHelper> helpers = new ArrayList<>();
+            for (int i = 0; i < n.length; ++i) {
+                helpers.add(new org.jquantlib.termstructures.credit.UpfrontCdsHelper(
+                        quote[i], fixedRate, new Period(n[i], TimeUnit.Years),
+                        settlementDays, calendar, frequency, convention, rule,
+                        dayCounter, recoveryRate, discountCurve,
+                        upfrontSettlementDays, true, true, null,
+                        new Actual360(true), true,
+                        CreditDefaultSwap.PricingModel.Midpoint));
+            }
+
+            final PiecewiseDefaultCurve<BackwardFlat> piecewiseCurve =
+                    new PiecewiseDefaultCurve<BackwardFlat>(
+                            PiecewiseDefaultCurve.Flavor.HAZARD_RATE,
+                            BackwardFlat.class, today, helpers,
+                            new Thirty360(Thirty360.Convention.BondBasis));
+            final Handle<DefaultProbabilityTermStructure> probabilityHandle =
+                    new Handle<DefaultProbabilityTermStructure>(piecewiseCurve);
+
+            final double notional = 1.0;
+            final double tolerance = 1.0e-6;
+
+            // C++ uses an inner SavedSettings backup that flips to true; emulate
+            // explicitly so the bootstrap inside UpfrontCdsHelper sees true.
+            final boolean innerPrev = s.isTodaysPayments();
+            s.setTodaysPayments(true);
+            try {
+                for (int i = 0; i < n.length; ++i) {
+                    final Date protectionStart = today.add(settlementDays);
+                    final Date startDate = protectionStart;
+                    final Date endDate = CreditDefaultSwap.cdsMaturity(today,
+                            new Period(n[i], TimeUnit.Years), rule);
+                    final Date upfrontDate = calendar.advance(today,
+                            upfrontSettlementDays, TimeUnit.Days, convention, false);
+
+                    final Schedule schedule = new Schedule(
+                            startDate, endDate, new Period(frequency), calendar,
+                            convention, BusinessDayConvention.Unadjusted, rule, false);
+
+                    final CreditDefaultSwap cds = new CreditDefaultSwap(
+                            Protection.Side.Buyer, notional, quote[i], fixedRate,
+                            schedule, convention, dayCounter, true, true,
+                            protectionStart, upfrontDate, null, new Actual360(true),
+                            true, today, 3);
+                    cds.setPricingEngine(new MidPointCdsEngine(
+                            probabilityHandle, recoveryRate, discountCurve, true));
+
+                    final double inputUpfront = quote[i];
+                    final double computedUpfront = cds.fairUpfront();
+                    if (Math.abs(inputUpfront - computedUpfront) > tolerance) {
+                        fail("Failed to reproduce fair upfront for " + n[i]
+                                + "Y CDS\n  computed=" + computedUpfront
+                                + "\n  input=" + inputUpfront);
+                    }
+                }
+            } finally {
+                s.setTodaysPayments(innerPrev);
+            }
+
+            // Outer assertion: flag must be back to false (UpfrontCdsHelper
+            // implied-quote must NOT have leaked the inner flip).
+            assertEquals("includeTodaysCashFlows leaked", false, s.isTodaysPayments());
+        } finally {
+            s.setTodaysPayments(prevTodaysPayments);
+        }
     }
 
     /** Java port of {@code BOOST_AUTO_TEST_CASE(testIterativeBootstrapRetries)}.

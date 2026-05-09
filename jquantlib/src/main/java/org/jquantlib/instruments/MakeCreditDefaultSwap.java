@@ -105,9 +105,9 @@ public class MakeCreditDefaultSwap {
     private Date protectionStart_;       // null sentinel
     private Date upfrontDate_;           // null sentinel
     private Claim claim_;                // null = use FaceValueClaim
-    /** C++ defaults to {@code Actual360(true)}; Java has only the plain
-     *  constructor — see class-level Javadoc. */
-    private DayCounter lastPeriodDayCounter_ = new Actual360();
+    /** C++ defaults to {@code Actual360(true)} ("Actual/360 (inc)"). Java now
+     *  matches as of Phase 3d L0 A.2. */
+    private DayCounter lastPeriodDayCounter_ = new Actual360(true);
     private boolean rebatesAccrual_ = true;
     private Date tradeDate_;             // null = use Settings.evaluationDate()
     private int cashSettlementDays_ = 3;
