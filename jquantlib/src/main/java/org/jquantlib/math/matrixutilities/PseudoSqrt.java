@@ -167,8 +167,10 @@ public class PseudoSqrt {
         for (int i=0; i<retainedFactors; ++i) {
             diagonal.set(i,i, Math.sqrt(eigenValues.get(i)));
         }
-        // TODO: code review:: compare against C++ code
-        final Matrix result = jd.eigenvectors().mul(jd.eigenvectors()).mul(diagonal);
+        // Phase 3j align: C++ pseudosqrt.cpp:532 is `eigenvectors() * diagonal`
+        // (one multiplication). Java port previously had the duplicated factor
+        // `eigenvectors().mul(eigenvectors())` which produced an unrelated matrix.
+        final Matrix result = jd.eigenvectors().mul(diagonal);
 
         normalizePseudoRoot(matrix, result);
         return result;
@@ -187,10 +189,13 @@ public class PseudoSqrt {
         final int pseudoCols = pseudo.cols;
 
         // row normalization
+        // Phase 3j align: C++ pseudosqrt.cpp:62-63 sums `pseudo[i][j]*pseudo[i][j]`
+        // (squared row norm). Java port previously used `pseudo[i][j]*pseudo[j][i]`
+        // which is asymmetric and OOB when pseudoCols != rows.
         for (int i=0; i<size; ++i) {
             double norm = 0.0;
             for (int j=0; j<pseudoCols; ++j) {
-                norm += pseudo.get(i, j)*pseudo.get(j, i);
+                norm += pseudo.get(i, j) * pseudo.get(i, j);
             }
             if (norm>0.0) {
                 final double normAdj = Math.sqrt(matrix.get(i,i)/norm);
@@ -591,11 +596,22 @@ const Disposable<Matrix> rankReducedSqrt(const Matrix& matrix,
     // private methods
     //
 
+    /**
+     * Returns {@code true} iff {@code matrix} is symmetric (within
+     * {@link Closeness#isClose} tolerance). Mirrors C++
+     * {@code checkSymmetry} in {@code ql/math/matrixutilities/pseudosqrt.cpp}
+     * (under {@code QL_EXTRA_SAFETY_CHECKS}): for each strict-lower-triangle
+     * pair, requires {@code matrix[i][j] ~ matrix[j][i]}.
+     *
+     * <p>Phase 3j align: previously inverted condition (returned {@code true}
+     * only when no close pairs were found, i.e. for non-symmetric matrices),
+     * which made every covariance assembly fail PseudoSqrt's input validation.
+     */
     private static boolean checkSymmetry(final Matrix matrix) {
         final int size = matrix.rows;
         for (int i=0; i<size; ++i) {
             for (int j=0; j<i; ++j)
-                if (Closeness.isClose(matrix.get(i, j), matrix.get(j, i)))
+                if (!Closeness.isClose(matrix.get(i, j), matrix.get(j, i)))
                     return false;
         }
         return true;
