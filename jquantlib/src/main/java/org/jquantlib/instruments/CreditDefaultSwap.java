@@ -281,10 +281,21 @@ public class CreditDefaultSwap extends Instrument {
 
         QL.require(!schedule.empty(), "CreditDefaultSwap needs a non-empty schedule.");
 
-        // C++ branches on schedule.hasRule() && rule == DateGeneration::CDS / CDS2015.
-        // Java DateGeneration enum doesn't yet expose CDS / CDS2015 rules; treat
-        // every schedule as pre-Big-Bang. See class-level Javadoc.
-        final boolean postBigBang = false;
+        // C++ branches on schedule.hasRule() && rule == DateGeneration::CDS /
+        // CDS2015 (creditdefaultswap.cpp:88-93). Java has no hasRule() alias —
+        // accessing schedule.rule() throws when the schedule was built with
+        // the simplified date-list constructor; guard with try/catch so legacy
+        // call sites (no rule) still work.
+        boolean postBigBang = false;
+        try {
+            final org.jquantlib.time.DateGeneration.Rule r = schedule.rule();
+            if (r == org.jquantlib.time.DateGeneration.Rule.CDS
+                    || r == org.jquantlib.time.DateGeneration.Rule.CDS2015) {
+                postBigBang = true;
+            }
+        } catch (final RuntimeException ignored) {
+            // schedule has no rule — leave postBigBang = false.
+        }
 
         if (!postBigBang) {
             QL.require(protectionStart_.le(schedule.date(0)),
@@ -762,5 +773,61 @@ public class CreditDefaultSwap extends Instrument {
         protected Engine() {
             super(new CreditDefaultSwap.ArgumentsImpl(), new CreditDefaultSwap.ResultsImpl());
         }
+    }
+
+    //
+    // Free helpers — mirrors C++ free functions in
+    // ql/instruments/creditdefaultswap.{hpp,cpp}
+    //
+
+    /**
+     * Returns the standard CDS maturity for a given trade date and tenor under
+     * the {@link org.jquantlib.time.DateGeneration.Rule#CDS},
+     * {@link org.jquantlib.time.DateGeneration.Rule#CDS2015}, or
+     * {@link org.jquantlib.time.DateGeneration.Rule#OldCDS} convention.
+     *
+     * <p>Mirrors C++ {@code QuantLib::cdsMaturity(Date, Period, DateGeneration::Rule)}
+     * declared in {@code ql/instruments/creditdefaultswap.hpp:361}. The maturity
+     * is the previous-twentieth of the trade date plus tenor plus three months,
+     * with a special case for CDS2015 anchor dates that fall on June 20 or
+     * December 20.
+     */
+    public static Date cdsMaturity(final Date tradeDate,
+                                   final org.jquantlib.time.Period tenor,
+                                   final org.jquantlib.time.DateGeneration.Rule rule) {
+        QL.require(rule == org.jquantlib.time.DateGeneration.Rule.CDS2015
+                || rule == org.jquantlib.time.DateGeneration.Rule.CDS
+                || rule == org.jquantlib.time.DateGeneration.Rule.OldCDS,
+                "cdsMaturity should only be used with date generation rule CDS2015, CDS or OldCDS");
+
+        QL.require(tenor.units() == org.jquantlib.time.TimeUnit.Years
+                || (tenor.units() == org.jquantlib.time.TimeUnit.Months
+                        && tenor.length() % 3 == 0),
+                "cdsMaturity expects a tenor that is a multiple of 3 months.");
+
+        if (rule == org.jquantlib.time.DateGeneration.Rule.OldCDS) {
+            QL.require(tenor.length() != 0,
+                    "A tenor of 0M is not supported for OldCDS.");
+        }
+
+        Date anchorDate = org.jquantlib.time.Schedule.previousTwentieth(tradeDate, rule);
+        if (rule == org.jquantlib.time.DateGeneration.Rule.CDS2015
+                && (anchorDate.eq(new Date(20, org.jquantlib.time.Month.December, anchorDate.year()))
+                        || anchorDate.eq(new Date(20, org.jquantlib.time.Month.June, anchorDate.year())))) {
+            if (tenor.length() == 0) {
+                return new Date();
+            }
+            anchorDate = anchorDate.sub(new org.jquantlib.time.Period(
+                    3, org.jquantlib.time.TimeUnit.Months));
+        }
+
+        final Date maturity = anchorDate.add(tenor).add(
+                new org.jquantlib.time.Period(3, org.jquantlib.time.TimeUnit.Months));
+        QL.require(maturity.gt(tradeDate),
+                "error calculating CDS maturity. Tenor is " + tenor
+                        + ", trade date is " + tradeDate
+                        + " generating a maturity of " + maturity
+                        + " <= trade date.");
+        return maturity;
     }
 }

@@ -345,21 +345,48 @@ public class CreditDefaultSwapTest {
      * (Phase 3b Track B per the design's CDS-helpers scope; if the factory
      * is itself out of scope for Track B then Phase 3c).
      */
-    @Ignore("Phase 3b Track B (or Phase 3c): needs MakeCreditDefaultSwap factory")
     @Test
     public void testAccrualRebateAmounts() {
-        // C++ test verbatim — see Javadoc.
-        //
-        // notional = 1e7, spread = 0.01, maturity = Date(20, Jun, 2014).
-        // For each (tradeDate, expectedAccrual) in:
-        //   { Date(18,Mar,2009), 24166.67 }, { Date(19,Mar,2009), 0.00 },
-        //   { Date(20,Mar,2009), 277.78 },   { Date(23,Mar,2009), 1111.11 },
-        //   { Date(19,Jun,2009), 25555.56 }, { Date(20,Jun,2009), 25833.33 },
-        //   { Date(21,Jun,2009), 0.00 },     { Date(22,Jun,2009), 277.78 },
-        //   { Date(18,Jun,2014), 25277.78 }, { Date(19,Jun,2014), 25555.56 }:
-        //   Settings::instance().evaluationDate() = tradeDate;
-        //   cds = MakeCreditDefaultSwap(maturity, spread).withNominal(notional);
-        //   assert |expectedAccrual - cds.accrualRebate().amount()| < 0.01.
+        // C++ creditdefaultswap.cpp:724-757.
+        final double notional = 1.0e7;
+        final double spread = 0.01;
+        final org.jquantlib.time.Date maturity = new org.jquantlib.time.Date(
+                20, org.jquantlib.time.Month.June, 2014);
+
+        final Object[][] cases = {
+                { new org.jquantlib.time.Date(18, org.jquantlib.time.Month.March, 2009), 24166.67 },
+                { new org.jquantlib.time.Date(19, org.jquantlib.time.Month.March, 2009), 0.00 },
+                { new org.jquantlib.time.Date(20, org.jquantlib.time.Month.March, 2009), 277.78 },
+                { new org.jquantlib.time.Date(23, org.jquantlib.time.Month.March, 2009), 1111.11 },
+                { new org.jquantlib.time.Date(19, org.jquantlib.time.Month.June, 2009), 25555.56 },
+                { new org.jquantlib.time.Date(20, org.jquantlib.time.Month.June, 2009), 25833.33 },
+                { new org.jquantlib.time.Date(21, org.jquantlib.time.Month.June, 2009), 0.00 },
+                { new org.jquantlib.time.Date(22, org.jquantlib.time.Month.June, 2009), 277.78 },
+                { new org.jquantlib.time.Date(18, org.jquantlib.time.Month.June, 2014), 25277.78 },
+                { new org.jquantlib.time.Date(19, org.jquantlib.time.Month.June, 2014), 25555.56 }
+        };
+
+        final org.jquantlib.Settings s = new org.jquantlib.Settings();
+        final org.jquantlib.time.Date prevEval = s.evaluationDate();
+        try {
+            for (final Object[] kase : cases) {
+                final org.jquantlib.time.Date tradeDate = (org.jquantlib.time.Date) kase[0];
+                final double expectedAccrual = (Double) kase[1];
+
+                s.setEvaluationDate(tradeDate);
+
+                final org.jquantlib.instruments.CreditDefaultSwap cds =
+                        new org.jquantlib.instruments.MakeCreditDefaultSwap(maturity, spread)
+                                .withNominal(notional)
+                                .build();
+                final double actual = cds.accrualRebate().amount();
+                org.junit.Assert.assertEquals(
+                        "trade date " + tradeDate + " accrual mismatch",
+                        expectedAccrual, actual, 0.01);
+            }
+        } finally {
+            s.setEvaluationDate(prevEval);
+        }
     }
 
 
