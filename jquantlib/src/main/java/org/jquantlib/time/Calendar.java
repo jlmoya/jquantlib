@@ -345,8 +345,15 @@ public class Calendar {
             final Date d1 = d.add(new Period(n, unit));
 
             // we are sure the unit is Months or Years
-            if (endOfMonth && isEndOfMonth(d))
-                return endOfMonth(d1);
+            if (endOfMonth) {
+                if (c == BusinessDayConvention.Unadjusted) {
+                    // move to the last calendar day if d is the last calendar day
+                    if (Date.isEndOfMonth(d)) return Date.endOfMonth(d1);
+                } else {
+                    // move to the last business day if d is the last business day
+                    if (isEndOfMonth(d)) return endOfMonth(d1);
+                }
+            }
 
             return adjust(d1, c);
         }
