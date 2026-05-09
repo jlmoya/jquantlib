@@ -146,6 +146,11 @@ public class CmsCoupon extends FloatingRateCoupon {
         super (paymentDate, nominal, startDate, endDate, fixingDays,
                index, gearing, spread, refPeriodStart, refPeriodEnd,
                dayCounter, isInArrears);
+        // C++ CmsCoupon stores its SwapIndex as both base-class index_ and
+        // its own swapIndex_ field. The Java port previously left this
+        // field null, which Hagan/LinearTSR pricers and CmsLeg pricer
+        // wiring all crash on. Mirror the C++ behaviour here.
+        this.swapIndex_ = index;
     }
 
     public SwapIndex swapIndex() {
