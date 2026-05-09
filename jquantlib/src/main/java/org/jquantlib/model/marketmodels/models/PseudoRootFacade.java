@@ -48,6 +48,29 @@ public class PseudoRootFacade extends MarketModel {
     private final List<Matrix> covariancePseudoRoots_;
 
     /**
+     * Calibrator constructor (Phase 3j A.6b): builds a PseudoRootFacade from a
+     * completed {@link CTSMMCapletCalibration}. Extracts the calibrator's
+     * swap pseudo-roots, coterminal swap rates, and displacements as the
+     * facade's per-step volatility structure.
+     *
+     * <p>Mirrors {@code PseudoRootFacade(const ext::shared_ptr<CTSMMCapletCalibration>&)}
+     * in {@code ql/models/marketmodels/models/pseudorootfacade.cpp:28-33}
+     * (QuantLib v1.42.1).
+     *
+     * @param calibrator a successfully-calibrated {@link CTSMMCapletCalibration}
+     */
+    public PseudoRootFacade(final CTSMMCapletCalibration calibrator) {
+        final List<Matrix> roots = calibrator.swapPseudoRoots();
+        this.covariancePseudoRoots_ = new ArrayList<>(roots);
+        this.numberOfFactors_ = roots.get(0).columns();
+        this.numberOfRates_ = roots.get(0).rows();
+        this.numberOfSteps_ = roots.size();
+        this.initialRates_ = calibrator.curveState().coterminalSwapRates();
+        this.displacements_ = calibrator.displacements();
+        this.evolution_ = new EvolutionDescription(calibrator.curveState().rateTimes());
+    }
+
+    /**
      * Raw-matrix constructor.
      *
      * @param covariancePseudoRoots one matrix per evolution step
