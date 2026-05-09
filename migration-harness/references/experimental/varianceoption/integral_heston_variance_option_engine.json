@@ -1,0 +1,129 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 0.9104618669739757
+      },
+      "inputs": {
+        "T_years": 1.5,
+        "dayCounter": "Actual360",
+        "days_to_maturity": 540,
+        "kappa": 2.0,
+        "nominal": 1.0,
+        "r": 0.0,
+        "rho": -0.5,
+        "sigma": 0.1,
+        "strike": 0.05,
+        "theta": 0.01,
+        "type": "Call",
+        "v0": 2.0
+      },
+      "name": "qlts_call_v0_2.0_T_1.5_K_0.05"
+    },
+    {
+      "expected": {
+        "npv": 0.04667956357829118
+      },
+      "inputs": {
+        "T_years": 1.0,
+        "dayCounter": "Actual360",
+        "days_to_maturity": 360,
+        "kappa": 2.0,
+        "nominal": 1.0,
+        "r": 0.0,
+        "rho": -0.5,
+        "sigma": 0.1,
+        "strike": 0.7,
+        "theta": 0.01,
+        "type": "Put",
+        "v0": 1.5
+      },
+      "name": "qlts_put_v0_1.5_T_1.0_K_0.7"
+    },
+    {
+      "expected": {
+        "npv": 4.8087731942071665e-05
+      },
+      "inputs": {
+        "T_years": 1.0,
+        "dayCounter": "Actual360",
+        "days_to_maturity": 360,
+        "kappa": 2.0,
+        "nominal": 1.0,
+        "r": 0.0,
+        "rho": -0.5,
+        "sigma": 0.1,
+        "strike": 0.5,
+        "theta": 0.01,
+        "type": "Call",
+        "v0": 1.0
+      },
+      "name": "call_v0_1.0_T_1.0_K_0.5"
+    },
+    {
+      "expected": {
+        "npv": 0.8967759393057075
+      },
+      "inputs": {
+        "T_years": 2.0,
+        "dayCounter": "Actual360",
+        "days_to_maturity": 720,
+        "kappa": 2.0,
+        "nominal": 1.0,
+        "r": 0.0,
+        "rho": -0.5,
+        "sigma": 0.1,
+        "strike": 0.1,
+        "theta": 0.01,
+        "type": "Call",
+        "v0": 2.0
+      },
+      "name": "call_v0_2.0_T_2.0_K_0.10"
+    },
+    {
+      "expected": {
+        "npv": 0.17592981382169964
+      },
+      "inputs": {
+        "T_years": 0.5,
+        "dayCounter": "Actual360",
+        "days_to_maturity": 180,
+        "kappa": 2.0,
+        "nominal": 1.0,
+        "r": 0.0,
+        "rho": -0.5,
+        "sigma": 0.1,
+        "strike": 0.3,
+        "theta": 0.01,
+        "type": "Call",
+        "v0": 1.5
+      },
+      "name": "call_v0_1.5_T_0.5_K_0.30"
+    },
+    {
+      "expected": {
+        "npv": 67.03413931795681
+      },
+      "inputs": {
+        "T_years": 1.0,
+        "dayCounter": "Actual360",
+        "days_to_maturity": 360,
+        "kappa": 2.0,
+        "nominal": 100.0,
+        "r": 0.0,
+        "rho": -0.5,
+        "sigma": 0.1,
+        "strike": 0.2,
+        "theta": 0.01,
+        "type": "Call",
+        "v0": 2.0
+      },
+      "name": "call_v0_2.0_T_1.0_K_0.20_n100"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T11:52:10Z",
+  "generated_by": "integral_heston_variance_option_engine_probe",
+  "test_group": "experimental/varianceoption/integral_heston_variance_option_engine"
+}
