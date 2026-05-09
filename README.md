@@ -2,8 +2,8 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase3a--complete-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-973%2F0%2F0%2F45-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase3b--complete-blue)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-1004%2F0%2F0%2F51-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
@@ -59,9 +59,10 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 2u | `jquantlib-phase2u-complete` | Inflation test-suite expansion (44%→86%): 4 cpp files ported + 5 L0 Phase 2x aligns + Track F body fills with 4 infrastructure aligns. 11 commits across 6 worktrees. | 933/0/0/37 | 2026-05-08 |
 | 2v | `jquantlib-phase2v-complete` | Inflation 100% (production + test-suite). CPIBond + 12 missing CPI index classes + GlobalBootstrap + lazy-baseDate ctor + YYIIS discount-curve overload + 2 remaining test-suite ports. 7 commits + 1 manual recovery. | 950/0/0/39 | 2026-05-08 |
 | 2x | `jquantlib-phase2x-complete` | Small infrastructure aligns + WeakReferenceObservable batched notification. mvn test wall-clock 30+ min → 59.5s (32x speedup). | 951/0/0/38 | 2026-05-08 |
-| **3a** | **`jquantlib-phase3a-complete`** | **First Phase-3 subsystem (greenfield credit termstructures): DefaultProbabilityTermStructure base + 3 abstract bases + FlatHazardRate + 3 interpolated curves + PiecewiseDefaultCurve + ProbabilityTraits + DefaultProbabilityHelper non-CDS + defaultprobabilitycurves.cpp test port. New package `org.jquantlib.termstructures.credit`. Plus pre-existing LinearInterpolation.primitive off-by-one fix.** | **973/0/0/45** | **2026-05-08** |
+| 3a | `jquantlib-phase3a-complete` | First Phase-3 subsystem (greenfield credit termstructures): 3 abstract bases + FlatHazardRate + 3 interpolated curves + PiecewiseDefaultCurve + ProbabilityTraits + DefaultProbabilityHelper non-CDS + defaultprobabilitycurves.cpp test port. New package `org.jquantlib.termstructures.credit`. | 973/0/0/45 | 2026-05-08 |
+| **3b** | **`jquantlib-phase3b-complete`** | **CreditDefaultSwap instrument + Protection/Claim/FaceValueClaim + MidPointCdsEngine + CdsHelper/SpreadCdsHelper/UpfrontCdsHelper + creditdefaultswap.cpp test skeleton (10 tests with bodies + dependency map). impliedHazardRate + conventionalSpread wired. 4 of 7 Phase 3a CDS-deferred tests un-ignored. New package `org.jquantlib.pricingengines.credit`.** | **1004/0/0/51** | **2026-05-08** |
 
-**Current tip on `main`:** post-Phase 3a. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
+**Current tip on `main`:** post-Phase 3b. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
