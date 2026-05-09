@@ -645,7 +645,10 @@ public class CreditDefaultSwap extends Instrument {
     }
 
     @Override
-    protected void setupArguments(final PricingEngine.Arguments args) {
+    public void setupArguments(final PricingEngine.Arguments args) {
+        // Promoted from protected so CdsOption (in experimental.credit) can
+        // delegate its CDS-arguments population through the underlying swap;
+        // mirrors the C++ pattern where Instrument::setupArguments is public.
         QL.require(args instanceof CreditDefaultSwap.ArgumentsImpl,
                 "wrong argument type — expected CreditDefaultSwap.Arguments");
         final CreditDefaultSwap.ArgumentsImpl a = (CreditDefaultSwap.ArgumentsImpl) args;
