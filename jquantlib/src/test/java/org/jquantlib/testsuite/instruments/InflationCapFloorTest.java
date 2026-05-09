@@ -396,15 +396,14 @@ public class InflationCapFloorTest {
     }
 
     /**
-     * Mirrors C++ {@code makeHelpers} free function (line 64-86). The Java
-     * {@link YearOnYearInflationSwapHelper} constructor variant accepting the
-     * discount curve directly is not ported — the helper builds an internal
-     * flat-zero discount curve which is mathematically equivalent (the
-     * fair-rate computation cancels equal discount factors between the two
-     * legs of the bootstrapping YYIIS).
-     *
-     * <p>The {@code discountCurve} parameter is accepted for signature parity
-     * with the C++ helper but is currently ignored.
+     * Mirrors C++ {@code makeHelpers} free function
+     * ({@code inflationcapfloor.cpp:64-86}). Each helper is built with the
+     * discount-curve overload (Phase 2v L0 A.4) so the bootstrap correctly
+     * picks up time-value adjustments from the supplied nominal yield curve
+     * (rather than the flat-zero default). For YoY swaps the fair rate IS
+     * discount-curve dependent (unlike zero-coupon swaps), so passing the
+     * same nominal curve used for repricing matters for cached-NPV roundtrip
+     * accuracy.
      */
     private static List<YearOnYearInflationSwapHelper> makeHelpers(
             final List<DatumYY> iiData,
@@ -423,7 +422,7 @@ public class InflationCapFloorTest {
                     new Handle<>(new SimpleQuote(datum.rate / 100.0));
             instruments.add(new YearOnYearInflationSwapHelper(
                     quote, observationLag, maturity, calendar, bdc, dc, ii,
-                    interpolation));
+                    interpolation, discountCurve));
         }
         return instruments;
     }
@@ -596,21 +595,21 @@ public class InflationCapFloorTest {
     // testCachedValue — inflationcapfloor.cpp:452-522
     // ===================================================================
     @Test
-    @org.junit.Ignore("Phase 2v: depends on YearOnYearInflationSwapHelper(quote, lag,"
-            + " maturity, cal, bdc, dc, ii, interp, discountCurve) overload that"
-            + " accepts an external nominal discount curve. The Java helper"
-            + " currently builds an internal flat-zero discount curve, which"
-            + " makes the bootstrapped pillar rates equal the YYIIS input quotes"
-            + " (since fairRate degenerates to the simple average of YoY rates"
-            + " when discount factors cancel). With the flat YoY curve at K=2.95%"
-            + " the cap/floor optionlet forward equals the strike exactly, so"
-            + " ATM Black call = put — both sides return the same NPV (262.538"
-            + " for Black, 9162.13 for DD, 8899.65 for Bachelier). The cached"
-            + " C++ values 219.452/314.641 (Black), 9114.61/9209.8 (DD),"
-            + " 8852.4/8947.59 (Bachelier) reflect a discount-weighted bootstrap"
-            + " producing F != K. Re-enable once the discount-curve helper"
-            + " overload is ported (Phase 2v candidate, already tracked in the"
-            + " inflation Phase 2x align list as L0 A.4 sibling).")
+    @org.junit.Ignore("Phase 2v L0 A.4 made the YearOnYearInflationSwapHelper"
+            + " discount-curve overload usable in CommonVars (the Java helper"
+            + " class already had it from Phase 2u). The Java bootstrap now"
+            + " correctly produces non-flat pillars (e.g. 0.02886 at year 3)"
+            + " when the 5% nominal discount curve is supplied — verified by"
+            + " diagnostic dump. However the cap/floor cached NPVs still"
+            + " require a downstream alignment: the YoY pricer's forward at"
+            + " the strike date equals the input quote 2.95% (because pillars"
+            + " 0-2 are all 2.95%), giving cap NPV == floor NPV ≈ 262.5"
+            + " (Black ATM premium) vs the C++ cached 219/315 split which"
+            + " requires F != K. The remaining gap traces to a"
+            + " YoYInflationCoupon / pricer convention divergence (likely the"
+            + " interplay between observation lag, period anchor and"
+            + " effective interpolation) that is independent of the helper"
+            + " ctor and out of scope for L0 A.4. Defer to Phase 2x.")
     public void testCachedValue() {
         // Testing Black yoy inflation cap/floor price against cached values...
 
