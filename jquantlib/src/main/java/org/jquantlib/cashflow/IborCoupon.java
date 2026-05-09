@@ -41,7 +41,8 @@
 package org.jquantlib.cashflow;
 
 import org.jquantlib.QL;
-import org.jquantlib.Settings;
+// NOTE: qualify org.jquantlib.Settings explicitly to avoid name clash
+// with the nested IborCoupon.Settings class (Phase 2x A.3).
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.IndexManager;
@@ -146,7 +147,7 @@ public class IborCoupon extends FloatingRateCoupon {
 
     @Override
     public double indexFixing() {
-        final Settings settings = new Settings();
+        final org.jquantlib.Settings settings = new org.jquantlib.Settings();
         if (settings.isUseIndexedCoupon())
             return index_.fixing(fixingDate());
         if (isInArrears())
@@ -204,6 +205,81 @@ public class IborCoupon extends FloatingRateCoupon {
             v.visit(this);
         } else {
             super.accept(pv);
+        }
+    }
+
+
+    //
+    // nested Settings class — mirrors C++ IborCoupon::Settings singleton
+    // (cashflows/iborcoupon.hpp:110-133)
+    //
+
+    /**
+     * Per-session settings for the {@link IborCoupon} class. Mirrors the
+     * C++ {@code IborCoupon::Settings} singleton.
+     *
+     * <p>The C++ default depends on the compile-time flag
+     * {@code QL_USE_INDEXED_COUPON}. v1.42.1 ships with that flag NOT set,
+     * so {@code usingAtParCoupons_ = true} by default. The Java port keeps
+     * the same default and honors {@link org.jquantlib.Settings#isUseIndexedCoupon()}
+     * for back-compat with the existing per-session flag.
+     */
+    public static final class Settings {
+
+        private static volatile Settings instance = null;
+
+        private boolean usingAtParCoupons = true;
+
+        private Settings() {
+            // mirrors C++ IborCoupon::Settings() = default; with the
+            // QL_USE_INDEXED_COUPON guard. Java reads the existing
+            // org.jquantlib.Settings#isUseIndexedCoupon() session flag at
+            // construction so legacy callers that flipped that flag continue
+            // to work.
+            this.usingAtParCoupons = !new org.jquantlib.Settings().isUseIndexedCoupon();
+        }
+
+        public static Settings getInstance() {
+            if (instance == null) {
+                synchronized (Settings.class) {
+                    if (instance == null) {
+                        instance = new Settings();
+                    }
+                }
+            }
+            return instance;
+        }
+
+        /**
+         * When called, IborCoupons are created as par coupons instead of
+         * indexed coupons. Mirrors C++
+         * {@code IborCoupon::Settings::createAtParCoupons()}.
+         */
+        public void createAtParCoupons() {
+            this.usingAtParCoupons = true;
+            new org.jquantlib.Settings().setUseIndexedCoupon(false);
+        }
+
+        /**
+         * When called, IborCoupons are created as indexed coupons instead
+         * of par coupons. Mirrors C++
+         * {@code IborCoupon::Settings::createIndexedCoupons()}.
+         */
+        public void createIndexedCoupons() {
+            this.usingAtParCoupons = false;
+            new org.jquantlib.Settings().setUseIndexedCoupon(true);
+        }
+
+        /**
+         * If true, IborCoupons are created as par coupons; otherwise indexed.
+         * The default (matching v1.42.1 without QL_USE_INDEXED_COUPON) is
+         * {@code true}.
+         *
+         * <p>Mirrors C++
+         * {@code IborCoupon::Settings::usingAtParCoupons() const}.
+         */
+        public boolean usingAtParCoupons() {
+            return this.usingAtParCoupons;
         }
     }
 
