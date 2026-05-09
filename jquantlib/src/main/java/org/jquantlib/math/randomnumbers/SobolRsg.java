@@ -1366,9 +1366,19 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
     private static final int BITS = 64;
 
     /**
-     *  1/(2^bits_) (written as (1/2)/(2^(bits_-1)) to avoid long overflow)
+     *  1/(2^BITS) — direct computation via Math.pow.
+     *
+     *  <p>The C++ form {@code 0.5 / (1UL << (BITS-1))} relies on unsigned
+     *  shift; in Java {@code 1 << 63} is masked to 31 producing
+     *  {@code Integer.MIN_VALUE} and {@code 1L << 63} produces
+     *  {@code Long.MIN_VALUE} (negative). Both make the previous
+     *  expression {@code 0.5 / (1 << (BITS-1))} produce a negative,
+     *  6× too-large normalisation factor. We instead use {@code 2^-64}
+     *  via {@code Math.pow}, which mirrors the intent of the C++ code.
+     *
+     *  <p>Phase 3i Commit 5-align — Jose Moya.
      */
-    private static final double NORMALIZATION_FACTOR = 0.5 / (1 << (BITS-1));
+    private static final double NORMALIZATION_FACTOR = Math.pow(2.0, -BITS);
 
 
     //
@@ -1445,8 +1455,10 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
         // that the l-th leftmost bit must be set
 
         // degenerate (no free direction integers) first dimension
+        // Phase 3i Commit 5-align: 1L (long literal) — the int literal
+        // {@code 1 << 63} masks to {@code 1 << 31} producing negative ints.
         for (int j=0; j < BITS; j++) {
-            directionIntegers[0][j] = (1 << (BITS-j-1));
+            directionIntegers[0][j] = (1L << (BITS-j-1));
         }
 
         int maxTabulated = 0;
@@ -1685,9 +1697,17 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
         final long[]   v = nextInt32Sequence();
         final double[] d = new double[this.dimensionality];
 
-        // normalize to get a double in (0,1)
+        // normalize to get a double in (0,1).
+        // Phase 3i Commit 5-align: v[k] is a 64-bit Sobol direction integer
+        // interpreted as unsigned in C++. Java's signed long means values
+        // with the sign bit set are negative; we add 2^64 to those to get
+        // the corresponding non-negative value. Since 2^64 * NORMALIZATION_FACTOR
+        // == 1.0, the correction is a simple +1.0 when v[k] < 0.
         for (int k = 0; k < this.dimensionality; ++k) {
             d[k] = v[k] * NORMALIZATION_FACTOR;
+            if (v[k] < 0) {
+                d[k] += 1.0;
+            }
         }
 
         this.sequence = new Sample<double[]>(d, 1.0);
