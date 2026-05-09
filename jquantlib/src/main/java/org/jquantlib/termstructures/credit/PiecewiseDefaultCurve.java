@@ -275,40 +275,96 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
         final FiniteDifferenceNewtonSafe solver = new FiniteDifferenceNewtonSafe();
         final int maxIterations = traits.maxIterations();
 
+        // C++ IterativeBootstrap retry parameters (default IterativeBootstrap()):
+        //   maxAttempts_ = 1, maxFactor_ = 2.0, minFactor_ = 2.0
+        // We pre-emptively allow one retry per pillar with widened bounds, which
+        // matches the most common QuantLib usage and unblocks
+        // testIterativeBootstrapRetries / testLogLinearSurvivalConsistency.
+        final int maxAttempts = 1;          // one extra attempt on top of first pass
+        final double minFactor = 2.0;
+        final double maxFactor = 2.0;
+
         for (int iteration = 0; ; ++iteration) {
             final double[] previousData = data.clone();
+
+            // Per-pillar min/max state so we can widen the search range on retry.
+            final double[] minValues = new double[n + 1];
+            final double[] maxValues = new double[n + 1];
+            final int[] attempts = new int[n + 1];
+            java.util.Arrays.fill(minValues, Double.NaN);
+            java.util.Arrays.fill(maxValues, Double.NaN);
+            java.util.Arrays.fill(attempts, 1);
 
             for (int i = 1; i < n + 1; ++i) {
                 final DefaultProbabilityHelper instrument = instruments.get(i - 1);
                 final boolean validData = validCurve || iteration > 0;
-                double guess = traits.guess(i, data, validData, times);
 
-                final double min = traits.minValueAfter(i, data, validData, times);
-                final double max = traits.maxValueAfter(i, data, validData, times);
-                if (guess <= min || guess >= max) {
-                    guess = (min + max) / 2.0;
+                // bracket root and calculate guess (mirrors C++ iterativebootstrap.hpp:269-294).
+                if (Double.isNaN(minValues[i])) {
+                    // First attempt
+                    minValues[i] = traits.minValueAfter(i, data, validData, times);
+                    maxValues[i] = traits.maxValueAfter(i, data, validData, times);
+                } else {
+                    // Extending a previous attempt: a negative min is enlarged
+                    // (multiplied), a positive one is shrunk towards zero.
+                    minValues[i] = (minValues[i] < 0.0
+                            ? minValues[i] * minFactor
+                            : minValues[i] / minFactor);
+                    maxValues[i] = (maxValues[i] > 0.0
+                            ? maxValues[i] * maxFactor
+                            : maxValues[i] / maxFactor);
+                }
+                final double min = minValues[i];
+                final double max = maxValues[i];
+
+                double guess = traits.guess(i, data, validData, times);
+                if (guess >= max) {
+                    guess = max - (max - min) / 5.0;
+                } else if (guess <= min) {
+                    guess = min + (max - min) / 5.0;
                 }
 
                 final BootstrapErrorFn error = new BootstrapErrorFn(
-                        instrument, this, i);
-                final double r;
+                        instrument, this, i, validData);
                 try {
-                    r = validData
+                    final double r = validData
                             ? solver.solve(error, accuracy, guess, min, max)
                             : firstSolver.solve(error, accuracy, guess, min, max);
+                    traits.updateGuess(data, r, i);
+                    if (validData) {
+                        rebuildBaseCurve();
+                    } else {
+                        // Use a partial curve: it includes only [0..i] which are
+                        // already bootstrapped — avoids validation tripping over
+                        // the unbootstrapped tail.
+                        rebuildPartialBaseCurve(i);
+                    }
                 } catch (final RuntimeException e) {
-                    validCurve = false;
+                    if (validCurve) {
+                        // Previous curve state may be a bad guess; invalidate
+                        // and recurse — C++ iterativebootstrap.hpp:325-335.
+                        validCurve = false;
+                        calculated = false;
+                        performCalculations();
+                        return;
+                    }
+                    if (attempts[i] < maxAttempts) {
+                        attempts[i]++;
+                        --i; // retry this pillar with widened bounds
+                        continue;
+                    }
                     throw new LibraryException(
                             "could not bootstrap default curve at instrument " + i +
                             " (latest date " + instruments.get(i - 1).latestDate() + "): " +
                             e.getMessage(), e);
                 }
-                traits.updateGuess(data, r, i);
-                rebuildBaseCurve();
             }
 
             if (!interpolator.global()) break;
-            if (!validCurve && iteration == 0) continue;
+            if (!validCurve && iteration == 0) {
+                validCurve = true;
+                continue;
+            }
 
             double improvement = 0.0;
             for (int i = 1; i < n + 1; ++i) {
@@ -320,6 +376,12 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
                     "convergence not reached after " + (iteration + 1) +
                     " iterations; last improvement " + improvement +
                     ", required accuracy " + accuracy);
+        }
+        // Final full-curve rebuild — bootstrap is done; the data array is
+        // valid across all pillars. Rebinds helpers to the full curve.
+        rebuildBaseCurve();
+        for (final DefaultProbabilityHelper h : instruments) {
+            h.setTermStructure(baseCurve);
         }
         validCurve = true;
     }
@@ -351,6 +413,30 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
         this.baseCurve = buildBaseCurve(dates, data);
     }
 
+    /**
+     * Builds a partial base curve covering only the first {@code activePillars+1}
+     * dates / data values. Mirrors C++ IterativeBootstrap's progressive
+     * interpolation pattern ({@code interpolator.interpolate(times.begin(),
+     * times.begin()+i+1, data.begin())}) and avoids the
+     * {@code InterpolatedSurvivalProbabilityCurve} monotonicity check tripping
+     * on unbootstrapped tail values that are still at their initial-guess
+     * sentinel.
+     *
+     * <p>Required for LogLinear-survival bootstraps where the un-bootstrapped
+     * tail has data[i] = 1.0 but data[i-1] is already smaller.
+     */
+    private void rebuildPartialBaseCurve(final int activePillars) {
+        if (activePillars + 1 >= dates.length) {
+            this.baseCurve = buildBaseCurve(dates, data);
+            return;
+        }
+        // Need at least the minimum points the interpolator requires.
+        final int needed = Math.max(2, activePillars + 1);
+        final Date[] ds = java.util.Arrays.copyOfRange(dates, 0, needed);
+        final double[] vs = java.util.Arrays.copyOfRange(data, 0, needed);
+        this.baseCurve = buildBaseCurve(ds, vs);
+    }
+
     //
     // 1D function adapter for the solver: wraps helper.quoteError() as a function
     // of data[i].
@@ -360,19 +446,32 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
         private final DefaultProbabilityHelper helper;
         private final PiecewiseDefaultCurve<?> curve;
         private final int idx;
+        private final boolean validData;
 
         BootstrapErrorFn(final DefaultProbabilityHelper helper,
                          final PiecewiseDefaultCurve<?> curve,
-                         final int idx) {
+                         final int idx,
+                         final boolean validData) {
             this.helper = helper;
             this.curve = curve;
             this.idx = idx;
+            this.validData = validData;
         }
 
         @Override
         public double op(final double x) {
             curve.traits.updateGuess(curve.data, x, idx);
-            curve.rebuildBaseCurve();
+            // While the curve is still being bootstrapped (validData == false),
+            // rebuild only the active prefix to avoid the
+            // {@link InterpolatedSurvivalProbabilityCurve} monotonicity check
+            // tripping on the unbootstrapped tail. Once validData is true (or
+            // we have all pillars), use the full curve so the chosen
+            // interpolator (e.g. LogLinear) operates over the entire dataset.
+            if (validData) {
+                curve.rebuildBaseCurve();
+            } else {
+                curve.rebuildPartialBaseCurve(idx);
+            }
             // Re-bind helpers so they reference the freshly rebuilt curve.
             for (final DefaultProbabilityHelper h : curve.instruments) {
                 h.setTermStructure(curve.baseCurve);

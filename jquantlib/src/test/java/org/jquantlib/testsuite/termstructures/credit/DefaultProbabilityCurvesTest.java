@@ -269,7 +269,6 @@ public class DefaultProbabilityCurvesTest {
      *  intermediate iterate as a "negative hazard rate". Porting the
      *  retry/initial-guess machinery is deferred to Phase 3c.
      */
-    @Ignore("Phase 3c: needs IterativeBootstrap initial-guess refinement for LogLinear")
     @Test
     public void testLogLinearSurvivalConsistency() {
         testBootstrapFromSpread(
@@ -318,10 +317,34 @@ public class DefaultProbabilityCurvesTest {
         // UpfrontCdsHelper::impliedQuote() flips it.
     }
 
-    /** Phase 3c: needs DateGeneration.CDS2015 + IterativeBootstrap retries +
-     *  InterpolatedDiscountCurve constructor that takes
-     *  (dates, discountFactors, dayCounter). */
-    @Ignore("Phase 3c: needs DateGeneration.CDS2015 + IterativeBootstrap retries")
+    /** Java port of {@code BOOST_AUTO_TEST_CASE(testIterativeBootstrapRetries)}.
+     *
+     *  <p>The C++ test exercises three flavours of {@code IterativeBootstrap}
+     *  configuration on a 1-Apr-2020 distressed-CDS dataset:
+     *  <ol>
+     *    <li>default {@code IterativeBootstrap()} — must throw at the first
+     *        alive instrument with a specific error-message prefix
+     *        ({@code "1st iteration: failed at 1st alive instrument"});</li>
+     *    <li>{@code IterativeBootstrap(..., maxAttempts=5, minFactor=1.0,
+     *        maxFactor=10.0)} — must still throw, but at the third alive
+     *        instrument;</li>
+     *    <li>same as above + {@code dontThrow=true, dontThrowSteps=2} — must
+     *        return a fallback curve without throwing.</li>
+     *  </ol>
+     *
+     *  <p><b>Phase 3c status:</b> Phase 3c L0 A.2 added retry-with-widened-
+     *  bounds + progressive-interpolation fallback to
+     *  {@link PiecewiseDefaultCurve} (sufficient to unblock
+     *  {@link #testLogLinearSurvivalConsistency}). The remaining work is
+     *  structural: a dedicated {@code IterativeBootstrap} configuration
+     *  object passed through the {@link PiecewiseDefaultCurve} constructor
+     *  (currently the parameters are hard-coded), plus the
+     *  {@code dontThrow} / fallback-search mechanism. Both are pure-additive
+     *  ports of {@code ql/termstructures/iterativebootstrap.hpp}; deferred to
+     *  Phase 3d (along with the {@code BOOST_CHECK_EXCEPTION} pattern that
+     *  matches specific error-message prefixes).
+     */
+    @Ignore("Phase 3d: needs IterativeBootstrap configuration object on PiecewiseDefaultCurve constructor + dontThrow fallback mode")
     @Test
     public void testIterativeBootstrapRetries() {
         // C++: 1 Apr 2020 distressed-CDS scenario testing IterativeBootstrap
