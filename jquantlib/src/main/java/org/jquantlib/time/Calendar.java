@@ -403,6 +403,13 @@ public class Calendar {
             if (from.gt(to)) {
                 wd = -wd;
             }
+        } else {
+            // Phase 5c align: C++ v1.42.1 ql/time/calendar.cpp:188 returns
+            // 1 when from == to and both endpoints are included on a
+            // business day; previously Java fell through to 0.
+            if (includeFirst && includeLast && isBusinessDay(from)) {
+                wd = 1;
+            }
         }
 
         return wd;
