@@ -37,7 +37,7 @@ import org.jquantlib.math.distributions.NormalDistribution;
  * <p>Its simplicity is a result of the convolution stability of the Gaussian
  * distribution.
  */
-public class GaussianCopulaPolicy {
+public class GaussianCopulaPolicy implements CopulaPolicy {
 
     /**
      * Initialisation traits placeholder. The Gaussian copula policy does not

@@ -54,7 +54,7 @@ import org.jquantlib.math.distributions.StudentDistribution;
  *
  * <p>Phase 4m.6 — analog of Phase 4k {@link GaussianCopulaPolicy}.
  */
-public class TCopulaPolicy {
+public class TCopulaPolicy implements CopulaPolicy {
 
     /**
      * Initialisation traits storing the per-factor T orders. Indices
