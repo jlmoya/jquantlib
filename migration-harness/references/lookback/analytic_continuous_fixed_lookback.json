@@ -1,0 +1,169 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 27.41948726564609
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 90.0,
+        "vol": 0.2
+      },
+      "name": "call_strike90_max100_1y_v20"
+    },
+    {
+      "expected": {
+        "npv": 10.11213218378851
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 110.0,
+        "vol": 0.2
+      },
+      "name": "call_strike110_max100_1y_v20"
+    },
+    {
+      "expected": {
+        "npv": 17.90719302063895
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 100.0,
+        "vol": 0.2
+      },
+      "name": "call_strike100_max100_1y_v20"
+    },
+    {
+      "expected": {
+        "npv": 57.22884770854046
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 2.0,
+        "minmax": 105.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 80.0,
+        "vol": 0.3
+      },
+      "name": "call_strike80_max105_2y_v30"
+    },
+    {
+      "expected": {
+        "npv": 24.1777405486661
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 2.0,
+        "minmax": 100.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 120.0,
+        "vol": 0.3
+      },
+      "name": "call_strike120_max100_2y_v30"
+    },
+    {
+      "expected": {
+        "npv": 22.59127913130586
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 110.0,
+        "vol": 0.2
+      },
+      "name": "put_strike110_min100_1y_v20"
+    },
+    {
+      "expected": {
+        "npv": 5.5777474235098
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 90.0,
+        "vol": 0.2
+      },
+      "name": "put_strike90_min100_1y_v20"
+    },
+    {
+      "expected": {
+        "npv": 13.07898488629872
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 1.0,
+        "minmax": 100.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 100.0,
+        "vol": 0.2
+      },
+      "name": "put_strike100_min100_1y_v20"
+    },
+    {
+      "expected": {
+        "npv": 43.21257020765101
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 2.0,
+        "minmax": 95.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 120.0,
+        "vol": 0.3
+      },
+      "name": "put_strike120_min95_2y_v30"
+    },
+    {
+      "expected": {
+        "npv": 10.162721768821257
+      },
+      "inputs": {
+        "S": 100.0,
+        "maturity_years": 2.0,
+        "minmax": 100.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 80.0,
+        "vol": 0.3
+      },
+      "name": "put_strike80_min100_2y_v30"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T21:45:39Z",
+  "generated_by": "analytic_continuous_fixed_lookback_probe",
+  "test_group": "lookback/analytic_continuous_fixed_lookback"
+}
