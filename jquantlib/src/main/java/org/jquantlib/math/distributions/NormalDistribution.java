@@ -105,9 +105,18 @@ public class NormalDistribution implements Derivative {
 	 */
 	@Override
 	public double op(final double x) /* @ReadOnly */ {
-		final double exponent = -0.5*x*x;
+		// Mirrors C++ v1.42.1 normaldistribution.hpp NormalDistribution::operator():
+		//   delta = x - mean
+		//   exponent = -delta^2 / (2*sigma^2)
+		//   pdf = M_SQRT_2 * M_1_SQRTPI / sigma * exp(exponent)
+		// Phase 5h.5-RND align: the previous implementation computed only the
+		// standard-normal density, ignoring stored mean/sigma. Callers using
+		// the (mean, sigma) constructor (e.g. GenericGaussianStatistics,
+		// BSMRNDCalculator, LocalVolRNDCalculator) now match C++.
+		final double delta = x - average;
+		final double exponent = -(delta * delta) / denominator;
 		if (exponent <= -690.0) return 0.0;
-		return Constants.M_1_SQRT2PI*Math.exp(exponent);
+		return normalizationFactor * Math.exp(exponent);
 	}
 
     //
