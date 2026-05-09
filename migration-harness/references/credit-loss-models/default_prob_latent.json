@@ -1,0 +1,113 @@
+{
+  "cases": [
+    {
+      "expected": 0.20073402085670278,
+      "inputs": {
+        "idio": 0.8944271909999159,
+        "m": [
+          -2.0
+        ],
+        "prob": 0.05,
+        "weight": 0.4472135954999579
+      },
+      "name": "cond_def_p5pc_rho20pc_mneg2"
+    },
+    {
+      "expected": 0.09028496868155611,
+      "inputs": {
+        "idio": 0.8944271909999159,
+        "m": [
+          -1.0
+        ],
+        "prob": 0.05,
+        "weight": 0.4472135954999579
+      },
+      "name": "cond_def_p5pc_rho20pc_mneg1"
+    },
+    {
+      "expected": 0.032957426873503615,
+      "inputs": {
+        "idio": 0.8944271909999159,
+        "m": [
+          0.0
+        ],
+        "prob": 0.05,
+        "weight": 0.4472135954999579
+      },
+      "name": "cond_def_p5pc_rho20pc_mpos0"
+    },
+    {
+      "expected": 0.00966765827858379,
+      "inputs": {
+        "idio": 0.8944271909999159,
+        "m": [
+          1.0
+        ],
+        "prob": 0.05,
+        "weight": 0.4472135954999579
+      },
+      "name": "cond_def_p5pc_rho20pc_mpos1"
+    },
+    {
+      "expected": 0.0022627418237686214,
+      "inputs": {
+        "idio": 0.8944271909999159,
+        "m": [
+          2.0
+        ],
+        "prob": 0.05,
+        "weight": 0.4472135954999579
+      },
+      "name": "cond_def_p5pc_rho20pc_mpos2"
+    },
+    {
+      "expected": 0.05532500407245794,
+      "inputs": {
+        "idio": 0.8660254037844386,
+        "m": [
+          1.0,
+          -0.5
+        ],
+        "prob": 0.1,
+        "weights": [
+          0.3,
+          0.4
+        ]
+      },
+      "name": "cond_def_p10pc_2fact_w34_m1_neg05"
+    },
+    {
+      "expected": 0.0694622090361407,
+      "inputs": {
+        "idio": 0.8660254037844386,
+        "m": [
+          0.0,
+          0.0
+        ],
+        "prob": 0.1,
+        "weights": [
+          0.3,
+          0.4
+        ]
+      },
+      "name": "cond_def_p10pc_2fact_w34_m_zero"
+    },
+    {
+      "expected": 0.08530468157343479,
+      "inputs": {
+        "idio": 0.7071067811865475,
+        "m": [
+          -3.0
+        ],
+        "prob": 0.001,
+        "weight": 0.7071067811865476
+      },
+      "name": "cond_def_low_prob_extreme_neg_m"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T21:52:02Z",
+  "generated_by": "default_prob_latent_probe.cpp (Phase 4m.7)",
+  "test_group": "credit-loss-models/default_prob_latent"
+}
