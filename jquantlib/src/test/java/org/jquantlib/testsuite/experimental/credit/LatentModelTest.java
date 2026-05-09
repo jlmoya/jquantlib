@@ -114,6 +114,54 @@ public class LatentModelTest {
         }
     }
 
+    /**
+     * Cross-consistency: integrateV must agree component-wise with integrate
+     * called separately on each component. Phase 4m.7b WI-2 (integrateV port).
+     *
+     * <p>Validates the GaussianQuadMultidimIntegrator vector overload against
+     * its own scalar overload across three integrand components defined over
+     * R^2 with Gauss-Hermite weight {@code e^{-x²-y²}}: the constant function,
+     * a polynomial {@code x²·y²}, and {@code x·y}. Tier: TIGHT — the vector
+     * path is a deterministic re-summation of the same node/weight tables,
+     * so component-wise differences should be at the floating-point noise
+     * floor.
+     */
+    @Test
+    public void integrateVMatchesScalarComponentwise() {
+        final org.jquantlib.math.integrals.GaussianQuadMultidimIntegrator integ =
+                new org.jquantlib.math.integrals.GaussianQuadMultidimIntegrator(2, 16, 0.0);
+        final double s0 = integ.integrate((x) -> 1.0);
+        final double s1 = integ.integrate((x) -> x[0] * x[0] * x[1] * x[1]);
+        final double s2 = integ.integrate((x) -> x[0] * x[1]);
+        final double[] v = integ.integrateV((x) -> new double[] {
+                1.0,
+                x[0] * x[0] * x[1] * x[1],
+                x[0] * x[1]
+        });
+        assertTrue("integrateV[0] (const 1): vec=" + v[0] + " scalar=" + s0,
+                Tolerance.tight(v[0], s0));
+        assertTrue("integrateV[1] (x²y²): vec=" + v[1] + " scalar=" + s1,
+                Tolerance.tight(v[1], s1));
+        assertTrue("integrateV[2] (xy): vec=" + v[2] + " scalar=" + s2,
+                Tolerance.tight(v[2], s2));
+    }
+
+    /** Same cross-consistency test for the LMIntegration adapter. */
+    @Test
+    public void integrateVOnLMIntegrationMatchesScalarComponentwise() {
+        final LMIntegration lmi = new GaussianQuadLMIntegration(2, 16);
+        final double s0 = lmi.integrate((x) -> 1.0);
+        final double s1 = lmi.integrate((x) -> x[0] * x[0] * x[1] * x[1]);
+        final double[] v = lmi.integrateV((x) -> new double[] {
+                1.0,
+                x[0] * x[0] * x[1] * x[1]
+        });
+        assertTrue("LMI integrateV[0] (const 1): vec=" + v[0] + " scalar=" + s0,
+                Tolerance.tight(v[0], s0));
+        assertTrue("LMI integrateV[1] (x²y²): vec=" + v[1] + " scalar=" + s1,
+                Tolerance.tight(v[1], s1));
+    }
+
     @Test
     public void crossValidateLatentModel2var2fact() {
         final ReferenceReader reader = ReferenceReader.load(TEST_GROUP);

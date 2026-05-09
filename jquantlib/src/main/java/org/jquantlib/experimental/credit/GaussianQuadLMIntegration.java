@@ -52,6 +52,8 @@ public final class GaussianQuadLMIntegration implements LMIntegration {
         return integrator_.integrate(f);
     }
 
-    /** Vector integration is not yet implemented for the Gauss-Hermite backend. */
-    // integrateV intentionally inherits the throwing default until needed.
+    @Override
+    public double[] integrateV(final Function<double[], double[]> f) {
+        return integrator_.integrateV(f);
+    }
 }
