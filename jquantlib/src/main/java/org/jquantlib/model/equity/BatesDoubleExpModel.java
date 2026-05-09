@@ -26,6 +26,7 @@ package org.jquantlib.model.equity;
 import org.jquantlib.math.optimization.BoundaryConstraint;
 import org.jquantlib.math.optimization.PositiveConstraint;
 import org.jquantlib.model.ConstantParameter;
+import org.jquantlib.model.NullParameter;
 import org.jquantlib.processes.HestonProcess;
 
 /**
@@ -41,6 +42,10 @@ public class BatesDoubleExpModel extends HestonModel {
 
     public BatesDoubleExpModel(final HestonProcess process, final double lambda, final double nuUp, final double nuDown, final double p) {
         super(process);
+        // Match C++ arguments_.resize(9): extend by 4 NullParameter slots.
+        while (arguments_.size() < 9) {
+            arguments_.add(new NullParameter());
+        }
         arguments_.set(5, new ConstantParameter(p, new BoundaryConstraint(0.0, 1.0)));
         arguments_.set(6, new ConstantParameter(nuDown, new PositiveConstraint()));
         arguments_.set(7, new ConstantParameter(nuUp, new PositiveConstraint()));
@@ -67,7 +72,11 @@ public class BatesDoubleExpModel extends HestonModel {
     public static class BatesDoubleExpDetJumpModel extends BatesDoubleExpModel {
         public BatesDoubleExpDetJumpModel(final HestonProcess process, final double lambda, final double nuUp, final double nuDown, final double p,
                 final double kappaLambda, final double thetaLambda) {
-            super(process);
+            super(process, lambda, nuUp, nuDown, p);
+            // Match C++ arguments_.resize(11): extend by 2 NullParameter slots.
+            while (arguments_.size() < 11) {
+                arguments_.add(new NullParameter());
+            }
             arguments_.set(9, new ConstantParameter(kappaLambda, new PositiveConstraint()));
             arguments_.set(10, new ConstantParameter(thetaLambda, new PositiveConstraint()));
 

@@ -26,17 +26,28 @@ package org.jquantlib.model.equity;
 import org.jquantlib.math.optimization.NoConstraint;
 import org.jquantlib.math.optimization.PositiveConstraint;
 import org.jquantlib.model.ConstantParameter;
+import org.jquantlib.model.NullParameter;
 import org.jquantlib.processes.HestonProcess;
 
 /**
- * 
- * @author Ueli Hofstetter
+ * Bates stochastic-volatility model (Heston SV plus jump diffusion).
  *
+ * <p>Mirrors C++ v1.42.1 {@code ql/models/equity/batesmodel.{hpp,cpp}}
+ * BatesModel. The C++ ctor calls {@code arguments_.resize(8)} after
+ * {@code HestonModel(process)} sets 5 slots; the Java port appends three
+ * NullParameter slots to extend the inherited size-5 list before assigning
+ * nu/delta/lambda. (Pre-Phase 5h.5 the Java code attempted
+ * {@code arguments_.set(5,...)} which would have thrown IOOBE — fixed in
+ * the align commit prior to BatesEngine port.)
  */
 public class BatesModel extends HestonModel {
 
     public BatesModel(final HestonProcess process, final double lambda, final double nu, final double delta) {
         super(process);
+        // Match C++ arguments_.resize(8): extend by 3 NullParameter slots.
+        while (arguments_.size() < 8) {
+            arguments_.add(new NullParameter());
+        }
         arguments_.set(5, new ConstantParameter(nu, new NoConstraint()));
         arguments_.set(6, new ConstantParameter(delta, new PositiveConstraint()));
         arguments_.set(7, new ConstantParameter(lambda, new PositiveConstraint()));
@@ -58,29 +69,6 @@ public class BatesModel extends HestonModel {
 
     public double lambda() {
         return arguments_.get(7).get(0.0);
-    }
-
-    private static class BatesDetJumpModel extends BatesModel {
-
-        public BatesDetJumpModel(final HestonProcess process) {
-            this(process, 0.1, 0.0, 0.1, 1.0, 0.1);
-        }
-
-        public BatesDetJumpModel(final HestonProcess process, final double lambda, final double nu, final double delta, final double kappaLambda,
-                final double thetaLambda) {
-            super(process);
-            arguments_.set(8, new ConstantParameter(kappaLambda, new PositiveConstraint()));
-            arguments_.set(9, new ConstantParameter(thetaLambda, new PositiveConstraint()));
-        }
-
-        public double kappaLambda() {
-            return arguments_.get(8).get(0.0);
-        }
-
-        public double thethaLambda() {
-            return arguments_.get(9).get(0.0);
-        }
-
     }
 
 }
