@@ -69,13 +69,13 @@ public abstract class MultiProductMultiStep extends MarketModelMultiProduct {
     }
 
     @Override
-    public final EvolutionDescription evolution() {
+    public EvolutionDescription evolution() {
         return evolution_;
     }
 
     /** MoneyMarketPlus(1) numeraires: {@code numeraires[i] = i + 1}. */
     @Override
-    public final int[] suggestedNumeraires() {
+    public int[] suggestedNumeraires() {
         final int n = rateTimes_.length - 1;
         final int[] numeraires = new int[n];
         for (int i = 0; i < n; ++i) {
