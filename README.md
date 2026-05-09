@@ -2,8 +2,8 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2u--complete-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-933%2F0%2F0%2F37-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase2v--complete-blue)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-950%2F0%2F0%2F39-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
@@ -56,9 +56,10 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 2r | `jquantlib-phase2r-complete` | Inflation 100% core surface coverage. YoYOptionletVolatilitySurface family + 4 inflation cap/floor instruments + InflationCapFloorEngines (Black/UnitDisplaced/Bachelier) + 3 YoY optionlet pricers + FDNewtonSafe solver + YoYInflationIndex.fixing past-path align. 8 commits across 3 worktrees. Java inflation core surface 85% → 100%. | 853/0/0/22 | 2026-05-08 |
 | 2s | `jquantlib-phase2s-complete` | Experimental inflation closeout — Polynomial2DSpline + GenericIndexes + KInterpolated/Piecewise YoYOptionletVol + YoY Optionlet Stripper family + CPI/YoY CapFloorTermPriceSurface + InterpolatingCPICapFloorEngine. Inflation subsystem fully complete. | 888/0/0/22 | 2026-05-08 |
 | 2t | `jquantlib-phase2t-complete` | First test-suite phase under rigor directive — inflation.cpp ported (2,323 LOC → 31 @Test methods). InflationCommonVars test fixture + inflationPeriod sub-annual bug fix. | 919/0/0/40 | 2026-05-08 |
-| **2u** | **`jquantlib-phase2u-complete`** | **Inflation test-suite expansion (44%→86%): 4 cpp files ported (inflationcapfloor + inflationcpiswap + inflationcpicapfloor + inflationcapflooredcoupon, ~2,239 LOC C++) + 5 L0 Phase 2x aligns + Track F body fills with 4 infrastructure aligns (PiecewiseZero/YoY update() override; YYIIS helper nominalTermStructure param; AbstractTermStructure updating_ re-entrancy guard). 11 commits across 6 worktrees.** | **933/0/0/37** | **2026-05-08** |
+| 2u | `jquantlib-phase2u-complete` | Inflation test-suite expansion (44%→86%): 4 cpp files ported + 5 L0 Phase 2x aligns + Track F body fills with 4 infrastructure aligns. 11 commits across 6 worktrees. | 933/0/0/37 | 2026-05-08 |
+| **2v** | **`jquantlib-phase2v-complete`** | **Inflation 100% (production + test-suite). CPIBond + 6 missing CPI base + YY variants (12 index classes) + GlobalBootstrap + lazy-baseDate ctor + YYIIS discount-curve overload + inflationcpibond + inflationvolatility test ports. 7 commits + 1 manual recovery (2 agent stalls handled).** | **950/0/0/39** | **2026-05-08** |
 
-**Current tip on `main`:** post-Phase 2u. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
+**Current tip on `main`:** post-Phase 2v. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
