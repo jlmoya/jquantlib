@@ -1,0 +1,169 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 25.22381413871354
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 0.3,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 90.0,
+        "vol": 0.2
+      },
+      "name": "call_strike90_lstart0.3_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 16.638385459153703
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 0.3,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 100.0,
+        "vol": 0.2
+      },
+      "name": "call_strike100_lstart0.3_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 13.035240138018704
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 0.5,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "q": 0.01,
+        "r": 0.04,
+        "strike": 110.0,
+        "vol": 0.25
+      },
+      "name": "call_strike110_lstart0.5_T1_v25"
+    },
+    {
+      "expected": {
+        "npv": 40.35629090920901
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 1.0,
+        "maturity_years": 2.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 90.0,
+        "vol": 0.3
+      },
+      "name": "call_strike90_lstart1.0_T2_v30"
+    },
+    {
+      "expected": {
+        "npv": 9.22700550815405
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 1.0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 100.0,
+        "vol": 0.2
+      },
+      "name": "call_strike100_lstart_eq_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 20.266895930750596
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 0.3,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 110.0,
+        "vol": 0.2
+      },
+      "name": "put_strike110_lstart0.3_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 11.85217546714993
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 0.3,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 100.0,
+        "vol": 0.2
+      },
+      "name": "put_strike100_lstart0.3_T1_v20"
+    },
+    {
+      "expected": {
+        "npv": 7.661305115064889
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 0.5,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "q": 0.01,
+        "r": 0.04,
+        "strike": 90.0,
+        "vol": 0.25
+      },
+      "name": "put_strike90_lstart0.5_T1_v25"
+    },
+    {
+      "expected": {
+        "npv": 28.60451908476996
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 1.0,
+        "maturity_years": 2.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 110.0,
+        "vol": 0.3
+      },
+      "name": "put_strike110_lstart1.0_T2_v30"
+    },
+    {
+      "expected": {
+        "npv": 6.3300806275499095
+      },
+      "inputs": {
+        "S": 100.0,
+        "lookback_start_years": 1.0,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "strike": 100.0,
+        "vol": 0.2
+      },
+      "name": "put_strike100_lstart_eq_T1_v20"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T21:45:40Z",
+  "generated_by": "analytic_continuous_partial_fixed_lookback_probe",
+  "test_group": "lookback/analytic_continuous_partial_fixed_lookback"
+}
