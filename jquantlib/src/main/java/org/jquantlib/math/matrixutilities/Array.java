@@ -134,11 +134,20 @@ public class Array extends Cells<Address.ArrayAddress> implements Cloneable, Ite
      * @param flags is a <code>Set&lt;Address.Flags&gt;</code>
      *
      * @see Address.Flags
+     *
+     * <p>Phase 3f: Array now <strong>wraps</strong> the supplied {@code array}
+     * (no copy) so that subsequent in-place mutations of the source buffer
+     * (e.g. by {@code IterativeBootstrap.calculate}) propagate to interpolations
+     * holding this Array. This mirrors C++ {@code Array(InputIterator,InputIterator)}
+     * iterator semantics. Callers that needed defensive-copy semantics now must
+     * pass {@code array.clone()} explicitly. Across the JQuantLib codebase the
+     * predominant pattern is {@code new Array(new double[]{...literals...})}
+     * where the literal has no other reference, so the change is behavior-neutral
+     * for those sites.</p>
      */
     public Array(final double[] array, final Set<Address.Flags> flags) {
-        super(1, array.length, null);
+        super(1, array.length, array, /*addr*/ null);
         this.addr = new DirectArrayRowAddress(this.$, 0, null, 0, array.length-1, flags, true, 1, array.length);
-        System.arraycopy(array, 0, $, 0, this.size());
     }
 
     /**
@@ -159,11 +168,19 @@ public class Array extends Cells<Address.ArrayAddress> implements Cloneable, Ite
      * @param flags is a <code>Set&lt;Address.Flags&gt;</code>
      *
      * @see Address.Flags
+     *
+     * <p>Phase 3f: as with {@link #Array(double[], Set)}, this constructor now
+     * <strong>wraps</strong> the supplied {@code array} (no copy). When
+     * {@code size < array.length} the resulting Array is a partial view of
+     * the first {@code size} elements of the backing buffer; mutations to those
+     * positions in the source array are visible through this view, mirroring
+     * C++ {@code Array(InputIterator,InputIterator)} iterator semantics. The
+     * underlying address is dimensioned to {@code size}, so reads/writes stay
+     * within the view window.</p>
      */
     public Array(final double[] array, final int size, final Set<Address.Flags> flags) {
-        super(1, size, null);
+        super(1, size, array, /*addr*/ null);
         this.addr = new DirectArrayRowAddress(this.$, 0, null, 0, size-1, flags, true, 1, size);
-        System.arraycopy(array, 0, $, 0, this.size());
     }
 
     /**

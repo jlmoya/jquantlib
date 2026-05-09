@@ -158,7 +158,19 @@ public abstract class Cells<T extends Address> implements Cloneable {
         this.$ = data;
         this.addr = addr;
         this.size = rows*cols;
-        if (data.length != addr.rows()*addr.cols())
+        // Phase 3f: relax `data.length == ...` to `>=` so that an Array can wrap
+        // a partial view of a longer backing buffer (used by IterativeBootstrap
+        // to share storage with the curve `data[]` array, mirroring C++
+        // `data.begin()` iterator semantics from iterativebootstrap.hpp). Old
+        // strict equality blocked the Phase 3f Interpolation copy-vs-reference
+        // fix; partial-view callers always supply an addr whose op() stays
+        // within [0, addr.rows()*addr.cols()-1], so reads/writes remain safe.
+        // Skip the check when addr is null — the caller (e.g. Array(double[], …))
+        // assigns a fresh addr immediately after super(), and uses rows*cols as
+        // the implicit constraint.
+        if (addr != null && data.length < addr.rows()*addr.cols())
+            throw new IllegalArgumentException("declared dimension do not match underlying storage size");
+        if (addr == null && data.length < rows*cols)
             throw new IllegalArgumentException("declared dimension do not match underlying storage size");
     }
 
