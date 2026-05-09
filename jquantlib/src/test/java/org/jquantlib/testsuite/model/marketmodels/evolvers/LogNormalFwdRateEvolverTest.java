@@ -15,9 +15,14 @@ import org.jquantlib.model.marketmodels.BrownianGenerator;
 import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
 import org.jquantlib.model.marketmodels.EvolutionDescription;
 import org.jquantlib.model.marketmodels.MarketModel;
+import org.jquantlib.model.marketmodels.evolvers.LogNormalCmSwapRatePc;
+import org.jquantlib.model.marketmodels.evolvers.LogNormalCotSwapRatePc;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateBalland;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateEuler;
+import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateIpc;
 import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRatePc;
+import org.jquantlib.model.marketmodels.evolvers.LogNormalFwdRateiBalland;
+import org.jquantlib.model.marketmodels.evolvers.NormalFwdRatePc;
 import org.junit.Test;
 
 /**
@@ -90,6 +95,81 @@ public class LogNormalFwdRateEvolverTest {
             final double f = evolver.currentState().forwardRate(i);
             assertTrue("forward[" + i + "] finite", !Double.isNaN(f) && !Double.isInfinite(f));
         }
+    }
+
+    @Test
+    public void ipc_terminalMeasure_advancesBackwardsIteratively() {
+        final FlatVolMarketModel mm = new FlatVolMarketModel();
+        final ZeroBrownianGeneratorFactory bgf = new ZeroBrownianGeneratorFactory();
+        // Ipc requires terminal measure: numeraire = N (last rate index) for each step
+        final int[] num = new int[mm.numberOfSteps()];
+        for (int i = 0; i < num.length; ++i) num[i] = mm.numberOfRates();
+        final LogNormalFwdRateIpc evolver = new LogNormalFwdRateIpc(mm, bgf, num);
+
+        evolver.startNewPath();
+        evolver.advanceStep();
+        assertEquals(1, evolver.currentStep());
+        for (int i = 0; i < mm.numberOfRates(); ++i) {
+            final double f = evolver.currentState().forwardRate(i);
+            assertTrue("forward[" + i + "] finite", !Double.isNaN(f) && !Double.isInfinite(f));
+        }
+    }
+
+    @Test
+    public void iBalland_terminalMeasure_combinesIterativeAndGeometricMean() {
+        final FlatVolMarketModel mm = new FlatVolMarketModel();
+        final ZeroBrownianGeneratorFactory bgf = new ZeroBrownianGeneratorFactory();
+        final int[] num = new int[mm.numberOfSteps()];
+        for (int i = 0; i < num.length; ++i) num[i] = mm.numberOfRates();
+        final LogNormalFwdRateiBalland evolver = new LogNormalFwdRateiBalland(mm, bgf, num);
+
+        evolver.startNewPath();
+        evolver.advanceStep();
+        assertEquals(1, evolver.currentStep());
+    }
+
+    @Test
+    public void normalPc_zeroBrownian_isAdditiveAndFinite() {
+        final FlatVolMarketModel mm = new FlatVolMarketModel();
+        final ZeroBrownianGeneratorFactory bgf = new ZeroBrownianGeneratorFactory();
+        final int[] num = new int[mm.numberOfSteps()];
+        for (int i = 0; i < num.length; ++i) num[i] = mm.numberOfRates();
+        final NormalFwdRatePc evolver = new NormalFwdRatePc(mm, bgf, num);
+
+        evolver.startNewPath();
+        evolver.advanceStep();
+        assertEquals(1, evolver.currentStep());
+        for (int i = 0; i < mm.numberOfRates(); ++i) {
+            final double f = evolver.currentState().forwardRate(i);
+            assertTrue("forward[" + i + "] finite", !Double.isNaN(f) && !Double.isInfinite(f));
+        }
+    }
+
+    @Test
+    public void cotSwapPc_zeroBrownian_evolvesCoterminalSwapRates() {
+        final FlatVolMarketModel mm = new FlatVolMarketModel();
+        final ZeroBrownianGeneratorFactory bgf = new ZeroBrownianGeneratorFactory();
+        final int[] num = new int[mm.numberOfSteps()];
+        for (int i = 0; i < num.length; ++i) num[i] = mm.numberOfRates();
+        final LogNormalCotSwapRatePc evolver = new LogNormalCotSwapRatePc(mm, bgf, num);
+
+        evolver.startNewPath();
+        evolver.advanceStep();
+        assertEquals(1, evolver.currentStep());
+    }
+
+    @Test
+    public void cmSwapPc_zeroBrownian_evolvesCmSwapRatesWithSpan() {
+        final FlatVolMarketModel mm = new FlatVolMarketModel();
+        final ZeroBrownianGeneratorFactory bgf = new ZeroBrownianGeneratorFactory();
+        final int[] num = new int[mm.numberOfSteps()];
+        for (int i = 0; i < num.length; ++i) num[i] = mm.numberOfRates();
+        final int spanningForwards = 1; // CM rate spans 1 forward = degenerates to forward LIBOR
+        final LogNormalCmSwapRatePc evolver = new LogNormalCmSwapRatePc(spanningForwards, mm, bgf, num);
+
+        evolver.startNewPath();
+        evolver.advanceStep();
+        assertEquals(1, evolver.currentStep());
     }
 
     @Test
