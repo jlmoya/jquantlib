@@ -200,16 +200,26 @@ public class CallableBond extends Bond {
         arguments.redemptionDate = redemption().date();
 
         final Leg cfs = cashflows();
+        final CashFlow redemptionCf = redemption();
 
         arguments.couponDates = new ArrayList<Date>();
         arguments.couponAmounts = new ArrayList<Double>();
 
-        for (int i = 0; i < cfs.size() - 1; i++) {
+        // C++ skips cashflows.size()-1 (i.e. excludes the last) on the
+        // assumption that the redemption is the last cash flow. JQuantLib's
+        // EarlierThanCashFlowComparator is not a stable sort for equal-date
+        // cash flows, so the last index may be a coupon (not the redemption);
+        // identify the redemption by reference and skip it explicitly.
+        for (int i = 0; i < cfs.size(); i++) {
+            final CashFlow cf = cfs.get(i);
+            if (cf == redemptionCf) {
+                continue;
+            }
             // Java port: tradingExCoupon predicate is not yet available on
             // CashFlow; treat all non-occurred cash flows as in-coupon.
-            if (!cfs.get(i).hasOccurred(settlement, false)) {
-                arguments.couponDates.add(cfs.get(i).date());
-                arguments.couponAmounts.add(cfs.get(i).amount());
+            if (!cf.hasOccurred(settlement, false)) {
+                arguments.couponDates.add(cf.date());
+                arguments.couponAmounts.add(cf.amount());
             }
         }
 

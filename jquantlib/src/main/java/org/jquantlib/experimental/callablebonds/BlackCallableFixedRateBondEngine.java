@@ -158,9 +158,14 @@ public class BlackCallableFixedRateBondEngine extends CallableBondEngineImpl {
         /* Assumes:
            1. cashflows are in ascending order!
            2. income = coupons paid between settlementDate() and put/call date
+           Java port: walk every cashflow and break on the first that has not
+           yet been called (regardless of whether it's a coupon or redemption);
+           the unstable sort caveat described in CallableBond.setupArguments
+           does not apply here because this loop discriminates by date, not
+           by trailing position.
         */
         double income = 0.0;
-        for (int i = 0; i < cf.size() - 1; i++) {
+        for (int i = 0; i < cf.size(); i++) {
             final CashFlow c = cf.get(i);
             if (!c.hasOccurred(settlement, false)) {
                 if (c.hasOccurred(optionMaturity, false)) {
