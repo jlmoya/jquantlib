@@ -1,0 +1,300 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "delta": 0.12516566745670185,
+        "dividendRho": -109.16901356327732,
+        "gamma": 0.0,
+        "npv": 12.516566745670172,
+        "rho": 84.13588007193697,
+        "theta": 0.2503313349134034,
+        "vega": 48.04905862346157
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "vol": 0.2
+      },
+      "name": "fwd_atm_call_T2_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.07593178148994227,
+        "dividendRho": 60.512161996858346,
+        "gamma": 0.0,
+        "npv": 7.5931781489942285,
+        "rho": -75.69851829484679,
+        "theta": 0.15186356297988454,
+        "vega": 48.04905862346157
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "vol": 0.2
+      },
+      "name": "fwd_atm_put_T2_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.08379590645923136,
+        "dividendRho": -84.3614766915507,
+        "gamma": 0.0,
+        "npv": 8.37959064592313,
+        "rho": 67.60229539970445,
+        "theta": 0.1675918129184626,
+        "vega": 50.73424201130106
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.1,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "vol": 0.2
+      },
+      "name": "fwd_otm_call_T2_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.18008999061819692,
+        "dividendRho": -133.64851333394523,
+        "gamma": 0.0,
+        "npv": 18.008999061819672,
+        "rho": 97.6305152103059,
+        "theta": 0.3601799812363934,
+        "vega": 38.91520560357775
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 0.9,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "vol": 0.2
+      },
+      "name": "fwd_itm_call_T2_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.131921381749886,
+        "dividendRho": -118.16527342462555,
+        "gamma": 0.0,
+        "npv": 13.19213817498859,
+        "rho": 91.78099707464835,
+        "theta": 0.2638427634997598,
+        "vega": 49.993431993245615
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 30,
+        "vol": 0.2
+      },
+      "name": "fwd_atm_call_T2_reset30"
+    },
+    {
+      "expected": {
+        "delta": 0.11456925075503126,
+        "dividendRho": -95.48877572379902,
+        "gamma": 0.0,
+        "npv": 11.456925075503106,
+        "rho": 72.57492557279282,
+        "theta": 0.22913850151006215,
+        "vega": 44.887217858590525
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 180,
+        "vol": 0.2
+      },
+      "name": "fwd_atm_call_T2_reset180"
+    },
+    {
+      "expected": {
+        "delta": 0.07856158726203673,
+        "dividendRho": -45.20588735088415,
+        "gamma": 0.0,
+        "npv": 7.8561587262036925,
+        "rho": 37.34972862468046,
+        "theta": 0.15712317452407382,
+        "vega": 33.15269479497831
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 365,
+        "moneyness": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "vol": 0.2
+      },
+      "name": "fwd_atm_call_T1_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.17328499634166944,
+        "dividendRho": -110.3555175631807,
+        "gamma": 0.0,
+        "npv": 17.328499634166942,
+        "rho": 75.69851829484679,
+        "theta": 0.34656999268333877,
+        "vega": 48.04905862346158
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "vol": 0.3
+      },
+      "name": "fwd_atm_call_v30_T2_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.0,
+        "dividendRho": -1.0530091046818941,
+        "gamma": 0.0,
+        "npv": 0.12424320050762117,
+        "rho": 0.8045227036666517,
+        "theta": 0.006212160025381017,
+        "vega": 0.47694938604648024
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "variant": "Performance",
+        "vol": 0.2
+      },
+      "name": "perf_atm_call_T2_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.0,
+        "dividendRho": 0.6192468108809591,
+        "gamma": 0.0,
+        "npv": 0.07537216669914105,
+        "rho": -0.7699911442792411,
+        "theta": 0.003768608334957028,
+        "vega": 0.47694938604648024
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.0,
+        "option_type": "Put",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "variant": "Performance",
+        "vol": 0.2
+      },
+      "name": "perf_atm_put_T2_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.0,
+        "dividendRho": -0.8168876271544824,
+        "gamma": 0.0,
+        "npv": 0.08317833331998666,
+        "rho": 0.6505309605145091,
+        "theta": 0.0041589166659993055,
+        "vega": 0.5036033227716196
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.1,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "variant": "Performance",
+        "vol": 0.2
+      },
+      "name": "perf_otm_call_T2_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.0,
+        "dividendRho": -1.282556798680146,
+        "gamma": 0.0,
+        "npv": 0.17876273317147728,
+        "rho": 0.9250313323371917,
+        "theta": 0.008938136658573806,
+        "vega": 0.3862840178815934
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 0.9,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 90,
+        "variant": "Performance",
+        "vol": 0.2
+      },
+      "name": "perf_itm_call_T2_reset90"
+    },
+    {
+      "expected": {
+        "delta": 0.0,
+        "dividendRho": -0.8851944707331839,
+        "gamma": 0.0,
+        "npv": 0.11288673035067745,
+        "rho": 0.659421010031829,
+        "theta": 0.00564433651753388,
+        "vega": 0.4422802126400664
+      },
+      "inputs": {
+        "S": 100.0,
+        "expiry_days": 730,
+        "moneyness": 1.0,
+        "option_type": "Call",
+        "q": 0.02,
+        "r": 0.05,
+        "reset_days": 180,
+        "variant": "Performance",
+        "vol": 0.2
+      },
+      "name": "perf_atm_call_T2_reset180"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T23:21:34Z",
+  "generated_by": "forward_vanilla_engine_probe",
+  "test_group": "pricingengines/forward/forward_vanilla_engine"
+}
