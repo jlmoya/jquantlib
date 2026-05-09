@@ -1,0 +1,212 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 0.8006699879460143
+      },
+      "inputs": {
+        "days": 183,
+        "delta": 0.0001,
+        "engine": "bates",
+        "integrationOrder": 128,
+        "kappa": 5.0,
+        "kappaLambda": 0.0,
+        "lambda": 0.0001,
+        "nu": 0.0,
+        "nuDown": 0.0,
+        "nuUp": 0.0,
+        "p": 0.0,
+        "q": 0.04,
+        "r": 0.1,
+        "rho": 0.0,
+        "sigma": 0.0001,
+        "spot": 32.0,
+        "strike": 30.0,
+        "theta": 0.05,
+        "thetaLambda": 0.0,
+        "type": "put",
+        "v0": 0.05
+      },
+      "name": "bates_black_degenerate"
+    },
+    {
+      "expected": {
+        "npv": 10.681961176516676
+      },
+      "inputs": {
+        "days": 365,
+        "delta": 0.2,
+        "engine": "bates",
+        "integrationOrder": 128,
+        "kappa": 2.0,
+        "kappaLambda": 0.0,
+        "lambda": 0.5,
+        "nu": 0.05,
+        "nuDown": 0.0,
+        "nuUp": 0.0,
+        "p": 0.0,
+        "q": 0.02,
+        "r": 0.05,
+        "rho": -0.5,
+        "sigma": 0.3,
+        "spot": 100.0,
+        "strike": 100.0,
+        "theta": 0.04,
+        "thetaLambda": 0.0,
+        "type": "call",
+        "v0": 0.04
+      },
+      "name": "bates_jump_heavy"
+    },
+    {
+      "expected": {
+        "npv": 3.8430744022977534
+      },
+      "inputs": {
+        "days": 730,
+        "delta": 0.18,
+        "engine": "bates",
+        "integrationOrder": 128,
+        "kappa": 1.5,
+        "kappaLambda": 0.0,
+        "lambda": 0.3,
+        "nu": -0.05,
+        "nuDown": 0.0,
+        "nuUp": 0.0,
+        "p": 0.0,
+        "q": 0.01,
+        "r": 0.04,
+        "rho": -0.6,
+        "sigma": 0.4,
+        "spot": 100.0,
+        "strike": 80.0,
+        "theta": 0.05,
+        "thetaLambda": 0.0,
+        "type": "put",
+        "v0": 0.05
+      },
+      "name": "bates_put_otm"
+    },
+    {
+      "expected": {
+        "npv": 10.215085545795397
+      },
+      "inputs": {
+        "days": 365,
+        "delta": 0.2,
+        "engine": "batesDetJump",
+        "integrationOrder": 128,
+        "kappa": 2.0,
+        "kappaLambda": 1.0,
+        "lambda": 0.5,
+        "nu": 0.05,
+        "nuDown": 0.0,
+        "nuUp": 0.0,
+        "p": 0.0,
+        "q": 0.02,
+        "r": 0.05,
+        "rho": -0.5,
+        "sigma": 0.3,
+        "spot": 100.0,
+        "strike": 100.0,
+        "theta": 0.04,
+        "thetaLambda": 0.1,
+        "type": "call",
+        "v0": 0.04
+      },
+      "name": "batesDetJump_atm"
+    },
+    {
+      "expected": {
+        "npv": 9.847134726438094
+      },
+      "inputs": {
+        "days": 365,
+        "delta": 0.0,
+        "engine": "batesDoubleExp",
+        "integrationOrder": 128,
+        "kappa": 2.0,
+        "kappaLambda": 0.0,
+        "lambda": 0.5,
+        "nu": 0.0,
+        "nuDown": 0.1,
+        "nuUp": 0.1,
+        "p": 0.5,
+        "q": 0.02,
+        "r": 0.05,
+        "rho": -0.5,
+        "sigma": 0.3,
+        "spot": 100.0,
+        "strike": 100.0,
+        "theta": 0.04,
+        "thetaLambda": 0.0,
+        "type": "call",
+        "v0": 0.04
+      },
+      "name": "batesDoubleExp_atm"
+    },
+    {
+      "expected": {
+        "npv": 3.693937240584283
+      },
+      "inputs": {
+        "days": 730,
+        "delta": 0.0,
+        "engine": "batesDoubleExp",
+        "integrationOrder": 128,
+        "kappa": 1.5,
+        "kappaLambda": 0.0,
+        "lambda": 0.3,
+        "nu": 0.0,
+        "nuDown": 0.1,
+        "nuUp": 0.15,
+        "p": 0.4,
+        "q": 0.01,
+        "r": 0.04,
+        "rho": -0.6,
+        "sigma": 0.4,
+        "spot": 100.0,
+        "strike": 80.0,
+        "theta": 0.05,
+        "thetaLambda": 0.0,
+        "type": "put",
+        "v0": 0.05
+      },
+      "name": "batesDoubleExp_put_otm"
+    },
+    {
+      "expected": {
+        "npv": 9.620468995135306
+      },
+      "inputs": {
+        "days": 365,
+        "delta": 0.0,
+        "engine": "batesDoubleExpDetJump",
+        "integrationOrder": 128,
+        "kappa": 2.0,
+        "kappaLambda": 1.0,
+        "lambda": 0.5,
+        "nu": 0.0,
+        "nuDown": 0.1,
+        "nuUp": 0.1,
+        "p": 0.5,
+        "q": 0.02,
+        "r": 0.05,
+        "rho": -0.5,
+        "sigma": 0.3,
+        "spot": 100.0,
+        "strike": 100.0,
+        "theta": 0.04,
+        "thetaLambda": 0.1,
+        "type": "call",
+        "v0": 0.04
+      },
+      "name": "batesDoubleExpDetJump_atm"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T23:07:40Z",
+  "generated_by": "bates_engine_probe",
+  "test_group": "pricingengines/vanilla/bates_engine"
+}
