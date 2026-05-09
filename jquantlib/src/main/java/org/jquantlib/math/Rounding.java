@@ -124,7 +124,11 @@ public class Rounding {
           case Down:
             break;
           case Up:
-            lvalue += 1.0;
+            // Align with C++ QuantLib v1.42.1 (rounding.cpp:55):
+            // only add 1 when there is a non-zero fractional part to round up
+            if (modVal != 0.0) {
+                lvalue += 1.0;
+            }
             break;
           case Closest:
             if (modVal >= (digit_/10.0)){
