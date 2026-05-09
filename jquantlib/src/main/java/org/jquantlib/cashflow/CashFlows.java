@@ -202,6 +202,102 @@ public class CashFlows {
     }
 
 
+    //
+    // C++-style static overloads (mirror QuantLib::CashFlows static API)
+    //
+
+    /**
+     * NPV of the cash flows. Mirrors C++ {@code CashFlows::npv(leg,
+     * discountCurve, includeSettlementDateFlows, settlementDate, npvDate)}.
+     *
+     * @param leg the cash-flow leg
+     * @param discountCurve discount-curve handle (raw, like the C++ reference)
+     * @param includeSettlementDateFlows whether a flow on the settlement date
+     *        is treated as still-pending (true) or as already paid (false)
+     * @param settlementDate the settlement date; if null, the curve's
+     *        reference date is used
+     * @param npvDate the date the NPV is discounted to; if null, the
+     *        result is the dirty present value at {@code settlementDate}
+     */
+    public static double npv(final Leg leg,
+                             final YieldTermStructure discountCurve,
+                             final boolean includeSettlementDateFlows,
+                             final Date settlementDate,
+                             final Date npvDate) {
+        Date date = settlementDate;
+        if (date == null || date.isNull()) {
+            date = discountCurve.referenceDate();
+        }
+
+        double totalNPV = 0.0;
+        for (int i = 0; i < leg.size(); ++i) {
+            final CashFlow cf = leg.get(i);
+            if (!cf.hasOccurred(date, includeSettlementDateFlows)) {
+                totalNPV += cf.amount() * discountCurve.discount(cf.date());
+            }
+        }
+
+        if (npvDate == null || npvDate.isNull()) {
+            return totalNPV;
+        }
+        return totalNPV / discountCurve.discount(npvDate);
+    }
+
+    /**
+     * Iterator-style "next cash flow" helper used by {@link
+     * #accruedAmount(Leg, boolean, Date)}; returns the index of the first
+     * {@code CashFlow} not yet occurred relative to {@code settlementDate},
+     * or {@code leg.size()} if none.
+     *
+     * <p>Mirrors C++ {@code CashFlows::nextCashFlow}
+     * (cashflows.cpp:101-117).
+     */
+    public static int nextCashFlow(final Leg leg,
+                                   final boolean includeSettlementDateFlows,
+                                   Date settlementDate) {
+        if (leg.isEmpty()) {
+            return 0;
+        }
+        if (settlementDate == null || settlementDate.isNull()) {
+            settlementDate = new Settings().evaluationDate();
+        }
+        for (int i = 0; i < leg.size(); ++i) {
+            if (!leg.get(i).hasOccurred(settlementDate, includeSettlementDateFlows)) {
+                return i;
+            }
+        }
+        return leg.size();
+    }
+
+    /**
+     * Accrued amount of a leg. Mirrors C++
+     * {@code CashFlows::accruedAmount(leg, includeSettlementDateFlows,
+     * settlementDate)} (cashflows.cpp:376-393).
+     *
+     * <p>Sums {@link Coupon#accruedAmount(Date)} across all coupons whose
+     * payment date equals the next cash-flow's payment date.
+     */
+    public static double accruedAmount(final Leg leg,
+                                       final boolean includeSettlementDateFlows,
+                                       Date settlementDate) {
+        if (settlementDate == null || settlementDate.isNull()) {
+            settlementDate = new Settings().evaluationDate();
+        }
+        final int idx = nextCashFlow(leg, includeSettlementDateFlows, settlementDate);
+        if (idx >= leg.size()) {
+            return 0.0;
+        }
+        final Date paymentDate = leg.get(idx).date();
+        double result = 0.0;
+        for (int i = idx; i < leg.size() && leg.get(i).date().equals(paymentDate); ++i) {
+            final CashFlow cf = leg.get(i);
+            if (cf instanceof Coupon) {
+                result += ((Coupon) cf).accruedAmount(settlementDate);
+            }
+        }
+        return result;
+    }
+
     /*
      * BPS Functions implied from quantlib default variables
      * since we cannot assign variables to defaults in the parameter lists of functions,

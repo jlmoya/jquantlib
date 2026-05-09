@@ -34,6 +34,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.CPILeg;
+import org.jquantlib.cashflow.CashFlows;
+import org.jquantlib.cashflow.Leg;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
@@ -41,6 +44,7 @@ import org.jquantlib.indexes.CPI;
 import org.jquantlib.indexes.IndexManager;
 import org.jquantlib.indexes.inflation.UKRPI;
 import org.jquantlib.instruments.bonds.CPIBond;
+import org.jquantlib.math.Constants;
 import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.pricingengines.bond.DiscountingBondEngine;
 import org.jquantlib.quotes.Handle;
@@ -362,32 +366,89 @@ public class CPIBondTest {
      * settlementDate)} on each leg.
      */
     @Test
-    @Ignore("Phase 2x: requires standalone CPILeg builder class with"
-            + " .withBaseDate()/.withBaseCPI()/.withSubtractInflationNominal()"
-            + " fluent setters AND CashFlows.npv/accruedAmount static"
-            + " overloads operating on a Leg with explicit dirty/clean"
-            + " settle dates. Java has neither: CPISwap/CPIBond build the"
-            + " leg inline (CPIBond.buildCpiLeg in Phase 2v B.1), and"
-            + " CashFlows is an instance singleton with NPV but no"
-            + " leg-level static accruedAmount. Porting CPILeg from"
-            + " ql/cashflows/cpicoupon.{hpp,cpp} is the Phase 2x candidate"
-            + " (also unblocks CPISwap consistency cleanups).")
     public void testCPILegWithoutBaseCPI() {
-        // C++ flow:
-        //   1. Build CommonVars.
-        //   2. Build legWithBaseDate via CPILeg(schedule, index, Null<Real>,
-        //      contractObservationLag).withBaseDate(baseDate)... etc.
-        //   3. Build legWithBaseCPI via CPILeg(schedule, index, baseCPI,
-        //      contractObservationLag)... etc.
-        //   4. Compute NPV + accrued at settlementDate for each leg via
-        //      CashFlows::npv/accruedAmount.
-        //   5. cleanPrice = (npv - accrued) * 100 / notional.
-        //   6. Assert |cleanPriceWithBaseDate - cleanPriceWithBaseCPI| < 1e-8.
-        //   7. Assert |cleanPriceWithBaseDate - 394.79676680| < 1e-8.
-        //
-        // Java blockers:
-        //   - org.jquantlib.cashflow.CPILeg class does not exist.
-        //   - org.jquantlib.cashflow.CashFlows lacks static
-        //     accruedAmount(Leg, boolean, Date) overload.
+        final CommonVars common = new CommonVars();
+
+        final double notional = 1_000_000.0;
+        final double[] fixedRates = { 0.1 };
+        final DayCounter fixedDayCount = new Actual365Fixed();
+        final BusinessDayConvention fixedPaymentConvention =
+                BusinessDayConvention.ModifiedFollowing;
+        final Calendar fixedPaymentCalendar = new UnitedKingdom();
+        final Period contractObservationLag = new Period(3, TimeUnit.Months);
+        final CPI.InterpolationType observationInterpolation = CPI.InterpolationType.Flat;
+        final int settlementDays = 3;
+        final boolean growthOnly = false;
+        final double baseCPI = 206.1;
+        final Date baseDate = new Date(1, Month.July, 2007);
+        final Date startDate = new Date(2, Month.October, 2007);
+        final Date endDate = new Date(2, Month.October, 2052);
+
+        final Schedule fixedSchedule = new MakeSchedule(
+                        startDate, endDate, new Period(6, TimeUnit.Months),
+                        fixedPaymentCalendar, BusinessDayConvention.Unadjusted)
+                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+                .backwards()
+                .schedule();
+
+        final Leg legWithBaseDate = new CPILeg(
+                        fixedSchedule, common.ii2, Constants.NULL_REAL, contractObservationLag)
+                .withSubtractInflationNominal(growthOnly)
+                .withNotionals(notional)
+                .withBaseDate(baseDate)
+                .withFixedRates(fixedRates)
+                .withPaymentDayCounter(fixedDayCount)
+                .withObservationInterpolation(observationInterpolation)
+                .withPaymentAdjustment(fixedPaymentConvention)
+                .withPaymentCalendar(fixedPaymentCalendar)
+                .Leg();
+
+        final Leg legWithBaseCPI = new CPILeg(
+                        fixedSchedule, common.ii2, baseCPI, contractObservationLag)
+                .withSubtractInflationNominal(growthOnly)
+                .withNotionals(notional)
+                .withFixedRates(fixedRates)
+                .withPaymentDayCounter(fixedDayCount)
+                .withObservationInterpolation(observationInterpolation)
+                .withPaymentAdjustment(fixedPaymentConvention)
+                .withPaymentCalendar(fixedPaymentCalendar)
+                .Leg();
+
+        final Date settlementDate = fixedPaymentCalendar.advance(
+                common.evaluationDate,
+                new Period(settlementDays, TimeUnit.Days),
+                fixedPaymentConvention);
+
+        final YieldTermStructure yTS = common.yTS.currentLink();
+        final double npvWithBaseDate = CashFlows.npv(
+                legWithBaseDate, yTS, false, settlementDate, settlementDate);
+        final double accruedsBaseDate = CashFlows.accruedAmount(
+                legWithBaseDate, false, settlementDate);
+
+        final double npvWithBaseCPI = CashFlows.npv(
+                legWithBaseCPI, yTS, false, settlementDate, settlementDate);
+        final double accruedsBaseCPI = CashFlows.accruedAmount(
+                legWithBaseCPI, false, settlementDate);
+
+        final double cleanPriceWithBaseDate =
+                (npvWithBaseDate - accruedsBaseDate) * 100.0 / notional;
+        final double cleanPriceWithBaseCPI =
+                (npvWithBaseCPI - accruedsBaseCPI) * 100.0 / notional;
+
+        // Tier: tight (1e-8 absolute), per C++ tolerance.
+        final double tolerance = 1.0e-8;
+        if (Math.abs(cleanPriceWithBaseDate - cleanPriceWithBaseCPI) > tolerance) {
+            fail("prices of CPI leg with base date and explicit base CPI fixing are not equal"
+                    + "\n  clean npv of leg with baseDate:        " + cleanPriceWithBaseDate
+                    + "\n  clean npv of leg with explicit baseCPI: " + cleanPriceWithBaseCPI);
+        }
+        // Compare to expected price from C++ stored value.
+        final double storedPrice = 394.79676680;
+        if (Math.abs(cleanPriceWithBaseDate - storedPrice) > tolerance) {
+            fail("failed to reproduce expected CPI-bond clean price"
+                    + "\n  expected:   " + storedPrice
+                    + "\n  calculated: " + cleanPriceWithBaseDate
+                    + "\n  diff:       " + Math.abs(cleanPriceWithBaseDate - storedPrice));
+        }
     }
 }
