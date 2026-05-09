@@ -36,6 +36,8 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.util.Pair;
 
+// CPI is in the same package (org.jquantlib.indexes); no explicit import needed.
+
 /**
  * Base class for year-on-year inflation indices.
  *
@@ -140,7 +142,54 @@ public class YoYInflationIndex extends InflationIndex {
      * @param underlying  the zero-inflation index
      */
     public YoYInflationIndex(final ZeroInflationIndex underlying) {
-        this(underlying, new Handle<YoYInflationTermStructure>());
+        this(underlying, /*interpolated=*/ false, new Handle<YoYInflationTermStructure>());
+    }
+
+    /**
+     * Constructor for ratio-style YoY indices with explicit interpolation flag
+     * and no YoY term structure.
+     *
+     * <p>Mirrors C++ v1.42.1 deprecated overload
+     * {@code YoYInflationIndex(const ext::shared_ptr<ZeroInflationIndex>&, bool interpolated)}
+     * ({@code inflationindex.cpp:258-263}).
+     *
+     * <p>Deprecated in C++ v1.42.1 but still tested by the inflation test suite.
+     *
+     * @param underlying   the zero-inflation index
+     * @param interpolated whether the ratio YoY index is interpolated
+     */
+    public YoYInflationIndex(final ZeroInflationIndex underlying,
+                             final boolean interpolated) {
+        this(underlying, interpolated, new Handle<YoYInflationTermStructure>());
+    }
+
+    /**
+     * Constructor for ratio-style YoY indices with explicit interpolation flag
+     * and an optional YoY term structure.
+     *
+     * <p>Mirrors C++ v1.42.1 deprecated overload
+     * {@code YoYInflationIndex(const ext::shared_ptr<ZeroInflationIndex>&, bool interpolated,
+     * Handle<YoYInflationTermStructure>)} ({@code inflationindex.cpp:258-263}).
+     *
+     * @param underlying   the zero-inflation index
+     * @param interpolated whether the ratio YoY index is interpolated
+     * @param ts           optional YoY term structure for forecast fixings
+     */
+    public YoYInflationIndex(final ZeroInflationIndex underlying,
+                             final boolean interpolated,
+                             final Handle<YoYInflationTermStructure> ts) {
+        super("YYR_" + underlying.familyName(),
+              underlying.region(),
+              underlying.revised(),
+              interpolated,
+              underlying.frequency(),
+              underlying.availabilityLag(),
+              underlying.currency());
+        this.ratio = true;
+        this.underlyingIndex = underlying;
+        this.yoyInflation = ts;
+        this.yoyInflation.addObserver(this);
+        underlying.addObserver(this);
     }
 
     /**
@@ -165,6 +214,52 @@ public class YoYInflationIndex extends InflationIndex {
         }
         return new YoYInflationIndex(familyName, region, revised, interpolated,
                 ratio, frequency, availabilityLag, currency, h);
+    }
+
+    /**
+     * Whether a forecast term-structure is needed to produce the fixing for
+     * {@code fixingDate}.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code YoYInflationIndex::needsForecast(const Date&)}
+     * ({@code ql/indexes/inflationindex.cpp:298-329}).
+     *
+     * <p>For ratio-style indices ({@code ratio=true}), the check is delegated
+     * to the underlying {@link ZeroInflationIndex}: the latest needed date is
+     * {@code inflationPeriod(fixingDate).first} for non-interpolated indices
+     * or when {@code fixingDate == periodStart}, else
+     * {@code inflationPeriod(fixingDate).second + 1}.
+     *
+     * <p>For quoted YoY indices ({@code ratio=false}), the availability lag of
+     * this index determines the latest possible historical period.
+     *
+     * @param fixingDate the date for which the fixing is needed
+     * @return {@code true} if a forecast term-structure is required
+     */
+    public boolean needsForecast(final Date fixingDate) {
+        final Pair<Date, Date> fixingPeriod =
+                InflationTermStructure.inflationPeriod(fixingDate, frequency);
+        final Date latestNeededDate;
+        if (!interpolated || fixingDate.eq(fixingPeriod.first())) {
+            latestNeededDate = fixingPeriod.first();
+        } else {
+            latestNeededDate = fixingPeriod.second().inc();
+        }
+        if (ratio && underlyingIndex != null) {
+            return underlyingIndex.needsForecast(latestNeededDate);
+        } else {
+            final Date today = new Settings().evaluationDate();
+            final Date todayMinusLag = today.sub(availabilityLag);
+            final Pair<Date, Date> latestPossible =
+                    InflationTermStructure.inflationPeriod(todayMinusLag, frequency);
+            if (latestNeededDate.lt(latestPossible.first())) {
+                return false;
+            } else if (latestNeededDate.gt(latestPossible.second())) {
+                return true;
+            } else {
+                final Double f = IndexManager.getInstance().getHistory(name()).get(latestNeededDate);
+                return f == null || Double.isNaN(f);
+            }
+        }
     }
 
     /**
@@ -204,20 +299,21 @@ public class YoYInflationIndex extends InflationIndex {
     		// Mirrors C++ v1.42.1 YoYInflationIndex::pastFixing (inflationindex.cpp).
     		if (ratio) {
     		    if (underlyingIndex != null) {
-    		        // ratio==true with ZeroInflationIndex underlying (A.3 path):
-    		        // compute YoY as ratio of underlying CPI levels, mirroring C++
-    		        // YoYInflationIndex::pastFixing (inflationindex.cpp:331-341).
-    		        //
-    		        // C++ uses CPI::laggedFixing(underlyingIndex_, fixingDate, 0M, CPI::Flat)
-    		        // which evaluates to: underlyingIndex_->fixing(inflationPeriod(fixingDate,freq).first)
-    		        final Pair<Date,Date> curPeriod =
-    		                InflationTermStructure.inflationPeriod(fixingDate, frequency);
-    		        final Date prevFixDate = fixingDate.sub(new Period(1, TimeUnit.Years));
-    		        final Pair<Date,Date> prevPeriod =
-    		                InflationTermStructure.inflationPeriod(prevFixDate, frequency);
-
-    		        final @Rate double curr = underlyingIndex.fixing(curPeriod.first());
-    		        final @Rate double prev = underlyingIndex.fixing(prevPeriod.first());
+    		        // ratio==true with ZeroInflationIndex underlying:
+    		        // Mirrors C++ YoYInflationIndex::pastFixing (inflationindex.cpp:331-341):
+    		        //   CPI::laggedFixing(underlyingIndex_, fixingDate, 0M, interpolationType)
+    		        //   / CPI::laggedFixing(underlyingIndex_, fixingDate-1Y, 0M, interpolationType)
+    		        //   - 1.0
+    		        // where interpolationType = CPI::Linear if interpolated_, else CPI::Flat.
+    		        // Phase 2y A.3 align: previously always used Flat (curPeriod.first()/prevPeriod.first()),
+    		        // ignoring the interpolated flag. Now delegates to CPI.laggedFixing.
+    		        final CPI.InterpolationType itype = interpolated
+    		                ? CPI.InterpolationType.Linear
+    		                : CPI.InterpolationType.Flat;
+    		        final Period zeroLag = new Period(0, TimeUnit.Days);
+    		        final double curr = CPI.laggedFixing(underlyingIndex, fixingDate, zeroLag, itype);
+    		        final double prev = CPI.laggedFixing(underlyingIndex,
+    		                fixingDate.sub(new Period(1, TimeUnit.Years)), zeroLag, itype);
     		        return curr / prev - 1.0;
     		    } else {
     		        // Legacy path: ratio==true but no underlying stored (old-style

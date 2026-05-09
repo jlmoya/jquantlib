@@ -128,12 +128,13 @@ public final class CPI {
      * ({@code ql/indexes/inflationindex.cpp:65-116}). Used by YoY-coupon
      * pricers and by {@link org.jquantlib.cashflow.YoYInflationCoupon}.
      *
-     * <p>The C++ {@code Linear + ratio} branch (which interpolates the
-     * underlying ZeroInflationIndex fixings then forms the ratio) is not
-     * implemented here because Java's {@link YoYInflationIndex} ratio path is
-     * not currently exercised by Phase 2q (see clone(Handle) note in
-     * YoYInflationIndex). Genuine (non-ratio) YoY indices fall through to the
-     * else branch, matching C++ behavior for ratio_=false.
+     * <p>The {@code Linear} branch implements the C++ ratio-index special
+     * case: for ratio-style {@link YoYInflationIndex} indices whose needed
+     * fixings are historical (not forecast), the underlying
+     * {@link ZeroInflationIndex} fixings are linearly interpolated first and
+     * then divided — mirroring {@code inflationindex.cpp:83-113}.  For quoted
+     * (non-ratio) YoY indices the {@code Linear} branch interpolates the YoY
+     * rate directly.  Phase 2y A.3 align.
      *
      * @param index             the YoY inflation index whose fixing is observed
      * @param date              the unlagged date (e.g. payment / accrual end)
@@ -155,24 +156,42 @@ public final class CPI {
                 return index.fixing(fixingPeriod.first());
             }
             case Linear: {
-                final Pair<Date, Date> fixingPeriod = InflationTermStructure
-                        .inflationPeriod(date.sub(observationLag), index.frequency());
-                final Pair<Date, Date> interpolationPeriod = InflationTermStructure
-                        .inflationPeriod(date, index.frequency());
-
-                final double Y0 = index.fixing(fixingPeriod.first());
-
-                if (date.eq(interpolationPeriod.first())) {
-                    return Y0;
+                // C++ v1.42.1 CPI::laggedYoYRate Linear branch:
+                // For ratio indices where the needed fixings are historical
+                // (not forecast), interpolate the underlying CPI fixings first
+                // and then take the ratio — NOT the same as interpolating the
+                // ratio itself.  Mirrors inflationindex.cpp:83-113.
+                if (index.ratio()
+                        && index.underlyingIndex() != null
+                        && !index.needsForecast(date)) {
+                    final ZeroInflationIndex underlying = index.underlyingIndex();
+                    final double z1 = laggedFixing(underlying, date, observationLag, interpolationType);
+                    final double z0 = laggedFixing(underlying,
+                            date.sub(new Period(1, TimeUnit.Years)), observationLag, interpolationType);
+                    return z1 / z0 - 1.0;
                 }
+                // Non-ratio (quoted YoY) or forecast path: interpolate the YoY
+                // fixing directly.  Mirrors C++ else-branch in laggedYoYRate.
+                {
+                    final Pair<Date, Date> fixingPeriod = InflationTermStructure
+                            .inflationPeriod(date.sub(observationLag), index.frequency());
+                    final Pair<Date, Date> interpolationPeriod = InflationTermStructure
+                            .inflationPeriod(date, index.frequency());
 
-                final Period oneDay = new Period(1, TimeUnit.Days);
-                final double Y1 = index.fixing(fixingPeriod.second().add(oneDay));
+                    final double Y0 = index.fixing(fixingPeriod.first());
 
-                final long numerator = date.sub(interpolationPeriod.first());
-                final long denominator = (interpolationPeriod.second().add(oneDay))
-                        .sub(interpolationPeriod.first());
-                return Y0 + (Y1 - Y0) * ((double) numerator) / ((double) denominator);
+                    if (date.eq(interpolationPeriod.first())) {
+                        return Y0;
+                    }
+
+                    final Period oneDay = new Period(1, TimeUnit.Days);
+                    final double Y1 = index.fixing(fixingPeriod.second().add(oneDay));
+
+                    final long numerator = date.sub(interpolationPeriod.first());
+                    final long denominator = (interpolationPeriod.second().add(oneDay))
+                            .sub(interpolationPeriod.first());
+                    return Y0 + (Y1 - Y0) * ((double) numerator) / ((double) denominator);
+                }
             }
             default:
                 throw new LibraryException("unknown CPI interpolation type: "

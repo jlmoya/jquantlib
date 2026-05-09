@@ -142,6 +142,44 @@ public class ZeroInflationIndex extends InflationIndex {
     }
     
     /**
+     * Whether a forecast term-structure is needed to produce the fixing for
+     * {@code fixingDate}.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code ZeroInflationIndex::needsForecast(const Date&)}
+     * ({@code ql/indexes/inflationindex.cpp:197-220}).
+     *
+     * <p>For zero-inflation indices, fixings are always non-interpolated:
+     * {@code latestNeededDate = inflationPeriod(fixingDate, frequency).first}.
+     * If that date lies strictly before the latest possible historical period's
+     * start, the fixing is historical (return {@code false}).  If it lies
+     * strictly after the historical period's end, it is a future fixing
+     * (return {@code true}).  Otherwise, the stored time-series is consulted:
+     * present → not forecast; absent → forecast.
+     *
+     * @param fixingDate the date for which the fixing is needed
+     * @return {@code true} if a forecast term-structure is required
+     */
+    public boolean needsForecast(final Date fixingDate) {
+        final Date today = new Settings().evaluationDate();
+        final Date todayMinusLag = today.sub(availabilityLag);
+        final Pair<Date, Date> latestPossible =
+                InflationTermStructure.inflationPeriod(todayMinusLag, frequency);
+        // Zero-index fixings are always non-interpolated.
+        final Date latestNeededDate =
+                InflationTermStructure.inflationPeriod(fixingDate, frequency).first();
+        if (latestNeededDate.lt(latestPossible.first())) {
+            return false;
+        } else if (latestNeededDate.gt(latestPossible.second())) {
+            return true;
+        } else {
+            // In the boundary range: check whether the fixing is stored.
+            // TimeSeries.get() returns null when the key is not present.
+            final Double f = IndexManager.getInstance().getHistory(name()).get(latestNeededDate);
+            return f == null || Double.isNaN(f);
+        }
+    }
+
+    /**
      * Return the date of the last stored fixing, adjusted to the first day of
      * the corresponding inflation period.
      *
