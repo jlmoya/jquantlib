@@ -1,0 +1,87 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "accrualPeriod": 0.5083333333333333,
+        "averageAmount": 14661.84605024194,
+        "averageRate": 0.028842975836541523,
+        "compoundAmount": 14751.599028236975,
+        "compoundRate": 0.02901953907194159,
+        "dt": [
+          0.08333333333333333,
+          0.08611111111111111,
+          0.08333333333333333,
+          0.09166666666666666,
+          0.08055555555555556,
+          0.08333333333333333
+        ],
+        "fixingDate": 46261,
+        "fixingDates": [
+          46111,
+          46141,
+          46170,
+          46202,
+          46233,
+          46261
+        ],
+        "paymentDate": 46296,
+        "valueDates": [
+          46113,
+          46143,
+          46174,
+          46204,
+          46237,
+          46266,
+          46296
+        ]
+      },
+      "inputs": {
+        "evalDate": 46113,
+        "fixingDays": 2,
+        "forwardRate": 0.03,
+        "nominal": 1000000.0,
+        "resetSchedule_size": 7
+      },
+      "name": "single_coupon_compound_vs_average"
+    },
+    {
+      "expected": {
+        "average_cpn0_amount": 7098.186541140479,
+        "average_cpn0_rate": 0.028080737964951346,
+        "average_cpn1_amount": 7563.659509101461,
+        "average_cpn1_rate": 0.02959692851387528,
+        "compound_cpn0_amount": 7114.932741059121,
+        "compound_cpn0_fixings_count": 3,
+        "compound_cpn0_rate": 0.028146986667926196,
+        "compound_cpn1_amount": 7582.715774448135,
+        "compound_cpn1_rate": 0.029671496508710093,
+        "legSize": 2
+      },
+      "inputs": {
+        "nominal": 1000000.0,
+        "resetsPerCoupon": 3
+      },
+      "name": "leg_two_coupons_resetsPerCoupon3"
+    },
+    {
+      "expected": {
+        "NPV": 2012.792273450832,
+        "fairRate": 0.02901953631677021,
+        "fixedLegNPV": -12518.808855222356,
+        "floatingLegNPV": 14531.601128673188
+      },
+      "inputs": {
+        "averaging": "Compound",
+        "fixedRate": 0.025,
+        "nominal": 1000000.0,
+        "resetsPerCoupon": 3
+      },
+      "name": "swap_npv_compound"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T22:14:04Z",
+  "generated_by": "multiple_resets_coupon_probe",
+  "test_group": "cashflows/multiple_resets_coupon"
+}
