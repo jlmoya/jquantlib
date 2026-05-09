@@ -1,0 +1,553 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "value": 47485
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_maxDate_serial"
+    },
+    {
+      "expected": {
+        "value": -1.7976931348623157e+308
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_minStrike"
+    },
+    {
+      "expected": {
+        "value": 1.7976931348623157e+308
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_maxStrike"
+    },
+    {
+      "expected": {
+        "value": 1.0082191780821919
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionTime_i0"
+    },
+    {
+      "expected": {
+        "value": 44200
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionDate_serial_i0"
+    },
+    {
+      "expected": {
+        "value": 0.18
+      },
+      "inputs": {
+        "i": 0,
+        "t": 1.0082191780821919
+      },
+      "name": "curve_A_vol_node_i0"
+    },
+    {
+      "expected": {
+        "value": 2.0054794520547947
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionTime_i1"
+    },
+    {
+      "expected": {
+        "value": 44564
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionDate_serial_i1"
+    },
+    {
+      "expected": {
+        "value": 0.17
+      },
+      "inputs": {
+        "i": 1,
+        "t": 2.0054794520547947
+      },
+      "name": "curve_A_vol_node_i1"
+    },
+    {
+      "expected": {
+        "value": 3.0027397260273974
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionTime_i2"
+    },
+    {
+      "expected": {
+        "value": 44928
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionDate_serial_i2"
+    },
+    {
+      "expected": {
+        "value": 0.16
+      },
+      "inputs": {
+        "i": 2,
+        "t": 3.0027397260273974
+      },
+      "name": "curve_A_vol_node_i2"
+    },
+    {
+      "expected": {
+        "value": 5.005479452054795
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionTime_i3"
+    },
+    {
+      "expected": {
+        "value": 45659
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionDate_serial_i3"
+    },
+    {
+      "expected": {
+        "value": 0.15
+      },
+      "inputs": {
+        "i": 3,
+        "t": 5.005479452054795
+      },
+      "name": "curve_A_vol_node_i3"
+    },
+    {
+      "expected": {
+        "value": 7.010958904109589
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionTime_i4"
+    },
+    {
+      "expected": {
+        "value": 46391
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionDate_serial_i4"
+    },
+    {
+      "expected": {
+        "value": 0.145
+      },
+      "inputs": {
+        "i": 4,
+        "t": 7.010958904109589
+      },
+      "name": "curve_A_vol_node_i4"
+    },
+    {
+      "expected": {
+        "value": 10.008219178082191
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionTime_i5"
+    },
+    {
+      "expected": {
+        "value": 47485
+      },
+      "inputs": {
+        "nTenors": 6,
+        "scenario": "curve_A"
+      },
+      "name": "curve_A_optionDate_serial_i5"
+    },
+    {
+      "expected": {
+        "value": 0.14
+      },
+      "inputs": {
+        "i": 5,
+        "t": 10.008219178082191
+      },
+      "name": "curve_A_vol_node_i5"
+    },
+    {
+      "expected": {
+        "value": 0.1750788931169745
+      },
+      "inputs": {
+        "t": 1.5068493150684934
+      },
+      "name": "curve_A_vol_mid_i0"
+    },
+    {
+      "expected": {
+        "value": 0.1647633206490765
+      },
+      "inputs": {
+        "t": 2.504109589041096
+      },
+      "name": "curve_A_vol_mid_i1"
+    },
+    {
+      "expected": {
+        "value": 0.15360086336551848
+      },
+      "inputs": {
+        "t": 4.0041095890410965
+      },
+      "name": "curve_A_vol_mid_i2"
+    },
+    {
+      "expected": {
+        "value": 0.147274283425145
+      },
+      "inputs": {
+        "t": 6.008219178082192
+      },
+      "name": "curve_A_vol_mid_i3"
+    },
+    {
+      "expected": {
+        "value": 0.14227898477738937
+      },
+      "inputs": {
+        "t": 8.50958904109589
+      },
+      "name": "curve_A_vol_mid_i4"
+    },
+    {
+      "expected": {
+        "value": 47485
+      },
+      "inputs": {
+        "nStrikes": 4,
+        "nTenors": 4,
+        "scenario": "surf_B"
+      },
+      "name": "surf_B_maxDate_serial"
+    },
+    {
+      "expected": {
+        "value": 0.02
+      },
+      "inputs": {
+        "nStrikes": 4,
+        "nTenors": 4,
+        "scenario": "surf_B"
+      },
+      "name": "surf_B_minStrike"
+    },
+    {
+      "expected": {
+        "value": 0.08
+      },
+      "inputs": {
+        "nStrikes": 4,
+        "nTenors": 4,
+        "scenario": "surf_B"
+      },
+      "name": "surf_B_maxStrike"
+    },
+    {
+      "expected": {
+        "value": 0.2
+      },
+      "inputs": {
+        "i": 0,
+        "j": 0,
+        "strike": 0.02,
+        "t": 1.0082191780821919
+      },
+      "name": "surf_B_vol_node_i0j0"
+    },
+    {
+      "expected": {
+        "value": 0.195
+      },
+      "inputs": {
+        "i": 0,
+        "j": 1,
+        "strike": 0.04,
+        "t": 1.0082191780821919
+      },
+      "name": "surf_B_vol_node_i0j1"
+    },
+    {
+      "expected": {
+        "value": 0.19
+      },
+      "inputs": {
+        "i": 0,
+        "j": 2,
+        "strike": 0.06,
+        "t": 1.0082191780821919
+      },
+      "name": "surf_B_vol_node_i0j2"
+    },
+    {
+      "expected": {
+        "value": 0.185
+      },
+      "inputs": {
+        "i": 0,
+        "j": 3,
+        "strike": 0.08,
+        "t": 1.0082191780821919
+      },
+      "name": "surf_B_vol_node_i0j3"
+    },
+    {
+      "expected": {
+        "value": 0.20500000000000002
+      },
+      "inputs": {
+        "i": 1,
+        "j": 0,
+        "strike": 0.02,
+        "t": 2.0054794520547947
+      },
+      "name": "surf_B_vol_node_i1j0"
+    },
+    {
+      "expected": {
+        "value": 0.2
+      },
+      "inputs": {
+        "i": 1,
+        "j": 1,
+        "strike": 0.04,
+        "t": 2.0054794520547947
+      },
+      "name": "surf_B_vol_node_i1j1"
+    },
+    {
+      "expected": {
+        "value": 0.195
+      },
+      "inputs": {
+        "i": 1,
+        "j": 2,
+        "strike": 0.06,
+        "t": 2.0054794520547947
+      },
+      "name": "surf_B_vol_node_i1j2"
+    },
+    {
+      "expected": {
+        "value": 0.19
+      },
+      "inputs": {
+        "i": 1,
+        "j": 3,
+        "strike": 0.08,
+        "t": 2.0054794520547947
+      },
+      "name": "surf_B_vol_node_i1j3"
+    },
+    {
+      "expected": {
+        "value": 0.21000000000000002
+      },
+      "inputs": {
+        "i": 2,
+        "j": 0,
+        "strike": 0.02,
+        "t": 5.005479452054795
+      },
+      "name": "surf_B_vol_node_i2j0"
+    },
+    {
+      "expected": {
+        "value": 0.20500000000000002
+      },
+      "inputs": {
+        "i": 2,
+        "j": 1,
+        "strike": 0.04,
+        "t": 5.005479452054795
+      },
+      "name": "surf_B_vol_node_i2j1"
+    },
+    {
+      "expected": {
+        "value": 0.2
+      },
+      "inputs": {
+        "i": 2,
+        "j": 2,
+        "strike": 0.06,
+        "t": 5.005479452054795
+      },
+      "name": "surf_B_vol_node_i2j2"
+    },
+    {
+      "expected": {
+        "value": 0.195
+      },
+      "inputs": {
+        "i": 2,
+        "j": 3,
+        "strike": 0.08,
+        "t": 5.005479452054795
+      },
+      "name": "surf_B_vol_node_i2j3"
+    },
+    {
+      "expected": {
+        "value": 0.21500000000000002
+      },
+      "inputs": {
+        "i": 3,
+        "j": 0,
+        "strike": 0.02,
+        "t": 10.008219178082191
+      },
+      "name": "surf_B_vol_node_i3j0"
+    },
+    {
+      "expected": {
+        "value": 0.21000000000000002
+      },
+      "inputs": {
+        "i": 3,
+        "j": 1,
+        "strike": 0.04,
+        "t": 10.008219178082191
+      },
+      "name": "surf_B_vol_node_i3j1"
+    },
+    {
+      "expected": {
+        "value": 0.20500000000000002
+      },
+      "inputs": {
+        "i": 3,
+        "j": 2,
+        "strike": 0.06,
+        "t": 10.008219178082191
+      },
+      "name": "surf_B_vol_node_i3j2"
+    },
+    {
+      "expected": {
+        "value": 0.2
+      },
+      "inputs": {
+        "i": 3,
+        "j": 3,
+        "strike": 0.08,
+        "t": 10.008219178082191
+      },
+      "name": "surf_B_vol_node_i3j3"
+    },
+    {
+      "expected": {
+        "value": 0.20016168026070333
+      },
+      "inputs": {
+        "strike": 0.03,
+        "t": 1.5068493150684934
+      },
+      "name": "surf_B_vol_mid_lo"
+    },
+    {
+      "expected": {
+        "value": 0.19962862017699703
+      },
+      "inputs": {
+        "strike": 0.07,
+        "t": 7.506849315068493
+      },
+      "name": "surf_B_vol_mid_hi"
+    },
+    {
+      "expected": {
+        "value": 1.0082191780821919
+      },
+      "inputs": {
+        "nStrikes": 4,
+        "nTenors": 4,
+        "scenario": "surf_B"
+      },
+      "name": "surf_B_optionTime_i0"
+    },
+    {
+      "expected": {
+        "value": 2.0054794520547947
+      },
+      "inputs": {
+        "nStrikes": 4,
+        "nTenors": 4,
+        "scenario": "surf_B"
+      },
+      "name": "surf_B_optionTime_i1"
+    },
+    {
+      "expected": {
+        "value": 5.005479452054795
+      },
+      "inputs": {
+        "nStrikes": 4,
+        "nTenors": 4,
+        "scenario": "surf_B"
+      },
+      "name": "surf_B_optionTime_i2"
+    },
+    {
+      "expected": {
+        "value": 10.008219178082191
+      },
+      "inputs": {
+        "nStrikes": 4,
+        "nTenors": 4,
+        "scenario": "surf_B"
+      },
+      "name": "surf_B_optionTime_i3"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T20:43:25Z",
+  "generated_by": "capfloor_term_vol_probe",
+  "test_group": "termstructures/volatility/capfloor_term_vol"
+}
