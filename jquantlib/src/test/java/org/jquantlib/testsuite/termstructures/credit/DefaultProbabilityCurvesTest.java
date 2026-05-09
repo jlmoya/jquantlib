@@ -15,6 +15,7 @@ import java.util.List;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.instruments.CreditDefaultSwap;
@@ -33,15 +34,18 @@ import org.jquantlib.termstructures.credit.FlatHazardRate;
 import org.jquantlib.termstructures.credit.PiecewiseDefaultCurve;
 import org.jquantlib.termstructures.credit.SpreadCdsHelper;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedDiscountCurve;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
+import org.jquantlib.time.calendars.WeekendsOnly;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -344,10 +348,154 @@ public class DefaultProbabilityCurvesTest {
      *  Phase 3d (along with the {@code BOOST_CHECK_EXCEPTION} pattern that
      *  matches specific error-message prefixes).
      */
-    @Ignore("Phase 3d: needs IterativeBootstrap configuration object on PiecewiseDefaultCurve constructor + dontThrow fallback mode")
     @Test
     public void testIterativeBootstrapRetries() {
         // C++: 1 Apr 2020 distressed-CDS scenario testing IterativeBootstrap
         // retry/fallback paths against an inverted CDS spread curve.
+        final Date asof = new Date(1, Month.April, 2020);
+        final Settings settings = new Settings();
+        final Date prevEval = settings.evaluationDate();
+        try {
+            settings.setEvaluationDate(asof);
+
+            final Actual365Fixed tsDayCounter = new Actual365Fixed();
+
+            // USD discount curve dates / DFs (FedFunds OIS) — verbatim from
+            // C++ test-suite/defaultprobabilitycurves.cpp:412-469.
+            final Date[] usdCurveDates = {
+                new Date(1, Month.April, 2020),
+                new Date(2, Month.April, 2020),
+                new Date(14, Month.April, 2020),
+                new Date(21, Month.April, 2020),
+                new Date(28, Month.April, 2020),
+                new Date(6, Month.May, 2020),
+                new Date(5, Month.June, 2020),
+                new Date(7, Month.July, 2020),
+                new Date(5, Month.August, 2020),
+                new Date(8, Month.September, 2020),
+                new Date(7, Month.October, 2020),
+                new Date(5, Month.November, 2020),
+                new Date(7, Month.December, 2020),
+                new Date(6, Month.January, 2021),
+                new Date(5, Month.February, 2021),
+                new Date(5, Month.March, 2021),
+                new Date(7, Month.April, 2021),
+                new Date(4, Month.April, 2022),
+                new Date(3, Month.April, 2023),
+                new Date(3, Month.April, 2024),
+                new Date(3, Month.April, 2025),
+                new Date(5, Month.April, 2027),
+                new Date(3, Month.April, 2030),
+                new Date(3, Month.April, 2035),
+                new Date(3, Month.April, 2040),
+                new Date(4, Month.April, 2050)
+            };
+            final double[] usdCurveDfs = {
+                1.000000000, 0.999955835, 0.999931070, 0.999914629, 0.999902799,
+                0.999887990, 0.999825782, 0.999764392, 0.999709076, 0.999647785,
+                0.999594638, 0.999536198, 0.999483093, 0.999419291, 0.999379417,
+                0.999324981, 0.999262356, 0.999575101, 0.996135441, 0.995228348,
+                0.989366687, 0.979271200, 0.961150726, 0.926265361, 0.891640651,
+                0.839314063
+            };
+            final Handle<YieldTermStructure> usdYts =
+                    new Handle<YieldTermStructure>(
+                            new InterpolatedDiscountCurve<LogLinear>(
+                                    LogLinear.class, usdCurveDates,
+                                    usdCurveDfs, tsDayCounter));
+
+            // CDS spreads, 6M..5Y (LinkedHashMap to preserve order).
+            final java.util.LinkedHashMap<Period, Double> cdsSpreads =
+                    new java.util.LinkedHashMap<Period, Double>();
+            cdsSpreads.put(new Period(6, TimeUnit.Months), 2.957980250);
+            cdsSpreads.put(new Period(1, TimeUnit.Years),  3.076933100);
+            cdsSpreads.put(new Period(2, TimeUnit.Years),  2.944524520);
+            cdsSpreads.put(new Period(3, TimeUnit.Years),  2.844498960);
+            cdsSpreads.put(new Period(4, TimeUnit.Years),  2.769234420);
+            cdsSpreads.put(new Period(5, TimeUnit.Years),  2.713474100);
+            final double recoveryRate = 0.035;
+
+            // Conventions
+            final int settlementDays = 1;
+            final WeekendsOnly calendar = new WeekendsOnly();
+            final Frequency frequency = Frequency.Quarterly;
+            final BusinessDayConvention paymentConvention =
+                    BusinessDayConvention.Following;
+            final DateGeneration.Rule rule = DateGeneration.Rule.CDS2015;
+            final Actual360 dayCounter = new Actual360();
+            // Last-period day counter — wired through SpreadCdsHelper into the
+            // generated CDS leg via FixedRateLeg.withLastPeriodDayCounter
+            // (Phase 3d L0 A.2). At Phase 3d L0 A.1 the
+            // {@code Actual360(includeLastDay=true)} variant does not exist yet;
+            // the test still exercises the bootstrap retry/fallback path
+            // because the distressed-CDS scenario fails irrespective of the
+            // single-day DC difference.
+            final Actual360 lastPeriodDayCounter = new Actual360();
+
+            final List<DefaultProbabilityHelper> helpers = new ArrayList<>();
+            for (final java.util.Map.Entry<Period, Double> e : cdsSpreads.entrySet()) {
+                helpers.add(new SpreadCdsHelper(
+                        e.getValue().doubleValue(), e.getKey(),
+                        settlementDays, calendar, frequency,
+                        paymentConvention, rule, dayCounter,
+                        recoveryRate, usdYts, true, true,
+                        null, lastPeriodDayCounter, true,
+                        CreditDefaultSwap.PricingModel.Midpoint));
+            }
+
+            // Curve with default IterativeBootstrap — must throw at 1st alive
+            // helper with the standard message.
+            final PiecewiseDefaultCurve<LogLinear> dpts1 =
+                    new PiecewiseDefaultCurve<LogLinear>(
+                            PiecewiseDefaultCurve.Flavor.SURVIVAL_PROBABILITY,
+                            LogLinear.class, asof, helpers, tsDayCounter);
+            final Date testDate = new Date(21, Month.December, 2020);
+            try {
+                dpts1.survivalProbability(testDate, true);
+                fail("Expected default-IterativeBootstrap to throw");
+            } catch (final RuntimeException e) {
+                assertTrue(
+                    "expected '1st iteration: failed at 1st alive instrument' but got: " +
+                            e.getMessage(),
+                    e.getMessage().contains(
+                            "1st iteration: failed at 1st alive instrument"));
+            }
+
+            // Curve with IterativeBootstrap(maxAttempts=5, minFactor=1.0, maxFactor=10.0)
+            // — still throws but later (3rd alive helper).
+            final PiecewiseDefaultCurve.Config cfg2 =
+                    new PiecewiseDefaultCurve.Config(5, 1.0, 10.0, false, 10);
+            final PiecewiseDefaultCurve<LogLinear> dpts2 =
+                    new PiecewiseDefaultCurve<LogLinear>(
+                            PiecewiseDefaultCurve.Flavor.SURVIVAL_PROBABILITY,
+                            LogLinear.class, asof, helpers, tsDayCounter, cfg2);
+            try {
+                dpts2.survivalProbability(testDate, true);
+                fail("Expected retry-bootstrap to throw at 3rd alive helper");
+            } catch (final RuntimeException e) {
+                assertTrue(
+                    "expected '1st iteration: failed at 3rd alive instrument' but got: " +
+                            e.getMessage(),
+                    e.getMessage().contains(
+                            "1st iteration: failed at 3rd alive instrument"));
+            }
+
+            // Curve with dontThrow=true — must produce a fallback curve and
+            // return without throwing.
+            final PiecewiseDefaultCurve.Config cfg3 =
+                    new PiecewiseDefaultCurve.Config(5, 1.0, 10.0, true, 2);
+            final PiecewiseDefaultCurve<LogLinear> dpts3 =
+                    new PiecewiseDefaultCurve<LogLinear>(
+                            PiecewiseDefaultCurve.Flavor.SURVIVAL_PROBABILITY,
+                            LogLinear.class, asof, helpers, tsDayCounter, cfg3);
+            try {
+                dpts3.survivalProbability(testDate, true);
+                // No exception expected.
+            } catch (final RuntimeException e) {
+                fail("dontThrow=true should not throw, but got: " + e.getMessage());
+            }
+        } finally {
+            settings.setEvaluationDate(prevEval);
+        }
     }
 }

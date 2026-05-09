@@ -93,6 +93,75 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
         }
     }
 
+    /**
+     * Configuration mirror of C++ template
+     * {@code IterativeBootstrap<Curve>(accuracy, minValue, maxValue, maxAttempts,
+     * maxFactor, minFactor, dontThrow, dontThrowSteps, maxEvaluations)}
+     * (ql/termstructures/iterativebootstrap.hpp:80-101).
+     *
+     * <p>Captures all retry / fallback knobs without exposing the C++ Curve
+     * template parameter. The Java port wires {@code accuracy} via the
+     * existing constructor argument; the rest of the fields tune the bootstrap
+     * loop in {@link PiecewiseDefaultCurve#performCalculations()}.
+     *
+     * <p>{@code minValue} / {@code maxValue} default to {@link Double#NaN}
+     * (= C++ {@code Null<Real>()}); when NaN, the per-pillar bound comes from
+     * the curve traits. A non-NaN value overrides on every attempt.
+     */
+    /**
+     * Configuration mirror of C++
+     * {@code IterativeBootstrap<Curve>(accuracy, minValue, maxValue, maxAttempts,
+     * maxFactor, minFactor, dontThrow, dontThrowSteps, maxEvaluations)}.
+     *
+     * <p>Constructor positional argument order matches C++ exactly
+     * ({@code maxAttempts, maxFactor, minFactor, dontThrow, dontThrowSteps,
+     * minValue, maxValue}) so call sites can be transcribed mechanically.
+     */
+    public static final class Config {
+        public final int maxAttempts;
+        public final double maxFactor;
+        public final double minFactor;
+        public final boolean dontThrow;
+        public final int dontThrowSteps;
+        public final double minValue;
+        public final double maxValue;
+
+        public Config() {
+            this(1, 2.0, 2.0, false, 10, Double.NaN, Double.NaN);
+        }
+
+        public Config(final int maxAttempts,
+                      final double maxFactor,
+                      final double minFactor,
+                      final boolean dontThrow,
+                      final int dontThrowSteps) {
+            this(maxAttempts, maxFactor, minFactor, dontThrow, dontThrowSteps,
+                    Double.NaN, Double.NaN);
+        }
+
+        public Config(final int maxAttempts,
+                      final double maxFactor,
+                      final double minFactor,
+                      final boolean dontThrow,
+                      final int dontThrowSteps,
+                      final double minValue,
+                      final double maxValue) {
+            QL.require(maxFactor >= 1.0,
+                    "maxFactor must be >= 1.0 (got " + maxFactor + ")");
+            QL.require(minFactor >= 1.0,
+                    "minFactor must be >= 1.0 (got " + minFactor + ")");
+            QL.require(maxAttempts >= 1,
+                    "maxAttempts must be >= 1 (got " + maxAttempts + ")");
+            this.maxAttempts = maxAttempts;
+            this.maxFactor = maxFactor;
+            this.minFactor = minFactor;
+            this.dontThrow = dontThrow;
+            this.dontThrowSteps = dontThrowSteps;
+            this.minValue = minValue;
+            this.maxValue = maxValue;
+        }
+    }
+
     //
     // private fields
     //
@@ -103,6 +172,7 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
     private final List<DefaultProbabilityHelper> instruments;
     private final ProbabilityTraits.Traits traits;
     private final double accuracy;
+    private final Config config;
 
     /** Cached underlying curve flavour delegate (built lazily by bootstrap). */
     private DefaultProbabilityTermStructure baseCurve;
@@ -127,7 +197,7 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
             final Date referenceDate,
             final List<? extends DefaultProbabilityHelper> instruments,
             final DayCounter dayCounter) {
-        this(flavor, classI, referenceDate, instruments, dayCounter, 1.0e-12);
+        this(flavor, classI, referenceDate, instruments, dayCounter, 1.0e-12, new Config());
     }
 
     public PiecewiseDefaultCurve(
@@ -137,17 +207,48 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
             final List<? extends DefaultProbabilityHelper> instruments,
             final DayCounter dayCounter,
             final double accuracy) {
+        this(flavor, classI, referenceDate, instruments, dayCounter, accuracy, new Config());
+    }
+
+    /**
+     * Constructor accepting an {@link Config} mirroring C++ template
+     * {@code PiecewiseDefaultCurve<Traits, Interpolator, IterativeBootstrap>(
+     * referenceDate, instruments, dayCounter, IterativeBootstrap)}
+     * (ql/termstructures/credit/piecewisedefaultcurve.hpp).
+     *
+     * @since Phase 3d L0 A.1
+     */
+    public PiecewiseDefaultCurve(
+            final Flavor flavor,
+            final Class<I> classI,
+            final Date referenceDate,
+            final List<? extends DefaultProbabilityHelper> instruments,
+            final DayCounter dayCounter,
+            final Config config) {
+        this(flavor, classI, referenceDate, instruments, dayCounter, 1.0e-12, config);
+    }
+
+    public PiecewiseDefaultCurve(
+            final Flavor flavor,
+            final Class<I> classI,
+            final Date referenceDate,
+            final List<? extends DefaultProbabilityHelper> instruments,
+            final DayCounter dayCounter,
+            final double accuracy,
+            final Config config) {
         super(referenceDate, new org.jquantlib.time.calendars.NullCalendar(), dayCounter);
         QL.require(flavor != null, "flavor must be non-null");
         QL.require(classI != null, "interpolator class must be non-null");
         QL.require(instruments != null && !instruments.isEmpty(),
                 "no helpers provided to piecewise default curve");
+        QL.require(config != null, "config must be non-null");
         this.flavor = flavor;
         this.classI = classI;
         this.interpolator = constructInterpolator(classI);
         this.instruments = new ArrayList<>(instruments);
         this.traits = flavor.traits();
         this.accuracy = accuracy;
+        this.config = config;
         this.validCurve = false;
         this.calculated = false;
         for (final DefaultProbabilityHelper h : this.instruments) {
@@ -275,14 +376,15 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
         final FiniteDifferenceNewtonSafe solver = new FiniteDifferenceNewtonSafe();
         final int maxIterations = traits.maxIterations();
 
-        // C++ IterativeBootstrap retry parameters (default IterativeBootstrap()):
-        //   maxAttempts_ = 1, maxFactor_ = 2.0, minFactor_ = 2.0
-        // We pre-emptively allow one retry per pillar with widened bounds, which
-        // matches the most common QuantLib usage and unblocks
-        // testIterativeBootstrapRetries / testLogLinearSurvivalConsistency.
-        final int maxAttempts = 1;          // one extra attempt on top of first pass
-        final double minFactor = 2.0;
-        final double maxFactor = 2.0;
+        // Phase 3d L0 A.1 — pull retry / fallback knobs from Config
+        // (ql/termstructures/iterativebootstrap.hpp:80-101).
+        final int maxAttempts = config.maxAttempts;
+        final double minFactor = config.minFactor;
+        final double maxFactor = config.maxFactor;
+        final boolean dontThrow = config.dontThrow;
+        final int dontThrowSteps = config.dontThrowSteps;
+        final double minValueOverride = config.minValue;
+        final double maxValueOverride = config.maxValue;
 
         for (int iteration = 0; ; ++iteration) {
             final double[] previousData = data.clone();
@@ -302,8 +404,12 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
                 // bracket root and calculate guess (mirrors C++ iterativebootstrap.hpp:269-294).
                 if (Double.isNaN(minValues[i])) {
                     // First attempt
-                    minValues[i] = traits.minValueAfter(i, data, validData, times);
-                    maxValues[i] = traits.maxValueAfter(i, data, validData, times);
+                    minValues[i] = !Double.isNaN(minValueOverride)
+                            ? minValueOverride
+                            : traits.minValueAfter(i, data, validData, times);
+                    maxValues[i] = !Double.isNaN(maxValueOverride)
+                            ? maxValueOverride
+                            : traits.maxValueAfter(i, data, validData, times);
                 } else {
                     // Extending a previous attempt: a negative min is enlarged
                     // (multiplied), a positive one is shrunk towards zero.
@@ -353,10 +459,22 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
                         --i; // retry this pillar with widened bounds
                         continue;
                     }
-                    throw new LibraryException(
-                            "could not bootstrap default curve at instrument " + i +
-                            " (latest date " + instruments.get(i - 1).latestDate() + "): " +
-                            e.getMessage(), e);
+                    if (dontThrow) {
+                        // C++ iterativebootstrap.hpp:346-352 — use the
+                        // fallback value that minimizes |error| over [min, max].
+                        traits.updateGuess(data,
+                                dontThrowFallback(error, min, max, dontThrowSteps), i);
+                        rebuildPartialBaseCurve(i);
+                        continue;
+                    }
+                    // C++ iterativebootstrap.hpp:354-359 — message format
+                    // expected by Boost test BOOST_CHECK_EXCEPTION:
+                    //   "Nth iteration: failed at Nth alive instrument, ..."
+                    final String msg = ordinal(iteration + 1) + " iteration: failed "
+                            + "at " + ordinal(i) + " alive instrument, "
+                            + "pillar " + instruments.get(i - 1).latestDate()
+                            + ": " + e.getMessage();
+                    throw new LibraryException(msg, e);
                 }
             }
 
@@ -372,10 +490,15 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
             }
             if (improvement <= accuracy) break;
 
-            QL.require(iteration + 1 < maxIterations,
+            // C++ iterativebootstrap.hpp:377-385 — if dontThrow + max iterations,
+            // accept best-effort result.
+            if (iteration == maxIterations - 1) {
+                if (dontThrow) break;
+                QL.require(false,
                     "convergence not reached after " + (iteration + 1) +
                     " iterations; last improvement " + improvement +
                     ", required accuracy " + accuracy);
+            }
         }
         // Final full-curve rebuild — bootstrap is done; the data array is
         // valid across all pillars. Rebinds helpers to the full curve.
@@ -493,6 +616,47 @@ public class PiecewiseDefaultCurve<I extends Interpolator>
             this.interpolation = interpolator.interpolate(
                     new Array(Arrays.copyOf(times, times.length)),
                     new Array(Arrays.copyOf(data, data.length)));
+        }
+    }
+
+    /**
+     * Mirror of C++ {@code detail::dontThrowFallback} — sweep [xMin, xMax]
+     * with {@code steps} samples and return the x value with the smallest
+     * absolute error (ql/termstructures/iterativebootstrap.hpp:44-71).
+     */
+    private static double dontThrowFallback(final Ops.DoubleOp error,
+                                            double xMin, final double xMax,
+                                            final int steps) {
+        QL.require(xMin < xMax, "Expected xMin to be less than xMax");
+        double result = xMin;
+        double minAbsError = Math.abs(error.op(xMin));
+        final double stepSize = (xMax - xMin) / steps;
+        for (int i = 0; i < steps; ++i) {
+            xMin += stepSize;
+            final double absError = Math.abs(error.op(xMin));
+            if (absError < minAbsError) {
+                result = xMin;
+                minAbsError = absError;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 1-based English ordinal — mirror of C++ {@code QuantLib::io::ordinal}
+     * needed to reproduce the iterative-bootstrap exception message format
+     * the Boost test {@code BOOST_CHECK_EXCEPTION} pattern matches against.
+     */
+    private static String ordinal(final int n) {
+        if (n <= 0) return Integer.toString(n);
+        final int mod100 = n % 100;
+        final int mod10 = n % 10;
+        if (mod100 >= 11 && mod100 <= 13) return n + "th";
+        switch (mod10) {
+            case 1:  return n + "st";
+            case 2:  return n + "nd";
+            case 3:  return n + "rd";
+            default: return n + "th";
         }
     }
 }
