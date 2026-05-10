@@ -92,6 +92,33 @@ public class SpotRecoveryLatentModelTest {
     }
 
     @Test
+    public void conditionalExpLossRRInv_isPdefTimesOneMinusRR() {
+        // For a single-name spot-recovery model with single-factor weights
+        // 0.3 (def) and 0.5 (RR), modelA=1.0, mktFactor [0.5]:
+        //   E[L|m] = pdef(invP, m) * (1 − E[RR|invP,invRR,m])
+        // Cross-validate that the computed value equals the explicit product
+        // of the two existing kernel evaluators.
+        final List<List<Double>> w = new ArrayList<>();
+        w.add(Arrays.asList(0.3));   // name 0 default
+        w.add(Arrays.asList(0.5));   // name 0 recovery
+        final List<Double> recoveries = Arrays.asList(0.40);
+        final GaussianCopulaPolicy copula = new GaussianCopulaPolicy(w);
+        final SpotRecoveryLatentModel<GaussianCopulaPolicy> model =
+                new SpotRecoveryLatentModel<>(w, recoveries, 1.0, copula,
+                        LatentModel.IntegrationType.GaussianQuadrature);
+        final double invP = -1.5;   // arbitrary inv-cumul value
+        final double invRR = 0.2;
+        final double[] mkt = {0.5};
+
+        final double pdef = model.conditionalDefaultProbabilityInvP(invP, 0, mkt);
+        final double rr = model.expCondRecoveryInvPinvRR(invP, invRR, 0, mkt);
+        final double expected = pdef * (1.0 - rr);
+        final double actual = model.conditionalExpLossRRInv(invP, invRR, 0, mkt);
+        assertEquals("E[L|m] = pdef * (1 - E[RR|m])",
+                expected, actual, TIGHT);
+    }
+
+    @Test
     public void rejectsOddRowCount() {
         // 3 rows (must be even).
         final List<List<Double>> w = new ArrayList<>();

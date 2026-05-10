@@ -52,16 +52,22 @@ import org.jquantlib.time.Date;
  *
  * <p>Java vs C++ differences:
  * <ul>
- *   <li>The {@code conditionalRecoveryInvPinvRR} reference inside
- *       {@code conditionalExpLossRRInv} is undefined in v1.42.1 (likely
- *       a stale ToDo). The Java port skips the {@code conditionalExpLossRR*}
- *       and {@code expectedLoss} methods that depend on it; those are
- *       deferred to a follow-up phase if a use-site shows up.</li>
+ *   <li>The C++ {@code conditionalRecoveryInvPinvRR} symbol referenced
+ *       inside {@code conditionalExpLossRRInv} is undefined in v1.42.1
+ *       (apparent stale ToDo — never compiles, never instantiates). The
+ *       Java port resolves this by routing through the existing
+ *       {@link #expCondRecoveryInvPinvRR(double, double, int, double[])}
+ *       which IS defined and matches the C++ formula in eq. 44 (Li 2009).
+ *       Justification: the missing C++ method was clearly intended to be
+ *       this one — both take the same {@code (invP, invRR, iName, mkt)}
+ *       signature and both yield the conditional recovery rate. Phase
+ *       4m.7c-b WI-3.</li>
  *   <li>The C++ {@code Basket} link uses {@code shared_ptr}; Java uses a
  *       direct reference. {@code resetBasket} mirrors C++ semantics.</li>
  * </ul>
  *
- * <p>Phase 4m.7c WI-4 foundation.
+ * <p>Phase 4m.7c WI-4 foundation; Phase 4m.7c-b WI-3 added
+ * {@code conditionalExpLossRR*} and {@code expectedLoss}.
  *
  * @param <P> the {@link CopulaPolicy} subtype controlling distributions
  */
@@ -286,5 +292,66 @@ public class SpotRecoveryLatentModel<P extends CopulaPolicy> extends LatentModel
      */
     public double latentRRVarValue(final double[] allFactors, final int iName) {
         return latentVarValue(allFactors, iName + numNames_);
+    }
+
+    // ------------------------------------------------------------------------
+    //  Phase 4m.7c-b WI-3 — conditionalExpLossRR family + expectedLoss
+    // ------------------------------------------------------------------------
+
+    /**
+     * Conditional expected loss for name {@code iName} given pre-inverted
+     * unconditional default probability and recovery rate. Mirrors C++
+     * {@code conditionalExpLossRRInv}, with {@code conditionalRecoveryInvPinvRR}
+     * resolved to {@link #expCondRecoveryInvPinvRR}.
+     *
+     * <p>Returns {@code pdef × (1 − E[RR | …])}.
+     */
+    public double conditionalExpLossRRInv(final double invP,
+                                           final double invRR,
+                                           final int iName,
+                                           final double[] mktFactors) {
+        return conditionalDefaultProbabilityInvP(invP, iName, mktFactors)
+                * (1.0 - expCondRecoveryInvPinvRR(invP, invRR, iName, mktFactors));
+    }
+
+    /**
+     * Date-driven conditional expected loss for name {@code iName}. Mirrors
+     * C++ {@code conditionalExpLossRR}.
+     */
+    public double conditionalExpLossRR(final Date d, final int iName,
+                                        final double[] mktFactors) {
+        QL.require(basket_ != null, "No portfolio basket set.");
+        final Pool pool = basket_.pool();
+        final List<DefaultProbKey> dks = basket_.defaultKeys();
+        final List<String> names = basket_.names();
+        final Handle<DefaultProbabilityTermStructure> dts =
+                pool.get(names.get(iName)).defaultProbability(dks.get(iName));
+        final double pDefUncond = dts.currentLink().defaultProbability(d);
+        final double invP = inverseCumulativeY(pDefUncond, iName);
+        final double invRR = inverseCumulativeY(recoveries_[iName], iName + numNames_);
+        return conditionalExpLossRRInv(invP, invRR, iName, mktFactors);
+    }
+
+    /**
+     * Single-name expected loss at date {@code d}. Mirrors C++
+     * {@code expectedLoss}: integrates {@link #conditionalExpLossRRInv} over
+     * the systemic-factor density. Used for testing model coherence —
+     * preserves the marginal loss {@code pdef × (1 − R̄)} of the input single-
+     * name CDS calibration.
+     *
+     * <p>Requires a basket bound via {@link #resetBasket(Basket)}.
+     */
+    public double expectedLoss(final Date d, final int iName) {
+        QL.require(basket_ != null, "No portfolio basket set.");
+        final Pool pool = basket_.pool();
+        final List<DefaultProbKey> dks = basket_.defaultKeys();
+        final List<String> names = basket_.names();
+        final Handle<DefaultProbabilityTermStructure> dts =
+                pool.get(names.get(iName)).defaultProbability(dks.get(iName));
+        final double pDefUncond = dts.currentLink().defaultProbability(d);
+        final double invP = inverseCumulativeY(pDefUncond, iName);
+        final double invRR = inverseCumulativeY(recoveries_[iName], iName + numNames_);
+        return integratedExpectedValue((double[] v) ->
+                conditionalExpLossRRInv(invP, invRR, iName, v));
     }
 }
