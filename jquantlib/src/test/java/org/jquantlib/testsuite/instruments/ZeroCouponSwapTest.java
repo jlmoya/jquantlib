@@ -42,7 +42,10 @@ import org.junit.Test;
 public class ZeroCouponSwapTest {
 
     private static final String REASON =
-            "Phase 5d.5 — requires ZeroCouponSwap port (no Java equivalent yet)";
+            "Phase 5d.5: ZeroCouponSwap now ported (commit be7affe7); test bodies are "
+          + "`fail(\"not implemented\")` — needs full port from C++ zerocouponswap.cpp. "
+          + "(Note: a parallel ZeroCouponSwapBasicTest already exercises the freshly "
+          + "ported ZeroCouponSwap directly with smoke tests.)";
 
     @Ignore(REASON)
     @Test

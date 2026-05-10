@@ -41,16 +41,19 @@ import org.junit.Test;
 public class AmortizingBondTest {
 
     private static final String REASON =
-            "Phase 5d.5 — requires AmortizingFixedRateBond port "
-          + "(no Java equivalent for the amortizing bond family yet)";
+            "Phase 5d.5: AmortizingFixedRateBond now ported (commit d303b8bc); "
+          + "test body is `fail(\"not implemented\")` — needs full port from "
+          + "C++ amortizingbond.cpp::testAmortizingFixedRateBond.";
 
     private static final String REASON_BRAZIL =
-            "Phase 5d.5 — requires AmortizingFixedRateBond + Brazilian "
-          + "sinkable-bond schedule helpers (no Java equivalent yet)";
+            "Phase 5d.5: AmortizingFixedRateBond ported; Brazilian sinkable-bond "
+          + "schedule helpers still needed; test body is `fail(\"not implemented\")` — "
+          + "needs full port + Brazilian helpers.";
 
     private static final String REASON_DRAW_DOWN =
-            "Phase 5d.5 — requires AmortizingFixedRateBond + draw-down "
-          + "schedule wrapper (no Java equivalent yet)";
+            "Phase 5d.5: AmortizingFixedRateBond ported; draw-down schedule wrapper "
+          + "still needed; test body is `fail(\"not implemented\")` — needs full port + "
+          + "draw-down helpers.";
 
     @Ignore(REASON)
     @Test
