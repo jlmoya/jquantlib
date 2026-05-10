@@ -474,9 +474,201 @@ public class QuantoOptionTest {
         }
     }
 
-    @Ignore(REASON_FORWARD + " + Greeks numerical-derivative cross-check")
     @Test
-    public void testForwardGreeks() { fail("not implemented"); }
+    public void testForwardGreeks() {
+        QL.info("Testing quanto-forward option greeks...");
+        // Java port of v1.42.1 test-suite/quantooption.cpp::testForwardGreeks.
+
+        final java.util.Map<String, Double> calculated = new java.util.HashMap<>();
+        final java.util.Map<String, Double> expected = new java.util.HashMap<>();
+        final java.util.Map<String, Double> tolerance = new java.util.HashMap<>();
+        tolerance.put("delta",   1.0e-5);
+        tolerance.put("gamma",   1.0e-5);
+        tolerance.put("theta",   1.0e-5);
+        tolerance.put("rho",     1.0e-5);
+        tolerance.put("divRho",  1.0e-5);
+        tolerance.put("vega",    1.0e-5);
+        tolerance.put("qrho",    1.0e-5);
+        tolerance.put("qvega",   1.0e-5);
+        tolerance.put("qlambda", 1.0e-5);
+
+        final Option.Type[] types = { Option.Type.Call, Option.Type.Put };
+        final double[] moneyness = { 0.9, 1.0, 1.1 };
+        final double[] underlyings = { 100.0 };
+        final double[] qRates = { 0.04, 0.05 };
+        final double[] rRates = { 0.01, 0.05, 0.15 };
+        final int[] lengths = { 2 };
+        final int[] startMonths = { 6, 9 };
+        final double[] vols = { 0.11, 1.20 };
+        final double[] correlations = { 0.10, 0.90 };
+
+        final DayCounter dc = new Actual360();
+        final Date today = Date.todaysDate();
+        new org.jquantlib.Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(qRate, dc));
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(rRate, dc));
+        final SimpleQuote vol = new SimpleQuote(0.0);
+        final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                Utilities.flatVol(vol, dc));
+        final SimpleQuote fxRate = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> fxrTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(fxRate, dc));
+        final SimpleQuote fxVol = new SimpleQuote(0.0);
+        final Handle<BlackVolTermStructure> fxVolTS = new Handle<BlackVolTermStructure>(
+                Utilities.flatVol(fxVol, dc));
+        final SimpleQuote correlation = new SimpleQuote(0.0);
+
+        final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot), qTS, rTS, volTS);
+        final PricingEngine engine = new QuantoForwardVanillaEngine(
+                stochProcess, fxrTS, fxVolTS, new Handle<Quote>(correlation));
+
+        for (final Option.Type type : types) {
+            for (final double mn : moneyness) {
+                for (final int length : lengths) {
+                    for (final int startMonth : startMonths) {
+                        final Date exDate = today.add(new org.jquantlib.time.Period(
+                                length, org.jquantlib.time.TimeUnit.Years));
+                        final Exercise exercise = new EuropeanExercise(exDate);
+                        final Date reset = today.add(new org.jquantlib.time.Period(
+                                startMonth, org.jquantlib.time.TimeUnit.Months));
+                        final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, 0.0);
+
+                        final QuantoForwardVanillaOption option = new QuantoForwardVanillaOption(
+                                mn, reset, payoff, exercise);
+                        option.setPricingEngine(engine);
+
+                        for (final double u : underlyings) {
+                            for (final double m : qRates) {
+                                for (final double n : rRates) {
+                                    for (final double v : vols) {
+                                        for (final double fxr : rRates) {
+                                            for (final double fxv : vols) {
+                                                for (final double corr : correlations) {
+                                                    final double q = m, r = n;
+                                                    spot.setValue(u);
+                                                    qRate.setValue(q);
+                                                    rRate.setValue(r);
+                                                    vol.setValue(v);
+                                                    fxRate.setValue(fxr);
+                                                    fxVol.setValue(fxv);
+                                                    correlation.setValue(corr);
+
+                                                    final double value = option.NPV();
+                                                    calculated.put("delta",   option.delta());
+                                                    calculated.put("gamma",   option.gamma());
+                                                    calculated.put("theta",   option.theta());
+                                                    calculated.put("rho",     option.rho());
+                                                    calculated.put("divRho",  option.dividendRho());
+                                                    calculated.put("vega",    option.vega());
+                                                    calculated.put("qrho",    option.qrho());
+                                                    calculated.put("qvega",   option.qvega());
+                                                    calculated.put("qlambda", option.qlambda());
+
+                                                    if (value > spot.value() * 1.0e-5) {
+                                                        final double du = u * 1.0e-4;
+                                                        spot.setValue(u + du);
+                                                        double value_p = option.NPV();
+                                                        final double delta_p = option.delta();
+                                                        spot.setValue(u - du);
+                                                        double value_m = option.NPV();
+                                                        final double delta_m = option.delta();
+                                                        spot.setValue(u);
+                                                        expected.put("delta", (value_p - value_m) / (2 * du));
+                                                        expected.put("gamma", (delta_p - delta_m) / (2 * du));
+
+                                                        final double dr = r * 1.0e-4;
+                                                        rRate.setValue(r + dr);
+                                                        value_p = option.NPV();
+                                                        rRate.setValue(r - dr);
+                                                        value_m = option.NPV();
+                                                        rRate.setValue(r);
+                                                        expected.put("rho", (value_p - value_m) / (2 * dr));
+
+                                                        final double dq = q * 1.0e-4;
+                                                        qRate.setValue(q + dq);
+                                                        value_p = option.NPV();
+                                                        qRate.setValue(q - dq);
+                                                        value_m = option.NPV();
+                                                        qRate.setValue(q);
+                                                        expected.put("divRho", (value_p - value_m) / (2 * dq));
+
+                                                        final double dv = v * 1.0e-4;
+                                                        vol.setValue(v + dv);
+                                                        value_p = option.NPV();
+                                                        vol.setValue(v - dv);
+                                                        value_m = option.NPV();
+                                                        vol.setValue(v);
+                                                        expected.put("vega", (value_p - value_m) / (2 * dv));
+
+                                                        final double dfxr = fxr * 1.0e-4;
+                                                        fxRate.setValue(fxr + dfxr);
+                                                        value_p = option.NPV();
+                                                        fxRate.setValue(fxr - dfxr);
+                                                        value_m = option.NPV();
+                                                        fxRate.setValue(fxr);
+                                                        expected.put("qrho", (value_p - value_m) / (2 * dfxr));
+
+                                                        final double dfxv = fxv * 1.0e-4;
+                                                        fxVol.setValue(fxv + dfxv);
+                                                        value_p = option.NPV();
+                                                        fxVol.setValue(fxv - dfxv);
+                                                        value_m = option.NPV();
+                                                        fxVol.setValue(fxv);
+                                                        expected.put("qvega", (value_p - value_m) / (2 * dfxv));
+
+                                                        final double dcorr = corr * 1.0e-4;
+                                                        correlation.setValue(corr + dcorr);
+                                                        value_p = option.NPV();
+                                                        correlation.setValue(corr - dcorr);
+                                                        value_m = option.NPV();
+                                                        correlation.setValue(corr);
+                                                        expected.put("qlambda", (value_p - value_m) / (2 * dcorr));
+
+                                                        final double dT = dc.yearFraction(today.sub(1), today.add(1));
+                                                        new org.jquantlib.Settings().setEvaluationDate(today.sub(1));
+                                                        value_m = option.NPV();
+                                                        new org.jquantlib.Settings().setEvaluationDate(today.add(1));
+                                                        value_p = option.NPV();
+                                                        new org.jquantlib.Settings().setEvaluationDate(today);
+                                                        expected.put("theta", (value_p - value_m) / dT);
+
+                                                        for (final String greek : calculated.keySet()) {
+                                                            final double expct = expected.get(greek);
+                                                            final double calcl = calculated.get(greek);
+                                                            final double tol = tolerance.get(greek);
+                                                            final double error = Utilities.relativeError(expct, calcl, u);
+                                                            if (error > tol) {
+                                                                fail("failed to reproduce quanto-forward Greek " + greek + ":"
+                                                                        + "\n    expected:   " + expct
+                                                                        + "\n    calculated: " + calcl
+                                                                        + "\n    error:      " + error
+                                                                        + "\n    tolerance:  " + tol
+                                                                        + "\n    type=" + type + " moneyness=" + mn
+                                                                        + " u=" + u + " q=" + q + " r=" + r
+                                                                        + " v=" + v + " fxr=" + fxr + " fxv=" + fxv
+                                                                        + " corr=" + corr);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     @Ignore(REASON_FORWARD + " — performance-style discounted-strike variant")
     @Test
