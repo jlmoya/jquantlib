@@ -86,7 +86,6 @@ public class CurrencyTest {
 
 
     //Note: the initialization of the triangulated currency is a little bit suspicious...data_ not initialized!!
-    @Ignore
     @Test(expected = NullPointerException.class)
     public void testLeakyCurrencyInitialization(){
         final CHFCurrency chf = new CHFCurrency();
