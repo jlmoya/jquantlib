@@ -130,7 +130,8 @@ public class UnitedStates extends Calendar {
         NYSE,           // New York stock exchange calendar
         GOVERNMENTBOND, // government-bond calendar
         NERC,           // off-peak days for NERC
-        FederalReserve  // Federal Reserve Bankwire System (Phase 5g.5d)
+        FederalReserve, // Federal Reserve Bankwire System (Phase 5g.5d)
+        LiborImpact     // Libor impact calendar (Phase Bug-Fix-5)
     }
 
 
@@ -158,6 +159,9 @@ public class UnitedStates extends Calendar {
             break;
         case FederalReserve:
             impl = new FederalReserveImpl();
+            break;
+        case LiborImpact:
+            impl = new LiborImpactImpl();
             break;
         default:
             throw new LibraryException(UNKNOWN_MARKET);
@@ -235,6 +239,48 @@ public class UnitedStates extends Calendar {
 //                     (d == 24 && w == Weekday.Friday)) && m == Month.December))
                 return false;
             return true;
+        }
+    }
+
+    /**
+     * US calendar with the Independence Day "Libor impact" exemption.
+     *
+     * <p>Mirrors C++ v1.42.1 ql/time/calendars/unitedstates.cpp
+     * {@code UnitedStates::LiborImpactImpl::isBusinessDay}.
+     *
+     * <p>Per ICE LIBOR holiday calendars
+     * (<https://www.theice.com/iba/libor>,
+     * <https://www.theice.com/marketdata/reports/170>), since 2015 a
+     * July 4 (Independence Day) observance falls back to the regular
+     * settlement rule only when it lands on a weekday. When it would have
+     * been moved to Monday (Jul 5) or Friday (Jul 3), the day remains a
+     * Libor business day.
+     *
+     * <p>Phase Bug-Fix-5.
+     */
+    private final class LiborImpactImpl extends WesternImpl {
+
+        private final SettlementImpl settlement = new SettlementImpl();
+
+        @Override
+        public String name() { return "US with Libor impact"; }
+
+        @Override
+        public boolean isBusinessDay(final Date date) {
+            final Weekday w = date.weekday();
+            final int d = date.dayOfMonth();
+            final Month m = date.month();
+            final int y = date.year();
+            // Since 2015 Independence Day only impacts Libor if it falls
+            // on a weekday — i.e. the Saturday->Friday and Sunday->Monday
+            // moves are NOT observed. Return true (business day) for those
+            // moved-observance dates.
+            if (((d == 5 && w == Weekday.Monday)
+                    || (d == 3 && w == Weekday.Friday))
+                    && m == Month.July && y >= 2015) {
+                return true;
+            }
+            return settlement.isBusinessDay(date);
         }
     }
 
