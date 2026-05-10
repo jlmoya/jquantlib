@@ -26,7 +26,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.distributions.InverseCumulativeNormal;
+import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
+import org.jquantlib.math.randomnumbers.SobolRsg;
+import org.jquantlib.math.statistics.SequenceStatistics;
 import org.jquantlib.methods.montecarlo.BrownianBridge;
+import org.jquantlib.methods.montecarlo.Sample;
 import org.jquantlib.testsuite.util.ReferenceReader;
 import org.jquantlib.time.TimeGrid;
 import org.json.JSONArray;
@@ -55,12 +62,113 @@ public class BrownianBridgeTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5a.5 carry-forward — depends on SequenceStatistics.covariance/correlation "
-            + "fix (see CovarianceTest.testCovariance carry-forward). The C++ test computes "
-            + "covariance over 262143 Sobol samples and compares to identity within 2.5e-4; "
-            + "Java's SequenceStatistics gives a divergent estimator.")
+    @Ignore("Phase Body-Fill-2: body-filled, but still fails with cov max-error ~0.54 "
+            + "(C++ tolerance is 2.5e-4). The Bug-Fix #3 SequenceStatistics aliasing fix "
+            + "is necessary but not sufficient — divergence appears to come from another "
+            + "layer (likely Sobol/InverseCumulativeNormal/BrownianBridge interaction "
+            + "between Java and C++ v1.42.1). Body retained for future debugging.")
     @Test
     public void testVariates() {
+        // Java port of QuantLib v1.42.1 test-suite/brownianbridge.cpp::testVariates.
+        QL.info("Testing Brownian-bridge variates...");
+
+        final double[] times = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 2.0, 5.0};
+        final int n = times.length;
+        final int samples = 262143;
+        final long seed = 42L;
+
+        final SobolRsg sobol = new SobolRsg(n, seed);
+        final InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal> generator =
+                new InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>(
+                        sobol, new InverseCumulativeNormal());
+
+        final BrownianBridge bridge = new BrownianBridge(times);
+
+        final SequenceStatistics stats1 = new SequenceStatistics(n);
+        final SequenceStatistics stats2 = new SequenceStatistics(n);
+
+        final double[] temp = new double[n];
+
+        for (int i = 0; i < samples; ++i) {
+            final Sample<double[]> sample = generator.nextSequence();
+            bridge.transform(sample.value(), temp);
+            stats1.add(temp);
+
+            // path-summed series
+            final double[] path = new double[n];
+            path[0] = temp[0] * Math.sqrt(times[0]);
+            for (int j = 1; j < n; ++j) {
+                path[j] = path[j - 1] + temp[j] * Math.sqrt(times[j] - times[j - 1]);
+            }
+            stats2.add(path);
+        }
+
+        // ---- Normalized single variates: mean ~ 0, covariance ~ identity ----
+        final double[] expectedMean = new double[n];
+        final Matrix expectedCov = new Matrix(n, n);
+        for (int i = 0; i < n; ++i) {
+            expectedCov.set(i, i, 1.0);
+        }
+
+        final double meanTolerance = 1.0e-16;
+        double covTolerance = 2.5e-4;
+
+        Array mean = stats1.mean();
+        Matrix covariance = stats1.covariance();
+
+        double maxMeanError = maxDiff(mean, expectedMean);
+        double maxCovError = maxDiff(covariance, expectedCov);
+
+        if (maxMeanError > meanTolerance) {
+            org.junit.Assert.fail("failed to reproduce expected mean values"
+                    + "\n    max error:  " + maxMeanError);
+        }
+        if (maxCovError > covTolerance) {
+            org.junit.Assert.fail("failed to reproduce expected covariance"
+                    + "\n    max error:  " + maxCovError);
+        }
+
+        // ---- De-normalized sums along the path: cov[i][j] = times[min(i,j)] ----
+        final Matrix expectedCov2 = new Matrix(n, n);
+        for (int i = 0; i < n; ++i) {
+            for (int j = i; j < n; ++j) {
+                expectedCov2.set(i, j, times[i]);
+                expectedCov2.set(j, i, times[i]);
+            }
+        }
+        covTolerance = 6.0e-4;
+
+        mean = stats2.mean();
+        covariance = stats2.covariance();
+        maxMeanError = maxDiff(mean, expectedMean);
+        maxCovError = maxDiff(covariance, expectedCov2);
+
+        if (maxMeanError > meanTolerance) {
+            org.junit.Assert.fail("failed to reproduce expected mean values"
+                    + "\n    max error:  " + maxMeanError);
+        }
+        if (maxCovError > covTolerance) {
+            org.junit.Assert.fail("failed to reproduce expected covariance"
+                    + "\n    max error:  " + maxCovError);
+        }
+    }
+
+    private static double maxDiff(final Array a, final double[] b) {
+        double diff = 0.0;
+        for (int i = 0; i < a.size(); ++i) {
+            diff = Math.max(diff, Math.abs(a.get(i) - b[i]));
+        }
+        return diff;
+    }
+
+    private static double maxDiff(final Matrix a, final Matrix b) {
+        double diff = 0.0;
+        for (int i = 0; i < a.rows(); ++i) {
+            for (int j = 0; j < a.columns(); ++j) {
+                diff = Math.max(diff, Math.abs(a.get(i, j) - b.get(i, j)));
+            }
+        }
+        return diff;
     }
 
     @Ignore("Phase 5a.5 carry-forward — depends on SequenceStatistics + path-generation "
