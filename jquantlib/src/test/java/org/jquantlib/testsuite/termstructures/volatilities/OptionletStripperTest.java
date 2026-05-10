@@ -554,7 +554,7 @@ public class OptionletStripperTest {
         }
     }
 
-    @Ignore("Phase 5g.5c: BLOCKED — Java BlackCapFloorEngine hard-codes displacement_=0.0 (no constructor accepts a shift); cannot price the per-strike constant-vol comparison cap with shift=0.03. Production fix required: extend BlackCapFloorEngine to accept a (Handle<YTS>, double v, DayCounter, double displacement) constructor or expose VolatilityType+displacement on OptionletVolatilityStructure (matches C++ v1.42.1).")
+    @Ignore("Phase 5g.5d unblocked the production gap (BlackCapFloorEngine now accepts a displacement parameter via the new (Handle<YTS>, double v, DayCounter, double displacement) and (Handle<YTS>, Handle<OVS>, double displacement) overloads). Test body still needs to be ported from C++ optionletstripper.cpp::testTermVolatilityStrippingShiftedLogNormalVol — body-fill TBD.")
     @Test
     public void testTermVolatilityStrippingShiftedLogNormalVol() { fail("not implemented"); }
 
@@ -804,7 +804,7 @@ public class OptionletStripperTest {
                 error <= tolerance);
     }
 
-    @Ignore("Phase 5g.5c: BLOCKED — Java UnitedStates calendar lacks the FederalReserve market variant required by C++ optionletstripper.cpp::testTermVolatilityStripping1ON. Add UnitedStates.Market.FederalReserve (US holiday calendar) before un-ignoring.")
+    @Ignore("Phase 5g.5d unblocked the production gap (UnitedStates.Market.FederalReserve calendar variant added, mirroring C++ v1.42.1 UnitedStates::FederalReserveImpl). Test body still needs to be ported from C++ optionletstripper.cpp::testTermVolatilityStripping1ON — body-fill TBD.")
     @Test
     public void testTermVolatilityStripping1ON() { fail("not implemented"); }
 }
