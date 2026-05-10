@@ -484,25 +484,53 @@ public class RiskNeutralDensityCalculatorTest {
     public void testBlackScholesWithSkew() { fail("not implemented"); }
 
     /**
-     * Phase 5h.5-RND-c port of C++ {@code testMassAtZeroCEVProcessRND}
+     * Phase 5h.5-RND-d port of C++ {@code testMassAtZeroCEVProcessRND}
      * (lines 709-746). Verifies the total probability mass for the
      * CEV process: integral of pdf over [eps, f0+ax] plus mass at zero
      * should equal 1, at tolerance 1e-4 (matches C++).
      *
-     * <p>Status: ignored. The Java {@link CEVRNDCalculator} is missing the
-     * {@code pdf(f, t)} method (cdf, invcdf, massAtZero are present), so
-     * the GaussLobatto integration of pdf cannot be performed. The C++
-     * {@code CEVRNDCalculator::pdf} uses
-     * {@code boost::math::pdf(non_central_chi_squared_distribution<Real>(...))}
-     * with the appropriate chain-rule scaling — adding this in Java is a
-     * production-code change and is deferred to its own commit (out of
-     * scope for the test-only Phase 5h.5-RND-c).
+     * <p>Now active: {@link CEVRNDCalculator#pdf(double, double)} was
+     * ported in Phase Production-Audit (2026-05-10), enabling the
+     * GaussLobatto integration of pdf used here.
      */
-    @Ignore("Phase 5h.5-RND-c: CEVRNDCalculator.pdf(f, t) not yet ported. "
-            + "Test cannot run until pdf method is added (production-code work, "
-            + "deferred to dedicated commit). See javadoc above.")
     @Test
-    public void testMassAtZeroCEVProcessRND() { fail("not implemented"); }
+    public void testMassAtZeroCEVProcessRND() {
+        final double f0 = 100.0;
+        final double t = 2.75;
+
+        final double[][] params = new double[][] {
+                {  0.1, 1.6  },
+                {  0.01, 2.0 },
+                { 10.0, 0.35 },
+                { 50.0, 0.1  }
+        };
+
+        final double tol = 1.0e-4;
+
+        for (final double[] param : params) {
+            final double alpha = param[0];
+            final double beta  = param[1];
+
+            final CEVRNDCalculator calculator = new CEVRNDCalculator(f0, alpha, beta);
+
+            final double ax = 15.0 * Math.sqrt(t) * alpha * Math.pow(f0, beta);
+            final double tFinal = t;
+            final double lower = Math.max(Constants.QL_EPSILON, f0 - ax);
+            final double upper = f0 + ax;
+
+            final double calculated = new GaussLobattoIntegral(1000, 1.0e-8)
+                    .op(new Ops.DoubleOp() {
+                        @Override
+                        public double op(final double x) {
+                            return calculator.pdf(x, tFinal);
+                        }
+                    }, lower, upper) + calculator.massAtZero(t);
+
+            assertEquals("CEV total probability mass alpha=" + alpha
+                            + " beta=" + beta,
+                    1.0, calculated, tol);
+        }
+    }
 
     /**
      * Phase 5h.5-RND port of C++ {@code testCEVCDF} (lines 748-781).
