@@ -81,6 +81,44 @@ public class CEVRNDCalculator {
         }
     }
 
+    /**
+     * PDF: probability density of F_t at {@code f}.
+     *
+     * <p>Java port of v1.42.1
+     * {@code CEVRNDCalculator::pdf(Real f, Time t)} (cevrndcalculator.cpp).
+     * Uses the relationship between the CEV process density and the
+     * non-central chi-squared density obtained via the change of variable
+     * {@code y = X(f) = f^{2(1-beta)} / (alpha*(1-beta))^2}:
+     *
+     * <pre>
+     * delta &lt; 2:
+     *   pdf(f, t) = NCCS(df=4-delta, ncp=y/t).pdf(x0/t) / t
+     *               * 2 (1 - beta) * y / f
+     * delta &gt;= 2:
+     *   pdf(f, t) = NCCS(df=delta,   ncp=x0/t).pdf(y/t) / t
+     *               * 2 (beta - 1) * y / f
+     * </pre>
+     *
+     * <p>The {@code 2 (beta - 1) y / f} factor is negative for {@code beta &gt; 1},
+     * but {@code y / t} is also outside the natural support so the NCCS pdf
+     * value cancels the sign, mirroring boost's behaviour exactly.
+     */
+    public double pdf(final double f, final double t) {
+        final double y = X(f);
+
+        if (delta_ < 2.0) {
+            // C++: pdf(chi2(4-delta, y/t), x0_/t)/t * 2*(1-beta)*y/f
+            return new NonCentralCumulativeChiSquaredDistribution(
+                    4.0 - delta_, y / t).pdf(x0_ / t)
+                    / t * 2.0 * (1.0 - beta_) * y / f;
+        } else {
+            // C++: pdf(chi2(delta, x0_/t), y/t)/t * 2*(beta-1)*y/f
+            return new NonCentralCumulativeChiSquaredDistribution(
+                    delta_, x0_ / t).pdf(y / t)
+                    / t * 2.0 * (beta_ - 1.0) * y / f;
+        }
+    }
+
     /** CDF: P(F_t <= f). */
     public double cdf(final double f, final double t) {
         final double y = X(f);
