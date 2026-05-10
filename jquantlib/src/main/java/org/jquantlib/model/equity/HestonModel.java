@@ -54,9 +54,12 @@ import org.jquantlib.quotes.SimpleQuote;
 public class HestonModel extends CalibratedModel {
 
     protected RelinkableHandle<Quote> v0_, kappa_, theta_, sigma_, rho_;;
+    /** Calibration target — needed by SLV calibrators (Phase 5h.5-SLV-b). */
+    private final HestonProcess process_;
 
     public HestonModel(final HestonProcess process) {
         super(5);
+        this.process_ = process;
         this.v0_ = process.v0();
         this.kappa_ = process.kappa();
         this.theta_ = process.theta();
@@ -68,6 +71,15 @@ public class HestonModel extends CalibratedModel {
         arguments_.set(3, new ConstantParameter(process.rho().currentLink().value(), new BoundaryConstraint(-1.0, 1.0)));
         arguments_.set(4, new ConstantParameter(process.v0().currentLink().value(), new PositiveConstraint()));
 
+    }
+
+    /**
+     * Returns the underlying {@link HestonProcess} held by this calibrated
+     * model. Mirrors the C++ {@code HestonModel::process()} accessor.
+     * Required by Heston SLV calibrators (Phase 5h.5-SLV-b).
+     */
+    public HestonProcess process() {
+        return process_;
     }
 
     @Override
