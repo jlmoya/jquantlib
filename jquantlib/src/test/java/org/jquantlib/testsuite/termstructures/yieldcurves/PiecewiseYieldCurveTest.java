@@ -928,12 +928,21 @@ public class PiecewiseYieldCurveTest {
 	        if (Math.abs(expectedRate-estimatedRate) > tolerance) {
 	        	throw new RuntimeException(
 	        			String.format("%s %d %s %s %f %s %s %f",
-	                        "after LIBOR fixing:\n", 
+	                        "after LIBOR fixing:\n",
 	                        swapData[i].n, " year(s) swap:\n",
 	                        "    estimated rate: ", estimatedRate, "\n",
 	                        "    expected rate:  ", expectedRate));
 	        }
 	    }
+
+	    // Java-only cleanup: IndexManager is a global singleton; the
+	    // index.addFixing(vars.today, 0.0425) call above leaks into
+	    // sibling test cases (e.g. test*Consistency depo helpers see
+	    // 4.25% as their fixing instead of bootstrapping a fresh value)
+	    // unless we clear the history before returning. C++ doesn't need
+	    // this because each Boost test case runs in a fresh translation
+	    // unit; JUnit reuses the JVM.
+	    index.clearFixings();
 	}
 
 	
