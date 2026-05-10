@@ -1,0 +1,207 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 9.423264068636023
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Call",
+        "premium": 1.0,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 100.0,
+        "strike2": 105.0,
+        "vol": 0.25
+      },
+      "name": "haug_call_S100_X1100_X2105_v25_r8_T180_T270_A1"
+    },
+    {
+      "expected": {
+        "npv": 7.8980381236205615
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Call",
+        "premium": 1.0,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 100.0,
+        "strike2": 105.0,
+        "vol": 0.2
+      },
+      "name": "call_atm_lower_vol"
+    },
+    {
+      "expected": {
+        "npv": 5.240625092904658
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Call",
+        "premium": 1.0,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 110.0,
+        "strike2": 115.0,
+        "vol": 0.25
+      },
+      "name": "call_otm"
+    },
+    {
+      "expected": {
+        "npv": 15.62466068541051
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Call",
+        "premium": 1.0,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 90.0,
+        "strike2": 95.0,
+        "vol": 0.25
+      },
+      "name": "call_itm"
+    },
+    {
+      "expected": {
+        "npv": 9.600337424599083
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Call",
+        "premium": 0.5,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 100.0,
+        "strike2": 105.0,
+        "vol": 0.25
+      },
+      "name": "call_low_premium"
+    },
+    {
+      "expected": {
+        "npv": 9.184351517065695
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Call",
+        "premium": 2.0,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 100.0,
+        "strike2": 105.0,
+        "vol": 0.25
+      },
+      "name": "call_high_premium"
+    },
+    {
+      "expected": {
+        "npv": 8.442612906636766
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Call",
+        "premium": 1.0,
+        "q": 0.03,
+        "r": 0.08,
+        "strike1": 100.0,
+        "strike2": 105.0,
+        "vol": 0.25
+      },
+      "name": "call_with_dividend"
+    },
+    {
+      "expected": {
+        "npv": 6.532920867920232
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 90,
+        "days2": 180,
+        "option_type": "Call",
+        "premium": 1.0,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 100.0,
+        "strike2": 105.0,
+        "vol": 0.25
+      },
+      "name": "call_T1_short"
+    },
+    {
+      "expected": {
+        "npv": -0.15073812607379955
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Put",
+        "premium": 1.0,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 100.0,
+        "strike2": 105.0,
+        "vol": 0.25
+      },
+      "name": "put_atm"
+    },
+    {
+      "expected": {
+        "npv": -14.335974083982293
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Put",
+        "premium": 1.0,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 90.0,
+        "strike2": 85.0,
+        "vol": 0.25
+      },
+      "name": "put_otm"
+    },
+    {
+      "expected": {
+        "npv": 8.213679261527755
+      },
+      "inputs": {
+        "S": 100.0,
+        "days1": 180,
+        "days2": 270,
+        "option_type": "Put",
+        "premium": 1.0,
+        "q": 0.0,
+        "r": 0.08,
+        "strike1": 110.0,
+        "strike2": 115.0,
+        "vol": 0.25
+      },
+      "name": "put_itm"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-10T04:19:42Z",
+  "generated_by": "holder_extensible_option_probe",
+  "test_group": "experimental/holder-extensible/holder_extensible_option"
+}
