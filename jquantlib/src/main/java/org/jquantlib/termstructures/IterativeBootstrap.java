@@ -245,8 +245,28 @@ public class IterativeBootstrap<Curve extends PiecewiseYieldCurve> implements Bo
                     // by BootstrapError in solve procedure), but safe
                     data[i] = r;
                 } catch (final Exception e) {
-                    validCurve = false;
-                    QL.error ("could not bootstrap");
+                    // Phase Bug-Fix-3: align to v1.42.1 — C++ pattern is:
+                    //   if (validCurve_) { invalidate, recurse, return; }
+                    //   else throw with descriptive message.
+                    // The previous Java code silently logged "could not bootstrap"
+                    // via QL.error and continued — leaving data[i] uninitialized,
+                    // which silently produced garbage curves and broke downstream
+                    // consistency tests (testSplineZeroConsistency,
+                    // testSplineForwardConsistency, testLogCubicDiscountConsistency,
+                    // testLiborFixing, testJpyLibor).
+                    if (validCurve) {
+                        // the previous curve state might have been a bad guess,
+                        // so we retry without using it.
+                        validCurve = false;
+                        calculate();
+                        return;
+                    }
+                    throw new LibraryException(
+                            "iteration " + (iteration + 1) +
+                            ": failed at " + i + "th alive instrument" +
+                            ", pillar " + instrument.latestDate() +
+                            ", reference date " + ts.dates()[0] +
+                            ": " + e.getMessage());
                 }
             }
 
