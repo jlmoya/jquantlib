@@ -124,7 +124,7 @@ public class Bond extends Instrument {
      * @param issueDate
      * @param coupons
      */
-    protected Bond(final /* @Natural */int settlementDays,
+    public Bond(final /* @Natural */int settlementDays,
             	   final Calendar calendar,
             	   final Date issueDate,
             	   final Leg coupons) {
@@ -149,12 +149,12 @@ public class Bond extends Instrument {
         evaluationDate.addObserver(this);
     }
 
-    protected Bond(final /* @Natural */int settlementDays,
+    public Bond(final /* @Natural */int settlementDays,
             	   final Calendar calendar) {
         this(settlementDays, calendar, new Date(), new Leg());
     }
 
-    protected Bond(final /* @Natural */int settlementDays,
+    public Bond(final /* @Natural */int settlementDays,
             	   final Calendar calendar,
             	   final Date issueDate) {
         this(settlementDays, calendar, issueDate, new Leg());
@@ -870,7 +870,12 @@ public class Bond extends Instrument {
                 lastPaymentDate = coupon.date().clone();
             } else if (!Closeness.isClose(notional, notionals_.get(notionals_.size() -1 ))) {
                 // ...or if it has changed.
-                QL.require(notional < notionals_.get(notionals_.size()-1), "increasing coupon notionals");
+                // Phase 5d.5-Bonds-b align — C++ Bond::calculateNotionalsFromCashflows
+                // (ql/instruments/bond.cpp:379-386) does NOT require monotonically
+                // decreasing notionals; bonds with draw-down + amortization phases
+                // (testAmortizingFixedRateBondWithDrawDown) legitimately have
+                // increasing-then-decreasing notionals.  Pre-existing Java guard
+                // was an inherited divergence; removed per ground-truth principle.
                 notionals_.add(coupon.nominal());
                 // in this case, we also add the last valid date for
                 // the previous one...
