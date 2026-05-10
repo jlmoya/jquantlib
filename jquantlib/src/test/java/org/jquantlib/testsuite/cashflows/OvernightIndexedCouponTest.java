@@ -62,40 +62,41 @@ import org.junit.Test;
 public class OvernightIndexedCouponTest {
 
     private static final String REASON_PAST =
-            "Phase 5d.5 — requires OvernightIndex + OvernightIndexedCoupon "
-          + "(no Java equivalent for past-coupon rate computation yet)";
+            "Phase 5d.5: OvernightIndex + OvernightIndexedCoupon now ported (commits fa38ff70, 41f7102a); "
+          + "test bodies are `fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
 
     private static final String REASON_CURRENT =
-            "Phase 5d.5 — requires OvernightIndex + OvernightIndexedCoupon "
-          + "(no Java equivalent for current-coupon rate computation yet)";
+            "Phase 5d.5: OvernightIndex + OvernightIndexedCoupon now ported (commits fa38ff70, 41f7102a); "
+          + "test bodies are `fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
 
     private static final String REASON_FUTURE =
-            "Phase 5d.5 — requires OvernightIndex + OvernightIndexedCoupon "
-          + "(no Java equivalent for future-coupon rate forecasting yet)";
+            "Phase 5d.5: OvernightIndex + OvernightIndexedCoupon now ported (commits fa38ff70, 41f7102a); "
+          + "test bodies are `fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
 
     private static final String REASON_ACCRUED =
-            "Phase 5d.5 — requires OvernightIndex + OvernightIndexedCoupon "
-          + "(no Java equivalent for accrued-amount computation yet)";
+            "Phase 5d.5: OvernightIndex + OvernightIndexedCoupon now ported (commits fa38ff70, 41f7102a); "
+          + "test bodies are `fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
 
     private static final String REASON_LOOKBACK =
-            "Phase 5d.5 — requires OvernightIndexedCoupon + lookback / "
-          + "observation-shift / lockout machinery (no Java equivalent yet)";
+            "Phase 5d.5: OvernightIndexedCoupon ported; lookback / observation-shift / lockout "
+          + "machinery still TODO. Test bodies need full port from C++ overnightindexedcoupon.cpp.";
 
     private static final String REASON_BLACK =
-            "Phase 5d.5 — requires Black ON-coupon / Black averaging-ON "
-          + "caplet/floorlet pricer (no Java equivalent yet)";
+            "Phase 5d.5: OvernightIndexedCouponPricer now ported (commit 41f7102a); needs Black "
+          + "ON-coupon / Black averaging-ON caplet/floorlet pricer integration; test bodies need "
+          + "full port from C++ overnightindexedcoupon.cpp.";
 
     private static final String REASON_LEG =
-            "Phase 5d.5 — requires OvernightLeg builder + gearings / "
-          + "spreads / caps / floors (no Java equivalent yet)";
+            "Phase 5d.5: OvernightLeg builder ported (commit 41f7102a); test bodies are "
+          + "`fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
 
     private static final String REASON_TELESCOPIC =
-            "Phase 5d.5 — requires OvernightIndexedCoupon + telescopic "
-          + "value-dates handling (no Java equivalent yet)";
+            "Phase 5d.5: OvernightIndexedCoupon ported; telescopic value-dates handling still TODO. "
+          + "Test bodies need full port from C++ overnightindexedcoupon.cpp.";
 
     private static final String REASON_PAYMENT =
-            "Phase 5d.5 — requires OvernightIndexedCoupon + payment-before-"
-          + "accrual-end corner case (no Java equivalent yet)";
+            "Phase 5d.5: OvernightIndexedCoupon ported; payment-before-accrual-end corner case still TODO. "
+          + "Test bodies need full port from C++ overnightindexedcoupon.cpp.";
 
     @Ignore(REASON_PAST) @Test public void testPastCouponRate() { fail("not implemented"); }
     @Ignore(REASON_PAST) @Test public void testPastSpreadedCouponRate() { fail("not implemented"); }

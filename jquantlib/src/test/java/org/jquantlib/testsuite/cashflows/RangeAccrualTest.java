@@ -69,18 +69,17 @@ public class RangeAccrualTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-RA-1/2/3 — needs RangeAccrualFloatersCoupon + "
-            + "RangeAccrualPricerByBgm + RangeAccrualLeg production port.")
+    @Ignore("Phase 5e.5 WI-5e.5-RA-1/2/3: RangeAccrualFloatersCoupon + RangeAccrualPricerByBgm + RangeAccrualLeg now ported (commit efa0330a); empty test body — needs full port from C++ rangeaccrual.cpp::testInfiniteRange.")
     @Test
     public void testInfiniteRange() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-RA-1/2/3 — same prereqs as testInfiniteRange.")
+    @Ignore("Phase 5e.5 WI-5e.5-RA-1/2/3: RangeAccrualFloatersCoupon + RangeAccrualPricerByBgm + RangeAccrualLeg now ported (commit efa0330a); empty test body — needs full port from C++ rangeaccrual.cpp.")
     @Test
     public void testPriceMonotonicityWithRespectToLowerStrike() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-RA-1/2/3 — same prereqs as testInfiniteRange.")
+    @Ignore("Phase 5e.5 WI-5e.5-RA-1/2/3: RangeAccrualFloatersCoupon + RangeAccrualPricerByBgm + RangeAccrualLeg now ported (commit efa0330a); empty test body — needs full port from C++ rangeaccrual.cpp.")
     @Test
     public void testPriceMonotonicityWithRespectToUpperStrike() {
     }

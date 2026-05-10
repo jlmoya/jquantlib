@@ -40,8 +40,10 @@ import org.junit.Test;
 public class MultipleResetsCouponsTest {
 
     private static final String REASON =
-            "Phase 5d.5 — requires MultipleResetsCoupon + MultipleResetsLeg + "
-          + "compounded/averaged sub-period pricers (no Java equivalent yet)";
+            "Phase 5d.5: MultipleResetsCoupon + MultipleResetsLeg now ported (commit 40bf78eb); "
+          + "test bodies are `fail(\"not implemented\")` — needs full port from C++ "
+          + "multipleresetscoupons.cpp. (Note: parallel MultipleResetsCouponSmokeTest already "
+          + "exercises the freshly-ported family with smoke tests.)";
 
     @Ignore(REASON)
     @Test

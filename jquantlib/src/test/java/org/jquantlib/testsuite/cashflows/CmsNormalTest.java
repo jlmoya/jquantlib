@@ -56,8 +56,9 @@ public class CmsNormalTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CMSN-1 + WI-5e.5-CMS-1 — needs Hagan pricers "
-            + "with normal-vol kernel.")
+    @Ignore("Phase 5e.5 WI-5e.5-CMSN-1: HaganPricer + AnalyticHaganPricer + NumericHaganPricer "
+            + "now ported (commits 4128cfc4, fee9948f); empty test body — needs full port from "
+            + "C++ cms_normal.cpp::testFairRate. Normal-vol kernel wiring still TODO.")
     @Test
     public void testFairRate() {
     }

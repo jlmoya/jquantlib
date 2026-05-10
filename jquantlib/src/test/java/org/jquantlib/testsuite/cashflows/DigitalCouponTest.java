@@ -71,37 +71,37 @@ public class DigitalCouponTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-DC-1 — needs BlackIborCouponPricer wired into DigitalCoupon.")
+    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
     @Test
     public void testAssetOrNothing() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-DC-1 — needs BlackIborCouponPricer wired into DigitalCoupon.")
+    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
     @Test
     public void testAssetOrNothingDeepInTheMoney() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-DC-1 — needs BlackIborCouponPricer wired into DigitalCoupon.")
+    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
     @Test
     public void testAssetOrNothingDeepOutTheMoney() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-DC-1 — needs BlackIborCouponPricer wired into DigitalCoupon.")
+    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
     @Test
     public void testCashOrNothing() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-DC-1 — needs BlackIborCouponPricer wired into DigitalCoupon.")
+    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
     @Test
     public void testCashOrNothingDeepInTheMoney() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-DC-1 — needs BlackIborCouponPricer wired into DigitalCoupon.")
+    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
     @Test
     public void testCashOrNothingDeepOutTheMoney() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-DC-1 — needs BlackIborCouponPricer wired into DigitalCoupon.")
+    @Ignore("Phase 5e.5 WI-5e.5-DC-1: BlackIborCouponPricer now ported (commit 2e0ef9e7); empty test body — needs full port from C++ digitalcoupon.cpp + DigitalCoupon-pricer wiring.")
     @Test
     public void testCallPutParity() {
     }
