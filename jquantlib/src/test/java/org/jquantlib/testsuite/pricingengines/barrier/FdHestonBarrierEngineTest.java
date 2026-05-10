@@ -6,7 +6,6 @@
  */
 package org.jquantlib.testsuite.pricingengines.barrier;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.jquantlib.Settings;
@@ -46,16 +45,17 @@ import org.junit.Test;
  * ({@code migration-harness/cpp/probes/pricingengines/barrier/
  *   fd_heston_barrier_engine_probe.cpp}).
  *
- * <p>In-barrier cases (DownIn/UpIn) require {@code FdHestonRebateEngine}
- * which is a Phase 4n.5b carry-forward; the Java engine throws
- * {@link UnsupportedOperationException} for those, which is also asserted.
+ * <p>In-barrier cases (DownIn/UpIn) are handled by parity (vanilla + rebate
+ * - out) and exercised by {@link FdHestonRebateEngineTest} for the rebate
+ * leg directly; here we additionally smoke-test that the in-barrier path
+ * returns finite, non-negative values.
  *
  * <p><strong>Tolerance tier — LOOSE 1e-2 abs/rel.</strong>
  * Justification: 2-factor FD on a 50t x 50x x 20v grid (intentionally coarse
  * for CI). Gamma at out-barriers can be near-zero / negative; we bias the
  * tolerance check to absolute when expected magnitude is small.
  *
- * @author Phase 4n.5 port
+ * @author Phase 4n.5 port; Phase 4n.5b in-barrier wiring
  */
 public class FdHestonBarrierEngineTest {
 
@@ -93,10 +93,16 @@ public class FdHestonBarrierEngineTest {
                 BarrierType.DownOut, Option.Type.Call);
     }
 
+    /**
+     * Smoke test for the in-barrier (DownIn) path now wired in
+     * Phase 4n.5b. The expectation is that the engine returns a finite,
+     * non-negative NPV (rebate=0, K=100, B=80, 1y to maturity, S=100).
+     * We do not pin a specific reference value here — the rebate engine
+     * itself is fingerprinted in {@link FdHestonRebateEngineTest}, and
+     * the parity formula is mechanical.
+     */
     @Test
-    public void inBarrierThrowsUnsupported() {
-        // The in-barrier path requires FdHestonRebateEngine which is not
-        // yet ported. Confirm the engine surfaces a clear error.
+    public void inBarrierReturnsFiniteValue() {
         final FdHestonBarrierEngine engine = makeEngine(50, 50, 20, 0);
         final Date eval = new Date(15, Month.January, 2026);
         new Settings().setEvaluationDate(eval);
@@ -106,13 +112,13 @@ public class FdHestonBarrierEngineTest {
         final BarrierOption option = new BarrierOption(
                 BarrierType.DownIn, 80.0, 0.0, payoff, exercise);
         option.setPricingEngine(engine);
-        boolean threw = false;
-        try {
-            option.NPV();
-        } catch (UnsupportedOperationException expected) {
-            threw = true;
+        final double npv = option.NPV();
+        if (Double.isNaN(npv) || Double.isInfinite(npv)) {
+            fail("DownIn NPV is not finite: " + npv);
         }
-        assertTrue("expected UnsupportedOperationException for DownIn barrier", threw);
+        if (npv < -1e-6) {
+            fail("DownIn NPV is materially negative: " + npv);
+        }
     }
 
     // ------------------------------------------------------------------

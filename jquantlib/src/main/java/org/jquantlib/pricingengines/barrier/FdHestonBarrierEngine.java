@@ -32,6 +32,7 @@ import org.jquantlib.instruments.BarrierType;
 import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher;
@@ -49,6 +50,7 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmDividendHandler;
 import org.jquantlib.methods.finitedifferences.utilities.FdmLogInnerValue;
 import org.jquantlib.methods.finitedifferences.utilities.FdmTimeDepDirichletBoundary;
 import org.jquantlib.model.equity.HestonModel;
+import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
 import org.jquantlib.processes.HestonProcess;
 
 /**
@@ -61,18 +63,18 @@ import org.jquantlib.processes.HestonProcess;
  * boundary at the barrier (set to the rebate value), using the same ADI
  * machinery as {@link org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine}.
  *
+ * <p>All four barrier types are supported. In-barriers are computed via
+ * parity {@code IN = vanilla + rebate - OUT}, delegating to
+ * {@link FdHestonRebateEngine} for the rebate-on-touch leg and
+ * {@link org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine
+ * FdHestonVanillaEngine} for the unconstrained vanilla NPV.
+ *
  * <h3>Limitations vs. C++ v1.42.1</h3>
  * <ul>
- *   <li>Only out-barriers ({@code DownOut}, {@code UpOut}) and European
- *       exercise are supported. The in-barrier path requires
- *       {@code FdHestonRebateEngine}, which is not yet ported; an attempt
- *       to price an {@code In} barrier raises {@link UnsupportedOperationException}.
- *       This is a Phase 4n.5b carry-forward.</li>
+ *   <li>Only European exercise is supported (American/Bermudan barriers
+ *       require additional step-condition wiring).</li>
  *   <li>{@code FdmQuantoHelper} not yet ported — quanto-adjustment path omitted.</li>
  *   <li>{@code LocalVolTermStructure} leverage function not yet ported — pure-Heston only.</li>
- *   <li>{@code thetaAt} returns NaN until {@link
- *       org.jquantlib.methods.finitedifferences.solvers.Fdm2DimSolver Fdm2DimSolver}
- *       gains a snapshot-condition theta hook.</li>
  *   <li>The Java {@link HestonModel} does not expose {@code .process()}, so this
  *       engine takes the model and process as separate arguments (matches
  *       the existing {@code FdHestonHullWhiteVanillaEngine} pattern).</li>
@@ -142,12 +144,6 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
                 "only European-style barrier options are supported");
 
         final BarrierType barrier = args.barrierType;
-        if (barrier == BarrierType.DownIn || barrier == BarrierType.UpIn) {
-            throw new UnsupportedOperationException(
-                    "FdHestonBarrierEngine: in-barriers (DownIn/UpIn) require "
-                  + "FdHestonRebateEngine which is not yet ported "
-                  + "(Phase 4n.5b carry-forward).");
-        }
 
         // 1. Mesher
         final double maturity = hestonProcess.time(args.exercise.lastDate());
@@ -158,13 +154,18 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
                 vGrid, hestonProcess, maturity,
                 Math.max(tGridMin, tGrid / 50), 0.0001);
 
-        // 1.2 Equity mesher with barrier-aligned bounds
+        // 1.2 Equity mesher with barrier-aligned bounds. Per C++ v1.42.1,
+        //     Down{In,Out} both anchor xMin and Up{In,Out} both anchor xMax;
+        //     the FD solution is the OUT value (rebate-on-survival), and the
+        //     IN value is recovered below via parity.
         final StrikedTypePayoff payoff = (StrikedTypePayoff) args.payoff;
         QL.require(payoff != null, "non-striked payoff given");
 
-        final double xMin = (barrier == BarrierType.DownOut)
+        final double xMin = (barrier == BarrierType.DownOut
+                          || barrier == BarrierType.DownIn)
                 ? JQuantMath.log(args.barrier) : Double.NaN;
-        final double xMax = (barrier == BarrierType.UpOut)
+        final double xMax = (barrier == BarrierType.UpOut
+                          || barrier == BarrierType.UpIn)
                 ? JQuantMath.log(args.barrier) : Double.NaN;
 
         // C++ uses scale=1.5, eps=0.0001, no concentration point (Null<Real>).
@@ -213,14 +214,16 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
                 new FdmStepConditionComposite(stoppingTimes, stepConditions);
 
         // 4. Boundary conditions: Dirichlet at the barrier with constant rebate.
+        //    Both Down{In,Out} take Lower; both Up{In,Out} take Upper.
         final List<BoundaryCondition<FdmLinearOp>> bcList =
                 new ArrayList<BoundaryCondition<FdmLinearOp>>();
         final double rebateValue = args.rebate;
-        if (barrier == BarrierType.DownOut) {
+        if (barrier == BarrierType.DownOut || barrier == BarrierType.DownIn) {
             bcList.add(new FdmTimeDepDirichletBoundary(
                     mesher, t -> rebateValue, /*direction=*/0,
                     BoundaryCondition.Side.Lower));
-        } else if (barrier == BarrierType.UpOut) {
+        }
+        if (barrier == BarrierType.UpOut || barrier == BarrierType.UpIn) {
             bcList.add(new FdmTimeDepDirichletBoundary(
                     mesher, t -> rebateValue, /*direction=*/0,
                     BoundaryCondition.Side.Upper));
@@ -243,6 +246,40 @@ public class FdHestonBarrierEngine extends BarrierOption.EngineImpl {
         r.value          = solver.valueAt(spot, v0);
         r.greeks().delta = solver.deltaAt(spot, v0);
         r.greeks().gamma = solver.gammaAt(spot, v0);
-        r.greeks().theta = solver.thetaAt(spot, v0); // NaN until snapshot-theta wired
+        r.greeks().theta = solver.thetaAt(spot, v0);
+
+        // 6. In-barriers via parity: IN = vanilla + rebate - OUT.
+        //    The FD computation above produces the OUT value (the rebate
+        //    is paid on barrier non-touch). For Down*In/Up*In we add a
+        //    standalone vanilla NPV and the rebate-on-touch leg, and
+        //    subtract the OUT value already in r.value.
+        if (barrier == BarrierType.DownIn || barrier == BarrierType.UpIn) {
+            // Standalone vanilla option.
+            final VanillaOption vanillaOption = new VanillaOption(payoff, args.exercise);
+            vanillaOption.setPricingEngine(new FdHestonVanillaEngine(
+                    hestonModel, hestonProcess, dividends,
+                    tGrid, xGrid, vGrid, dampingSteps, schemeDesc, mixingFactor));
+
+            // Rebate (per C++ defaults: x/v grids reduced to 1/4 size, min
+            // 20/10; damping reduced to min(1, dampingSteps/2) when nonzero).
+            final BarrierOption rebateOption = new BarrierOption(
+                    args.barrierType, args.barrier, args.rebate, payoff, args.exercise);
+            final int xGridMin = 20;
+            final int vGridMin = 10;
+            final int rebateDampingSteps =
+                    (dampingSteps > 0) ? Math.min(1, dampingSteps / 2) : 0;
+            rebateOption.setPricingEngine(new FdHestonRebateEngine(
+                    hestonModel, hestonProcess, dividends,
+                    tGrid,
+                    Math.max(xGridMin, xGrid / 4),
+                    Math.max(vGridMin, vGrid / 4),
+                    rebateDampingSteps,
+                    schemeDesc, mixingFactor));
+
+            r.value          = vanillaOption.NPV()       + rebateOption.NPV()       - r.value;
+            r.greeks().delta = vanillaOption.delta()     + rebateOption.delta()     - r.greeks().delta;
+            r.greeks().gamma = vanillaOption.gamma()     + rebateOption.gamma()     - r.greeks().gamma;
+            r.greeks().theta = vanillaOption.theta()     + rebateOption.theta()     - r.greeks().theta;
+        }
     }
 }
