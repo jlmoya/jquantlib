@@ -79,7 +79,7 @@ import org.jquantlib.util.Pair;
  * @author Richard Gomes
  */
 @QualityAssurance(quality = Quality.Q4_UNIT, reviewers = { "Richard Gomes" }, version = Version.V097)
-public abstract class GeneralStatistics {
+public class GeneralStatistics {
 	
     private List<ComparablePair<Double, Double>> samples;
     private boolean sorted;
@@ -146,6 +146,17 @@ public abstract class GeneralStatistics {
     public void reset() {
     	samples = new ArrayList<ComparablePair<Double, Double>>();
         sorted = true;
+    }
+
+    /**
+     * informs the internal storage of a planned increase in size
+     * (mirrors C++ {@code GeneralStatistics::reserve}; Java ArrayList
+     * auto-grows so this is currently a hint only).
+     */
+    public void reserve(final int n) {
+        if (samples instanceof ArrayList) {
+            ((ArrayList<ComparablePair<Double, Double>>) samples).ensureCapacity(n);
+        }
     }
 
     /**
