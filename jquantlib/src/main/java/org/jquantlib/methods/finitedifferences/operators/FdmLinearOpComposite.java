@@ -21,10 +21,12 @@
  */
 package org.jquantlib.methods.finitedifferences.operators;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.matrixutilities.SparseMatrix;
 
 /**
  * Composite linear operator for time-dependent multi-dim pde systems.
@@ -34,8 +36,12 @@ import org.jquantlib.math.matrixutilities.Matrix;
  * <p>
  * The composite pattern allows operator-splitting schemes (e.g. Hundsdorfer)
  * to ask each direction sub-operator separately for its action on the state.
+ * <p>
+ * <b>Phase 5b.5b update:</b> adds {@link #toSparseMatrixDecomp()} +
+ * sparse-aware {@link #toSparseMatrix()} default which sums per-direction
+ * sparse matrices — mirrors C++ {@code std::accumulate(dcmp.begin()+1, ...)}.
  *
- * @author Phase 2h WI-1 port
+ * @author Phase 2h WI-1 port; Phase 5b.5b sparse extension
  */
 public interface FdmLinearOpComposite extends FdmLinearOp {
 
@@ -76,4 +82,54 @@ public interface FdmLinearOpComposite extends FdmLinearOp {
      * still get a usable matrix.
      */
     List<Matrix> toMatrixDecomp();
+
+    /**
+     * Sparse equivalent of {@link #toMatrixDecomp()} (Phase 5b.5b).
+     * <p>
+     * Default implementation delegates to {@link #toMatrixDecomp()} and
+     * converts each dense {@link Matrix} to a {@link SparseMatrix}.
+     * Implementations that hold native sparse state (e.g. an
+     * {@link NthOrderDerivativeOp}-based operator) should override this for
+     * efficiency.
+     *
+     * @return one sparse matrix per direction
+     */
+    default List<SparseMatrix> toSparseMatrixDecomp() {
+        final List<Matrix> dense = toMatrixDecomp();
+        final List<SparseMatrix> out = new ArrayList<>(dense.size());
+        for (final Matrix d : dense) {
+            final int r = d.rows();
+            final int c = d.cols();
+            final SparseMatrix sp = new SparseMatrix(r, c);
+            for (int i = 0; i < r; ++i) {
+                for (int j = 0; j < c; ++j) {
+                    final double v = d.get(i, j);
+                    if (v != 0.0) {
+                        sp.set(i, j, v);
+                    }
+                }
+            }
+            out.add(sp);
+        }
+        return out;
+    }
+
+    /**
+     * Sparse-aware override of {@link FdmLinearOp#toSparseMatrix()} — sums
+     * per-direction sparse matrices to mirror C++ composite
+     * {@code toMatrix()} which uses {@code std::accumulate(dcmp.begin()+1, ...)}.
+     */
+    @Override
+    default SparseMatrix toSparseMatrix() {
+        final List<SparseMatrix> dcmp = toSparseMatrixDecomp();
+        if (dcmp.isEmpty()) {
+            // Falls back to the dense-conversion default of FdmLinearOp.
+            return FdmLinearOp.super.toSparseMatrix();
+        }
+        SparseMatrix acc = new SparseMatrix(dcmp.get(0));
+        for (int i = 1; i < dcmp.size(); ++i) {
+            acc = acc.addAssign(dcmp.get(i));
+        }
+        return acc;
+    }
 }
