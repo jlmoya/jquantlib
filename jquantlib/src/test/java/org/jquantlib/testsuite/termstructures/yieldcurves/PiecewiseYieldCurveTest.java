@@ -656,7 +656,7 @@ public class PiecewiseYieldCurveTest {
 	  }
 
     
-	@Ignore("Phase Bug-Fix-3: LogCubic interpolator's global() flag causes IterativeBootstrap to throw 'no chance to fix it in a later iteration' on first try — root cause is incorrect early-iteration handling for global interpolators when extending point-by-point. Deferred — needs Java port of C++ iterativebootstrap.hpp:295-311 fallback-to-Linear logic adapted to current Java structure.")
+	@Ignore("Phase Bug-Fix-3: bootstrap converges slowly under LogCubic+Discount; after 50 iterations (Discount.maxIterations) improvement stuck at ~0.015 vs required 1e-12. Phase Bug-Fix-3 fixed the inverted-condition bug in IterativeBootstrap (was throwing for global() interpolators that should fall back to Linear); test now reaches the iteration loop but oscillates rather than throws. Possible deeper convergence issue: previousData snapshot timing or Discount.maxIterations gap (Java 50 vs C++ 100). Deferred — needs convergence loop + Discount.maxIterations alignment to C++.")
 	@Test
 	public void testLogCubicDiscountConsistency() {
 

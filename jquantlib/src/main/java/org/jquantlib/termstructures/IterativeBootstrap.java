@@ -225,12 +225,20 @@ public class IterativeBootstrap<Curve extends PiecewiseYieldCurve> implements Bo
                     try {
                         ts.setInterpolation(interpolator.interpolate (new Array(times, i+1), new Array(data, i+1)));
                     } catch (final Exception e) {
-                        // no chance to fix it in a later iteration
-                        if (ts.interpolator().global()) {
+                        // Phase Bug-Fix-3: align to v1.42.1 — C++ pattern at
+                        // iterativebootstrap.hpp:301-309 is:
+                        //   if (!Interpolator::global) throw;  // no chance to fix it in a later iteration
+                        //   else use Linear while target is not usable yet
+                        // The previous Java code had the condition INVERTED
+                        // (threw when global() was true) which broke any
+                        // global interpolator (LogCubic, Cubic) bootstrap on
+                        // partial data (testLogCubicDiscountConsistency).
+                        if (!ts.interpolator().global()) {
                             throw new LibraryException("no chance to fix it in a later iteration");
                         }
 
-                        // otherwise, if the target interpolation is not usable yet
+                        // otherwise use Linear while the target interpolation
+                        // is not usable yet
                         ts.setInterpolation(new Linear().interpolate (new Array(times, i+1), new Array(data, i+1)));
                     }
                 }
