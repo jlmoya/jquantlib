@@ -204,6 +204,55 @@ public class BrownianBridge {
     }
 
     /**
+     * Mirrors C++ {@code const std::vector<Size>& bridgeIndex() const}:
+     * for each variate index {@code i}, the path-point index that
+     * variate constructs (Phase MC-extras WI-5 alignment).
+     */
+    public final int[] bridgeIndex() /* @ReadOnly */ {
+        return bridgeIndex_;
+    }
+
+    /**
+     * Mirrors C++ {@code const std::vector<Size>& leftIndex() const}:
+     * the left-anchor path-point for the {@code i}th step.
+     */
+    public final int[] leftIndex() /* @ReadOnly */ {
+        return leftIndex_;
+    }
+
+    /**
+     * Mirrors C++ {@code const std::vector<Size>& rightIndex() const}:
+     * the right-anchor path-point for the {@code i}th step.
+     */
+    public final int[] rightIndex() /* @ReadOnly */ {
+        return rightIndex_;
+    }
+
+    /**
+     * Mirrors C++ {@code const std::vector<Real>& leftWeight() const}:
+     * the left-anchor convex coefficient for the {@code i}th step.
+     */
+    public final double[] leftWeight() /* @ReadOnly */ {
+        return leftWeight_;
+    }
+
+    /**
+     * Mirrors C++ {@code const std::vector<Real>& rightWeight() const}:
+     * the right-anchor convex coefficient for the {@code i}th step.
+     */
+    public final double[] rightWeight() /* @ReadOnly */ {
+        return rightWeight_;
+    }
+
+    /**
+     * Mirrors C++ {@code const std::vector<Real>& stdDeviation() const}:
+     * the conditional standard deviation for the {@code i}th step.
+     */
+    public final double[] stdDeviation() /* @ReadOnly */ {
+        return stdDev_;
+    }
+
+    /**
      * Brownian-bridge constructor
      */
     //
