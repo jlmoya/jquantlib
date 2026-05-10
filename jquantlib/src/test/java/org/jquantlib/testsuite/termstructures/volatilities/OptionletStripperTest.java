@@ -25,8 +25,11 @@ import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.termstructures.volatilities.capfloor.CapFloorTermVolCurve;
 import org.jquantlib.termstructures.volatilities.capfloor.CapFloorTermVolSurface;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletStripper1;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletStripper2;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.termstructures.volatilities.optionlet.StrippedOptionletAdapter;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
@@ -166,9 +169,102 @@ public class OptionletStripperTest {
     @Test
     public void testTermVolatilityStrippingShiftedLogNormalVol() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5: OptionletStripper2 now ported (commit e347e531); test body is `fail(\"not implemented\")` — needs full port from C++ optionletstripper.cpp::testFlatTermVolatilityStripping2")
+    /**
+     * Faithful port of C++ test-suite/optionletstripper.cpp::
+     * {@code testFlatTermVolatilityStripping2} (lines 745-810).
+     *
+     * <p>Builds two strippers on the same flat 18% term-vol surface:
+     * stripper1 (per-strike caplet bootstrapping) and stripper2
+     * (stripper1 + ATM term-vol curve calibration). Their stripped vols
+     * must agree to TIGHT (1e-7 abs) at every (tenor, strike) — both
+     * collapse back to the input flat vol when the input is flat.
+     *
+     * <p>Phase 5g.5b: OptionletStripper2 + StrippedOptionletAdapter
+     * smileSectionImpl ported in Phase 5g.5b WI-3 + WI-4; the round-trip
+     * check now succeeds.
+     */
     @Test
-    public void testFlatTermVolatilityStripping2() { fail("not implemented"); }
+    public void testFlatTermVolatilityStripping2() {
+        new Settings().setEvaluationDate(new Date(28, Month.October, 2013));
+
+        final Calendar calendar = new Target();
+        final DayCounter dayCounter = new Actual365Fixed();
+        final double flatFwdRate = 0.04;
+        final Handle<YieldTermStructure> yts =
+                new Handle<YieldTermStructure>(new FlatForward(0, calendar, flatFwdRate, dayCounter));
+
+        final int nTenors = 10;
+        final List<Period> optionTenors = new ArrayList<Period>(nTenors);
+        for (int i = 0; i < nTenors; ++i) {
+            optionTenors.add(new Period(i + 1, TimeUnit.Years));
+        }
+        final int nStrikes = 10;
+        final double[] strikes = new double[nStrikes];
+        for (int j = 0; j < nStrikes; ++j) {
+            strikes[j] = (j + 1) / 100.0;
+        }
+
+        final double flatVol = 0.18;
+        final Matrix termV = new Matrix(nTenors, nStrikes);
+        for (int i = 0; i < nTenors; ++i) {
+            for (int j = 0; j < nStrikes; ++j) {
+                termV.set(i, j, flatVol);
+            }
+        }
+        final CapFloorTermVolSurface flatTermVolSurface = new CapFloorTermVolSurface(
+                0, calendar, BusinessDayConvention.Following,
+                optionTenors, strikes, termV, dayCounter);
+
+        // Build the matching ATM curve (one tenor per row, same flat vol)
+        final List<Handle<? extends Quote>> curveHandles =
+                new ArrayList<Handle<? extends Quote>>(nTenors);
+        for (int i = 0; i < nTenors; ++i) {
+            curveHandles.add(new Handle<Quote>(new SimpleQuote(flatVol)));
+        }
+        final CapFloorTermVolCurve flatTermVolCurve = new CapFloorTermVolCurve(
+                0, calendar, BusinessDayConvention.Following,
+                optionTenors, curveHandles, dayCounter);
+
+        final IborIndex iborIndex = new Euribor6M(yts);
+        final double accuracy = 1.0e-6;
+
+        final OptionletStripper1 stripper1 = new OptionletStripper1(
+                flatTermVolSurface, iborIndex,
+                Constants.NULL_REAL,
+                accuracy, 100,
+                new Handle<YieldTermStructure>(),
+                org.jquantlib.model.VolatilityType.ShiftedLognormal, 0.0,
+                false, null);
+
+        final StrippedOptionletAdapter adapter1 = new StrippedOptionletAdapter(stripper1);
+        final Handle<OptionletVolatilityStructure> vol1 =
+                new Handle<OptionletVolatilityStructure>(adapter1);
+        adapter1.enableExtrapolation();
+
+        final OptionletStripper2 stripper2 = new OptionletStripper2(
+                stripper1,
+                new Handle<CapFloorTermVolCurve>(flatTermVolCurve));
+        final StrippedOptionletAdapter adapter2 = new StrippedOptionletAdapter(stripper2);
+        final Handle<OptionletVolatilityStructure> vol2 =
+                new Handle<OptionletVolatilityStructure>(adapter2);
+        adapter2.enableExtrapolation();
+
+        final double tolerance = 1.0e-7;
+        for (int t = 0; t < optionTenors.size(); ++t) {
+            for (int s = 0; s < strikes.length; ++s) {
+                final double v1 = vol1.currentLink().volatility(
+                        optionTenors.get(t), strikes[s], true);
+                final double v2 = vol2.currentLink().volatility(
+                        optionTenors.get(t), strikes[s], true);
+                final double error = Math.abs(v1 - v2);
+                assertTrue("vol1 != vol2 @ tenor=" + optionTenors.get(t)
+                                + " strike=" + strikes[s]
+                                + " v1=" + v1 + " v2=" + v2
+                                + " error=" + error + " tol=" + tolerance,
+                        error <= tolerance);
+            }
+        }
+    }
 
     @Ignore("Phase 5f.5: OptionletStripper2 + surface ported; test body is `fail(\"not implemented\")` — needs full port from C++ optionletstripper.cpp::testTermVolatilityStripping2")
     @Test
