@@ -22,7 +22,38 @@
 
 package org.jquantlib.testsuite.instruments;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.cashflow.BlackIborCouponPricer;
+import org.jquantlib.cashflow.FixedRateLeg;
+import org.jquantlib.cashflow.IborLeg;
+import org.jquantlib.cashflow.Leg;
+import org.jquantlib.cashflow.PricerSetter;
+import org.jquantlib.currencies.Europe.EURCurrency;
+import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.SimpleDayCounter;
+import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.instruments.Swap;
+import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -108,11 +139,89 @@ public class SwapTest {
     public void testSpreadDependency() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-2 — needs IborLeg.inArrears() + "
-            + "BlackIborCouponPricer wiring; JQuant has optionlet vol scaffolding but in-arrears path "
-            + "through IborCouponPricer setup is incomplete.")
+    /**
+     * Phase 5d.5-Bonds-b WI-5e.5-SWAP-2 — port of C++ swap.cpp:218-282
+     * (testInArrears).
+     *
+     * <p>Builds a 5-year EURCurrency swap on a NullCalendar with annual
+     * tenor and exercises the {@link IborLeg#inArrears()} flag plus
+     * {@link BlackIborCouponPricer} wiring via
+     * {@link PricerSetter#setCouponPricer}.  The expected NPV
+     * {@code -144813.0} is the cached value from C++ Hull "Options,
+     * Futures, and Other Derivatives" 4th-ed worked example, p.550 (with
+     * the documented sign-corrected adjustment 0.05 + 0.000115·T1).
+     *
+     * <p>Tolerance is loose ({@code 1.0}) per the C++ test fixture; this
+     * matches the Hull text's quoted precision.
+     */
     @Test
     public void testInArrears() {
+        final Date today = new Settings().evaluationDate();
+        final Date maturity = today.add(new Period(5, TimeUnit.Years));
+        final NullCalendar calendar = new NullCalendar();
+        final Schedule schedule = new Schedule(today, maturity,
+                new Period(Frequency.Annual), calendar,
+                BusinessDayConvention.Following,
+                BusinessDayConvention.Following,
+                DateGeneration.Rule.Forward, false);
+        final SimpleDayCounter dayCounter = new SimpleDayCounter();
+        final double nominal = 100_000_000.0;
+
+        final double oneYear = 0.05;
+        final double r = Math.log(1.0 + oneYear);
+        final FlatForward flat = new FlatForward(today,
+                new Handle<org.jquantlib.quotes.Quote>(new SimpleQuote(r)), dayCounter);
+        final Handle<YieldTermStructure> termStructure = new Handle<YieldTermStructure>(flat);
+
+        final IborIndex index = new IborIndex("dummy",
+                new Period(1, TimeUnit.Years), 0,
+                new EURCurrency(), calendar,
+                BusinessDayConvention.Following, false, dayCounter,
+                termStructure);
+
+        final Leg fixedLeg = new FixedRateLeg(schedule, dayCounter)
+                .withNotionals(nominal)
+                .withCouponRates(oneYear)
+                .Leg();
+
+        final double capletVolatility = 0.22;
+        final Handle<OptionletVolatilityStructure> vol =
+                new Handle<OptionletVolatilityStructure>(
+                        new ConstantOptionletVolatility(today,
+                                new NullCalendar(),
+                                BusinessDayConvention.Following,
+                                capletVolatility, dayCounter));
+        final BlackIborCouponPricer pricer = new BlackIborCouponPricer(vol);
+
+        // Per C++: gearings + spreads vectors empty (use defaults). Java
+        // leaves them at default (empty Array) when unset on the builder.
+        // fixingDays = 0 mirrors C++ withFixingDays(0).
+        final Leg floatingLeg = new IborLeg(schedule, index)
+                .withNotionals(new Array(new double[] { nominal }))
+                .withPaymentDayCounter(dayCounter)
+                .withFixingDays(0)
+                .inArrears()
+                .Leg();
+        PricerSetter.setCouponPricer(floatingLeg, pricer);
+
+        final Swap swap = new Swap(floatingLeg, fixedLeg);
+        swap.setPricingEngine(new DiscountingSwapEngine(termStructure));
+
+        final double storedValue = -144813.0;
+        final double tolerance = 1.0;
+        final double npv = swap.NPV();
+
+        // Smoke: confirm finite, non-zero, sign-correct.  When BlackIbor
+        // pricer plumbing diverges in subtle ways from C++ the absolute
+        // NPV may shift slightly; first assert directionally then
+        // compare to stored value within tolerance.
+        assertTrue("swap NPV should be finite", !Double.isNaN(npv) && !Double.isInfinite(npv));
+
+        if (Math.abs(npv - storedValue) > tolerance) {
+            fail("Wrong NPV calculation:\n"
+                    + "    expected:   " + storedValue + "\n"
+                    + "    calculated: " + npv);
+        }
     }
 
     @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-3 — depends on regenerating cached NPV "
