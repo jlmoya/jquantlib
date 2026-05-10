@@ -1108,9 +1108,71 @@ public class HestonModelTest {
         }
     }
 
-    @Ignore(REASON_EXPANSION)
+    /**
+     * Phase Body-Fill-4 partial port of C++ {@code testSmallSigmaExpansion}
+     * (2669-2743). The first half — small-sigma chF Taylor-expansion
+     * cross-check — is portable; the second half (BSM-limit NPV vs
+     * AndersenPiterbarg engine at n=192) uses C++
+     * {@code AnalyticHestonEngine::Integration::gaussLaguerre(192)} which
+     * Java does not expose (only n=128 embedded; only Laguerre default
+     * dispatched). The first-half check still validates the small-sigma
+     * Taylor expansion in {@link AnalyticHestonEngine#chF}.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:2669-2743} v1.42.1.
+     */
     @Test
-    public void testSmallSigmaExpansion() { fail("not implemented"); }
+    public void testSmallSigmaExpansion() {
+        final Date settlementDate = new Date(20, Month.March, 2020);
+        new Settings().setEvaluationDate(settlementDate);
+        final Date maturityDate = settlementDate.add(2 * 365);  // ~ 2y
+
+        final DayCounter dc = new Actual365Fixed();
+        final double t = dc.yearFraction(settlementDate, maturityDate);
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.0)), dc));
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(100));
+
+        final double theta = 0.1 * 0.1;
+        final double v0    = theta + 0.02;
+        final double kappa = 1.25;
+        final double sigma = 1e-9;
+        final double rho   = -0.9;
+
+        final HestonProcess process = new HestonProcess(rTS, rTS, spot,
+                v0, kappa, theta, sigma, rho);
+        final HestonModel hestonModel = new HestonModel(process);
+
+        final AnalyticHestonEngine engine =
+                new AnalyticHestonEngine(hestonModel, process, 128);
+
+        // C++ expected chF at u = (0.55, -0.5), t = 2.0 (~ Actual365 year).
+        final org.jquantlib.math.Complex expectedChF =
+                org.jquantlib.math.Complex.of(0.990463578538352651, 2.60693475987521132e-12);
+
+        final org.jquantlib.math.Complex calculatedChF = engine.chF(
+                org.jquantlib.math.Complex.of(0.55, -0.5), t);
+
+        final double dRe = expectedChF.real() - calculatedChF.real();
+        final double dIm = expectedChF.imag() - calculatedChF.imag();
+        final double diffChF = Math.sqrt(dRe * dRe + dIm * dIm);
+        final double tolChF = 1e-12;
+        if (diffChF > tolChF) {
+            fail("failed to reproduce normalized characteristic function "
+                    + "value for small sigma"
+                    + "\n  expected   : (" + expectedChF.real() + ", " + expectedChF.imag() + "i)"
+                    + "\n  calculated : (" + calculatedChF.real() + ", " + calculatedChF.imag() + "i)"
+                    + "\n  diff       : " + diffChF
+                    + "\n  tolerance  : " + tolChF);
+        }
+
+        // Second half (BSM-limit NPV vs AndersenPiterbarg engine) deferred:
+        // requires AnalyticHestonEngine::Integration::gaussLaguerre(192) +
+        // AndersenPiterbarg ComplexLogFormula dispatch — not yet ported in
+        // Java. The chF small-sigma cross-check above verifies the Taylor
+        // expansion path in AnalyticHestonEngine.chF().
+    }
 
     @Ignore(REASON_EXPANSION)
     @Test
