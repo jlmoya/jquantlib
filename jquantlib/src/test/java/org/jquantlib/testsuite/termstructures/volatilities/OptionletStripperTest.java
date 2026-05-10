@@ -554,9 +554,97 @@ public class OptionletStripperTest {
         }
     }
 
-    @Ignore("Phase 5g.5d unblocked the production gap (BlackCapFloorEngine now accepts a displacement parameter via the new (Handle<YTS>, double v, DayCounter, double displacement) and (Handle<YTS>, Handle<OVS>, double displacement) overloads). Test body still needs to be ported from C++ optionletstripper.cpp::testTermVolatilityStrippingShiftedLogNormalVol — body-fill TBD.")
+    /**
+     * Faithful port of C++ test-suite/optionletstripper.cpp::
+     * {@code testTermVolatilityStrippingShiftedLogNormalVol} (lines 678-743).
+     *
+     * <p>Strips the real-market 16x13 cap-vol surface under the
+     * shifted-lognormal model with separate discounting/forwarding curves
+     * (shift = 0.03), then verifies the stripped Black engine round-trips
+     * constant-vol prices to TIGHT (2.5e-8).
+     *
+     * <p>Phase 5g.5e — body fully ported. Currently @Ignore'd because of a
+     * residual production gap: {@link OptionletStripper1#performCalculations}
+     * builds its inner {@link BlackCapFloorEngine} without forwarding the
+     * caller-supplied {@code displacement_}, so the bootstrap throws
+     * "strike+displacement must be non-negative" on the negative-strike
+     * tail of the real-market surface. The Phase 5g.5d production work
+     * landed the engine displacement parameter; the next production touch
+     * needs to forward {@code displacement_} from
+     * {@code OptionletStripper1.performCalculations} to its inner
+     * {@code BlackCapFloorEngine} (one-line change). Tracking as Phase 5g.5e
+     * carry-forward — production touch deferred per agent contract
+     * (test-only scope).
+     */
+    @Ignore("Phase 5g.5e body fully ported but @Ignore'd: OptionletStripper1.performCalculations builds its inner BlackCapFloorEngine without forwarding displacement_, so the bootstrap throws 'strike+displacement must be non-negative' on negative-strike tail. Production fix needed: forward displacement_ from OptionletStripper1 to its inner engine (~1 LOC). Carry-forward to next production-touching phase.")
     @Test
-    public void testTermVolatilityStrippingShiftedLogNormalVol() { fail("not implemented"); }
+    public void testTermVolatilityStrippingShiftedLogNormalVol() {
+        final double shift = 0.03;
+        new Settings().setEvaluationDate(new Date(30, Month.April, 2015));
+
+        final Calendar calendar = new Target();
+        final DayCounter dayCounter = new Actual365Fixed();
+
+        final Handle<YieldTermStructure> discountingYTS =
+                buildRealDiscountingYTS(calendar, dayCounter);
+        final Handle<YieldTermStructure> forwardingYTS =
+                buildRealForwardingYTS(calendar, dayCounter);
+
+        final CapFloorTermVolData data = makeRealCapFloorTermVolData();
+        final CapFloorTermVolSurface capFloorVolRealSurface = new CapFloorTermVolSurface(
+                0, calendar, BusinessDayConvention.Following,
+                data.optionTenors, data.strikes, data.termV, dayCounter);
+
+        final IborIndex iborIndex = new Euribor6M(forwardingYTS);
+        final double accuracy = 1.0e-6;
+        final double tolerance = 2.5e-8;
+
+        final OptionletStripper1 stripper = new OptionletStripper1(
+                capFloorVolRealSurface, iborIndex,
+                Constants.NULL_REAL,
+                accuracy, 100,
+                discountingYTS,
+                org.jquantlib.model.VolatilityType.ShiftedLognormal, shift,
+                true, null);
+
+        final StrippedOptionletAdapter adapter = new StrippedOptionletAdapter(stripper);
+        final Handle<OptionletVolatilityStructure> vol =
+                new Handle<OptionletVolatilityStructure>(adapter);
+        adapter.enableExtrapolation();
+
+        // C++ passes (discountingYTS, vol) and the engine reads the
+        // displacement off the OVS. Java's OVS does not yet expose
+        // displacement(), so the engine carries an explicit displacement
+        // field — we forward the same shift we passed to the stripper.
+        final BlackCapFloorEngine strippedVolEngine = new BlackCapFloorEngine(
+                discountingYTS, vol, shift);
+
+        for (int s = 0; s < data.strikes.length; ++s) {
+            for (int t = 0; t < data.optionTenors.size(); ++t) {
+                final CapFloor cap = new MakeCapFloor(CapFloor.Type.Cap,
+                        data.optionTenors.get(t), iborIndex, data.strikes[s],
+                        new Period(0, TimeUnit.Days))
+                        .withPricingEngine(strippedVolEngine)
+                        .value();
+                final double priceFromStrippedVolatility = cap.NPV();
+
+                final BlackCapFloorEngine constantVolEngine = new BlackCapFloorEngine(
+                        discountingYTS, data.termV.get(t, s),
+                        capFloorVolRealSurface.dayCounter(), shift);
+                cap.setPricingEngine(constantVolEngine);
+                final double priceFromConstantVolatility = cap.NPV();
+
+                final double error = Math.abs(priceFromStrippedVolatility - priceFromConstantVolatility);
+                assertTrue("shifted-lognormal stripping mismatch: tenor=" + data.optionTenors.get(t)
+                        + " strike=" + data.strikes[s]
+                        + " stripped=" + priceFromStrippedVolatility
+                        + " constant=" + priceFromConstantVolatility
+                        + " error=" + error
+                        + " tol=" + tolerance,
+                        error <= tolerance);
+            }
+        }
+    }
 
     /**
      * Faithful port of C++ test-suite/optionletstripper.cpp::
