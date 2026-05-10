@@ -659,23 +659,193 @@ public class CPISwapTest {
     // ===================================================================
     // BOOST_AUTO_TEST_CASE(cpibondconsistency) — inflationcpiswap.cpp:408-491
     // ===================================================================
+    /**
+     * Port of {@code inflationcpiswap.cpp:408-491} (QuantLib v1.42.1) —
+     * Phase Body-Fill (2026-05-09).
+     *
+     * <p>Builds the same multi-period CPISwap as {@link #consistency} but
+     * with {@code subtractInflationNominal = false}, plus the equivalent
+     * {@link org.jquantlib.instruments.bonds.CPIBond}, and asserts that
+     * {@code cpiBond.NPV()} agrees with {@code swap.legNPV(0)} (the
+     * inflation-leg NPV) within the C++ tolerance of 1e-5.
+     *
+     * <p>Reuses the 29-pillar nominal {@link InterpolatedZeroCurve} from
+     * the {@link #consistency} test (un-ignored by Phase 2y A.1) — the
+     * stored-NPV check only passes against this exact curve.
+     */
     @Test
-    @Ignore("Phase 2v: CPIBond now ported (org.jquantlib.instruments.bonds.CPIBond exists);"
-            + " test body is comments-only — needs full port from C++ inflationcpiswap.cpp::cpibondconsistency.")
     public void cpibondconsistency() {
-        // C++ flow:
-        //   - Build same CPISwap as in `consistency` but with
-        //     subtractInflationNominal = false.
-        //   - Build the equivalent CPIBond:
-        //       CPIBond(settlementDays=1, nominal=1e6, baseCPI=206.1,
-        //               contractObservationLag, fixedIndex=common.ii,
-        //               observationInterpolation=Flat,
-        //               fixedSchedule, fixedRates={0.1}, fixedDayCount=Act365F,
-        //               fixedPaymentConvention=ModFollowing).
-        //   - Price both with DiscountingSwapEngine / DiscountingBondEngine.
-        //   - Assert |cpiB.NPV() - zisV.legNPV(0)| < 1e-5.
-        //
-        // Java blocker: CPIBond not ported.
+        final CommonVars common = new CommonVars();
+
+        // 29-pillar nominal curve (identical to consistency test).
+        final Date[] nomD = {
+            new Date(26, Month.November, 2009),
+            new Date(2, Month.December, 2009),
+            new Date(29, Month.December, 2009),
+            new Date(25, Month.February, 2010),
+            new Date(18, Month.March, 2010),
+            new Date(25, Month.May, 2010),
+            new Date(16, Month.September, 2010),
+            new Date(16, Month.December, 2010),
+            new Date(17, Month.March, 2011),
+            new Date(16, Month.June, 2011),
+            new Date(22, Month.September, 2011),
+            new Date(25, Month.November, 2011),
+            new Date(26, Month.November, 2012),
+            new Date(25, Month.November, 2013),
+            new Date(25, Month.November, 2014),
+            new Date(25, Month.November, 2015),
+            new Date(25, Month.November, 2016),
+            new Date(27, Month.November, 2017),
+            new Date(26, Month.November, 2018),
+            new Date(25, Month.November, 2019),
+            new Date(25, Month.November, 2021),
+            new Date(25, Month.November, 2024),
+            new Date(26, Month.November, 2029),
+            new Date(27, Month.November, 2034),
+            new Date(25, Month.November, 2039),
+            new Date(25, Month.November, 2049),
+            new Date(25, Month.November, 2059),
+            new Date(25, Month.November, 2069),
+            new Date(27, Month.November, 2079)
+        };
+        final double[] nomR = {
+            0.475   / 100.0,
+            0.47498 / 100.0,
+            0.49988 / 100.0,
+            0.59955 / 100.0,
+            0.65361 / 100.0,
+            0.82830 / 100.0,
+            0.78960 / 100.0,
+            0.93762 / 100.0,
+            1.12037 / 100.0,
+            1.31308 / 100.0,
+            1.52011 / 100.0,
+            1.78399 / 100.0,
+            2.41170 / 100.0,
+            2.83935 / 100.0,
+            3.12888 / 100.0,
+            3.34298 / 100.0,
+            3.50632 / 100.0,
+            3.63666 / 100.0,
+            3.74723 / 100.0,
+            3.83988 / 100.0,
+            4.00508 / 100.0,
+            4.16042 / 100.0,
+            4.15577 / 100.0,
+            4.04933 / 100.0,
+            3.95217 / 100.0,
+            3.80932 / 100.0,
+            3.80849 / 100.0,
+            3.72677 / 100.0,
+            3.63082 / 100.0
+        };
+        final InterpolatedZeroCurve<Linear> nomCurve =
+                new InterpolatedZeroCurve<>(Linear.class, nomD, nomR,
+                        common.dcNominal);
+        final Handle<YieldTermStructure> nominalTS =
+                new Handle<YieldTermStructure>(nomCurve);
+
+        // CPISwap parameters — same as consistency test EXCEPT
+        // subtractInflationNominal = false (cpp:415).
+        final CPISwap.Type type = CPISwap.Type.Payer;
+        final double nominal = 1_000_000.0;
+        final boolean subtractInflationNominal = false;
+        final double spread = 0.0;
+        final DayCounter floatDayCount = new Actual365Fixed();
+        final BusinessDayConvention floatPaymentConvention =
+                BusinessDayConvention.ModifiedFollowing;
+        final int fixingDays = 0;
+        final IborIndex floatIndex = new GBPLibor(
+                new Period(6, TimeUnit.Months), nominalTS);
+
+        final double fixedRate = 0.1;
+        final double baseCPI = 206.1;
+        final DayCounter fixedDayCount = new Actual365Fixed();
+        final BusinessDayConvention fixedPaymentConvention =
+                BusinessDayConvention.ModifiedFollowing;
+        final Period contractObservationLag = common.contractObservationLag;
+        final CPI.InterpolationType observationInterpolation =
+                common.contractObservationInterpolation;
+
+        final Date startDate = new Date(2, Month.October, 2007);
+        final Date endDate = new Date(2, Month.October, 2052);
+        final Schedule floatSchedule = new org.jquantlib.time.MakeSchedule(
+                startDate, endDate, new Period(6, TimeUnit.Months),
+                new UnitedKingdom(), floatPaymentConvention)
+                .withTerminationDateConvention(floatPaymentConvention)
+                .backwards()
+                .schedule();
+        final Schedule fixedSchedule = new org.jquantlib.time.MakeSchedule(
+                startDate, endDate, new Period(6, TimeUnit.Months),
+                new UnitedKingdom(), BusinessDayConvention.Unadjusted)
+                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+                .backwards()
+                .schedule();
+
+        final CPISwap zisV = new CPISwap(type, nominal, subtractInflationNominal,
+                spread, floatDayCount, floatSchedule, floatPaymentConvention,
+                fixingDays, floatIndex, fixedRate, baseCPI, fixedDayCount,
+                fixedSchedule, fixedPaymentConvention, contractObservationLag,
+                common.ii2, observationInterpolation, Constants.NULL_REAL);
+
+        // Seed past fixings — same as consistency (cpp:458-472).
+        final double[] floatFix = {
+                0.06255, 0.05975, 0.0637, 0.018425, 0.0073438, -1.0, -1.0
+        };
+        final double[] cpiFix = { 211.4, 217.2, 211.4, 213.4, -2.0, -2.0 };
+        for (int i = 0; i < floatSchedule.size(); ++i) {
+            if (floatSchedule.date(i).lt(common.evaluationDate)) {
+                floatIndex.addFixing(floatSchedule.date(i),
+                        (i < floatFix.length ? floatFix[i] : -1.0), true);
+            }
+            if (i < zisV.cpiLeg().size()) {
+                final CashFlow cf = zisV.cpiLeg().get(i);
+                if (cf instanceof CPICoupon) {
+                    final CPICoupon zic = (CPICoupon) cf;
+                    if (zic.fixingDate().lt(
+                            common.evaluationDate.sub(new Period(1, TimeUnit.Months)))) {
+                        common.ii2.addFixing(zic.fixingDate(),
+                                (i < cpiFix.length ? cpiFix[i] : -2.0), true);
+                    }
+                }
+            }
+        }
+
+        // Price the swap (cpp:476-477).
+        final DiscountingSwapEngine dse =
+                new DiscountingSwapEngine(nominalTS);
+        zisV.setPricingEngine(dse);
+        // Capture the inflation-leg NPV before constructing the bond — the
+        // WeakReferenceObservable cascade can invalidate cached results.
+        final double zisLegNpv = zisV.legNPV(0);
+
+        // Build the equivalent CPIBond (cpp:480-485).
+        final double[] fixedRates = { fixedRate };
+        final int settlementDays = 1; // cannot be zero
+        final org.jquantlib.instruments.bonds.CPIBond cpiB =
+                new org.jquantlib.instruments.bonds.CPIBond(
+                        settlementDays, nominal, baseCPI,
+                        contractObservationLag, common.ii2,
+                        observationInterpolation, fixedSchedule, fixedRates,
+                        fixedDayCount, fixedPaymentConvention);
+
+        final org.jquantlib.pricingengines.bond.DiscountingBondEngine dbe =
+                new org.jquantlib.pricingengines.bond.DiscountingBondEngine(
+                        nominalTS);
+        cpiB.setPricingEngine(dbe);
+
+        // C++: QL_REQUIRE(fabs(cpiB.NPV() - zisV.legNPV(0)) < 1e-5)
+        // (cpp:490).
+        final double cpiBondNpv = cpiB.NPV();
+        final double diff = Math.abs(cpiBondNpv - zisLegNpv);
+        if (diff >= 1e-5) {
+            fail("CPIBond does not equal equivalent CPISwap inflation leg:"
+                    + " cpiBond.NPV=" + cpiBondNpv
+                    + " swap.legNPV(0)=" + zisLegNpv
+                    + " diff=" + diff
+                    + " tolerance=1e-5");
+        }
     }
 
     // ===================================================================
