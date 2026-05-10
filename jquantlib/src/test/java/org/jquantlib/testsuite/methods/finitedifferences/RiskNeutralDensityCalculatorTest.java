@@ -178,9 +178,78 @@ public class RiskNeutralDensityCalculatorTest {
         }
     }
 
-    @Ignore(REASON_MISSING)
+    /**
+     * Phase 5h.5-RND-c port of C++ {@code testBSMagainstHestonRND}
+     * (lines 124-208). Verifies HestonRNDCalculator converges to the
+     * BSM density when Heston parameters degenerate (sigma -> 0,
+     * v0 = theta = vol^2). Tolerances: pdf/cdf 1e-4, invcdf 1e-3.
+     */
     @Test
-    public void testBSMagainstHestonRND() { fail("not implemented"); }
+    public void testBSMagainstHestonRND() {
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Date todaysDate = new Settings().evaluationDate();
+
+        final double s0 = 10.0;
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+
+        final double r = 0.155;
+        final double q = 0.0721;
+        final double v = 0.27;
+
+        final double kappa = 1.0;
+        final double theta = v * v;
+        final double rho   = -0.75;
+        final double v0    = v * v;
+        final double sigma = 0.0001;
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(r)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(q)), dayCounter));
+        final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                new BlackConstantVol(todaysDate, new org.jquantlib.time.calendars.NullCalendar(),
+                        new Handle<Quote>(new SimpleQuote(v)), dayCounter));
+
+        final BlackScholesMertonProcess bsmProcess =
+                new BlackScholesMertonProcess(spot, qTS, rTS, volTS);
+
+        final BSMRNDCalculator bsm = new BSMRNDCalculator(bsmProcess);
+        final HestonRNDCalculator heston = new HestonRNDCalculator(
+                new HestonProcess(rTS, qTS, spot, v0, kappa, theta, sigma, rho),
+                1.0e-8, 10000);
+
+        final double[] times   = { 0.5, 1.0, 2.0 };
+        final double[] strikes = { 7.5, 10.0, 15.0 };
+        final double[] probs   = { 1.0e-6, 0.01, 0.5, 0.99, 1.0 - 1.0e-6 };
+
+        for (final double t : times) {
+            for (final double strike : strikes) {
+                final double xs = Math.log(strike);
+
+                final double expectedPDF = bsm.pdf(xs, t);
+                final double calculatedPDF = heston.pdf(xs, t);
+
+                final double tol = 1.0e-4;
+                assertEquals("Heston vs BSM pdf t=" + t + " K=" + strike,
+                        expectedPDF, calculatedPDF, tol);
+
+                final double expectedCDF = bsm.cdf(xs, t);
+                final double calculatedCDF = heston.cdf(xs, t);
+
+                assertEquals("Heston vs BSM cdf t=" + t + " K=" + strike,
+                        expectedCDF, calculatedCDF, tol);
+            }
+
+            for (final double prob : probs) {
+                final double expectedInvCDF = bsm.invcdf(prob, t);
+                final double calculatedInvCDF = heston.invcdf(prob, t);
+
+                final double tol = 1.0e-3;
+                assertEquals("Heston vs BSM invcdf t=" + t + " p=" + prob,
+                        expectedInvCDF, calculatedInvCDF, tol);
+            }
+        }
+    }
 
     @Ignore(REASON_MISSING)
     @Test
