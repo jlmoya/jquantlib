@@ -22,36 +22,80 @@ import org.jquantlib.math.Ops;
 
 /**
  * Gauss-Laguerre quadrature for integrals of the form
- * {@code ∫₀^∞ f(x) e^{-x} dx}. Phase 2f WI-3 C.2 port of
- * {@code QuantLib::GaussLaguerreIntegration} (v1.42.1
+ * {@code ∫₀^∞ f(x) e^{-x} dx}. Phase 2f WI-3 C.2 / Phase 5h.5-Integration
+ * port of {@code QuantLib::GaussLaguerreIntegration} (v1.42.1
  * ql/math/integrals/gaussianquadratures.{hpp,cpp}).
  *
- * <p>JQuantLib does not yet have the {@link org.jquantlib.math.matrixutilities}
- * TQR eigendecomposition used by C++ to derive nodes/weights at runtime
- * from the Jacobi tridiagonal system. As a deliberate trade-off
- * documented in {@code phase2f-design §C.2}, the {@code n=128} table
- * (the only order used downstream by {@link
- * org.jquantlib.processes.HestonProcess} BroadieKaya schemes) is
- * embedded as static {@code double[]} arrays produced by the C++ probe
- * {@code gauss_laguerre_integration_probe}. Other orders are not
- * supported by this port.
+ * <p>For backward compatibility, the {@code n=128} table — which was the
+ * only order used by Phase 2f BroadieKaya — is kept embedded as static
+ * {@code double[]} arrays produced by the C++ probe
+ * {@code gauss_laguerre_integration_probe} and reproduced bit-exactly. The
+ * embedded table iteration order is fingerprinted in cross-validation
+ * tests; preserve it.
+ *
+ * <p>Phase 5h.5-Integration: extended to support arbitrary orders 1..192
+ * (matching the C++ guard {@code intOrder <= 192} in
+ * {@code AnalyticHestonEngine::Integration::gaussLaguerre}). Orders other
+ * than 128 are derived at construction time from the {@link GaussLaguerrePolynomial}
+ * via the {@link GaussianQuadrature} Golub-Welsch eigendecomposition.
  *
  * <p>The summation order matches C++ {@code GaussianQuadrature::operator()}:
- * highest-index node first, descending to index 0. This iteration order
- * is fingerprinted in the cross-validation test, so any bit-exact match
- * with the C++ probe's reference integrals depends on preserving it.
+ * highest-index node first, descending to index 0.
  */
 public final class GaussLaguerreIntegration {
 
-    /** Only n=128 is supported by this minimal port. */
+    /**
+     * Maximum supported integration order, matching the C++
+     * {@code QL_REQUIRE(intOrder <= 192, ...)} in
+     * {@code AnalyticHestonEngine::Integration::gaussLaguerre}.
+     */
+    public static final int MAX_ORDER = 192;
+
+    /**
+     * The pre-existing embedded table order (Phase 2f WI-3 C.2). Other
+     * supported orders are derived from {@link GaussLaguerrePolynomial}.
+     */
     public static final int SUPPORTED_ORDER = 128;
 
     private final int order_;
+    private final double s_;
+    private final double[] x_;
+    private final double[] w_;
 
+    /** Construct with weight {@code w(x;s)=x^s*exp(-x)}, default {@code s=0}. */
     public GaussLaguerreIntegration(final int n) {
-        QL.require(n == SUPPORTED_ORDER,
-                "GaussLaguerreIntegration: only n=" + SUPPORTED_ORDER + " is supported by this Java port");
+        this(n, 0.0);
+    }
+
+    /**
+     * Construct a Gauss-Laguerre quadrature of order {@code n} with
+     * generalized weight {@code w(x;s) = x^s * exp(-x)}, {@code s > -1}.
+     *
+     * @param n integration order (1..{@link #MAX_ORDER})
+     * @param s exponent in the weight (default 0.0)
+     */
+    public GaussLaguerreIntegration(final int n, final double s) {
+        QL.require(n > 0, "GaussLaguerreIntegration: order must be positive");
+        QL.require(n <= MAX_ORDER,
+                "GaussLaguerreIntegration: maximum integration order ("
+                        + MAX_ORDER + ") exceeded");
         this.order_ = n;
+        this.s_ = s;
+        if (n == SUPPORTED_ORDER && s == 0.0) {
+            this.x_ = X128;
+            this.w_ = W128;
+        } else {
+            // Derive nodes/weights via Golub-Welsch (TQR eigendecomposition
+            // of the Jacobi tridiagonal of GaussLaguerrePolynomial).
+            final GaussianQuadrature q = new GaussianQuadrature(n,
+                    new GaussLaguerrePolynomial(s));
+            this.x_ = new double[n];
+            this.w_ = new double[n];
+            for (int i = 0; i < n; ++i) {
+                this.x_[i] = q.x(i);
+                this.w_[i] = q.weight(i);
+            }
+        }
     }
 
     /** Number of quadrature points. */
@@ -61,23 +105,23 @@ public final class GaussLaguerreIntegration {
 
     /** Read-only access to the abscissa table. */
     public double x(final int i) {
-        return X128[i];
+        return x_[i];
     }
 
     /** Read-only access to the weight table. */
     public double weight(final int i) {
-        return W128[i];
+        return w_[i];
     }
 
     /**
-     * Compute {@code ∫₀^∞ f(x) e^{-x} dx} via the n=128 quadrature
-     * rule. Iterates highest-index node first to match C++
+     * Compute {@code ∫₀^∞ f(x) e^{-x} dx} via the n-point Gauss-Laguerre
+     * quadrature. Iterates highest-index node first to match C++
      * {@code GaussianQuadrature::operator()(const F& f) const}.
      */
     public double op(final Ops.DoubleOp f) {
         double sum = 0.0;
         for (int i = order_ - 1; i >= 0; --i) {
-            sum += W128[i] * f.op(X128[i]);
+            sum += w_[i] * f.op(x_[i]);
         }
         return sum;
     }

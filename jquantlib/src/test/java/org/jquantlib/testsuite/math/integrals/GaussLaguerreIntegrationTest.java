@@ -83,6 +83,63 @@ public class GaussLaguerreIntegrationTest {
         }
     }
 
+    /**
+     * Phase 5h.5-Integration: arbitrary orders (144, 160) derived via the
+     * Golub-Welsch algorithm in {@link org.jquantlib.math.integrals.GaussianQuadrature}
+     * + {@link org.jquantlib.math.integrals.GaussLaguerrePolynomial} must
+     * reproduce the analytic moments {@code ∫₀^∞ x^k e^{-x} dx = k!}.
+     *
+     * <p>Note: the C++ {@code GaussianQuadrature::operator()} returns the
+     * raw {@code Σ wᵢ f(xᵢ)} where the {@code exp(-x)} is implicitly
+     * absorbed in the weights ({@code wᵢ = μ₀ v[0][i]² / w(xᵢ)} with
+     * {@code w(x) = exp(-x)} for Laguerre); to recover
+     * {@code ∫₀^∞ x^k exp(-x) dx} we feed the integrand
+     * {@code f(x) = x^k * exp(-x)} explicitly.
+     */
+    @Test
+    public void derivedOrders144And160ReproduceFactorialMoments() {
+        for (int n : new int[] { 144, 160 }) {
+            final GaussLaguerreIntegration q = new GaussLaguerreIntegration(n);
+            // ∫₀^∞ 1 * e^{-x} dx = 1 = 0!
+            final double m0 = q.op(weighted(0));
+            // ∫₀^∞ x * e^{-x} dx = 1 = 1!
+            final double m1 = q.op(weighted(1));
+            // ∫₀^∞ x² * e^{-x} dx = 2 = 2!
+            final double m2 = q.op(weighted(2));
+            if (Math.abs(m0 - 1.0) > 1e-9) {
+                fail("n=" + n + " moment 0: expected 1.0 got " + m0);
+            }
+            if (Math.abs(m1 - 1.0) > 1e-9) {
+                fail("n=" + n + " moment 1: expected 1.0 got " + m1);
+            }
+            if (Math.abs(m2 - 2.0) > 1e-9) {
+                fail("n=" + n + " moment 2: expected 2.0 got " + m2);
+            }
+        }
+    }
+
+    /** {@code f(x) = x^k * exp(-x)} for analytic moment tests. */
+    private static Ops.DoubleOp weighted(final int k) {
+        return new Ops.DoubleOp() { public double op(double x) {
+            return Math.pow(x, k) * Math.exp(-x);
+        } };
+    }
+
+    /**
+     * Phase 5h.5-Integration: order > 192 must be rejected per the C++
+     * {@code QL_REQUIRE(intOrder <= 192, ...)} check in
+     * {@code AnalyticHestonEngine::Integration::gaussLaguerre}.
+     */
+    @Test
+    public void orderGreaterThan192Rejected() {
+        try {
+            new GaussLaguerreIntegration(193);
+            fail("expected order > 192 to throw");
+        } catch (final RuntimeException expected) {
+            // ok
+        }
+    }
+
     private static Ops.DoubleOp constOne() { return new Ops.DoubleOp() { public double op(double x){ return 1.0; } }; }
     private static Ops.DoubleOp identity() { return new Ops.DoubleOp() { public double op(double x){ return x; } }; }
     private static Ops.DoubleOp squared()  { return new Ops.DoubleOp() { public double op(double x){ return x * x; } }; }
