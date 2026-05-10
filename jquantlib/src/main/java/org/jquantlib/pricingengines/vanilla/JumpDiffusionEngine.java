@@ -60,6 +60,7 @@ package org.jquantlib.pricingengines.vanilla;
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.distributions.PoissonDistribution;
@@ -139,8 +140,12 @@ public class JumpDiffusionEngine extends VanillaOption.EngineImpl {
         final double /* @Real */k = Math.exp(muPlusHalfSquareVol) - 1.0;
         final double /* @Real */lambda = (k + 1.0) * process.jumpIntensity().currentLink().value();
 
-        // dummy strike
-        final double /* @Real */variance = process.blackVolatility().currentLink().blackVariance(A.exercise.lastDate(), 1.0);
+        QL.require(A.payoff instanceof StrikedTypePayoff, "non-striked payoff given");
+        final StrikedTypePayoff payoff = (StrikedTypePayoff) A.payoff;
+        // C++ jumpdiffusionengine.cpp:55-58 — strike-aware variance lookup
+        // (matters for skew-vol surfaces; flat vols ignore the strike).
+        final double /* @Real */variance =
+            process.blackVolatility().currentLink().blackVariance(A.exercise.lastDate(), payoff.strike());
 
         final DayCounter voldc = process.blackVolatility().currentLink().dayCounter();
         final Calendar volcal = process.blackVolatility().currentLink().calendar();
