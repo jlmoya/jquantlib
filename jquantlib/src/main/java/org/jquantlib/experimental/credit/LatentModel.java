@@ -29,6 +29,11 @@ import java.util.function.Function;
 
 import org.jquantlib.QL;
 import org.jquantlib.experimental.math.CopulaPolicy;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.util.DefaultObservable;
+import org.jquantlib.util.Observable;
+import org.jquantlib.util.Observer;
 
 /**
  * Generic multifactor latent variable model.
@@ -58,21 +63,29 @@ import org.jquantlib.experimental.math.CopulaPolicy;
  * <ul>
  *   <li>The C++ {@code FactorSampler} nested template (Box-Muller / PolarT
  *       specialisations) is deferred to a follow-up phase.</li>
- *   <li>The C++ {@code Handle<Quote>} constructor and the
- *       {@code Observer / Observable} machinery (single-factor correlation
- *       reactivity) are deferred until the credit observable wiring is
- *       ported.</li>
+ *   <li>The C++ {@code Handle<Quote>} reactive single-factor constructor is
+ *       supported via
+ *       {@link #LatentModel(Handle, int, CopulaPolicy, Function)} which
+ *       accepts an explicit copula-factory {@code Function} so the underlying
+ *       copula can be rebuilt when the quote ticks (Java has no equivalent
+ *       to C++ {@code copula_.getInitTraits()}). Phase 4m.7c-b WI-2.</li>
  *   <li>The {@code IntegrationFactory} static helper is replaced by the
  *       {@link #createLMIntegration(int, IntegrationType)} static factory
  *       method here.</li>
  * </ul>
+ *
+ * <p>The {@link LatentModel} implements both {@link Observer} (so it can
+ * react to single-factor {@link Quote} updates) and {@link Observable} (so
+ * downstream loss models can re-trigger their own calculations on copula
+ * change). When constructed without a Handle&lt;Quote&gt;, observer/observable
+ * traffic still works (a no-op {@link #update()} merely re-notifies).
  *
  * <p>Derived classes should implement a modelled magnitude (default time,
  * loss, ...) and provide probability distributions and conditional values.
  *
  * @param <P> the {@link CopulaPolicy} subtype controlling distributions
  */
-public class LatentModel<P extends CopulaPolicy> {
+public class LatentModel<P extends CopulaPolicy> implements Observer, Observable {
 
     /** Choice of integration backend in {@link #createLMIntegration}. */
     public enum IntegrationType {
@@ -98,6 +111,19 @@ public class LatentModel<P extends CopulaPolicy> {
     protected int nVariables_;
     /** Copula policy instance; supplies distribution evaluations. */
     protected P copula_;
+    /**
+     * Optional reactive market-correlation quote handle. Non-null only when
+     * constructed via the {@link #LatentModel(Handle, int, CopulaPolicy, Function)}
+     * single-factor reactive ctor (Phase 4m.7c-b WI-2).
+     */
+    protected Handle<Quote> cachedMktFactor_;
+    /**
+     * Optional copula factory used to rebuild {@link #copula_} when the
+     * cached market-factor quote changes. Required by the reactive ctor.
+     */
+    private Function<List<List<Double>>, P> copulaFactory_;
+    /** Backing observable for downstream notification. */
+    private final Observable delegatedObservable = new DefaultObservable(this);
 
     /**
      * Constructs a LM with an arbitrary number of latent variables and factors
@@ -150,6 +176,50 @@ public class LatentModel<P extends CopulaPolicy> {
      */
     public LatentModel(final double correlSqr, final int nVariables, final P copula) {
         this(uniformWeightMatrix(correlSqr, nVariables), copula);
+    }
+
+    /**
+     * Reactive single-factor constructor — mirrors C++
+     * {@code LatentModel(const Handle<Quote>& singleFactorCorrel, Size nVariables, …)}.
+     *
+     * <p>The {@link Quote#value()} read at construction time supplies the
+     * common single-factor weight: {@code β = sqrt(quote.value())} and
+     * idiosyncratic factor {@code √(1 − quote.value())} for every name.
+     * The model registers as an {@link Observer} on the quote handle so that
+     * any later quote update re-derives weights and triggers a rebuild of
+     * the copula via the supplied {@code copulaFactory}.
+     *
+     * @param singleFactorCorrel observable correlation-squared quote
+     * @param nVariables         number of latent variables
+     * @param copula             initial copula (must be consistent with
+     *                           {@code singleFactorCorrel.value()})
+     * @param copulaFactory      factory that maps the (re-derived) factor
+     *                           weights to a fresh copula instance; called on
+     *                           every quote update
+     */
+    public LatentModel(final Handle<Quote> singleFactorCorrel,
+                       final int nVariables,
+                       final P copula,
+                       final Function<List<List<Double>>, P> copulaFactory) {
+        this(uniformWeightMatrix(Math.sqrt(singleFactorCorrel.currentLink().value()), nVariables),
+             copula);
+        QL.require(singleFactorCorrel != null && !singleFactorCorrel.empty(),
+                "singleFactorCorrel handle must not be empty");
+        QL.require(copulaFactory != null,
+                "copulaFactory must not be null when using the Handle<Quote> ctor");
+        this.cachedMktFactor_ = singleFactorCorrel;
+        this.copulaFactory_ = copulaFactory;
+        // Register as Observer on the quote handle so update() fires on tick.
+        this.cachedMktFactor_.addObserver(this);
+        // Override idiosyncratic factor: C++ uses sqrt(1 - quote.value())
+        // (NOT sqrt(1 - sqrt(quote.value())^2) — the quote stores correlation
+        // not factor weight). Recompute to match.
+        final double w = Math.sqrt(singleFactorCorrel.currentLink().value());
+        for (int i = 0; i < nVariables_; ++i) {
+            this.idiosyncFctrs_[i] = Math.sqrt(1.0 - singleFactorCorrel.currentLink().value());
+            // Also override factorWeights_ to use the unsquared weight
+            this.factorWeights_.get(i).set(0, w);
+        }
     }
 
     /** Number of latent variables modelled. */
@@ -336,6 +406,79 @@ public class LatentModel<P extends CopulaPolicy> {
     /** Default Gauss-Hermite backend with {@link #DEFAULT_QUADRATURE_ORDER}. */
     public static LMIntegration createLMIntegration(final int dimension) {
         return createLMIntegration(dimension, IntegrationType.GaussianQuadrature);
+    }
+
+    // ------------------------------------------------------------------------
+    // Observer / Observable wiring (Phase 4m.7c-b WI-2)
+    // ------------------------------------------------------------------------
+
+    /**
+     * Reactive update triggered by {@link #cachedMktFactor_}'s {@link Quote}
+     * notifying observers. Mirrors C++ {@code LatentModel::update}: re-derives
+     * factor weights and idiosyncratic factors from the new quote value,
+     * rebuilds the copula via {@link #copulaFactory_}, then forwards the
+     * notification downstream.
+     *
+     * <p>No-op when the model was not constructed with the
+     * {@link #LatentModel(Handle, int, CopulaPolicy, Function)} ctor (the
+     * downstream observers are still notified — matches the polymorphic
+     * Observer contract).
+     */
+    @Override
+    public void update() {
+        if (cachedMktFactor_ != null && copulaFactory_ != null
+                && !cachedMktFactor_.empty()) {
+            final double rho = cachedMktFactor_.currentLink().value();
+            final double w = Math.sqrt(rho);
+            // Single-factor: rebuild factor weights and idiosyncratic factors.
+            this.factorWeights_ = uniformWeightMatrix(w, nVariables_);
+            this.idiosyncFctrs_ = new double[nVariables_];
+            for (int i = 0; i < nVariables_; ++i) {
+                this.idiosyncFctrs_[i] = Math.sqrt(1.0 - rho);
+            }
+            this.copula_ = copulaFactory_.apply(this.factorWeights_);
+        }
+        notifyObservers();
+    }
+
+    @Override
+    public final void addObserver(final Observer observer) {
+        delegatedObservable.addObserver(observer);
+    }
+
+    @Override
+    public final int countObservers() {
+        return delegatedObservable.countObservers();
+    }
+
+    @Override
+    public final List<Observer> getObservers() {
+        return delegatedObservable.getObservers();
+    }
+
+    @Override
+    public final void deleteObserver(final Observer observer) {
+        delegatedObservable.deleteObserver(observer);
+    }
+
+    @Override
+    public final void deleteObservers() {
+        delegatedObservable.deleteObservers();
+    }
+
+    @Override
+    public final void notifyObservers() {
+        delegatedObservable.notifyObservers();
+    }
+
+    @Override
+    public final void notifyObservers(final Object arg) {
+        delegatedObservable.notifyObservers(arg);
+    }
+
+    /** Read-only access to the cached single-factor correlation quote handle (may be {@code null}). */
+    public final Handle<Quote> cachedMktFactor() {
+        return cachedMktFactor_;
     }
 
     // ------------------------------------------------------------------------
