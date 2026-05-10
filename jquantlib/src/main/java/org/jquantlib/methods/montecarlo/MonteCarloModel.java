@@ -21,137 +21,170 @@
 /*
  Copyright (C) 2000, 2001, 2002, 2003 RiskMap srl
  Copyright (C) 2007 StatPro Italia srl
-
- This file is part of QuantLib, a free-software/open-source library
- for financial quantitative analysts and developers - http://quantlib.org/
-
- QuantLib is free software: you can redistribute it and/or modify it
- under the terms of the QuantLib license.  You should have received a
- copy of the license along with this program; if not, please email
- <quantlib-dev@lists.sf.net>. The license is also available online at
- <http://quantlib.org/license.shtml>.
-
- This program is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- FOR A PARTICULAR PURPOSE.  See the license for more details.
 */
 
 package org.jquantlib.methods.montecarlo;
 
-import org.jquantlib.math.randomnumbers.RandomNumberGenerator;
 import org.jquantlib.math.statistics.Statistics;
 
 /**
+ * General-purpose Monte Carlo model for path samples.
  *
- * General-purpose Monte Carlo model for path samples
- * <p>
- * The template arguments of this class correspond to available policies for the particular model to be instantiated---i.e., whether
- * it is single- or multi-asset, or whether it should use pseudo-random or low-discrepancy numbers for path generation. Such
- * decisions are grouped in trait classes so as to be orthogonal---see mctraits.hpp for examples.
- * <p>
+ * <p>Java port of {@code QuantLib v1.42.1
+ * ql/methods/montecarlo/montecarlomodel.hpp} (Phase 5h.5-MC-INFRA WI-5).
  *
- * The constructor accepts two safe references, i.e. two smart pointers, one to a path generator and the other to a path pricer. In
- * case of control variate technique the user should provide the additional control option, namely the option path pricer and the
- * option value.
+ * <p>The C++ class is parameterized over three template arguments —
+ * {@code MC} (the multi-/single-variate trait), {@code RNG} (the
+ * random-number trait) and {@code S} (the statistics accumulator). Java
+ * lacks template-template parameters, so this port collapses the two
+ * relevant traits to the bare path-generator and path-pricer types
+ * (parameter {@code PathType}). The statistics accumulator is the
+ * concrete {@link Statistics} class hierarchy (which provides
+ * {@code add}, {@code mean}, {@code samples}, {@code errorEstimate}).
  *
- * @category mcarlo
+ * <p>Both single-path ({@code PathType=Path}) and multi-path
+ * ({@code PathType=MultiPath}) variants share the same logic: the
+ * generator returns a {@code Sample<PathType>}, the pricer returns the
+ * payoff value, and the accumulator records (value, weight). Antithetic
+ * variates and the (price - cv-price + cv-value) control-variate
+ * adjustment are supported.
  *
- * @author Richard Gomes
+ * @param <PathType> {@link Path} for single-asset MC,
+ *                   {@link MultiPath} for multi-asset MC.
+ *
+ * @author JQuantLib
  */
-public class MonteCarloModel<MC extends Variate, RNG extends RandomNumberGenerator, S extends Statistics> {
+public class MonteCarloModel<PathType> {
 
-	public MonteCarloModel() {
-	}
+    //
+    // shared interfaces (decoupled from concrete classes so this model
+    // works equally well with PathGenerator/MultiPathGenerator and any
+    // PathPricer specialization).
+    //
 
-//    private PathGeneratorType pathGenerator_;
-//    private PathPricerType pathPricer_;
+    /**
+     * Anything that can produce a {@code Sample<PathType>} on demand.
+     */
+    public interface PathGeneratorAdapter<PathType> {
+        Sample<PathType> next();
+        Sample<PathType> antithetic();
+    }
 
-      private S sampleAccumulator_;
-//    private boolean isAntitheticVariate_;
-//    private PathPricerType cvPathPricer_;
-//    private ResultType cvOptionValue_;
-//    private boolean isControlVariate_;
+    /**
+     * Adapter for {@link PathGenerator} (single-asset).
+     */
+    public static final class PathGeneratorAdapterImpl
+            implements PathGeneratorAdapter<Path> {
+        private final PathGenerator<?> g;
+        public PathGeneratorAdapterImpl(final PathGenerator<?> g) { this.g = g; }
+        @Override public Sample<Path> next() { return g.next(); }
+        @Override public Sample<Path> antithetic() { return g.antithetic(); }
+    }
 
-	public void addSamples(final int size){
-		//  TODO... we have to work on this a bit.
+    /**
+     * Adapter for {@link MultiPathGenerator} (multi-asset).
+     */
+    public static final class MultiPathGeneratorAdapterImpl
+            implements PathGeneratorAdapter<MultiPath> {
+        private final MultiPathGenerator<?> g;
+        public MultiPathGeneratorAdapterImpl(final MultiPathGenerator<?> g) { this.g = g; }
+        @Override public Sample<MultiPath> next() { return g.next(); }
+        @Override public Sample<MultiPath> antithetic() { return g.antithetic(); }
+    }
 
-	}
 
-	public S sampleAccumulator(){
-		return sampleAccumulator_;
-	}
+    //
+    // private fields
+    //
+
+    private final PathGeneratorAdapter<PathType> pathGenerator_;
+    private final PathPricer<PathType> pathPricer_;
+    private final Statistics sampleAccumulator_;
+    private final boolean isAntitheticVariate_;
+
+    private final PathPricer<PathType> cvPathPricer_;
+    private final double cvOptionValue_;
+    private final boolean isControlVariate_;
+    private final PathGeneratorAdapter<PathType> cvPathGenerator_;
 
 
+    //
+    // constructors
+    //
+
+    /**
+     * Plain MC; no control variate.
+     */
+    public MonteCarloModel(
+            final PathGeneratorAdapter<PathType> pathGenerator,
+            final PathPricer<PathType> pathPricer,
+            final Statistics sampleAccumulator,
+            final boolean antitheticVariate) {
+        this(pathGenerator, pathPricer, sampleAccumulator, antitheticVariate,
+                null, 0.0, null);
+    }
+
+    /**
+     * MC with optional control variate. {@code cvPathPricer == null}
+     * disables the CV adjustment.
+     */
+    public MonteCarloModel(
+            final PathGeneratorAdapter<PathType> pathGenerator,
+            final PathPricer<PathType> pathPricer,
+            final Statistics sampleAccumulator,
+            final boolean antitheticVariate,
+            final PathPricer<PathType> cvPathPricer,
+            final double cvOptionValue,
+            final PathGeneratorAdapter<PathType> cvPathGenerator) {
+        this.pathGenerator_ = pathGenerator;
+        this.pathPricer_ = pathPricer;
+        this.sampleAccumulator_ = sampleAccumulator;
+        this.isAntitheticVariate_ = antitheticVariate;
+        this.cvPathPricer_ = cvPathPricer;
+        this.cvOptionValue_ = cvOptionValue;
+        this.cvPathGenerator_ = cvPathGenerator;
+        this.isControlVariate_ = (cvPathPricer != null);
+    }
+
+
+    /**
+     * Adds {@code samples} new draws to the underlying statistics
+     * accumulator. Mirrors {@code MonteCarloModel::addSamples} from
+     * C++.
+     */
+    public void addSamples(final int samples) {
+        for (int j = 1; j <= samples; j++) {
+            final Sample<PathType> path = pathGenerator_.next();
+            double price = pathPricer_.op(path.value());
+
+            if (isControlVariate_) {
+                if (cvPathGenerator_ == null) {
+                    price += cvOptionValue_ - cvPathPricer_.op(path.value());
+                } else {
+                    final Sample<PathType> cvPath = cvPathGenerator_.next();
+                    price += cvOptionValue_ - cvPathPricer_.op(cvPath.value());
+                }
+            }
+
+            if (isAntitheticVariate_) {
+                final Sample<PathType> atPath = pathGenerator_.antithetic();
+                double price2 = pathPricer_.op(atPath.value());
+                if (isControlVariate_) {
+                    if (cvPathGenerator_ == null) {
+                        price2 += cvOptionValue_ - cvPathPricer_.op(atPath.value());
+                    } else {
+                        final Sample<PathType> cvPath = cvPathGenerator_.antithetic();
+                        price2 += cvOptionValue_ - cvPathPricer_.op(cvPath.value());
+                    }
+                }
+                sampleAccumulator_.add((price + price2) / 2.0, path.weight());
+            } else {
+                sampleAccumulator_.add(price, path.weight());
+            }
+        }
+    }
+
+    public Statistics sampleAccumulator() /* @ReadOnly */ {
+        return sampleAccumulator_;
+    }
 }
-
-
-//template <template <class> class MC, class RNG, class S = Statistics>
-//class MonteCarloModel {
-//  public:
-//    typedef MC<RNG> mc_traits;
-//    typedef RNG rng_traits;
-//    typedef typename MC<RNG>::path_generator_type path_generator_type;
-//    typedef typename MC<RNG>::path_pricer_type path_pricer_type;
-//    typedef typename path_generator_type::sample_type sample_type;
-//    typedef typename path_pricer_type::result_type result_type;
-//    typedef S stats_type;
-//    // constructor
-//    MonteCarloModel(
-//              const boost::shared_ptr<path_generator_type>& pathGenerator,
-//              const boost::shared_ptr<path_pricer_type>& pathPricer,
-//              const stats_type& sampleAccumulator,
-//              bool antitheticVariate,
-//              const boost::shared_ptr<path_pricer_type>& cvPathPricer
-//                    = boost::shared_ptr<path_pricer_type>(),
-//              result_type cvOptionValue = result_type())
-//    : pathGenerator_(pathGenerator), pathPricer_(pathPricer),
-//      sampleAccumulator_(sampleAccumulator),
-//      isAntitheticVariate_(antitheticVariate),
-//      cvPathPricer_(cvPathPricer), cvOptionValue_(cvOptionValue) {
-//        if (!cvPathPricer_)
-//            isControlVariate_ = false;
-//        else
-//            isControlVariate_ = true;
-//    }
-//    void addSamples(Size samples);
-//    const stats_type& sampleAccumulator(void) const;
-//  private:
-//    boost::shared_ptr<path_generator_type> pathGenerator_;
-//    boost::shared_ptr<path_pricer_type> pathPricer_;
-//    stats_type sampleAccumulator_;
-//    bool isAntitheticVariate_;
-//    boost::shared_ptr<path_pricer_type> cvPathPricer_;
-//    result_type cvOptionValue_;
-//    bool isControlVariate_;
-//};
-//
-//
-//// inline definitions
-//template <template <class> class MC, class RNG, class S>
-//inline void MonteCarloModel<MC,RNG,S>::addSamples(Size samples) {
-//    for(Size j = 1; j <= samples; j++) {
-//
-//        sample_type path = pathGenerator_->next();
-//        result_type price = (*pathPricer_)(path.value);
-//
-//        if (isControlVariate_)
-//            price += cvOptionValue_-(*cvPathPricer_)(path.value);
-//
-//        if (isAntitheticVariate_) {
-//            path = pathGenerator_->antithetic();
-//            result_type price2 = (*pathPricer_)(path.value);
-//            if (isControlVariate_)
-//                price2 += cvOptionValue_-(*cvPathPricer_)(path.value);
-//            sampleAccumulator_.add((price+price2)/2.0, path.weight);
-//        } else {
-//            sampleAccumulator_.add(price, path.weight);
-//        }
-//    }
-//}
-//
-//template <template <class> class MC, class RNG, class S>
-//inline const typename MonteCarloModel<MC,RNG,S>::stats_type&
-//MonteCarloModel<MC,RNG,S>::sampleAccumulator() const {
-//    return sampleAccumulator_;
-//}
-//
