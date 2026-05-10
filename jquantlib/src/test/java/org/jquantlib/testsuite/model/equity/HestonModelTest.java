@@ -560,9 +560,137 @@ public class HestonModelTest {
 
     /* ---- 6. COS / Andersen-Piterbarg / Expansions -------------------- */
 
-    @Ignore(REASON_COS)
+    /**
+     * Phase Body-Fill-4 port of C++ {@code testCosHestonCumulants}
+     * (1791-1879). Cross-validates {@link COSHestonEngine}'s analytic
+     * cumulants {@code c1, c2, c3, c4} against numerical derivatives
+     * of the log-characteristic function — the closed-form derivation
+     * has to match the central-difference stencil to {@code 1e-7} for
+     * c1-c3 and {@code 1e-6} for c4.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:1791-1879} v1.42.1.
+     */
     @Test
-    public void testCosHestonCumulants() { fail("not implemented"); }
+    public void testCosHestonCumulants() {
+        final Date settlementDate = new Date(7, Month.February, 2017);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.15)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.075)), dayCounter));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final double v0    =  0.1;
+        final double rho   = -0.75;
+        final double sigma =  0.4;
+        final double kappa =  4.0;
+        final double theta =  0.25;
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+
+        final COSHestonEngine cosEngine = new COSHestonEngine(model, process);
+
+        final double tol = 1e-7;
+        final org.jquantlib.methods.finitedifferences.operators.NumericalDifferentiation.Scheme central =
+                org.jquantlib.methods.finitedifferences.operators.NumericalDifferentiation.Scheme.Central;
+
+        // Iterate t = 0.01, 0.02, 0.04, ... with t += t (doubling).
+        for (double t = 0.01; t < 41.0; t += t) {
+            final double tt = t;
+
+            // c1: 1st derivative of log(φ(u,t)) / i  at u=0.
+            // Sampler returns the real part of log(φ(u,t))/alpha for n=1
+            // (alpha = i).
+            final java.util.function.DoubleUnaryOperator f1 = u -> logChfRealOver(u, tt, 1, cosEngine);
+            final double nc1 = new org.jquantlib.methods.finitedifferences.operators.NumericalDifferentiation(
+                    f1, 1, 1e-5, 5, central).evaluate(0.0);
+            final double c1 = cosEngine.c1(t);
+            if (Math.abs(nc1 - c1) > tol) {
+                fail(" failed to reproduce first cumulant"
+                        + "\n    t          : " + t
+                        + "\n    expected   : " + nc1
+                        + "\n    calculated : " + c1
+                        + "\n    difference : " + Math.abs(nc1 - c1));
+            }
+
+            // c2: 2nd derivative; alpha = i^2 = -1.
+            final java.util.function.DoubleUnaryOperator f2 = u -> logChfRealOver(u, tt, 2, cosEngine);
+            final double nc2 = new org.jquantlib.methods.finitedifferences.operators.NumericalDifferentiation(
+                    f2, 2, 1e-2, 5, central).evaluate(0.0);
+            final double c2 = cosEngine.c2(t);
+            if (Math.abs(nc2 - c2) > tol) {
+                fail(" failed to reproduce second cumulant"
+                        + "\n    t          : " + t
+                        + "\n    expected   : " + nc2
+                        + "\n    calculated : " + c2
+                        + "\n    difference : " + Math.abs(nc2 - c2));
+            }
+
+            // c3: 3rd derivative; alpha = i^3 = -i.
+            final java.util.function.DoubleUnaryOperator f3 = u -> logChfRealOver(u, tt, 3, cosEngine);
+            final double nc3 = new org.jquantlib.methods.finitedifferences.operators.NumericalDifferentiation(
+                    f3, 3, 5e-3, 7, central).evaluate(0.0);
+            final double c3 = cosEngine.c3(t);
+            if (Math.abs(nc3 - c3) > tol) {
+                fail(" failed to reproduce third cumulant"
+                        + "\n    t          : " + t
+                        + "\n    expected   : " + nc3
+                        + "\n    calculated : " + c3
+                        + "\n    difference : " + Math.abs(nc3 - c3));
+            }
+
+            // c4: 4th derivative; alpha = i^4 = 1. Larger tolerance (10*tol).
+            final java.util.function.DoubleUnaryOperator f4 = u -> logChfRealOver(u, tt, 4, cosEngine);
+            final double nc4 = new org.jquantlib.methods.finitedifferences.operators.NumericalDifferentiation(
+                    f4, 4, 5e-2, 9, central).evaluate(0.0);
+            final double c4 = cosEngine.c4(t);
+            if (Math.abs(nc4 - c4) > 10 * tol) {
+                fail(" failed to reproduce 4th cumulant"
+                        + "\n    t          : " + t
+                        + "\n    expected   : " + nc4
+                        + "\n    calculated : " + c4
+                        + "\n    difference : " + Math.abs(nc4 - c4));
+            }
+        }
+    }
+
+    /**
+     * Helper: returns {@code Re(log(φ(u, t)) / i^n)} where
+     * {@code φ = COSHestonEngine.chF}. Mirrors C++
+     * {@code LogCharacteristicFunction(n, t, engine)(u)}.
+     */
+    private static double logChfRealOver(final double u, final double t, final int n,
+                                         final COSHestonEngine engine) {
+        final org.jquantlib.math.Complex chf = engine.chF(u, t);
+        // log(φ): use Complex.log() if available, else compute manually.
+        final double re = chf.real();
+        final double im = chf.imag();
+        final double absSq = re * re + im * im;
+        final double logRe = 0.5 * Math.log(absSq);
+        final double logIm = Math.atan2(im, re);
+        // Compute alpha = i^n. cycle: 1, i, -1, -i, 1, i, ...
+        // log(chf) / alpha = (log + i*phase) * (1/alpha) where 1/i^n = (-i)^n.
+        // (-i)^n: 1, -i, -1, i for n=0,1,2,3.
+        final int m = n & 3;
+        final double aRe;
+        final double aIm;
+        switch (m) {
+            case 0: aRe =  1.0; aIm =  0.0; break; // n=4 ⇒ 1/1 = 1
+            case 1: aRe =  0.0; aIm = -1.0; break; // n=1 ⇒ 1/i = -i
+            case 2: aRe = -1.0; aIm =  0.0; break; // n=2 ⇒ 1/-1 = -1
+            case 3: aRe =  0.0; aIm =  1.0; break; // n=3 ⇒ 1/-i = i
+            default: throw new IllegalStateException();
+        }
+        // (logRe + logIm i) * (aRe + aIm i) = real part = logRe*aRe - logIm*aIm.
+        return logRe * aRe - logIm * aIm;
+    }
 
     /**
      * Phase Body-Fill-4 port of C++ {@code testCosHestonEngine}: prices
