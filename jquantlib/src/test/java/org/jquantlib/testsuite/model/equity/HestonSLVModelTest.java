@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.math.Ops;
+import org.jquantlib.math.distributions.GammaFunction;
+import org.jquantlib.math.integrals.DiscreteSimpsonIntegral;
 import org.jquantlib.math.integrals.GaussLobattoIntegral;
 import org.jquantlib.math.interpolations.NaturalCubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
@@ -23,6 +25,7 @@ import org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp.TransformationType;
 import org.jquantlib.methods.finitedifferences.schemes.DouglasScheme;
+import org.jquantlib.methods.finitedifferences.utilities.FdmMesherIntegral;
 import org.jquantlib.methods.finitedifferences.utilities.SquareRootProcessRNDCalculator;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -109,6 +112,21 @@ public class HestonSLVModelTest {
 
     private static final String REASON_SLOW =
             "Phase 5h.5 + slow — requires SLV infra and @Tag(\"slow\") (Phase 5 META D8 + D9).";
+
+    /**
+     * Mirrors C++ {@code stationaryLogProbabilityFct}
+     * (test-suite/hestonslvmodel.cpp:157). The log-stationary density of
+     * the square-root process under the {@code Log} transform is
+     * {@code beta^alpha * exp(z*alpha) * exp(-beta*exp(z) - lgamma(alpha))}
+     * with {@code alpha = 2*kappa*theta/sigma^2} and {@code beta = alpha/theta}.
+     */
+    private static double stationaryLogProbabilityFct(
+            final double kappa, final double theta, final double sigma, final double z) {
+        final double alpha = 2.0 * kappa * theta / (sigma * sigma);
+        final double beta  = alpha / theta;
+        return Math.pow(beta, alpha) * Math.exp(z * alpha)
+                * Math.exp(-beta * Math.exp(z) - new GammaFunction().logValue(alpha));
+    }
 
     /**
      * Mirrors C++ {@code createStationaryDistributionMesher}
@@ -402,9 +420,77 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore(REASON_FP)
+    /**
+     * Tests Fokker-Planck forward evolution of the square-root process under
+     * the {@code Log} transform from a stationary initial density. Mirrors
+     * C++ {@code testSquareRootLogEvolveWithStationaryDensity}
+     * (test-suite/hestonslvmodel.cpp:1014). Tolerance: 0.005 absolute.
+     *
+     * <p>Iterates over sigma in [0.2, 2.0] (19 sub-cases). For each sigma
+     * builds a Uniform1dMesher on log(v), evolves the log-stationary density
+     * for 100 Douglas time-steps of dt=0.01 with the {@code FdmSquareRootFwdOp.Log}
+     * operator, then integrates via {@code FdmMesherIntegral} +
+     * {@code DiscreteSimpsonIntegral} and checks the integral ≈ 1-eps-lowEps.
+     */
     @Test
-    public void testSquareRootLogEvolveWithStationaryDensity() { fail("not implemented"); }
+    public void testSquareRootLogEvolveWithStationaryDensity() {
+        final double kappa = 2.5;
+        final double theta = 0.2;
+        final int vGrid = 1000;
+        final double eps = 1.0e-2;
+
+        for (double sigma = 0.2; sigma < 2.01; sigma += 0.1) {
+            final double lowerLimit = 0.001;
+
+            final SquareRootProcessRNDCalculator rnd =
+                    new SquareRootProcessRNDCalculator(theta, kappa, theta, sigma);
+            final double vMin = Math.max(lowerLimit, rnd.stationary_invcdf(eps));
+            final double lowEps = Math.max(eps, rnd.stationary_cdf(lowerLimit));
+            final double expected = 1.0 - eps - lowEps;
+            final double vMax = rnd.stationary_invcdf(1.0 - eps);
+
+            final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(1);
+            ms.add(new Uniform1dMesher(Math.log(vMin), Math.log(vMax), vGrid));
+            final FdmMesherComposite mesher = new FdmMesherComposite(ms);
+
+            final Array v = mesher.locations(0);
+            final Array p = new Array(vGrid);
+            for (int i = 0; i < v.size(); ++i) {
+                p.set(i, stationaryLogProbabilityFct(kappa, theta, sigma, v.get(i)));
+            }
+
+            final FdmSquareRootFwdOp op = new FdmSquareRootFwdOp(
+                    mesher, kappa, theta, sigma, 0, TransformationType.Log);
+
+            final int n = 100;
+            final double dt = 0.01;
+            final DouglasScheme evolver = new DouglasScheme(0.5, op);
+            evolver.setStep(dt);
+
+            for (int i = 1; i <= n; ++i) {
+                evolver.step(p, i * dt);
+            }
+
+            final FdmMesherIntegral mi = new FdmMesherIntegral(
+                    mesher,
+                    new FdmMesherIntegral.Integrator1d() {
+                        @Override
+                        public double op(final Array x, final Array f) {
+                            return new DiscreteSimpsonIntegral().op(x, f);
+                        }
+                    });
+            final double calculated = mi.integrate(p);
+
+            final double tol = 0.005;
+            if (Math.abs(calculated - expected) > tol) {
+                fail("failed to reproduce stationary probability function for "
+                        + "\n    sigma:      " + sigma
+                        + "\n    calculated: " + calculated
+                        + "\n    expected:   " + expected
+                        + "\n    tolerance:  " + tol);
+            }
+        }
+    }
 
     /* ---- 3. SLV calibration / propagation ----------------------------- */
 
