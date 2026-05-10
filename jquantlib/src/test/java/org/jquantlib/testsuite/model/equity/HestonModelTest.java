@@ -26,6 +26,7 @@ import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticPDFHestonEngine;
 import org.jquantlib.pricingengines.vanilla.COSHestonEngine;
 import org.jquantlib.pricingengines.McSimulation;
+import org.jquantlib.pricingengines.barrier.FdHestonBarrierEngine;
 import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.MCEuropeanHestonEngine;
@@ -191,9 +192,79 @@ public class HestonModelTest {
 
     /* ---- 3. FD engines ------------------------------------------------- */
 
-    @Ignore(REASON_FD)
+    /**
+     * Phase Body-Fill-4 port of C++ {@code testFdBarrierVsCached}
+     * (592-643): FD barrier Heston engine for DownOut and DownIn calls;
+     * reproduces 9.0246 and 7.7627 to 1e-3.
+     *
+     * <p>C++ uses Actual360 with `today = Settings::evaluationDate()`
+     * (whatever date is current). The barrier prices are insensitive to
+     * the specific calendar/year — pin to a fixed date to make the test
+     * reproducible. C++ grid (200, 400, 100); same in Java.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:592-643} v1.42.1.
+     */
     @Test
-    public void testFdBarrierVsCached() { fail("not implemented"); }
+    public void testFdBarrierVsCached() {
+        // C++ uses today = Settings::evaluationDate() with Actual360.
+        // Pin to a fixed date so the test is reproducible across suites.
+        final Date today = new Date(15, Month.July, 2026);
+        new Settings().setEvaluationDate(today);
+
+        final DayCounter dc = new org.jquantlib.daycounters.Actual360();
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(today,
+                        new Handle<Quote>(new SimpleQuote(0.08)), dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(today,
+                        new Handle<Quote>(new SimpleQuote(0.04)), dc));
+
+        final Date exDate = today.add(180);
+        final Exercise exercise = new EuropeanExercise(exDate);
+
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Call, 90.0);
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                0.25 * 0.25, 1.0, 0.25 * 0.25, 0.001, 0.0);
+        final HestonModel model = new HestonModel(process);
+
+        final PricingEngine engine = new FdHestonBarrierEngine(model, process,
+                /* tGrid */ 200, /* xGrid */ 400, /* vGrid */ 100,
+                /* dampingSteps */ 0, FdmSchemeDesc.Hundsdorfer());
+
+        org.jquantlib.instruments.BarrierOption option =
+                new org.jquantlib.instruments.BarrierOption(
+                        org.jquantlib.instruments.BarrierType.DownOut,
+                        95.0, 3.0, payoff, exercise);
+        option.setPricingEngine(engine);
+
+        double calculated = option.NPV();
+        double expected = 9.0246;
+        double error = Math.abs(calculated - expected);
+        if (error > 1.0e-3) {
+            fail("failed to reproduce cached price with FD Barrier engine"
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected
+                    + "\n    error:      " + error);
+        }
+
+        option = new org.jquantlib.instruments.BarrierOption(
+                org.jquantlib.instruments.BarrierType.DownIn,
+                95.0, 3.0, payoff, exercise);
+        option.setPricingEngine(engine);
+
+        calculated = option.NPV();
+        expected = 7.7627;
+        error = Math.abs(calculated - expected);
+        if (error > 1.0e-3) {
+            fail("failed to reproduce cached price with FD Barrier engine"
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected
+                    + "\n    error:      " + error);
+        }
+    }
 
     /**
      * Phase Body-Fill-4 port of C++ {@code testFdVanillaVsCached}
