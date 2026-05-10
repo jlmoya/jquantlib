@@ -656,7 +656,7 @@ public class PiecewiseYieldCurveTest {
 	  }
 
     
-	@Ignore("Phase Bug-Fix-3: bootstrap oscillates under LogCubic+Discount; even with maxIterations bumped from 50 to 100 (matching C++), improvement stuck at ~0.005 vs required 1e-12. Phase Bug-Fix-3 fixed two IterativeBootstrap bugs (silent QL.error catch + inverted global() condition) which got the test to the iteration loop, but the loop itself oscillates rather than converges. Possible deeper convergence issue: previousData snapshot timing (Java assigns unconditionally, C++ only when loopRequired_ && validData) or interpolation update sequence mid-iteration. Deferred — needs port of C++ iterativebootstrap.hpp:257-388 outer loop structure with proper validData state machine.")
+	@Ignore("Phase Bug-Fix-Curve: matches C++ v1.42.1 (test-suite/piecewiseyieldcurve.cpp:656 — `//Unstable BOOST_AUTO_TEST_CASE(testLogCubicDiscountConsistency)`). LogCubic+Discount is intrinsically unstable per QuantLib project itself; the cubic spline overshoots when extended pillar-by-pillar so the iteration loop oscillates rather than converges (Java sees ~0.005 residual vs required 1e-12, even with maxIterations=100 matching C++). C++ commented this test out and never resurrected it. Phase Bug-Fix-3 fixed two IterativeBootstrap bugs (silent QL.error catch + inverted global() condition) and Phase Bug-Fix-Curve made minValueAfter/maxValueAfter pillar-aware (matching C++); but this combo remains intrinsically unstable.")
 	@Test
 	public void testLogCubicDiscountConsistency() {
 
@@ -765,7 +765,7 @@ public class PiecewiseYieldCurveTest {
 	    testBMACurveConsistency(ForwardRate.class, BackwardFlat.class, IterativeBootstrap.class, vars);
 	}
 
-	@Ignore("Phase Bug-Fix-3: Brent solver fails 'root not bracketed' at 13th alive instrument (pillar 2033) — ForwardRate.minValueAfter/maxValueAfter return constant ±maxRate (=1.0) which is too loose for Cubic spline at long pillars (curve overshoots). C++ uses pillar-aware data[i-1]*exp(±maxRate*dt) bracket via min/max of data[]. Deferred — needs Traits API extension to access times[].")
+	@Ignore("Phase Bug-Fix-Curve: matches C++ v1.42.1 (test-suite/piecewiseyieldcurve.cpp:748 — `//Unstable BOOST_AUTO_TEST_CASE(testSplineForwardConsistency)`). Cubic spline + ForwardRate is genuinely numerically unstable per QuantLib project itself; the cubic spline overshoots when extended pillar-by-pillar so the bracket [-maxRate,+maxRate] (or pillar-aware [min(data)/2, max(data)*2]) does not contain the root for the long-pillar instruments. C++ commented this test out and never resurrected it. Phase Bug-Fix-Curve fixed minValueAfter/maxValueAfter to be pillar-aware (matching C++), but this combo remains intrinsically unstable.")
 	@Test
 	public void testSplineForwardConsistency() {
 
