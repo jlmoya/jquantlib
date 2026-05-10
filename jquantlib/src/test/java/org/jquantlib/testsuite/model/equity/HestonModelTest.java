@@ -25,7 +25,9 @@ import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticPDFHestonEngine;
 import org.jquantlib.pricingengines.vanilla.COSHestonEngine;
+import org.jquantlib.pricingengines.McSimulation;
 import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
+import org.jquantlib.pricingengines.vanilla.MCEuropeanHestonEngine;
 import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -253,7 +255,26 @@ public class HestonModelTest {
 
     @Ignore(REASON_MC)
     @Test
-    public void testMcVsCached() { fail("not implemented"); }
+    public void testMcVsCached() {
+        // Phase Body-Fill-4 attempted: the C++ test calls HestonProcess
+        // with discretization=QuadraticExponentialMartingale; the Java
+        // port of HestonProcess.evolve() implements the QE-M correction
+        // exactly per C++ hestonprocess.cpp:502-506, including the
+        // precondition `QL.require(A < beta, "illegal value")` (line 355).
+        // For these parameters (kappa=1.16, theta=0.2, sigma=0.8, rho=0.8,
+        // 11 steps/year) the seed-1234 PRNG produces at least one path
+        // step with A >= beta and the precondition trips. C++ presumably
+        // hits the same precondition path but on a different floating-
+        // point trajectory (cf. Mersenne-Twister output sensitivity); a
+        // bit-faithful reproduction would require porting QL probe
+        // mc_heston_path to identify the divergent step. Deferred to a
+        // future MC-cross-validation phase.
+        //
+        // Other discretizations (PartialTruncation / FullTruncation)
+        // would produce a different cached value than the C++ 0.0632851...
+        // hard-coded constant, defeating the purpose of "vs cached".
+        fail("not implemented (QE-M precondition trips on Java path; see Phase Body-Fill-4 note)");
+    }
 
     /* ---- 5. Integration / characteristic function -------------------- */
 
