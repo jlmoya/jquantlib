@@ -25,6 +25,7 @@ import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.Date;
 
 /**
@@ -60,6 +61,34 @@ public class ArithmeticAveragedOvernightIndexedCouponPricer extends OvernightInd
 
     public ArithmeticAveragedOvernightIndexedCouponPricer(
             final boolean byApprox, final double meanReversion, final double vol) {
+        this.byApprox_ = byApprox;
+        this.mrs_ = meanReversion;
+        this.vol_ = vol;
+    }
+
+    /**
+     * Full constructor mirroring C++ v1.42.1
+     * {@code ArithmeticAveragedOvernightIndexedCouponPricer(meanReversion,
+     * volatility, byApprox, v, effectiveVolatilityInput)}.
+     * <p>
+     * Phase 5e.5b-CFC-b — added so
+     * {@link BlackAveragingOvernightIndexedCouponPricer} can supply the
+     * OptionletVolatilityStructure handle through the parent ctor (matches
+     * C++ overnightindexedcouponpricer.hpp:140-147).
+     *
+     * @param meanReversion             Hull-White mean reversion (default 0.03)
+     * @param vol                       Hull-White short-rate vol (0.0 ⇒ no convexity adj)
+     * @param byApprox                  use Takada approximation when true
+     * @param v                         optionlet volatility handle (may be empty)
+     * @param effectiveVolatilityInput  treat the input vol as effective (caplet) vol
+     */
+    public ArithmeticAveragedOvernightIndexedCouponPricer(
+            final double meanReversion,
+            final double vol,
+            final boolean byApprox,
+            final Handle<OptionletVolatilityStructure> v,
+            final boolean effectiveVolatilityInput) {
+        super(v, effectiveVolatilityInput);
         this.byApprox_ = byApprox;
         this.mrs_ = meanReversion;
         this.vol_ = vol;
