@@ -19,16 +19,18 @@
 
 package org.jquantlib.experimental.commodities;
 
+import java.util.Map;
+
+import org.jquantlib.Settings;
+import org.jquantlib.currencies.Currency;
+import org.jquantlib.currencies.Money;
+import org.jquantlib.lang.exceptions.LibraryException;
+import org.jquantlib.time.Date;
+
 /**
  * Energy futures contract.
  * <p>
  * Java port of QuantLib v1.42.1 {@code energyfuture.{hpp,cpp}}.
- * <p>
- * The C++ {@code performCalculations} computes the mark-to-market via
- * {@link CommodityIndex#fixing} (or {@link CommodityIndex#forwardPrice})
- * and a chain of UoM/FX conversions; this is deferred to Phase 4o.5.
- * The instrument constructor / accessors / {@link #isExpired()} are
- * provided here.
  */
 public class EnergyFuture extends EnergyCommodity {
 
@@ -75,9 +77,74 @@ public class EnergyFuture extends EnergyCommodity {
 
     @Override
     protected void performCalculations() {
-        // Pricing implementation deferred to Phase 4o.5 (TODO):
-        // mirrors C++ EnergyFuture::performCalculations which combines
-        // tradePrice + index fixing/forwardPrice via UoM/FX conversion
-        // factors and lot quantity, then subtracts secondary cost amounts.
+        // C++ v1.42.1 energyfuture.cpp ::performCalculations.
+        // NPV = sign * lot * Q * (quotePriceValue - tradePriceValue) - secondary costs,
+        // where quotePriceValue and tradePriceValue are the index quote /
+        // trade price converted to (baseCurrency, baseUnitOfMeasure), and Q
+        // is the trade quantity in baseUnitOfMeasure scaled by index lot
+        // quantity (matching the multiplication chain in the C++ code).
+        this.NPV = 0.0;
+        additionalResults_.clear();
+
+        final Date evaluationDate = new Settings().evaluationDate();
+        final Currency baseCurrency = CommoditySettings.getInstance().currency();
+        final UnitOfMeasure baseUnitOfMeasure =
+                CommoditySettings.getInstance().unitOfMeasure();
+
+        final double quantityUomConversionFactor =
+                calculateUomConversionFactor(quantity_.commodityType(),
+                        baseUnitOfMeasure, quantity_.unitOfMeasure())
+                        * index_.lotQuantity();
+        final double indexUomConversionFactor =
+                calculateUomConversionFactor(index_.commodityType(),
+                        index_.unitOfMeasure(), baseUnitOfMeasure);
+        final double tradePriceUomConversionFactor =
+                calculateUomConversionFactor(quantity_.commodityType(),
+                        tradePrice_.unitOfMeasure(), baseUnitOfMeasure);
+
+        final double tradePriceFxConversionFactor =
+                calculateFxConversionFactor(tradePrice_.amount().currency(),
+                        baseCurrency, evaluationDate);
+        final double indexPriceFxConversionFactor =
+                calculateFxConversionFactor(index_.currency(),
+                        baseCurrency, evaluationDate);
+
+        // Read the index quote (or fall back to forward price if quotes are stale).
+        double quoteValue;
+        final Date lastQuoteDate = index_.lastQuoteDate();
+        if (lastQuoteDate.ge(evaluationDate.sub(1))) {
+            quoteValue = index_.fixing(evaluationDate, false);
+        } else {
+            quoteValue = index_.forwardPrice(evaluationDate);
+            addPricingError(PricingError.Level.Warning,
+                    "curve [" + index_.name() + "] has stale quotes; "
+                            + "using forward price from ["
+                            + (index_.forwardCurve() != null
+                                    ? index_.forwardCurve().name() : "<no forward curve>")
+                            + "]");
+        }
+        if (Double.isNaN(quoteValue)) {
+            throw new LibraryException("missing quote for [" + index_.name() + "]");
+        }
+
+        final double tradePriceValue =
+                tradePrice_.amount().value() * tradePriceUomConversionFactor
+                        * tradePriceFxConversionFactor;
+        final double quotePriceValue =
+                quoteValue * indexUomConversionFactor * indexPriceFxConversionFactor;
+
+        final double quantityAmount = quantity_.amount() * quantityUomConversionFactor;
+
+        final double delta = (((quotePriceValue - tradePriceValue) * quantityAmount)
+                * index_.lotQuantity()) * buySell_;
+
+        this.NPV = delta;
+
+        // Subtract secondary costs (cf. EnergyCommodity::calculateSecondaryCostAmounts).
+        calculateSecondaryCostAmounts(quantity_.commodityType(),
+                quantity_.amount(), evaluationDate);
+        for (final Map.Entry<String, Money> entry : secondaryCostAmounts_.entrySet()) {
+            this.NPV -= entry.getValue().value();
+        }
     }
 }

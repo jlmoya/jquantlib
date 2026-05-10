@@ -19,6 +19,7 @@
 
 package org.jquantlib.experimental.commodities;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.jquantlib.currencies.Currency;
@@ -70,10 +71,32 @@ public abstract class EnergyCommodity extends Commodity {
 
     protected final CommodityType commodityType_;
 
+    /**
+     * Free-form pricing-engine results, populated by {@link #performCalculations()}.
+     * <p>
+     * Mirrors the C++ {@code Instrument::additionalResults_} field, which is a
+     * protected member of the C++ {@code Instrument} base. Java's
+     * {@code Instrument} only carries an additionalResults map on
+     * {@code Instrument.ResultsImpl}; energy instruments compute everything
+     * themselves (no external engine), so we keep a per-instrument map here
+     * (same pattern as {@code FloatFloatSwaption}).
+     */
+    protected final Map<String, Object> additionalResults_ = new HashMap<>();
+
     protected EnergyCommodity(final CommodityType commodityType,
                               final SecondaryCosts secondaryCosts) {
         super(secondaryCosts);
         this.commodityType_ = commodityType;
+    }
+
+    /** Read-only view of the additional results map. */
+    public final Map<String, Object> additionalResults() {
+        return additionalResults_;
+    }
+
+    /** Look up a single additional result by key (returns null if absent). */
+    public final Object additionalResult(final String key) {
+        return additionalResults_.get(key);
     }
 
     public abstract Quantity quantity();
