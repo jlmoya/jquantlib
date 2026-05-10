@@ -251,9 +251,95 @@ public class RiskNeutralDensityCalculatorTest {
         }
     }
 
-    @Ignore(REASON_MISSING)
+    /**
+     * Phase 5h.5-RND-c partial port of C++ {@code testLocalVolatilityRND}
+     * (lines 285-464). Verifies LocalVolRNDCalculator's pdf/cdf/invcdf
+     * against the closed-form lognormal solution for constant local vol
+     * (the first ~40% of the C++ test).
+     *
+     * <p>The remaining C++ block (Dumas parametric vol surface +
+     * FdBlackScholesVanillaEngine cross-validation) requires
+     * {@code DumasParametricVolSurface} + {@code NoExceptLocalVolSurface}
+     * which are not yet ported in JQuantLib; that block is deferred to
+     * a separate commit (Phase 5h.5-RND-d carry-forward).
+     *
+     * <p>Tolerances mirror C++: rTol=0.01 (1% rel), atol=0.005 (0.5% abs).
+     */
     @Test
-    public void testLocalVolatilityRND() { fail("not implemented"); }
+    public void testLocalVolatilityRND() {
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Date todaysDate = new Date(28, Month.December, 2012);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final double r = 0.015;
+        final double qy = 0.025;
+        final double s0 = 100.0;
+        final double v = 0.25;
+
+        final Quote spot = new SimpleQuote(s0);
+        final YieldTermStructure rTS = new FlatForward(todaysDate,
+                new Handle<Quote>(new SimpleQuote(r)), dayCounter);
+        final YieldTermStructure qTS = new FlatForward(todaysDate,
+                new Handle<Quote>(new SimpleQuote(qy)), dayCounter);
+
+        final TimeGrid timeGrid = new TimeGrid(1.0, 101);
+
+        final LocalVolRNDCalculator constVolCalc = new LocalVolRNDCalculator(
+                spot, rTS, qTS,
+                new LocalConstantVol(todaysDate, v, dayCounter),
+                timeGrid, /*xGrid=*/201, /*x0Density=*/0.1, /*localVolProbEps=*/1e-6,
+                /*maxIter=*/10000);
+
+        final double rTol = 0.01;
+        final double atol = 0.005;
+        for (double t = 0.1; t < 0.99; t += 0.015) {
+            final double stdDev = v * Math.sqrt(t);
+            final double xm = -0.5 * stdDev * stdDev
+                    + Math.log(s0 * qTS.discount(t) / rTS.discount(t));
+
+            final NormalDistribution gaussianPDF = new NormalDistribution(xm, stdDev);
+            final CumulativeNormalDistribution gaussianCDF = new CumulativeNormalDistribution(xm, stdDev);
+
+            for (double x = xm - 3 * stdDev; x < xm + 3 * stdDev; x += 0.05) {
+                final double expectedPDF = gaussianPDF.op(x);
+                final double calculatedPDF = constVolCalc.pdf(x, t);
+                final double absDiffPDF = Math.abs(expectedPDF - calculatedPDF);
+
+                assertTrue("forward pdf t=" + t + " x=" + x
+                                + " expected=" + expectedPDF + " actual=" + calculatedPDF
+                                + " absDiff=" + absDiffPDF
+                                + " relDiff=" + (absDiffPDF / expectedPDF),
+                        absDiffPDF <= atol || absDiffPDF / expectedPDF <= rTol);
+
+                final double expectedCDF = gaussianCDF.op(x);
+                final double calculatedCDF = constVolCalc.cdf(x, t);
+                final double absDiffCDF = Math.abs(expectedCDF - calculatedCDF);
+
+                assertTrue("forward cdf t=" + t + " x=" + x
+                                + " expected=" + expectedCDF + " actual=" + calculatedCDF
+                                + " absDiff=" + absDiffCDF,
+                        absDiffCDF <= atol);
+
+                final double expectedX = x;
+                final double calculatedX = constVolCalc.invcdf(expectedCDF, t);
+                final double absDiffX = Math.abs(expectedX - calculatedX);
+
+                assertTrue("forward invcdf t=" + t + " x=" + x
+                                + " expected=" + expectedX + " actual=" + calculatedX
+                                + " absDiff=" + absDiffX
+                                + " relDiff=" + (absDiffX / Math.abs(expectedX)),
+                        absDiffX <= atol || absDiffX / Math.abs(expectedX) <= rTol);
+            }
+        }
+
+        // Verify probability outside the interpolation range is zero.
+        final double tl = timeGrid.at(timeGrid.size() - 5);
+        final double xl = constVolCalc.mesher(tl).locations()[0];
+        assertTrue("probability at xl+epsilon should be > 0",
+                constVolCalc.pdf(xl + 0.0001, tl) > 0.0);
+        assertTrue("probability at xl-epsilon should be == 0",
+                constVolCalc.pdf(xl - 0.0001, tl) == 0.0);
+    }
 
     /**
      * Phase 5h.5-RND-c port of C++ {@code testSquareRootProcessRND}
@@ -383,7 +469,24 @@ public class RiskNeutralDensityCalculatorTest {
     @Test
     public void testBlackScholesWithSkew() { fail("not implemented"); }
 
-    @Ignore(REASON_CEV)
+    /**
+     * Phase 5h.5-RND-c port of C++ {@code testMassAtZeroCEVProcessRND}
+     * (lines 709-746). Verifies the total probability mass for the
+     * CEV process: integral of pdf over [eps, f0+ax] plus mass at zero
+     * should equal 1, at tolerance 1e-4 (matches C++).
+     *
+     * <p>Status: ignored. The Java {@link CEVRNDCalculator} is missing the
+     * {@code pdf(f, t)} method (cdf, invcdf, massAtZero are present), so
+     * the GaussLobatto integration of pdf cannot be performed. The C++
+     * {@code CEVRNDCalculator::pdf} uses
+     * {@code boost::math::pdf(non_central_chi_squared_distribution<Real>(...))}
+     * with the appropriate chain-rule scaling — adding this in Java is a
+     * production-code change and is deferred to its own commit (out of
+     * scope for the test-only Phase 5h.5-RND-c).
+     */
+    @Ignore("Phase 5h.5-RND-c: CEVRNDCalculator.pdf(f, t) not yet ported. "
+            + "Test cannot run until pdf method is added (production-code work, "
+            + "deferred to dedicated commit). See javadoc above.")
     @Test
     public void testMassAtZeroCEVProcessRND() { fail("not implemented"); }
 
