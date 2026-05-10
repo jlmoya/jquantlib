@@ -40,7 +40,7 @@
 package org.jquantlib.indexes.ibor;
 
 import org.jquantlib.currencies.America.CADCurrency;
-import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.AbstractYieldTermStructure;
@@ -77,12 +77,18 @@ public class Cdor extends IborIndex {
 
 	public Cdor(final Period tenor,
 			final Handle<YieldTermStructure> h) {
-		super("CDOR", tenor, 2,
+		// align(indexes.ibor): match C++ v1.42.1 cdor.hpp settlementDays=0
+		// (was 2) and dayCounter=Actual365Fixed (was Actual360). CDOR is the
+		// Canadian Dollar Offered Rate fixed in Canada by IDA — same
+		// Canadian Actual/365 day count and same-day value-date convention
+		// as CADLibor (per OpenGamma "Interest Rate Instruments and Market
+		// Conventions Guide", BBG, IKON).
+		super("CDOR", tenor, 0,
 				new CADCurrency(),
 				new Canada(),
 				BusinessDayConvention.ModifiedFollowing,
 				false,
-				new Actual360(), 
+				new Actual365Fixed(),
 				h);
 	}
 
