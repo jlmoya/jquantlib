@@ -35,7 +35,6 @@ import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -47,11 +46,9 @@ import org.junit.Test;
  * Greeks via MC performance engine, and end-to-end MC performance
  * pricing (one path per reset period).
  *
- * <p><strong>Phase 4h.5 partial: testValues bodied</strong> — uses the newly
- * ported {@link AnalyticCliquetEngine} + {@link CliquetOption} +
- * {@link PercentageStrikePayoff}. Greeks and MC variants remain Phase 5k.5
- * carry-forwards (numerical-derivative cross-check + MC engine not yet
- * ported).
+ * <p><strong>Phase 4h.5c (Greeks): full 648-case sweeps for testGreeks
+ * and testPerformanceGreeks bodied.</strong> testMcPerformance full
+ * sweep follow-up.
  *
  * <p>Source: {@code test-suite/cliquetoption.cpp} v1.42.1 @ {@code 099987f0ca}.
  */
@@ -60,18 +57,6 @@ public class CliquetOptionTest {
     public CliquetOptionTest() {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
-
-    private static final String REASON_GREEKS =
-            "Phase 5k.5 — requires CliquetOption + AnalyticCliquetEngine "
-          + "Greeks numerical-derivative cross-check (delta/gamma/theta/vega per-reset)";
-
-    private static final String REASON_PERF_GREEKS =
-            "Phase 5k.5 — requires AnalyticPerformanceEngine "
-          + "Greeks numerical-derivative cross-check";
-
-    private static final String REASON_MC_PERF =
-            "Phase 5k.5 — requires McPerformanceEngine "
-          + "(MC cliquet performance pricing; depends on path-by-path reset wiring)";
 
     /**
      * Mirrors C++ test-suite/cliquetoption.cpp::testValues.
@@ -124,28 +109,62 @@ public class CliquetOptionTest {
      * {@code testOptionGreeks<AnalyticCliquetEngine>}).
      * <p>
      * Numerical-derivative cross-check of analytic Greeks against finite
-     * differences. The C++ test sweeps 2 types x 3 moneyness x 2 lengths
-     * x 2 frequencies x 3 q x 3 r x 3 vol = 648 cases; Java tests one
-     * representative case to keep runtime under a second (full sweep is
-     * a Phase 4h.5c carry-forward).
+     * differences. Full Cartesian sweep: 2 types x 3 moneyness x 2 lengths
+     * x 2 frequencies x 3 q x 3 r x 3 vol = 648 cases per Greek.
      */
     @Test
     public void testGreeks() {
-        QL.info("Testing Cliquet option greeks (single representative case)...");
+        QL.info("Testing Cliquet option greeks (full 648-case sweep)...");
+        testOptionGreeks(/* useAnalyticPerformanceEngine */ false);
+    }
+
+    /**
+     * Mirrors C++ test-suite/cliquetoption.cpp::testPerformanceGreeks
+     * (template {@code testOptionGreeks<AnalyticPerformanceEngine>}).
+     * <p>
+     * Same numerical-derivative cross-check, but using
+     * {@link AnalyticPerformanceEngine}.
+     */
+    @Test
+    public void testPerformanceGreeks() {
+        QL.info("Testing performance option greeks (full 648-case sweep)...");
+        testOptionGreeks(/* useAnalyticPerformanceEngine */ true);
+    }
+
+    /**
+     * Shared body for {@link #testGreeks} and {@link #testPerformanceGreeks}
+     * mirroring the C++ template {@code testOptionGreeks<T>}.
+     */
+    private static void testOptionGreeks(final boolean useAnalyticPerformanceEngine) {
+        final double tolDelta  = 1.0e-5;
+        final double tolGamma  = 1.0e-5;
+        final double tolTheta  = 1.0e-5;
+        final double tolRho    = 1.0e-5;
+        final double tolDivRho = 1.0e-5;
+        final double tolVega   = 1.0e-5;
+
+        final Option.Type[] types = { Option.Type.Call, Option.Type.Put };
+        final double[] moneyness = { 0.9, 1.0, 1.1 };
+        final double[] underlyings = { 100.0 };
+        final double[] qRates = { 0.04, 0.05, 0.06 };
+        final double[] rRates = { 0.01, 0.05, 0.15 };
+        final int[] lengths = { 1, 2 };
+        final Frequency[] frequencies = { Frequency.Semiannual, Frequency.Quarterly };
+        final double[] vols = { 0.11, 0.50, 1.20 };
 
         final DayCounter dc = new Actual360();
         final Date today = Date.todaysDate();
-        final Settings settings = new Settings();
-        settings.setEvaluationDate(today);
+        new Settings().setEvaluationDate(today);
 
-        final SimpleQuote spot = new SimpleQuote(100.0);
-        final SimpleQuote qRate = new SimpleQuote(0.04);
-        final SimpleQuote rRate = new SimpleQuote(0.05);
-        final SimpleQuote vol = new SimpleQuote(0.50);
-
-        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
-        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
-        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+        final SimpleQuote spot  = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        // Use the moving (settlement-days=0, NullCalendar) variant so the curve's
+        // reference date tracks Settings.evaluationDate (matches C++ flatRate(qRate, dc)).
+        final YieldTermStructure qTS = Utilities.flatRate(qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final YieldTermStructure rTS = Utilities.flatRate(rRate, dc);
+        final SimpleQuote vol   = new SimpleQuote(0.0);
+        final BlackVolTermStructure volTS = Utilities.flatVol(vol, dc);
 
         final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
                 new Handle<Quote>(spot),
@@ -153,87 +172,141 @@ public class CliquetOptionTest {
                 new Handle<YieldTermStructure>(rTS),
                 new Handle<BlackVolTermStructure>(volTS));
 
-        final EuropeanExercise maturity = new EuropeanExercise(
-                today.add(new Period(2, org.jquantlib.time.TimeUnit.Years)));
+        for (final Option.Type type : types) {
+            for (final double moneynes : moneyness) {
+                for (final int length : lengths) {
+                    for (final Frequency frequencie : frequencies) {
 
-        final PercentageStrikePayoff payoff = new PercentageStrikePayoff(Option.Type.Call, 1.0);
+                        final EuropeanExercise maturity = new EuropeanExercise(
+                                today.add(new Period(length, org.jquantlib.time.TimeUnit.Years)));
 
-        // Reset dates: every 6 months between today and maturity (exclusive)
-        final List<Date> reset = new ArrayList<Date>();
-        Date d = today.add(new Period(Frequency.Semiannual));
-        while (d.lt(maturity.lastDate())) {
-            reset.add(d);
-            d = d.add(new Period(Frequency.Semiannual));
+                        final PercentageStrikePayoff payoff =
+                                new PercentageStrikePayoff(type, moneynes);
+
+                        // Reset dates: every Period(frequencie) between today (exclusive)
+                        // and maturity->lastDate() (exclusive)
+                        final List<Date> reset = new ArrayList<Date>();
+                        final Period tenor = new Period(frequencie);
+                        Date d = today.add(tenor);
+                        while (d.lt(maturity.lastDate())) {
+                            reset.add(d);
+                            d = d.add(tenor);
+                        }
+
+                        final PricingEngine engine = useAnalyticPerformanceEngine
+                                ? new AnalyticPerformanceEngine(process)
+                                : new AnalyticCliquetEngine(process);
+
+                        final CliquetOption option = new CliquetOption(payoff, maturity, reset);
+                        option.setPricingEngine(engine);
+
+                        for (final double u : underlyings) {
+                            for (final double m : qRates) {
+                                for (final double n : rRates) {
+                                    for (final double v : vols) {
+
+                                        final double q = m;
+                                        final double r = n;
+                                        spot.setValue(u);
+                                        qRate.setValue(q);
+                                        rRate.setValue(r);
+                                        vol.setValue(v);
+
+                                        final double value = option.NPV();
+                                        final double calcDelta  = option.delta();
+                                        final double calcGamma  = option.gamma();
+                                        final double calcTheta  = option.theta();
+                                        final double calcRho    = option.rho();
+                                        final double calcDivRho = option.dividendRho();
+                                        final double calcVega   = option.vega();
+
+                                        if (value > u * 1.0e-5) {
+                                            // Perturb spot and get delta and gamma
+                                            final double du = u * 1.0e-4;
+                                            spot.setValue(u + du);
+                                            final double valueP_s = option.NPV();
+                                            final double deltaP   = option.delta();
+                                            spot.setValue(u - du);
+                                            final double valueM_s = option.NPV();
+                                            final double deltaM   = option.delta();
+                                            spot.setValue(u);
+                                            final double expDelta = (valueP_s - valueM_s) / (2 * du);
+                                            final double expGamma = (deltaP - deltaM) / (2 * du);
+
+                                            // Perturb r, get rho
+                                            final double dr = r * 1.0e-4;
+                                            rRate.setValue(r + dr);
+                                            final double valueP_r = option.NPV();
+                                            rRate.setValue(r - dr);
+                                            final double valueM_r = option.NPV();
+                                            rRate.setValue(r);
+                                            final double expRho = (valueP_r - valueM_r) / (2 * dr);
+
+                                            // Perturb q, get dividendRho
+                                            final double dq = q * 1.0e-4;
+                                            qRate.setValue(q + dq);
+                                            final double valueP_q = option.NPV();
+                                            qRate.setValue(q - dq);
+                                            final double valueM_q = option.NPV();
+                                            qRate.setValue(q);
+                                            final double expDivRho = (valueP_q - valueM_q) / (2 * dq);
+
+                                            // Perturb vol, get vega
+                                            final double dv = v * 1.0e-4;
+                                            vol.setValue(v + dv);
+                                            final double valueP_v = option.NPV();
+                                            vol.setValue(v - dv);
+                                            final double valueM_v = option.NPV();
+                                            vol.setValue(v);
+                                            final double expVega = (valueP_v - valueM_v) / (2 * dv);
+
+                                            // Perturb date and get theta
+                                            final double dT = dc.yearFraction(today.sub(1), today.add(1));
+                                            new Settings().setEvaluationDate(today.sub(1));
+                                            final double valueM_t = option.NPV();
+                                            new Settings().setEvaluationDate(today.add(1));
+                                            final double valueP_t = option.NPV();
+                                            new Settings().setEvaluationDate(today);
+                                            final double expTheta = (valueP_t - valueM_t) / dT;
+
+                                            checkGreek("delta",       expDelta,  calcDelta,  u, tolDelta,  type, payoff, maturity, today, q, r, v);
+                                            checkGreek("gamma",       expGamma,  calcGamma,  u, tolGamma,  type, payoff, maturity, today, q, r, v);
+                                            checkGreek("theta",       expTheta,  calcTheta,  u, tolTheta,  type, payoff, maturity, today, q, r, v);
+                                            checkGreek("rho",         expRho,    calcRho,    u, tolRho,    type, payoff, maturity, today, q, r, v);
+                                            checkGreek("divRho",      expDivRho, calcDivRho, u, tolDivRho, type, payoff, maturity, today, q, r, v);
+                                            checkGreek("vega",        expVega,   calcVega,   u, tolVega,   type, payoff, maturity, today, q, r, v);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-
-        final PricingEngine engine = new AnalyticCliquetEngine(process);
-        final CliquetOption option = new CliquetOption(payoff, maturity, reset);
-        option.setPricingEngine(engine);
-
-        final double u = 100.0;
-        final double q = 0.04;
-        final double r = 0.05;
-        final double v = 0.50;
-
-        final double value = option.NPV();
-        QL.require(value > u * 1.0e-5, "value too small to perturb");
-
-        final double calcDelta  = option.delta();
-        final double calcGamma  = option.gamma();
-        // theta/rho/dividendRho/vega available too
-        final double calcRho    = option.rho();
-        final double calcDivRho = option.dividendRho();
-        final double calcVega   = option.vega();
-
-        // Perturb spot and get delta and gamma
-        final double du = u * 1.0e-4;
-        spot.setValue(u + du);
-        final double valueP = option.NPV();
-        final double deltaP = option.delta();
-        spot.setValue(u - du);
-        final double valueM = option.NPV();
-        final double deltaM = option.delta();
-        spot.setValue(u);
-        final double expDelta = (valueP - valueM) / (2 * du);
-        final double expGamma = (deltaP - deltaM) / (2 * du);
-
-        // Perturb r, get rho
-        final double dr = r * 1.0e-4;
-        rRate.setValue(r + dr);
-        final double rPlus = option.NPV();
-        rRate.setValue(r - dr);
-        final double rMinus = option.NPV();
-        rRate.setValue(r);
-        final double expRho = (rPlus - rMinus) / (2 * dr);
-
-        // Perturb q, get dividendRho
-        final double dq = q * 1.0e-4;
-        qRate.setValue(q + dq);
-        final double qPlus = option.NPV();
-        qRate.setValue(q - dq);
-        final double qMinus = option.NPV();
-        qRate.setValue(q);
-        final double expDivRho = (qPlus - qMinus) / (2 * dq);
-
-        // Perturb vol, get vega
-        final double dv = v * 1.0e-4;
-        vol.setValue(v + dv);
-        final double vPlus = option.NPV();
-        vol.setValue(v - dv);
-        final double vMinus = option.NPV();
-        vol.setValue(v);
-        final double expVega = (vPlus - vMinus) / (2 * dv);
-
-        // Tolerance: 1e-5 relative to underlying
-        final double tol = 1.0e-5 * u;
-        assertEquals("delta",       expDelta,  calcDelta,  tol);
-        assertEquals("gamma",       expGamma,  calcGamma,  tol);
-        assertEquals("rho",         expRho,    calcRho,    tol);
-        assertEquals("dividendRho", expDivRho, calcDivRho, tol);
-        assertEquals("vega",        expVega,   calcVega,   tol);
     }
 
-    @Ignore(REASON_PERF_GREEKS) @Test public void testPerformanceGreeks()   { fail("not implemented"); }
+    private static void checkGreek(final String greek, final double expected, final double calculated,
+                                   final double reference, final double tol,
+                                   final Option.Type type, final PercentageStrikePayoff payoff,
+                                   final EuropeanExercise maturity, final Date today,
+                                   final double q, final double r, final double v) {
+        final double error = Utilities.relativeError(expected, calculated, reference);
+        if (error > tol) {
+            fail(type + " option:\n"
+                + "    spot value:       " + reference + "\n"
+                + "    moneyness:        " + payoff.strike() + "\n"
+                + "    dividend yield:   " + q + "\n"
+                + "    risk-free rate:   " + r + "\n"
+                + "    reference date:   " + today + "\n"
+                + "    maturity:         " + maturity.lastDate() + "\n"
+                + "    volatility:       " + v + "\n\n"
+                + "    expected   " + greek + ": " + expected + "\n"
+                + "    calculated " + greek + ": " + calculated + "\n"
+                + "    error:            " + error + "\n"
+                + "    tolerance:        " + tol);
+        }
+    }
 
     /**
      * Mirrors C++ test-suite/cliquetoption.cpp::testMcPerformance.
