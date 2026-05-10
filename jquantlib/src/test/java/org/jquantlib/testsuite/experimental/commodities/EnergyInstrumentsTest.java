@@ -123,8 +123,9 @@ public class EnergyInstrumentsTest {
                 new CommodityType("WTI", "WTI"),
                 new Commodity.SecondaryCosts(),
                 empty, empty, empty);
-        // payer ==> payReceive_ = -1 per C++ convention
-        assertEquals(-1, evs.payReceive());
+        // payer=true ==> payReceive_ = 1 (matches C++ v1.42.1
+        // energyvanillaswap.cpp: payReceive_(payer ? 1 : 0)).
+        assertEquals(1, evs.payReceive());
         assertEquals(70.0, evs.fixedPrice().value(), EXACT);
         assertEquals("BBL", evs.fixedPriceUnitOfMeasure().code());
         assertNotNull(evs.index());

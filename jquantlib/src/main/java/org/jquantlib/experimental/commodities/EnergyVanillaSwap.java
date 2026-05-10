@@ -63,9 +63,9 @@ public class EnergyVanillaSwap extends EnergySwap {
                              final Handle<YieldTermStructure> discountTermStructure) {
         super(calendar, payCurrency, receiveCurrency, pricingPeriods,
                 commodityType, secondaryCosts);
-        // C++ stores payReceive_ as an Integer (-1 for payer, +1 for receiver
-        // in the standard convention).  Mirror that here.
-        this.payReceive_ = payer ? -1 : 1;
+        // Match C++ v1.42.1 energyvanillaswap.cpp: payReceive_(payer ? 1 : 0).
+        // Used as a sign predicate (payReceive_ > 0) inside performCalculations.
+        this.payReceive_ = payer ? 1 : 0;
         this.fixedPrice_ = fixedPrice;
         this.fixedPriceUnitOfMeasure_ = fixedPriceUnitOfMeasure;
         this.index_ = index;
