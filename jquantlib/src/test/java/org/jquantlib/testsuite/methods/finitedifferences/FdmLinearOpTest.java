@@ -434,15 +434,162 @@ public class FdmLinearOpTest {
     // ----------------- DEFERRED — Phase 5j.5 carry-forward -----------------
     // ------------------------------------------------------------------------
 
-    /** {@code testDerivativeWeightsOnNonUniformGrids} — requires
-     * {@code Concentrating1dMesher} (exists) <em>and</em>
-     * {@code NumericalDifferentiation} (NOT yet ported — Phase 5b carry).
-     * Defer to Phase 5b which audits {@code numericaldifferentiation.cpp}.
+    /** {@code testDerivativeWeightsOnNonUniformGrids} — Java port of v1.42.1
+     * {@code test-suite/fdmlinearop.cpp::testDerivativeWeightsOnNonUniformGrids}.
+     *
+     * <p>Phase Body-Fill-2: {@link org.jquantlib.methods.finitedifferences.operators.NumericalDifferentiation}
+     * is now ported (Phase 5b.5b commit 9c74e058), unblocking this test. Compares
+     * analytic stencil weights from FirstDerivativeOp / SecondDerivativeOp against
+     * NumericalDifferentiation.weights() for both interior nodes (3-point
+     * stencils) and boundary nodes (2-point stencils).
+     *
+     * <p>Body-fill is complete and matches the C++ logic verbatim, but the test
+     * is {@code @Ignore}d because the JQuantLib {@code TripleBandLinearOp.toMatrix()}
+     * (and the default {@code toSparseMatrix()} path) always materializes a
+     * dense matrix on the full layout. With the C++ test grid (50 x 25 x 31 =
+     * 38750 nodes) that is ~1.5e9 entries (~12 GB) — Java OOMs immediately.
+     * <p>Future work: override {@code TripleBandLinearOp.toSparseMatrix()} with
+     * a CSR construction that only writes the three bands (analogous to the
+     * existing {@link org.jquantlib.methods.finitedifferences.operators.NthOrderDerivativeOp}
+     * override). Once that's in place, un-ignore this test.
      */
-    @Ignore("Phase 5j.5 — requires NumericalDifferentiation (Phase 5b prereq)")
+    @Ignore("Phase Body-Fill-2: body-filled but TripleBandLinearOp.toMatrix() / "
+            + "toSparseMatrix() materializes the full layout (~1.5e9 cells) and "
+            + "OOMs the JVM. Needs a TripleBandLinearOp.toSparseMatrix() override "
+            + "that writes only the 3 bands. Body retained for re-enable.")
     @Test
     public void testDerivativeWeightsOnNonUniformGrids() {
-        fail("not implemented");
+        final org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher mesherX
+                = new org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher(
+                        -2.0, 3.0, 50, 0.5, 0.01);
+        final org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher mesherY
+                = new org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher(
+                        0.5, 5.0, 25, 0.5, 0.1);
+        final org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher mesherZ
+                = new org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher(
+                        -1.0, 2.0, 31, 1.5, 0.01);
+
+        final FdmMesherComposite meshers = new FdmMesherComposite(mesherX, mesherY, mesherZ);
+
+        final double tol = 1.0e-13;
+
+        for (int direction = 0; direction < 3; ++direction) {
+            // Use sparse matrices: 50x25x31 = 38750 layout means a dense
+            // matrix would be 38750^2 = 1.5e9 entries (12 GB). Match C++.
+            final SparseMatrix dfdx
+                    = new FirstDerivativeOp(direction, meshers).toSparseMatrix();
+            final SparseMatrix d2fdx2
+                    = new SecondDerivativeOp(direction, meshers).toSparseMatrix();
+            final Array gridPoints = meshers.locations(direction);
+
+            for (final FdmLinearOpIterator iter : meshers.layout()) {
+                final int c = iter.coordinates()[direction];
+                final int index = iter.index();
+                final int indexM1 = meshers.layout().neighbourhood(iter, direction, -1);
+                final int indexP1 = meshers.layout().neighbourhood(iter, direction, +1);
+
+                if (c == 0) {
+                    final Array twoPoints = new Array(2);
+                    twoPoints.set(0, 0.0);
+                    twoPoints.set(1, gridPoints.get(indexP1) - gridPoints.get(index));
+
+                    final Array ndW1 = new org.jquantlib.methods.finitedifferences
+                            .operators.NumericalDifferentiation(null, 1, twoPoints).weights();
+
+                    final double beta1 = dfdx.get(index, index);
+                    final double gamma1 = dfdx.get(index, indexP1);
+                    if (Math.abs((beta1 - ndW1.get(0)) / beta1) > tol
+                            || Math.abs((gamma1 - ndW1.get(1)) / gamma1) > tol) {
+                        fail("can not reproduce the weights of the first order"
+                                + " derivative operator on the lower boundary"
+                                + "\n expected beta:    " + ndW1.get(0)
+                                + "\n calculated beta:  " + beta1
+                                + "\n expected gamma:   " + ndW1.get(1)
+                                + "\n calculated gamma: " + gamma1);
+                    }
+                    // free boundary: second-deriv weights at boundary == 0
+                    final double beta2 = d2fdx2.get(index, index);
+                    final double gamma2 = d2fdx2.get(index, indexP1);
+                    if (Math.abs(beta2) > org.jquantlib.math.Constants.QL_EPSILON
+                            || Math.abs(gamma2) > org.jquantlib.math.Constants.QL_EPSILON) {
+                        fail("can not reproduce the weights of the second order"
+                                + " derivative operator on the lower boundary"
+                                + "\n calculated beta:  " + beta2
+                                + "\n calculated gamma: " + gamma2);
+                    }
+                } else if (c == meshers.layout().dim()[direction] - 1) {
+                    final Array twoPoints = new Array(2);
+                    twoPoints.set(0, gridPoints.get(indexM1) - gridPoints.get(index));
+                    twoPoints.set(1, 0.0);
+
+                    final Array ndW1 = new org.jquantlib.methods.finitedifferences
+                            .operators.NumericalDifferentiation(null, 1, twoPoints).weights();
+
+                    final double alpha1 = dfdx.get(index, indexM1);
+                    final double beta1 = dfdx.get(index, index);
+                    if (Math.abs((alpha1 - ndW1.get(0)) / alpha1) > tol
+                            || Math.abs((beta1 - ndW1.get(1)) / beta1) > tol) {
+                        fail("can not reproduce the weights of the first order"
+                                + " derivative operator on the upper boundary"
+                                + "\n expected alpha:   " + ndW1.get(0)
+                                + "\n calculated alpha: " + alpha1
+                                + "\n expected beta:    " + ndW1.get(1)
+                                + "\n calculated beta:  " + beta1);
+                    }
+                    final double alpha2 = d2fdx2.get(index, indexM1);
+                    final double beta2 = d2fdx2.get(index, index);
+                    if (Math.abs(alpha2) > org.jquantlib.math.Constants.QL_EPSILON
+                            || Math.abs(beta2) > org.jquantlib.math.Constants.QL_EPSILON) {
+                        fail("can not reproduce the weights of the second order"
+                                + " derivative operator on the upper boundary"
+                                + "\n calculated alpha: " + alpha2
+                                + "\n calculated beta:  " + beta2);
+                    }
+                } else {
+                    final Array threePoints = new Array(3);
+                    threePoints.set(0, gridPoints.get(indexM1) - gridPoints.get(index));
+                    threePoints.set(1, 0.0);
+                    threePoints.set(2, gridPoints.get(indexP1) - gridPoints.get(index));
+
+                    final Array ndW1 = new org.jquantlib.methods.finitedifferences
+                            .operators.NumericalDifferentiation(null, 1, threePoints).weights();
+                    final double alpha1 = dfdx.get(index, indexM1);
+                    final double beta1 = dfdx.get(index, index);
+                    final double gamma1 = dfdx.get(index, indexP1);
+
+                    if (Math.abs((alpha1 - ndW1.get(0)) / alpha1) > tol
+                            || Math.abs((beta1 - ndW1.get(1)) / beta1) > tol
+                            || Math.abs((gamma1 - ndW1.get(2)) / gamma1) > tol) {
+                        fail("can not reproduce the weights of the first order"
+                                + " derivative operator"
+                                + "\n expected alpha:   " + ndW1.get(0)
+                                + "\n calculated alpha: " + alpha1
+                                + "\n expected beta:    " + ndW1.get(1)
+                                + "\n calculated beta:  " + beta1
+                                + "\n expected gamma:   " + ndW1.get(2)
+                                + "\n calculated gamma: " + gamma1);
+                    }
+
+                    final Array ndW2 = new org.jquantlib.methods.finitedifferences
+                            .operators.NumericalDifferentiation(null, 2, threePoints).weights();
+                    final double alpha2 = d2fdx2.get(index, indexM1);
+                    final double beta2 = d2fdx2.get(index, index);
+                    final double gamma2 = d2fdx2.get(index, indexP1);
+                    if (Math.abs((alpha2 - ndW2.get(0)) / alpha2) > tol
+                            || Math.abs((beta2 - ndW2.get(1)) / beta2) > tol
+                            || Math.abs((gamma2 - ndW2.get(2)) / gamma2) > tol) {
+                        fail("can not reproduce the weights of the second order"
+                                + " derivative operator"
+                                + "\n expected alpha:   " + ndW2.get(0)
+                                + "\n calculated alpha: " + alpha2
+                                + "\n expected beta:    " + ndW2.get(1)
+                                + "\n calculated beta:  " + beta2
+                                + "\n expected gamma:   " + ndW2.get(2)
+                                + "\n calculated gamma: " + gamma2);
+                    }
+                }
+            }
+        }
     }
 
     /** {@code testFdmHestonBarrier} / {@code testFdmHestonAmerican} /
@@ -679,13 +826,52 @@ public class FdmLinearOpTest {
         }
     }
 
-    /** {@code testFdmMesherIntegral} — requires
-     * {@code FdmMesherIntegral} utility class (NOT ported).
+    /** {@code testFdmMesherIntegral} — Java port of v1.42.1
+     * {@code test-suite/fdmlinearop.cpp::testFdmMesherIntegral}, Simpson branch only.
+     *
+     * <p>Phase Body-Fill-2: {@link org.jquantlib.methods.finitedifferences.utilities.FdmMesherIntegral}
+     * + {@link org.jquantlib.math.integrals.DiscreteSimpsonIntegral} are now ported,
+     * unblocking the Simpson sub-test. The trapezoid sub-test is omitted because
+     * {@code DiscreteTrapezoidIntegral} is not yet ported.
+     *
+     * <p>Validates the polynomial integral on a non-uniform 21x11x5 = 1155-node
+     * Concentrating1d composite grid; Simpson's rule must be exact for the
+     * cubic polynomial used here.
      */
-    @Ignore("Phase 5j.5 — requires FdmMesherIntegral utility class")
     @Test
     public void testFdmMesherIntegral() {
-        fail("not implemented");
+        final FdmMesherComposite mesher = new FdmMesherComposite(
+                new org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher(
+                        -1, 1.6, 21, 0.0, 0.1),
+                new org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher(
+                        -3, 4, 11, 1.0, 0.01),
+                new org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher(
+                        -2, 1, 5, 0.5, 0.1));
+
+        final Array f = new Array(mesher.layout().size());
+        for (final FdmLinearOpIterator iter : mesher.layout()) {
+            final double x = mesher.location(iter, 0);
+            final double y = mesher.location(iter, 1);
+            final double z = mesher.location(iter, 2);
+            f.set(iter.index(), x * x + 3 * y * y - 3 * z * z
+                    + 2 * x * y - x * z - 3 * y * z
+                    + 4 * x - y - 3 * z + 2);
+        }
+
+        final double tol = 1.0e-12;
+        // Simpson's rule must be exact: Mathematica reference value.
+        final double expectedSimpson = 876.512;
+        final double calculatedSimpson = new org.jquantlib.methods.finitedifferences
+                .utilities.FdmMesherIntegral(
+                        mesher,
+                        new org.jquantlib.math.integrals.DiscreteSimpsonIntegral()::op
+                ).integrate(f);
+
+        if (Math.abs(calculatedSimpson - expectedSimpson) > tol * expectedSimpson) {
+            fail("discrete mesher integration using Simpson's rule failed:"
+                    + "\n    calculated: " + calculatedSimpson
+                    + "\n    expected:   " + expectedSimpson);
+        }
     }
 
     /** {@code testHighInterestRateBlackScholesMesher} /
