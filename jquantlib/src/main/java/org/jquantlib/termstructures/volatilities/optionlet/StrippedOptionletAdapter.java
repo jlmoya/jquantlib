@@ -19,10 +19,14 @@ package org.jquantlib.termstructures.volatilities.optionlet;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.interpolations.Interpolation;
 import org.jquantlib.math.interpolations.LinearInterpolation;
+import org.jquantlib.math.interpolations.factories.Cubic;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.model.VolatilityType;
+import org.jquantlib.termstructures.volatilities.InterpolatedSmileSection;
 import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.time.Date;
 
@@ -35,11 +39,11 @@ import org.jquantlib.time.Date;
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
- *  <li>{@code smileSectionImpl} returns {@code null} pending the port of
- *      {@code InterpolatedSmileSection<Cubic>} (Phase 5g.5b carry-forward).
- *      The C++ method builds an {@code InterpolatedSmileSection<Cubic>} per
- *      query; downstream callers (BlackCapFloorEngine, etc.) only need
- *      {@code volatility(t, strike)} which is fully implemented here.</li>
+ *  <li>{@code smileSectionImpl} builds an {@link InterpolatedSmileSection}
+ *      with a Cubic spline interpolator per query (Lagrange BC for &gt;= 4
+ *      strikes, second-derivative=0 BC otherwise). Mirrors C++
+ *      {@code InterpolatedSmileSection<Cubic>} construction; ported in
+ *      Phase 5g.5b.</li>
  *  <li>Java cannot multi-inherit; C++ inherits both
  *      {@code OptionletVolatilityStructure} and {@code LazyObject} —
  *      Java composes the lazy semantics inline (calculated_ flag +
@@ -109,14 +113,39 @@ public class StrippedOptionletAdapter extends OptionletVolatilityStructure {
     }
 
     /**
-     * Pending Phase 5g.5b: returns {@code null} until
-     * {@code InterpolatedSmileSection<Cubic>} is ported. Callers using only
-     * {@code volatility(t, strike)} are fully supported.
+     * Builds an {@link InterpolatedSmileSection} per query. Mirrors C++
+     * v1.42.1 {@code StrippedOptionletAdapter::smileSectionImpl}:
+     * <pre>
+     *   strikes = optionletStripper_.optionletStrikes(0)
+     *   stddevs[i] = volatilityImpl(t, strikes[i]) * sqrt(t)
+     *   bc = nstrikes >= 4 ? Lagrange : SecondDerivative(0)
+     *   return InterpolatedSmileSection&lt;Cubic&gt;(
+     *       t, strikes, stddevs, NaN_atm,
+     *       Cubic(Spline, false, bc, 0, bc, 0),
+     *       Actual365Fixed(), volatilityType(), displacement())
+     * </pre>
      */
     @Override
     protected SmileSection smileSectionImpl(final double optionTime) {
-        // C++ builds an InterpolatedSmileSection<Cubic> here; defer.
-        return null;
+        final List<Double> strikesList = optionletStripper_.optionletStrikes(0);
+        final int n = strikesList.size();
+        final double[] strikes = new double[n];
+        final double[] stddevs = new double[n];
+        final double sqrtT = Math.sqrt(optionTime);
+        for (int i = 0; i < n; ++i) {
+            strikes[i] = strikesList.get(i);
+            stddevs[i] = volatilityImpl(optionTime, strikes[i]) * sqrtT;
+        }
+        final CubicInterpolation.BoundaryCondition bc =
+                (n >= 4) ? CubicInterpolation.BoundaryCondition.Lagrange
+                         : CubicInterpolation.BoundaryCondition.SecondDerivative;
+        final Cubic cubic = new Cubic(
+                CubicInterpolation.DerivativeApprox.Spline, false,
+                bc, 0.0, bc, 0.0);
+        return new InterpolatedSmileSection(
+                optionTime, strikes, stddevs, Double.NaN,
+                cubic, new Actual365Fixed(),
+                volatilityType(), displacement(), false);
     }
 
     @Override

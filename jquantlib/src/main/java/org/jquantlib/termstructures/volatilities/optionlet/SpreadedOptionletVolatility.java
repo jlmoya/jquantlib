@@ -21,6 +21,7 @@ import org.jquantlib.model.VolatilityType;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.volatilities.SmileSection;
+import org.jquantlib.termstructures.volatilities.SpreadedSmileSection;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
@@ -34,10 +35,9 @@ import org.jquantlib.time.Date;
  *
  * <h3>Java port deviations from C++ v1.42.1</h3>
  * <ul>
- *  <li>{@code smileSectionImpl} returns {@code null} pending the port of
- *      {@code SpreadedSmileSection} (Phase 5g.5b carry-forward). Downstream
- *      callers using {@code volatility(t, strike)} (e.g.,
- *      {@link OptionletStripper2}) are fully supported.</li>
+ *  <li>{@code smileSectionImpl} wraps the base smile in a
+ *      {@link SpreadedSmileSection} (ported in Phase 5g.5b). Mirrors
+ *      C++ v1.42.1 SpreadedOptionletVolatility::smileSectionImpl.</li>
  *  <li>Java cannot multi-inherit; we extend {@link OptionletVolatilityStructure}
  *      and forward all inspector methods to {@code baseVol_} so that
  *      {@code referenceDate}, {@code maxDate}, {@code calendar}, etc., reflect
@@ -138,13 +138,18 @@ public class SpreadedOptionletVolatility extends OptionletVolatilityStructure {
     //
 
     /**
-     * Pending Phase 5g.5b: returns {@code null} until {@code SpreadedSmileSection}
-     * is ported. The {@code volatilityImpl} path is fully implemented and
-     * sufficient for {@link OptionletStripper2} bootstrap.
+     * Mirrors C++ v1.42.1 SpreadedOptionletVolatility::smileSectionImpl
+     * (time-based overload, lines 44-49 of spreadedoptionletvol.cpp):
+     * <pre>
+     *   baseSmile = baseVol_.smileSection(optionTime, true)
+     *   return new SpreadedSmileSection(baseSmile, spread_)
+     * </pre>
      */
     @Override
     protected SmileSection smileSectionImpl(final double optionTime) {
-        return null;
+        final SmileSection baseSmile =
+                baseVol_.currentLink().smileSection(optionTime, true);
+        return new SpreadedSmileSection(baseSmile, spread_);
     }
 
     @Override
