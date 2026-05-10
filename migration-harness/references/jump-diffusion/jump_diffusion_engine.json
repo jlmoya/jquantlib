@@ -1,0 +1,209 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 10.810986966812658
+      },
+      "inputs": {
+        "days": 365,
+        "jumpVol": 0.2,
+        "lambda": 2.0,
+        "maxIterations": 1000,
+        "meanLogJump": -0.2,
+        "q": 0.04,
+        "r": 0.1,
+        "relativeAccuracy": 1e-10,
+        "spot": 100.0,
+        "strike": 95.0,
+        "type": "put",
+        "vol": 0.2080865204668481
+      },
+      "name": "merton_put_1y"
+    },
+    {
+      "expected": {
+        "npv": 14.7869524434103
+      },
+      "inputs": {
+        "days": 1095,
+        "jumpVol": 0.2,
+        "lambda": 2.0,
+        "maxIterations": 1000,
+        "meanLogJump": -0.2,
+        "q": 0.04,
+        "r": 0.1,
+        "relativeAccuracy": 1e-10,
+        "spot": 100.0,
+        "strike": 95.0,
+        "type": "put",
+        "vol": 0.2080865204668481
+      },
+      "name": "merton_put_3y"
+    },
+    {
+      "expected": {
+        "npv": 14.973887607787137
+      },
+      "inputs": {
+        "days": 1825,
+        "jumpVol": 0.2,
+        "lambda": 2.0,
+        "maxIterations": 1000,
+        "meanLogJump": -0.2,
+        "q": 0.04,
+        "r": 0.1,
+        "relativeAccuracy": 1e-10,
+        "spot": 100.0,
+        "strike": 95.0,
+        "type": "put",
+        "vol": 0.2080865204668481
+      },
+      "name": "merton_put_5y"
+    },
+    {
+      "expected": {
+        "npv": 20.658318729641795
+      },
+      "inputs": {
+        "days": 36,
+        "jumpVol": 0.125,
+        "lambda": 1.0,
+        "maxIterations": 100,
+        "meanLogJump": -0.0078125,
+        "q": 0.0,
+        "r": 0.08,
+        "relativeAccuracy": 0.0001,
+        "spot": 100.0,
+        "strike": 80.0,
+        "type": "call",
+        "vol": 0.21650635094610965
+      },
+      "name": "haug_g25_k80_t01_l1"
+    },
+    {
+      "expected": {
+        "npv": 23.556210313027027
+      },
+      "inputs": {
+        "days": 180,
+        "jumpVol": 0.05590169943749474,
+        "lambda": 5.0,
+        "maxIterations": 100,
+        "meanLogJump": -0.0015624999999999999,
+        "q": 0.0,
+        "r": 0.08,
+        "relativeAccuracy": 0.0001,
+        "spot": 100.0,
+        "strike": 80.0,
+        "type": "call",
+        "vol": 0.21650635094610965
+      },
+      "name": "haug_g25_k80_t05_l5"
+    },
+    {
+      "expected": {
+        "npv": 3.397281196850448
+      },
+      "inputs": {
+        "days": 36,
+        "jumpVol": 0.125,
+        "lambda": 1.0,
+        "maxIterations": 100,
+        "meanLogJump": -0.0078125,
+        "q": 0.0,
+        "r": 0.08,
+        "relativeAccuracy": 0.0001,
+        "spot": 100.0,
+        "strike": 100.0,
+        "type": "call",
+        "vol": 0.21650635094610965
+      },
+      "name": "haug_g25_k100_t01_l1"
+    },
+    {
+      "expected": {
+        "npv": 8.955662917405585
+      },
+      "inputs": {
+        "days": 180,
+        "jumpVol": 0.03952847075210474,
+        "lambda": 10.0,
+        "maxIterations": 100,
+        "meanLogJump": -0.00078125,
+        "q": 0.0,
+        "r": 0.08,
+        "relativeAccuracy": 0.0001,
+        "spot": 100.0,
+        "strike": 100.0,
+        "type": "call",
+        "vol": 0.21650635094610965
+      },
+      "name": "haug_g25_k100_t05_l10"
+    },
+    {
+      "expected": {
+        "npv": 2.2011641579690884
+      },
+      "inputs": {
+        "days": 180,
+        "jumpVol": 0.05590169943749474,
+        "lambda": 5.0,
+        "maxIterations": 100,
+        "meanLogJump": -0.0015624999999999999,
+        "q": 0.0,
+        "r": 0.08,
+        "relativeAccuracy": 0.0001,
+        "spot": 100.0,
+        "strike": 120.0,
+        "type": "call",
+        "vol": 0.21650635094610965
+      },
+      "name": "haug_g25_k120_t05_l5"
+    },
+    {
+      "expected": {
+        "npv": 8.886201676711993
+      },
+      "inputs": {
+        "days": 180,
+        "jumpVol": 0.07905694150420949,
+        "lambda": 5.0,
+        "maxIterations": 100,
+        "meanLogJump": -0.003125,
+        "q": 0.0,
+        "r": 0.08,
+        "relativeAccuracy": 0.0001,
+        "spot": 100.0,
+        "strike": 100.0,
+        "type": "call",
+        "vol": 0.1767766952966369
+      },
+      "name": "haug_g50_k100_t05_l5"
+    },
+    {
+      "expected": {
+        "npv": 8.776873816727315
+      },
+      "inputs": {
+        "days": 180,
+        "jumpVol": 0.09682458365518543,
+        "lambda": 5.0,
+        "maxIterations": 100,
+        "meanLogJump": -0.004687500000000001,
+        "q": 0.0,
+        "r": 0.08,
+        "relativeAccuracy": 0.0001,
+        "spot": 100.0,
+        "strike": 100.0,
+        "type": "call",
+        "vol": 0.125
+      },
+      "name": "haug_g75_k100_t05_l5"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-10T04:02:50Z",
+  "generated_by": "jump_diffusion_engine_probe",
+  "test_group": "jump-diffusion/jump_diffusion_engine"
+}
