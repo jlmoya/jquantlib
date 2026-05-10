@@ -248,9 +248,71 @@ public class HestonModelTest {
         assertEquals("FdHestonVanillaEngine cached", expected, calculated, tolerance);
     }
 
-    @Ignore(REASON_FD)
+    /**
+     * Phase Body-Fill-4 port of C++ {@code testFdVanillaWithDividendsVsCached}
+     * (690-741): FD vanilla Heston engine with discrete cash dividends
+     * (1.0 per dividend, 6-month spacing); reproduces 12.946 to 5e-3.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:690-741} v1.42.1.
+     */
     @Test
-    public void testFdVanillaWithDividendsVsCached() { fail("not implemented"); }
+    public void testFdVanillaWithDividendsVsCached() {
+        final Date settlementDate = new Date(27, Month.December, 2004);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISDA);
+
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Call, 95.0);
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.05)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.0)), dayCounter));
+
+        final Date exerciseDate = new Date(28, Month.March, 2006);
+        final Exercise exercise = new EuropeanExercise(exerciseDate);
+
+        // Discrete dividends: 1.0 per dividend at 3m, 9m, 15m offsets
+        // (mirrors C++ for-loop d = settlementDate + 3M; d < exerciseDate;
+        // d += 6M).
+        final org.jquantlib.instruments.DividendSchedule divs =
+                new org.jquantlib.instruments.DividendSchedule();
+        // 3 months ~ 90 days, 6 months ~ 180 days. Mimic C++ approx.
+        Date d = settlementDate.add(new org.jquantlib.time.Period(
+                3, org.jquantlib.time.TimeUnit.Months));
+        while (d.lt(exerciseDate)) {
+            divs.add(new org.jquantlib.cashflow.FixedDividend(1.0, d.clone()));
+            d = d.add(new org.jquantlib.time.Period(
+                    6, org.jquantlib.time.TimeUnit.Months));
+        }
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                0.04, 1.0, 0.04, 0.001, 0.0);
+        final HestonModel model = new HestonModel(process);
+
+        final org.jquantlib.instruments.VanillaOption option =
+                new org.jquantlib.instruments.VanillaOption(payoff, exercise);
+        option.setPricingEngine(new FdHestonVanillaEngine(model, process,
+                divs,
+                /* tGrid */ 200, /* xGrid */ 400, /* vGrid */ 100,
+                /* dampingSteps */ 0, FdmSchemeDesc.Hundsdorfer(),
+                /* mixingFactor */ 1.0));
+
+        final double calculated = option.NPV();
+        // Independently FD/MC validated value (per C++ comment).
+        final double expected = 12.946;
+        final double error = Math.abs(calculated - expected);
+        final double tolerance = 5.0e-3;
+        if (error > tolerance) {
+            fail("failed to reproduce discrete dividend price with FD engine"
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected
+                    + "\n    error:      " + error);
+        }
+    }
 
     /**
      * Phase Body-Fill-4 port of C++ {@code testFdAmerican} (743-787):
