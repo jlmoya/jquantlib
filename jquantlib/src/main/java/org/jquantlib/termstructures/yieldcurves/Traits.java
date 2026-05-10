@@ -57,14 +57,22 @@ public interface Traits {
     public double guess(final YieldTermStructure curve, final Date d);
 
     /**
-     * possible constraints based on previous values
+     * possible constraints based on previous values.
+     * <p>
+     * Phase Bug-Fix-Curve: signature extended to take {@code times[]} and
+     * {@code validData} so that {@link Discount}, {@link ZeroYield} and
+     * {@link ForwardRate} can implement the C++ v1.42.1 pillar-aware bounds
+     * (see {@code ql/termstructures/yield/bootstraptraits.hpp}). Callers
+     * (currently only {@link org.jquantlib.termstructures.IterativeBootstrap})
+     * pass {@code validData = validCurve || iteration > 0} matching C++.
      */
-    public double minValueAfter(int i, final double[] data);
+    public double minValueAfter(int i, final double[] data, boolean validData, final double[] times);
 
     /**
-     * possible constraints based on maximum values
+     * possible constraints based on maximum values. See
+     * {@link #minValueAfter(int, double[], boolean, double[])}.
      */
-    public double maxValueAfter(int i, final double[] data);
+    public double maxValueAfter(int i, final double[] data, boolean validData, final double[] times);
 
     /**
      * update with new guess

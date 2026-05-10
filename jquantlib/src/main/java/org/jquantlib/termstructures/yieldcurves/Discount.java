@@ -47,6 +47,17 @@ import org.jquantlib.math.Constants;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 
+/*
+ * Phase Bug-Fix-Curve: minValueAfter/maxValueAfter ported from C++ v1.42.1
+ * ql/termstructures/yield/bootstraptraits.hpp (struct Discount). The previous
+ * Java port returned loose constants (Constants.QL_EPSILON / 3.0) because the
+ * Java Traits interface did not expose times[]. Now that the interface is
+ * extended, we can mirror C++ exactly:
+ *   minValueAfter(i): validData? min(data)/2 : data[i-1] * exp(-maxRate*dt)
+ *   maxValueAfter(i): data[i-1] * exp(+maxRate*dt)        (regardless of validData)
+ * with maxRate = 1.0 and dt = times[i] - times[i-1].
+ */
+
 /**
  * Discount-curve traits
  *
@@ -56,6 +67,7 @@ import org.jquantlib.time.Date;
 public class Discount implements Traits {
 
     private static final double averageRate = .05;
+    private static final double maxRate = 1.0;
 
     //TODO: think how constructor must look like
     public Discount() {
@@ -77,26 +89,36 @@ public class Discount implements Traits {
     }
 
     @Override
-    public double minValueAfter(final int i, final double[] data) {
-        return Constants.QL_EPSILON;
+    public double minValueAfter(final int i, final double[] data,
+                                final boolean validData, final double[] times) {
+        // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
+        // Discount::minValueAfter (bootstraptraits.hpp lines 81-93).
+        if (validData) {
+            // min over data[]/2.0
+            double minVal = data[0];
+            for (int k = 1; k < data.length; ++k) {
+                if (data[k] < minVal) {
+                    minVal = data[k];
+                }
+            }
+            return minVal / 2.0;
+        }
+        final double dt = times[i] - times[i - 1];
+        return data[i - 1] * Math.exp(-maxRate * dt);
     }
 
     @Override
-    public double maxValueAfter(final int i, final double[] data) {
-        // Phase 3g: align to v1.42.1 — C++ Discount::maxValueAfter does NOT
-        // gate negative-rate handling on a Settings flag; it always returns
-        // {@code data[i-1] * exp(maxRate * dt)} (where {@code maxRate = 1}),
-        // which permits discount factors above 1 (negative rates) within a
-        // sane bound. The previous Java code clamped {@code data[i] <=
-        // data[i-1]} unless {@code isNegativeRates()} was explicitly set,
-        // which silently clobbered EUR negative-rate bootstrap fixtures
-        // (Phase 3g testIsdaCalculatorReconcile* root cause). The Java Traits
-        // interface does not expose {@code times[]} so we can't compute the
-        // exact C++ bound; use a generous constant {@code 3.0} (matching
-        // what the previous {@code isNegativeRates=true} branch returned).
-        // The Brent solver inside IterativeBootstrap converges to the same
-        // root regardless of bracket width, as long as the root is contained.
-        return 3.0;
+    public double maxValueAfter(final int i, final double[] data,
+                                final boolean validData, final double[] times) {
+        // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
+        // Discount::maxValueAfter (bootstraptraits.hpp lines 94-102). C++
+        // does NOT branch on validData here — it always returns
+        // data[i-1] * exp(+maxRate * dt). This permits discount factors
+        // above 1 (negative rates) within a sane bound, fixing Phase 3g
+        // testIsdaCalculatorReconcile* root cause and unblocking spline
+        // bootstrap convergence (Brent root-bracketing).
+        final double dt = times[i] - times[i - 1];
+        return data[i - 1] * Math.exp(maxRate * dt);
     }
 
     @Override

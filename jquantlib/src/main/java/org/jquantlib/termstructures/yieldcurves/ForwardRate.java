@@ -57,6 +57,7 @@ import org.jquantlib.time.Frequency;
 public class ForwardRate implements Traits {
 
     static private final double averageRate = .05;
+    static private final double maxRate = 1.0;
 
     //TODO: think how constructor must look like
     public ForwardRate() {
@@ -78,20 +79,45 @@ public class ForwardRate implements Traits {
     }
 
     @Override
-    public double minValueAfter(final int i, final double[] data) {
+    public double minValueAfter(final int i, final double[] data,
+                                final boolean validData, final double[] times) {
+        // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
+        // ForwardRate::minValueAfter (bootstraptraits.hpp lines 258-272).
+        if (validData) {
+            double r = data[0];
+            for (int k = 1; k < data.length; ++k) {
+                if (data[k] < r) {
+                    r = data[k];
+                }
+            }
+            return r < 0.0 ? r * 2.0 : r / 2.0;
+        }
+        // See ZeroYield.minValueAfter docstring — Java's LogLinear interpolation
+        // breaks when y <= 0 in update(); C++ doesn't exercise LogLinear+ForwardRate
+        // either. Gate on Settings.isNegativeRates() to preserve Java's safe-positive
+        // bracket when negative rates aren't expected (documented divergence from C++).
         if (new Settings().isNegativeRates()) {
-            // no constraints.
-            // We choose as min a value very unlikely to be exceeded.
-            return -3.0;
+            return -maxRate;
         }
         return Constants.QL_EPSILON;
     }
 
     @Override
-    public double maxValueAfter(final int i, final double[] data) {
-        // no constraints.
-        // We choose as max a value very unlikely to be exceeded.
-        return 3.0;
+    public double maxValueAfter(final int i, final double[] data,
+                                final boolean validData, final double[] times) {
+        // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
+        // ForwardRate::maxValueAfter (bootstraptraits.hpp lines 273-286).
+        if (validData) {
+            double r = data[0];
+            for (int k = 1; k < data.length; ++k) {
+                if (data[k] > r) {
+                    r = data[k];
+                }
+            }
+            return r < 0.0 ? r / 2.0 : r * 2.0;
+        }
+        // no constraints; max very unlikely to be exceeded
+        return maxRate;
     }
 
     @Override

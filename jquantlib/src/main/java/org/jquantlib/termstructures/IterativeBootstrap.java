@@ -210,8 +210,14 @@ public class IterativeBootstrap<Curve extends PiecewiseYieldCurve> implements Bo
                 //QL.debug (" Guess : " + ((Double)(guess)).toString());
 
                 // bracket
-                final double min = traits.minValueAfter(i, data);
-                final double max = traits.maxValueAfter(i, data);
+                // Phase Bug-Fix-Curve: pass times[] and validData to traits so
+                // pillar-aware bounds (Discount/ZeroYield/ForwardRate) can
+                // mirror C++ v1.42.1. Per bootstraptraits.hpp + iterativebootstrap.hpp,
+                // validData = (validCurve_ at start) || (iteration > 0); Java
+                // tracks the same condition as `validCurve || iteration > 0`.
+                final boolean validData = validCurve || iteration > 0;
+                final double min = traits.minValueAfter(i, data, validData, times);
+                final double max = traits.maxValueAfter(i, data, validData, times);
 
                 if (guess <= min || guess >= max) {
                     guess = (min + max) / 2.0;

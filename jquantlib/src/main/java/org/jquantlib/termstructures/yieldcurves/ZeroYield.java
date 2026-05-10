@@ -57,6 +57,7 @@ import org.jquantlib.time.Frequency;
 public class ZeroYield implements Traits {
 
     private static final double avgRate = .05;
+    private static final double maxRate = 1.0;
 
     //TODO: think how constructor must look like
     public ZeroYield() {
@@ -78,18 +79,49 @@ public class ZeroYield implements Traits {
     }
 
     @Override
-    public double minValueAfter(final int i, final double[] data) {
+    public double minValueAfter(final int i, final double[] data,
+                                final boolean validData, final double[] times) {
+        // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
+        // ZeroYield::minValueAfter (bootstraptraits.hpp lines 165-179).
+        if (validData) {
+            double r = data[0];
+            for (int k = 1; k < data.length; ++k) {
+                if (data[k] < r) {
+                    r = data[k];
+                }
+            }
+            return r < 0.0 ? r * 2.0 : r / 2.0;
+        }
+        // C++ returns -maxRate unconditionally (allowing negative rates) but
+        // Java's LogLinear interpolation requires y > 0 in update() — same as
+        // C++ but the C++ test suite never exercises LogLinear+ZeroYield (only
+        // Linear+ZeroYield, Cubic+ZeroYield) so no-one ever notices. Java's
+        // testLogLinearZeroConsistency DOES exercise it. Gate on
+        // Settings.isNegativeRates() to preserve Java's safe-positive behavior
+        // when negative rates aren't expected (matches Java's pre-existing
+        // semantics; documented divergence from C++ for backward compatibility).
         if (new Settings().isNegativeRates()) {
-            return -3.0;
+            return -maxRate;
         }
         return Constants.QL_EPSILON;
     }
 
     @Override
-    public double maxValueAfter(final int i, final double[] data) {
-        // no constraints.
-        // We choose as max a value very unlikely to be exceeded.
-        return 3.0;
+    public double maxValueAfter(final int i, final double[] data,
+                                final boolean validData, final double[] times) {
+        // Phase Bug-Fix-Curve: pillar-aware bound matching C++ v1.42.1
+        // ZeroYield::maxValueAfter (bootstraptraits.hpp lines 180-193).
+        if (validData) {
+            double r = data[0];
+            for (int k = 1; k < data.length; ++k) {
+                if (data[k] > r) {
+                    r = data[k];
+                }
+            }
+            return r < 0.0 ? r / 2.0 : r * 2.0;
+        }
+        // no constraints; max very unlikely to be exceeded
+        return maxRate;
     }
 
     @Override
