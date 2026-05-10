@@ -126,8 +126,7 @@ public class BondTest {
 	}
 
 
-	@Ignore @Test
-	//FIXME: http://bugs.jquantlib.org/view.php?id=472
+	@Test
 	public void testYield() {
 		QL.info("Testing consistency of bond price/yield calculation....");
 
