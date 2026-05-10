@@ -174,8 +174,11 @@ public class OptionletStripper1 extends OptionletStripper {
         final SimpleQuote volQuote = new SimpleQuote(0.0);
         final PricingEngine capFloorEngine;
         if (volatilityType_ == VolatilityType.ShiftedLognormal) {
+            // Phase 5g.5f: forward displacement_ to inner Black engine so the
+            // shifted-lognormal stripping path handles negative-strike caps
+            // (matches C++ optionletstripper1.cpp lines 105-109).
             capFloorEngine = new BlackCapFloorEngine(discountCurve,
-                    new Handle<Quote>(volQuote), dc);
+                    new Handle<Quote>(volQuote), dc, displacement_);
         } else if (volatilityType_ == VolatilityType.Normal) {
             capFloorEngine = new BachelierCapFloorEngine(discountCurve,
                     new Handle<Quote>(volQuote), dc);

@@ -564,20 +564,20 @@ public class OptionletStripperTest {
      * (shift = 0.03), then verifies the stripped Black engine round-trips
      * constant-vol prices to TIGHT (2.5e-8).
      *
-     * <p>Phase 5g.5e — body fully ported. Currently @Ignore'd because of a
-     * residual production gap: {@link OptionletStripper1#performCalculations}
-     * builds its inner {@link BlackCapFloorEngine} without forwarding the
-     * caller-supplied {@code displacement_}, so the bootstrap throws
-     * "strike+displacement must be non-negative" on the negative-strike
-     * tail of the real-market surface. The Phase 5g.5d production work
-     * landed the engine displacement parameter; the next production touch
-     * needs to forward {@code displacement_} from
-     * {@code OptionletStripper1.performCalculations} to its inner
-     * {@code BlackCapFloorEngine} (one-line change). Tracking as Phase 5g.5e
-     * carry-forward — production touch deferred per agent contract
-     * (test-only scope).
+     * <p>Phase 5g.5e — body fully ported. Phase 5g.5f production fix:
+     * {@link OptionletStripper1#performCalculations} now forwards
+     * {@code displacement_} to its inner {@link BlackCapFloorEngine},
+     * matching C++ optionletstripper1.cpp lines 105-109. Bootstrap no longer
+     * throws "strike+displacement must be non-negative" on the
+     * negative-strike tail. Test still fails at the 30Y tenor with
+     * ~1.86e-7 round-trip drift (same NewtonSafe + 60-caplet adapter
+     * accumulation root cause as {@link #testTermVolatilityStripping1} —
+     * loosening tolerance to 1e-6 would trip A2). Non-30Y tenors agree to
+     * tolerance. @Ignore reason updated to reflect that the displacement
+     * blocker is closed; remaining work is the same 30Y-tenor solver
+     * accuracy carry-forward.
      */
-    @Ignore("Phase 5g.5e body fully ported but @Ignore'd: OptionletStripper1.performCalculations builds its inner BlackCapFloorEngine without forwarding displacement_, so the bootstrap throws 'strike+displacement must be non-negative' on negative-strike tail. Production fix needed: forward displacement_ from OptionletStripper1 to its inner engine (~1 LOC). Carry-forward to next production-touching phase.")
+    @Ignore("Phase 5g.5f production fix landed (displacement_ forwarded to inner Black engine — bootstrap no longer throws on negative strikes), but 30Y-tenor round-trip drift (~1.86e-7 observed at strike=0.01) still exceeds 2.5e-8 tolerance. Same NewtonSafe + 60-caplet adapter accumulation root cause as testTermVolatilityStripping1; non-30Y tenors agree. Loosening tolerance to 1e-6 would trip A2 (>1e-8). Production work needed: tighter implied-vol solver or revisit StrippedOptionletAdapter Cubic boundary conditions.")
     @Test
     public void testTermVolatilityStrippingShiftedLogNormalVol() {
         final double shift = 0.03;
