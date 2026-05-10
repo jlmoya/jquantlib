@@ -56,6 +56,11 @@ public class OvernightLeg {
     private int lookbackDays_ = Constants.NULL_NATURAL;
     private int lockoutDays_ = 0;
     private boolean applyObservationShift_ = false;
+    private List<Double> caps_ = new ArrayList<Double>();
+    private List<Double> floors_ = new ArrayList<Double>();
+    private boolean nakedOption_ = false;
+    private boolean dailyCapFloor_ = false;
+    private OvernightIndexedCouponPricer couponPricer_ = null;
 
     public OvernightLeg(final Schedule schedule, final OvernightIndex overnightIndex) {
         QL.require(overnightIndex != null, "no index provided");
@@ -142,6 +147,43 @@ public class OvernightLeg {
         return this;
     }
 
+    public OvernightLeg withCaps(final double cap) {
+        caps_ = new ArrayList<Double>();
+        caps_.add(cap);
+        return this;
+    }
+
+    public OvernightLeg withCaps(final List<Double> caps) {
+        caps_ = new ArrayList<Double>(caps);
+        return this;
+    }
+
+    public OvernightLeg withFloors(final double floor) {
+        floors_ = new ArrayList<Double>();
+        floors_.add(floor);
+        return this;
+    }
+
+    public OvernightLeg withFloors(final List<Double> floors) {
+        floors_ = new ArrayList<Double>(floors);
+        return this;
+    }
+
+    public OvernightLeg withNakedOption(final boolean naked) {
+        nakedOption_ = naked;
+        return this;
+    }
+
+    public OvernightLeg withDailyCapFloor(final boolean dailyCapFloor) {
+        dailyCapFloor_ = dailyCapFloor;
+        return this;
+    }
+
+    public OvernightLeg withCouponPricer(final OvernightIndexedCouponPricer couponPricer) {
+        couponPricer_ = couponPricer;
+        return this;
+    }
+
     /**
      * Build the leg.
      */
@@ -172,7 +214,23 @@ public class OvernightLeg {
                     telescopicValueDates_, averagingMethod_,
                     lookbackDays_, lockoutDays_, applyObservationShift_,
                     false /* compoundSpreadDaily */);
-            cashflows.add(coupon);
+            if (couponPricer_ != null) {
+                coupon.setPricer(couponPricer_);
+            }
+            // Apply cap/floor wrapper if either is provided.
+            final double cap = pickValueOrDefault(caps_, i - 1, Constants.NULL_REAL);
+            final double floor = pickValueOrDefault(floors_, i - 1, Constants.NULL_REAL);
+            if (cap == Constants.NULL_REAL && floor == Constants.NULL_REAL) {
+                cashflows.add(coupon);
+            } else {
+                final CappedFlooredOvernightIndexedCoupon cfCpn =
+                    new CappedFlooredOvernightIndexedCoupon(coupon, cap, floor,
+                                                            nakedOption_, dailyCapFloor_);
+                if (couponPricer_ != null) {
+                    cfCpn.setPricer(couponPricer_);
+                }
+                cashflows.add(cfCpn);
+            }
         }
         return cashflows;
     }

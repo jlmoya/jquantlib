@@ -110,8 +110,12 @@ public class CappedFlooredOvernightIndexedCoupon extends FloatingRateCoupon {
             cap_ = cap;
             floor_ = floor;
         }
+        // Match C++ exactly: the check uses cap_ (post-swap) >= floor (input,
+        // pre-swap). This means for positive gearing the check is cap >= floor,
+        // and for negative gearing the check is floor >= floor i.e. trivially true.
+        // See ql/cashflows/overnightindexedcoupon.cpp v1.42.1 line 300.
         if (cap_ != Constants.NULL_REAL && floor_ != Constants.NULL_REAL) {
-            QL.require(cap_ >= floor_,
+            QL.require(cap_ >= floor,
                 "cap level (" + cap_ + ") less than floor level (" + floor_ + ")");
         }
         this.underlying_.addObserver(this);
