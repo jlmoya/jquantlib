@@ -39,7 +39,11 @@ public class SquareRootProcessRNDCalculatorTest {
 
     private static final double TOL_TIGHT      = 1.0e-9;
     private static final double TOL_LOOSE      = 1.0e-6;
-    private static final double TOL_PDF_FD     = 1.0e-4;  // CDF finite-difference for PDF
+    // Phase 5h.5-SLV-d: pdf() now uses the exact non-central chi-squared PDF
+    // (Boost-equivalent Bessel form via NonCentralCumulativeChiSquaredDistribution.pdf),
+    // replacing the CDF central-difference (~1e-4 slack). Now matches the
+    // C++ reference at the same TIGHT 1e-9 tier as the CDF.
+    private static final double TOL_PDF_FD     = 1.0e-9;
     private static final double TOL_GAMMA_LOOSE = 1.0e-7; // Java GammaDistribution vs Boost
 
     private SquareRootProcessRNDCalculator calc() {

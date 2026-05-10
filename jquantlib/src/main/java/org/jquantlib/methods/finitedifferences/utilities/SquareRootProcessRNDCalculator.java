@@ -40,9 +40,9 @@ import org.jquantlib.math.solvers1D.Brent;
  * <p>Conditional CDF / inverse CDF are non-central chi-squared (delegated to
  * {@link NonCentralCumulativeChiSquaredDistribution} /
  * {@link InverseNonCentralCumulativeChiSquaredDistribution}). The conditional
- * PDF uses a CDF central-difference because JQuantLib has neither the
- * non-central chi-squared PDF nor the modified Bessel functions required by
- * its closed form (Phase 2/3 carry-forward).
+ * PDF now uses the exact closed-form via the modified Bessel functions —
+ * see {@link NonCentralCumulativeChiSquaredDistribution#pdf(double)} (Phase
+ * 5h.5-SLV-d port of Boost's pdf(non_central_chi_squared_distribution<>(...))).
  *
  * <p>Stationary density is gamma distributed (delegated to {@link GammaDistribution}
  * for the CDF; PDF closed-form via {@link GammaFunction#logValue}; inverse CDF
@@ -76,13 +76,15 @@ public class SquareRootProcessRNDCalculator extends RiskNeutralDensityCalculator
     public double pdf(final double v, final double t) {
         // C++: boost::math::pdf(non_central_chi_squared(df, ncp), v*k) * k
         //      → uses closed-form via modified Bessel functions.
-        // JQuantLib has no native non-central chi-squared pdf and the modified
-        // Bessel functions are stubs (Phase 2/3 carry-forward). Use a central
-        // finite-difference of the CDF as a practical approximation. Tolerance
-        // is documented as LOOSE (1e-4 abs/rel). Mirrors GBSMRNDCalculator's
-        // approach in JQuantLib.
-        final double dv = Math.max(1e-7, 1e-4 * v);
-        return (cdf(v + dv, t) - cdf(v - dv, t)) / (2.0 * dv);
+        // Phase 5h.5-SLV-d: the JQuantLib NonCentralCumulativeChiSquaredDistribution
+        // now ships an exact PDF (Boost-equivalent Bessel form for ncp <= 50,
+        // Poisson series otherwise), so we replicate the C++ formula directly
+        // rather than CDF-finite-differencing. The CDF central-difference
+        // surrogate (~1e-4 slack) used in earlier phases is no longer needed.
+        final double e   = Math.exp(-kappa_ * t);
+        final double k   = d_ / (1.0 - e);
+        final double ncp = k * v0_ * e;
+        return new NonCentralCumulativeChiSquaredDistribution(df_, ncp).pdf(v * k) * k;
     }
 
     @Override
