@@ -1,28 +1,218 @@
 {
   "cases": [
-    {"name": "atm_t0",      "inputs": {"t": 0.0,                  "K": 100.0, "flat": false}, "expected": {"blackVol": 0.25}},
-    {"name": "K50_1w",      "inputs": {"t": 0.019178082191780823, "K":  50.0, "flat": false}, "expected": {"blackVol": 0.52444322957270828}},
-    {"name": "K95_1w",      "inputs": {"t": 0.019178082191780823, "K":  95.0, "flat": false}, "expected": {"blackVol": 0.26133199707952798}},
-    {"name": "atm_1w",      "inputs": {"t": 0.019178082191780823, "K": 100.0, "flat": false}, "expected": {"blackVol": 0.24957503525311289}},
-    {"name": "K105_1w",     "inputs": {"t": 0.019178082191780823, "K": 105.0, "flat": false}, "expected": {"blackVol": 0.23966490806142315}},
-    {"name": "K200_1w",     "inputs": {"t": 0.019178082191780823, "K": 200.0, "flat": false}, "expected": {"blackVol": 0.22522876961943691}},
-    {"name": "atm_1m",      "inputs": {"t": 0.0833333333333333,   "K": 100.0, "flat": false}, "expected": {"blackVol": 0.24824797527268236}},
-    {"name": "atm_3m",      "inputs": {"t": 0.25,                 "K": 100.0, "flat": false}, "expected": {"blackVol": 0.24485637499999999}},
-    {"name": "atm_6m",      "inputs": {"t": 0.5,                  "K": 100.0, "flat": false}, "expected": {"blackVol": 0.23980579563517371}},
-    {"name": "K80_6m",      "inputs": {"t": 0.5,                  "K":  80.0, "flat": false}, "expected": {"blackVol": 0.24895965923215141}},
-    {"name": "K120_6m",     "inputs": {"t": 0.5,                  "K": 120.0, "flat": false}, "expected": {"blackVol": 0.23306579478746864}},
-    {"name": "atm_1y",      "inputs": {"t": 1.0,                  "K": 100.0, "flat": false}, "expected": {"blackVol": 0.2297505}},
-    {"name": "K50_1y",      "inputs": {"t": 1.0,                  "K":  50.0, "flat": false}, "expected": {"blackVol": 0.24941212986553365}},
-    {"name": "K150_1y",     "inputs": {"t": 1.0,                  "K": 150.0, "flat": false}, "expected": {"blackVol": 0.22047642857757255}},
-    {"name": "atm_18m",     "inputs": {"t": 1.5,                  "K": 100.0, "flat": false}, "expected": {"blackVol": 0.2197251824039369}},
-    {"name": "atm_2y",      "inputs": {"t": 2.0,                  "K": 100.0, "flat": false}, "expected": {"blackVol": 0.20971815728752538}},
-    {"name": "atm_3y",      "inputs": {"t": 3.0,                  "K": 100.0, "flat": false}, "expected": {"blackVol": 0.18974169237886465}},
-    {"name": "K400_3y",     "inputs": {"t": 3.0,                  "K": 400.0, "flat": false}, "expected": {"blackVol": 0.18107768056923523}},
-    {"name": "flat_atm_1y", "inputs": {"t": 1.0,                  "K": 100.0, "flat": true},  "expected": {"blackVol": 0.29999999999999999}}
+    {
+      "expected": {
+        "blackVol": 0.25
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": false,
+        "t": 0.0
+      },
+      "name": "atm_t0"
+    },
+    {
+      "expected": {
+        "blackVol": 0.5244432295727083
+      },
+      "inputs": {
+        "K": 50.0,
+        "flat": false,
+        "t": 0.019178082191780823
+      },
+      "name": "K50_1w"
+    },
+    {
+      "expected": {
+        "blackVol": 0.261331997079528
+      },
+      "inputs": {
+        "K": 95.0,
+        "flat": false,
+        "t": 0.019178082191780823
+      },
+      "name": "K95_1w"
+    },
+    {
+      "expected": {
+        "blackVol": 0.2495750352531129
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": false,
+        "t": 0.019178082191780823
+      },
+      "name": "atm_1w"
+    },
+    {
+      "expected": {
+        "blackVol": 0.23966490806142315
+      },
+      "inputs": {
+        "K": 105.0,
+        "flat": false,
+        "t": 0.019178082191780823
+      },
+      "name": "K105_1w"
+    },
+    {
+      "expected": {
+        "blackVol": 0.2252287696194369
+      },
+      "inputs": {
+        "K": 200.0,
+        "flat": false,
+        "t": 0.019178082191780823
+      },
+      "name": "K200_1w"
+    },
+    {
+      "expected": {
+        "blackVol": 0.24824797527268236
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": false,
+        "t": 0.08333333333333333
+      },
+      "name": "atm_1m"
+    },
+    {
+      "expected": {
+        "blackVol": 0.244856375
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": false,
+        "t": 0.25
+      },
+      "name": "atm_3m"
+    },
+    {
+      "expected": {
+        "blackVol": 0.2398057956351737
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": false,
+        "t": 0.5
+      },
+      "name": "atm_6m"
+    },
+    {
+      "expected": {
+        "blackVol": 0.24895965923215135
+      },
+      "inputs": {
+        "K": 80.0,
+        "flat": false,
+        "t": 0.5
+      },
+      "name": "K80_6m"
+    },
+    {
+      "expected": {
+        "blackVol": 0.23306579478746864
+      },
+      "inputs": {
+        "K": 120.0,
+        "flat": false,
+        "t": 0.5
+      },
+      "name": "K120_6m"
+    },
+    {
+      "expected": {
+        "blackVol": 0.2297505
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": false,
+        "t": 1.0
+      },
+      "name": "atm_1y"
+    },
+    {
+      "expected": {
+        "blackVol": 0.24941212986553365
+      },
+      "inputs": {
+        "K": 50.0,
+        "flat": false,
+        "t": 1.0
+      },
+      "name": "K50_1y"
+    },
+    {
+      "expected": {
+        "blackVol": 0.22047642857757255
+      },
+      "inputs": {
+        "K": 150.0,
+        "flat": false,
+        "t": 1.0
+      },
+      "name": "K150_1y"
+    },
+    {
+      "expected": {
+        "blackVol": 0.2197251824039369
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": false,
+        "t": 1.5
+      },
+      "name": "atm_18m"
+    },
+    {
+      "expected": {
+        "blackVol": 0.20971815728752538
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": false,
+        "t": 2.0
+      },
+      "name": "atm_2y"
+    },
+    {
+      "expected": {
+        "blackVol": 0.18974169237886465
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": false,
+        "t": 3.0
+      },
+      "name": "atm_3y"
+    },
+    {
+      "expected": {
+        "blackVol": 0.18107768056923523
+      },
+      "inputs": {
+        "K": 400.0,
+        "flat": false,
+        "t": 3.0
+      },
+      "name": "K400_3y"
+    },
+    {
+      "expected": {
+        "blackVol": 0.3
+      },
+      "inputs": {
+        "K": 100.0,
+        "flat": true,
+        "t": 1.0
+      },
+      "name": "flat_atm_1y"
+    }
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-05-10T07:30:00Z",
-  "generated_by": "dumas_parametric_vol_surface_probe (bootstrapped via /tmp/dumas_compute.cpp; mirrors v1.42.1 test-suite/riskneutraldensitycalculator.cpp lines 232-242 verbatim)",
+  "generated_at": "2026-05-10T07:44:27Z",
+  "generated_by": "dumas_parametric_vol_surface_probe",
   "test_group": "experimental/volatility/dumas_parametric_vol_surface"
 }

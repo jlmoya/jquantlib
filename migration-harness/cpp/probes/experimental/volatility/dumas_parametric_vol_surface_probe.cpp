@@ -18,7 +18,7 @@
 #include <ql/time/calendars/nullcalendar.hpp>
 #include <ql/time/daycounters/actual365fixed.hpp>
 #include <ql/termstructures/yield/flatforward.hpp>
-#include <ql/termstructures/voltermstructures.hpp>
+#include <ql/termstructures/volatility/equityfx/blackvoltermstructure.hpp>
 #include "../../common.hpp"
 
 // Inline copy of the C++ reference test class so the probe doesn't depend

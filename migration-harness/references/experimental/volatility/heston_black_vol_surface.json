@@ -1,0 +1,174 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "blackVariance": 0.009725763997182273,
+        "blackVol": 0.19723857631997116
+      },
+      "inputs": {
+        "K": 100.0,
+        "t": 0.25
+      },
+      "name": "atm_3m"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.011590896889626142,
+        "blackVol": 0.21532205543906682
+      },
+      "inputs": {
+        "K": 90.0,
+        "t": 0.25
+      },
+      "name": "K90_3m"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.008405288917754522,
+        "blackVol": 0.1833607255412622
+      },
+      "inputs": {
+        "K": 110.0,
+        "t": 0.25
+      },
+      "name": "K110_3m"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.026239528513502964,
+        "blackVol": 0.2290830788753415
+      },
+      "inputs": {
+        "K": 80.0,
+        "t": 0.5
+      },
+      "name": "K80_6m"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.01921607982583764,
+        "blackVol": 0.19604121926695742
+      },
+      "inputs": {
+        "K": 100.0,
+        "t": 0.5
+      },
+      "name": "atm_6m"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.015524345763548452,
+        "blackVol": 0.17620638900759786
+      },
+      "inputs": {
+        "K": 120.0,
+        "t": 0.5
+      },
+      "name": "K120_6m"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.0487998104286558,
+        "blackVol": 0.22090679126875162
+      },
+      "inputs": {
+        "K": 80.0,
+        "t": 1.0
+      },
+      "name": "K80_1y"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.04301491643655163,
+        "blackVol": 0.2074003771369561
+      },
+      "inputs": {
+        "K": 90.0,
+        "t": 1.0
+      },
+      "name": "K90_1y"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.038276972188501096,
+        "blackVol": 0.1956450157517464
+      },
+      "inputs": {
+        "K": 100.0,
+        "t": 1.0
+      },
+      "name": "atm_1y"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.0346026331215242,
+        "blackVol": 0.1860178301172342
+      },
+      "inputs": {
+        "K": 110.0,
+        "t": 1.0
+      },
+      "name": "K110_1y"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.03199232283361653,
+        "blackVol": 0.17886397858041883
+      },
+      "inputs": {
+        "K": 120.0,
+        "t": 1.0
+      },
+      "name": "K120_1y"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.07735316494670844,
+        "blackVol": 0.19666362773363613
+      },
+      "inputs": {
+        "K": 100.0,
+        "t": 2.0
+      },
+      "name": "atm_2y"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.09078677550069297,
+        "blackVol": 0.2130572405489813
+      },
+      "inputs": {
+        "K": 80.0,
+        "t": 2.0
+      },
+      "name": "K80_2y"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.06831124270345675,
+        "blackVol": 0.18481239501648253
+      },
+      "inputs": {
+        "K": 120.0,
+        "t": 2.0
+      },
+      "name": "K120_2y"
+    },
+    {
+      "expected": {
+        "blackVariance": 0.11722770260041687,
+        "blackVol": 0.19767625266279615
+      },
+      "inputs": {
+        "K": 100.0,
+        "t": 3.0
+      },
+      "name": "atm_3y"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-10T07:44:23Z",
+  "generated_by": "heston_black_vol_surface_probe",
+  "test_group": "experimental/volatility/heston_black_vol_surface"
+}
