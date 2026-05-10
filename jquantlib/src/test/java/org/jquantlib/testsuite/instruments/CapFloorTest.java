@@ -19,10 +19,41 @@
  JQuantLib is based on QuantLib. http://quantlib.org/
  When applicable, the original copyright notice follows this notice.
  */
-
 package org.jquantlib.testsuite.instruments;
 
+import static org.junit.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.cashflow.IborLeg;
+import org.jquantlib.cashflow.Leg;
+import org.jquantlib.daycounters.ActualActual;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.indexes.Euribor6M;
+import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.instruments.CapFloor;
+import org.jquantlib.instruments.VanillaSwap;
+import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
+import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.RelinkableHandle;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.testsuite.util.Utilities;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -31,36 +62,28 @@ import org.junit.Test;
  *
  * <p>10 BOOST_AUTO_TEST_CASE methods exercising the
  * {@link org.jquantlib.instruments.CapFloor} instrument with the
- * {@code BlackCapFloorEngine} and {@code BachelierCapFloorEngine}
- * pricing engines.
+ * {@link BlackCapFloorEngine} pricing engine.
  *
- * <h3>Phase 5e.5 carry-forward rationale</h3>
+ * <h3>Phase Body-Fill (2026-05-09)</h3>
  *
- * <p>JQuant has {@link org.jquantlib.instruments.CapFloor} (Phase 1
- * stub-finishing) and the {@code BlackCapFloorEngine} (Phase 2j) but
- * lacks the {@code MakeCapFloor} fluent helper that the C++ {@code
- * CommonVars} fixture relies on. Each test builds a vanilla swap, extracts
- * its floating leg, and wraps it in a Cap/Floor — JQuant has the lower-level
- * pieces but no convenience builder.
+ * <p>The 4 structural tests (testStrikeDependency, testConsistency,
+ * testParity, testATMRate) are body-filled and un-ignored.  These
+ * exercise pure consistency / put-call parity / ATM-rate identities and
+ * do not need cached reference values from C++ probes.
  *
- * <p>Specifically missing:
+ * <p>The remaining 6 tests stay deferred to Phase 5e.5:
  * <ul>
- *   <li>{@code MakeCapFloor} fluent builder — would streamline the C++
- *       {@code makeCapFloor(type, leg, strike, vol)} pattern. See
- *       WI-5e.5-CF-1.</li>
- *   <li>{@code BachelierCapFloorEngine} (used by
- *       {@code testBachelierOptionLetsDelta}) — JQuant has
- *       {@code BachelierBlackFormula} (Phase 5g territory) but no
- *       Bachelier-mode CapFloor engine. See WI-5e.5-CF-2.</li>
- *   <li>{@code CapFloor.optionletsPrice() / optionletsBPS() /
- *       optionletsDelta()} accessors — JQuant has {@code result}-map
- *       but the named accessors that exercise the {@code optionLetsXxx}
- *       results from C++ are unwired. See WI-5e.5-CF-3.</li>
+ *   <li>testVega — needs the analytical "vega" result-map entry on
+ *       BlackCapFloorEngine plus numerical-bump cross-check;</li>
+ *   <li>testImpliedVolatility — needs CapFloor.impliedVolatility() solver;</li>
+ *   <li>testCachedValue — needs cached NPVs regenerated from C++ v1.42.1
+ *       (could be added via migration-harness probes);</li>
+ *   <li>testCachedValueFromOptionLets / testOptionLetsDelta — need
+ *       CapFloor.optionletsPrice() / optionletsBPS() / optionletsDelta()
+ *       result-map accessors (WI-5e.5-CF-3);</li>
+ *   <li>testBachelierOptionLetsDelta — needs Bachelier-mode capfloor
+ *       engine + optionletsDelta accessor (WI-5e.5-CF-2 + WI-5e.5-CF-3).</li>
  * </ul>
- *
- * <p>All 10 methods are present as faithful skeleton {@code @Test} stubs
- * mirroring the C++ test names; bodies pending Phase 5e.5 production
- * fills.
  */
 public class CapFloorTest {
 
@@ -68,37 +91,317 @@ public class CapFloorTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp::testVega.")
+    /** Mirror of C++ {@code CommonVars} struct (capfloor.cpp:51-127). */
+    private static final class CommonVars {
+        final Date settlement;
+        final double[] nominals;
+        final BusinessDayConvention convention;
+        final Frequency frequency;
+        final IborIndex index;
+        final Calendar calendar;
+        final int fixingDays;
+        final RelinkableHandle<YieldTermStructure> termStructure;
+
+        CommonVars() {
+            this.nominals = new double[] { 100.0 };
+            this.frequency = Frequency.Semiannual;
+            this.termStructure = new RelinkableHandle<YieldTermStructure>();
+            this.index = new Euribor6M(termStructure);
+            this.calendar = index.fixingCalendar();
+            this.convention = BusinessDayConvention.ModifiedFollowing;
+            final Date today = new Settings().evaluationDate();
+            final int settlementDays = 2;
+            this.fixingDays = 2;
+            this.settlement = calendar.advance(today, settlementDays, TimeUnit.Days);
+            this.termStructure.linkTo(Utilities.flatRate(settlement, 0.05,
+                    new ActualActual(ActualActual.Convention.ISDA)));
+        }
+
+        Leg makeLeg(final Date startDate, final int length) {
+            final Date endDate = calendar.advance(startDate,
+                    new Period(length, TimeUnit.Years), convention);
+            final Schedule schedule = new Schedule(startDate, endDate,
+                    new Period(frequency), calendar,
+                    convention, convention,
+                    DateGeneration.Rule.Forward, false);
+            return new IborLeg(schedule, index)
+                    .withNotionals(new Array(nominals))
+                    .withPaymentDayCounter(index.dayCounter())
+                    .withPaymentAdjustment(convention)
+                    .withFixingDays(fixingDays)
+                    .Leg();
+        }
+
+        BlackCapFloorEngine makeEngine(final double volatility) {
+            final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(volatility));
+            return new BlackCapFloorEngine(termStructure, vol,
+                    new ActualActual(ActualActual.Convention.ISDA));
+        }
+
+        CapFloor makeCapFloor(final CapFloor.Type type, final Leg leg,
+                              final double strike, final double volatility) {
+            final List<Double> strikes = new ArrayList<Double>(
+                    Arrays.asList(Double.valueOf(strike)));
+            final CapFloor cf;
+            switch (type) {
+                case Cap:
+                    cf = new CapFloor(CapFloor.Type.Cap, leg, strikes,
+                            termStructure, null);
+                    break;
+                case Floor:
+                    cf = new CapFloor(CapFloor.Type.Floor, leg, strikes,
+                            termStructure, null);
+                    break;
+                default:
+                    throw new IllegalArgumentException("unknown cap/floor type");
+            }
+            cf.setPricingEngine(makeEngine(volatility));
+            return cf;
+        }
+    }
+
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
+            + "needs analytical 'vega' result-map entry on BlackCapFloorEngine "
+            + "+ numerical-bump cross-check.")
     @Test
     public void testVega() {
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp.")
     @Test
     public void testStrikeDependency() {
+        QL.info("Testing cap/floor dependency on strike...");
+
+        final CommonVars vars = new CommonVars();
+
+        final int[] lengths = { 1, 2, 3, 5, 7, 10, 15, 20 };
+        final double[] vols = { 0.01, 0.05, 0.10, 0.15, 0.20 };
+        final double[] strikes = { 0.03, 0.04, 0.05, 0.06, 0.07 };
+
+        // Java tweak: start the schedule one period after the curve
+        // reference date so the first IborCoupon fixing date is strictly
+        // in the future (cf. AnalyticCapFloorEngineTest). Java's
+        // IborIndex.fixing path NPEs on missing-but-required-on-eval
+        // fixings; C++ falls through to forecast.
+        final Date startDate = vars.termStructure.currentLink()
+                .referenceDate().add(new Period(vars.frequency));
+
+        for (final int length : lengths) {
+            for (final double vol : vols) {
+                final double[] capValues = new double[strikes.length];
+                final double[] floorValues = new double[strikes.length];
+                for (int s = 0; s < strikes.length; ++s) {
+                    final double strike = strikes[s];
+                    final Leg leg = vars.makeLeg(startDate, length);
+                    final CapFloor cap = vars.makeCapFloor(
+                            CapFloor.Type.Cap, leg, strike, vol);
+                    capValues[s] = cap.NPV();
+                    final CapFloor floor = vars.makeCapFloor(
+                            CapFloor.Type.Floor, leg, strike, vol);
+                    floorValues[s] = floor.NPV();
+                }
+                // Cap NPV must be non-increasing in strike.
+                for (int s = 0; s + 1 < strikes.length; ++s) {
+                    if (capValues[s] < capValues[s + 1]) {
+                        fail("NPV is increasing with the strike in a cap:\n"
+                                + "    length:     " + length + " years\n"
+                                + "    volatility: " + vol + "\n"
+                                + "    value:      " + capValues[s]
+                                + " at strike: " + strikes[s] + "\n"
+                                + "    value:      " + capValues[s + 1]
+                                + " at strike: " + strikes[s + 1]);
+                    }
+                }
+                // Floor NPV must be non-decreasing in strike.
+                for (int s = 0; s + 1 < strikes.length; ++s) {
+                    if (floorValues[s] > floorValues[s + 1]) {
+                        fail("NPV is decreasing with the strike in a floor:\n"
+                                + "    length:     " + length + " years\n"
+                                + "    volatility: " + vol + "\n"
+                                + "    value:      " + floorValues[s]
+                                + " at strike: " + strikes[s] + "\n"
+                                + "    value:      " + floorValues[s + 1]
+                                + " at strike: " + strikes[s + 1]);
+                    }
+                }
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp.")
     @Test
     public void testConsistency() {
+        QL.info("Testing consistency between cap, floor and collar...");
+
+        final CommonVars vars = new CommonVars();
+
+        final int[] lengths = { 1, 2, 3, 5, 7, 10, 15, 20 };
+        final double[] capRates = { 0.03, 0.04, 0.05, 0.06, 0.07 };
+        final double[] floorRates = { 0.03, 0.04, 0.05, 0.06, 0.07 };
+        final double[] vols = { 0.01, 0.05, 0.10, 0.15, 0.20 };
+
+        // See testStrikeDependency for the reference-date shift rationale.
+        final Date startDate = vars.termStructure.currentLink()
+                .referenceDate().add(new Period(vars.frequency));
+
+        for (final int length : lengths) {
+            for (final double capRate : capRates) {
+                for (final double floorRate : floorRates) {
+                    for (final double vol : vols) {
+                        final Leg leg = vars.makeLeg(startDate, length);
+                        final CapFloor cap = vars.makeCapFloor(
+                                CapFloor.Type.Cap, leg, capRate, vol);
+                        final CapFloor floor = vars.makeCapFloor(
+                                CapFloor.Type.Floor, leg, floorRate, vol);
+
+                        // Build Collar via the explicit cap+floor strikes ctor.
+                        final List<Double> capStrikes = new ArrayList<Double>(
+                                Arrays.asList(Double.valueOf(capRate)));
+                        final List<Double> floorStrikes = new ArrayList<Double>(
+                                Arrays.asList(Double.valueOf(floorRate)));
+                        final CapFloor collar = new CapFloor(
+                                CapFloor.Type.Collar, leg,
+                                capStrikes, floorStrikes,
+                                vars.termStructure, null);
+                        collar.setPricingEngine(vars.makeEngine(vol));
+
+                        final double diff = Math.abs(
+                                (cap.NPV() - floor.NPV()) - collar.NPV());
+                        if (diff > 1e-10) {
+                            fail("inconsistency between cap, floor and collar:\n"
+                                    + "    length:       " + length + " years\n"
+                                    + "    volatility:   " + vol + "\n"
+                                    + "    cap value:    " + cap.NPV()
+                                    + " at strike: " + capRate + "\n"
+                                    + "    floor value:  " + floor.NPV()
+                                    + " at strike: " + floorRate + "\n"
+                                    + "    collar value: " + collar.NPV()
+                                    + "\n    diff:         " + diff);
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp.")
     @Test
     public void testParity() {
+        QL.info("Testing cap/floor parity...");
+
+        final CommonVars vars = new CommonVars();
+
+        final int[] lengths = { 1, 2, 3, 5, 7, 10, 15, 20 };
+        final double[] strikes = { 0., 0.03, 0.04, 0.05, 0.06, 0.07 };
+        final double[] vols = { 0.01, 0.05, 0.10, 0.15, 0.20 };
+
+        // See testStrikeDependency for the reference-date shift rationale.
+        final Date startDate = vars.termStructure.currentLink()
+                .referenceDate().add(new Period(vars.frequency));
+
+        for (final int length : lengths) {
+            for (final double strike : strikes) {
+                for (final double vol : vols) {
+                    final Leg leg = vars.makeLeg(startDate, length);
+                    final CapFloor cap = vars.makeCapFloor(
+                            CapFloor.Type.Cap, leg, strike, vol);
+                    final CapFloor floor = vars.makeCapFloor(
+                            CapFloor.Type.Floor, leg, strike, vol);
+                    final Date maturity = vars.calendar.advance(startDate,
+                            new Period(length, TimeUnit.Years), vars.convention);
+                    final Schedule schedule = new Schedule(startDate, maturity,
+                            new Period(vars.frequency), vars.calendar,
+                            vars.convention, vars.convention,
+                            DateGeneration.Rule.Forward, false);
+                    final VanillaSwap swap = new VanillaSwap(
+                            VanillaSwap.Type.Payer, vars.nominals[0],
+                            schedule, strike, vars.index.dayCounter(),
+                            schedule, vars.index, 0.0,
+                            vars.index.dayCounter());
+                    swap.setPricingEngine(
+                            new DiscountingSwapEngine(vars.termStructure));
+                    final double diff = Math.abs(
+                            (cap.NPV() - floor.NPV()) - swap.NPV());
+                    if (diff > 1e-10) {
+                        fail("put/call parity violated:\n"
+                                + "    length:      " + length + " years\n"
+                                + "    volatility:  " + vol + "\n"
+                                + "    strike:      " + strike + "\n"
+                                + "    cap value:   " + cap.NPV() + "\n"
+                                + "    floor value: " + floor.NPV() + "\n"
+                                + "    swap value:  " + swap.NPV()
+                                + "\n    diff:        " + diff);
+                    }
+                }
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp.")
     @Test
     public void testATMRate() {
+        QL.info("Testing cap/floor ATM rate...");
+
+        final CommonVars vars = new CommonVars();
+
+        final int[] lengths = { 1, 2, 3, 5, 7, 10, 15, 20 };
+        final double[] strikes = { 0., 0.03, 0.04, 0.05, 0.06, 0.07 };
+        final double[] vols = { 0.01, 0.05, 0.10, 0.15, 0.20 };
+
+        // See testStrikeDependency for the reference-date shift rationale.
+        final Date startDate = vars.termStructure.currentLink()
+                .referenceDate().add(new Period(vars.frequency));
+
+        for (final int length : lengths) {
+            final Leg leg = vars.makeLeg(startDate, length);
+            final Date maturity = vars.calendar.advance(startDate,
+                    new Period(length, TimeUnit.Years), vars.convention);
+            final Schedule schedule = new Schedule(startDate, maturity,
+                    new Period(vars.frequency), vars.calendar,
+                    vars.convention, vars.convention,
+                    DateGeneration.Rule.Forward, false);
+
+            for (final double strike : strikes) {
+                for (final double vol : vols) {
+                    final CapFloor cap = vars.makeCapFloor(
+                            CapFloor.Type.Cap, leg, strike, vol);
+                    final CapFloor floor = vars.makeCapFloor(
+                            CapFloor.Type.Floor, leg, strike, vol);
+                    final double capATMRate = cap.atmRate();
+                    final double floorATMRate = floor.atmRate();
+                    if (Math.abs(floorATMRate - capATMRate) >= 1e-10) {
+                        fail("Cap ATM Rate and floor ATM Rate should be equal:\n"
+                                + "   length:        " + length + " years\n"
+                                + "   volatility:    " + vol + "\n"
+                                + "   strike:        " + strike + "\n"
+                                + "   cap ATM rate:  " + capATMRate + "\n"
+                                + "   floor ATM rate:" + floorATMRate);
+                    }
+                    final VanillaSwap swap = new VanillaSwap(
+                            VanillaSwap.Type.Payer, vars.nominals[0],
+                            schedule, floorATMRate, vars.index.dayCounter(),
+                            schedule, vars.index, 0.0,
+                            vars.index.dayCounter());
+                    swap.setPricingEngine(
+                            new DiscountingSwapEngine(vars.termStructure));
+                    final double swapNPV = swap.NPV();
+                    if (Math.abs(swapNPV) >= 1e-10) {
+                        fail("the NPV of a Swap struck at ATM rate "
+                                + "should be equal to 0:\n"
+                                + "   length:        " + length + " years\n"
+                                + "   volatility:    " + vol + "\n"
+                                + "   ATM rate:      " + floorATMRate + "\n"
+                                + "   swap NPV:      " + swapNPV);
+                    }
+                }
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — also needs implied-volatility solver wiring on CapFloor.")
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
+            + "needs implied-volatility solver wiring on CapFloor.")
     @Test
     public void testImpliedVolatility() {
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — also needs cached NPVs regenerated from C++ v1.42.1.")
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
+            + "needs cached NPVs regenerated from C++ v1.42.1 (probe candidate).")
     @Test
     public void testCachedValue() {
     }
