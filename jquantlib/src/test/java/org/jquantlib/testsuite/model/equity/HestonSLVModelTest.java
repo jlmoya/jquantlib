@@ -101,17 +101,12 @@ import org.junit.Test;
  */
 public class HestonSLVModelTest {
 
-    private static final String REASON_FP =
-            "Phase 5h.5 — requires FokkerPlanckFwdEquation solver + Fdm forward operators "
-            + "(no Java equivalent; Phase 2m only ported the backward Heston FD stack via HHW).";
-
-    private static final String REASON_SLV =
-            "Phase 5h.5 — requires HestonSLV-family classes "
-            + "(HestonStochasticLocalVolProcess + HestonSLVMCModel + HestonSLVFDMModel) "
-            + "(Phase 2m carry-forward; D9).";
-
-    private static final String REASON_SLOW =
-            "Phase 5h.5 + slow — requires SLV infra and @Tag(\"slow\") (Phase 5 META D8 + D9).";
+    // Phase 5h.5-SLV-c body-fills landed for testTransformedZeroFlowBC,
+    // testSquareRootEvolveWithStationaryDensity, testSquareRootLogEvolveWithStationaryDensity.
+    // testSquareRootZeroFlowBC + testSquareRootFokkerPlanckFwdEquation are body-filled
+    // but @Ignore'd pending an exact non-central chi-squared PDF (Java currently uses
+    // a CDF central-difference approximation). Remaining @Ignore reasons are per-test
+    // and identify the specific missing infrastructure class(es).
 
     /**
      * Mirrors C++ {@code stationaryLogProbabilityFct}
@@ -154,7 +149,8 @@ public class HestonSLVModelTest {
 
     /* ---- 1. Fokker-Planck forward PDE -------------------------------- */
 
-    @Ignore(REASON_FP)
+    @Ignore("Phase 5h.5-SLV-c — needs FdmBlackScholesFwdOp (forward PDE adapter "
+            + "for the BS process); only the backward FdmBlackScholesOp is in Java.")
     @Test
     public void testBlackScholesFokkerPlanckFwdEquation() { fail("not implemented"); }
 
@@ -236,15 +232,21 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore(REASON_FP)
+    @Ignore("Phase 5h.5-SLV-c slow — needs FdmHestonGreensFct.{Gaussian,ZeroCorrelation} "
+            + "algorithms (Phase 5h.5-SLV-b ported only the SemiAnalytical path), "
+            + "Concentrating1dMesher multi-cPoint variant, HundsdorferScheme, and 2D fokkerPlanckPrice2D.")
     @Test
     public void testHestonFokkerPlanckFwdEquation() { fail("not implemented"); }
 
-    @Ignore(REASON_FP)
+    @Ignore("Phase 5h.5-SLV-c — needs Concentrating1dMesher multi-cPoint variant, "
+            + "createSmoothImpliedVol+createLocalVolMatrixFromProcess test helpers, "
+            + "HundsdorferScheme, and 2D fokkerPlanckPrice2D.")
     @Test
     public void testHestonFokkerPlanckFwdEquationLogLVLeverage() { fail("not implemented"); }
 
-    @Ignore(REASON_FP)
+    @Ignore("Phase 5h.5-SLV-c — needs NoExceptLocalVolSurface and the "
+            + "createSmoothImpliedVol test helper (BlackVarianceSurface ctor "
+            + "with full vol matrix).")
     @Test
     public void testBlackScholesFokkerPlanckFwdEquationLocalVol() { fail("not implemented"); }
 
@@ -568,31 +570,42 @@ public class HestonSLVModelTest {
 
     /* ---- 3. SLV calibration / propagation ----------------------------- */
 
-    @Ignore(REASON_SLV)
+    @Ignore("Phase 5h.5-SLV-c — needs NoExceptLocalVolSurface + createSmoothImpliedVol "
+            + "test helper + HestonSLVFDMModel.logEntries() (logging accessor not yet "
+            + "exposed in Java HestonSLVFDMModel from Phase 5h.5-SLV-b).")
     @Test
     public void testLocalVolsvSLVPropDensity() { fail("not implemented"); }
 
-    @Ignore(REASON_SLOW)
+    @Ignore("Phase 5h.5-SLV-c slow — needs MakeMCEuropeanHestonEngine variant "
+            + "templated on HestonSLVProcess (Java MCEuropeanHestonEngine accepts only "
+            + "HestonProcess; HestonStochasticLocalVolProcess is a sibling class, not subclass).")
     @Test
     public void testMonteCarloCalibration() { fail("not implemented"); }
 
     /* ---- 4. Pricing checks -------------------------------------------- */
 
-    @Ignore(REASON_SLV)
+    @Ignore("Phase 5h.5-SLV-c — needs HestonBlackVolSurface (BlackVolTermStructure that "
+            + "implies BS vols from a Heston model via root-finding); not in Java.")
     @Test
     public void testBarrierPricingViaHestonLocalVol() { fail("not implemented"); }
 
-    @Ignore(REASON_SLOW)
+    @Ignore("Phase 5h.5-SLV-c slow — needs MakeMCEuropeanHestonEngine[HestonSLVProcess] "
+            + "and FdHestonVanillaEngine ctor with leverage-fct argument (Java engine is "
+            + "Heston-only); LocalConstantVol exists.")
     @Test
     public void testMonteCarloVsFdmPricing() { fail("not implemented"); }
 
-    @Ignore(REASON_SLV)
+    @Ignore("Phase 5h.5-SLV-c — needs SobolBrownianGeneratorFactory + "
+            + "FdHestonDoubleBarrierEngine + AnalyticDoubleBarrierBinaryEngine + "
+            + "HestonSLVMCModel.leverageFunction() accessor.")
     @Test
     public void testMoustacheGraph() { fail("not implemented"); }
 
     /* ---- 5. Process discretization ------------------------------------ */
 
-    @Ignore(REASON_SLV)
+    @Ignore("Phase 5h.5-SLV-c — needs SobolBrownianBridgeRsg (Sobol QMC + Brownian "
+            + "bridge) and FdHestonVanillaEngine ctor that accepts a localVol "
+            + "term-structure argument; getFixedLocalVolFromHeston test helper.")
     @Test
     public void testDiffusionAndDriftSlvProcess() { fail("not implemented"); }
 }
