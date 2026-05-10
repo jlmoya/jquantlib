@@ -7,12 +7,17 @@
 package org.jquantlib.testsuite.instruments;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.exercise.AmericanExercise;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.AverageBasketPayoff;
@@ -23,12 +28,18 @@ import org.jquantlib.instruments.MinBasketPayoff;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.SpreadBasketPayoff;
+import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.methods.montecarlo.LsmBasisSystem;
+import org.jquantlib.model.shortrate.StochasticProcessArray;
+import org.jquantlib.pricingengines.McSimulation;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.basket.BjerksundStenslandSpreadEngine;
 import org.jquantlib.pricingengines.basket.KirkEngine;
+import org.jquantlib.pricingengines.basket.MCAmericanBasketEngine;
 import org.jquantlib.pricingengines.basket.StulzEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+import org.jquantlib.processes.StochasticProcess1D;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -450,12 +461,436 @@ public class BasketOptionTest {
         assertEquals(10.0, spreadP.get(new double[]{ 210.0, 100.0 }), 1e-15);
     }
 
+    // ---- Phase 4i.5c body-fills — MCAmericanBasketEngine consumers ----
+
+    /** {@code C++ relativeError}: |x1-x2|/reference, fallback abs error if reference==0. */
+    private static double relativeError(final double x1, final double x2, final double reference) {
+        if (reference != 0.0) {
+            return Math.abs(x1 - x2) / reference;
+        }
+        return Math.abs(x1 - x2);
+    }
+
+    /** Mirrors {@code C++ BasketOptionOneData} struct. */
+    private static class BasketOptionOneData {
+        final Option.Type type;
+        final double strike;
+        final double s;
+        final double q;
+        final double r;
+        final double t;
+        final double v;
+        final double result;
+        final double tol;
+
+        BasketOptionOneData(final Option.Type type, final double strike, final double s,
+                final double q, final double r, final double t, final double v,
+                final double result, final double tol) {
+            this.type = type;
+            this.strike = strike;
+            this.s = s;
+            this.q = q;
+            this.r = r;
+            this.t = t;
+            this.v = v;
+            this.result = result;
+            this.tol = tol;
+        }
+    }
+
+    /** Mirrors {@code C++ BasketOptionThreeData} struct (subset used in testTavellaValues). */
+    private static class BasketOptionThreeData {
+        final BasketType basketType;
+        final Option.Type type;
+        final double strike;
+        final double s1, s2, s3;
+        final double r;
+        final double t;       // years
+        final double v1, v2, v3;
+        final double rho;
+        final double euroValue;
+        final double amValue;
+
+        BasketOptionThreeData(final BasketType bt, final Option.Type type,
+                final double strike, final double s1, final double s2, final double s3,
+                final double r, final double t,
+                final double v1, final double v2, final double v3,
+                final double rho, final double euroValue, final double amValue) {
+            this.basketType = bt;
+            this.type = type;
+            this.strike = strike;
+            this.s1 = s1;
+            this.s2 = s2;
+            this.s3 = s3;
+            this.r = r;
+            this.t = t;
+            this.v1 = v1;
+            this.v2 = v2;
+            this.v3 = v3;
+            this.rho = rho;
+            this.euroValue = euroValue;
+            this.amValue = amValue;
+        }
+    }
+
+    /**
+     * One-asset American put values used by {@code testOneDAmericanValues}
+     * and {@code testOddSamples}. Mirrors C++ {@code oneDataValues[]}.
+     */
+    private static final BasketOptionOneData[] ONE_D_VALUES = new BasketOptionOneData[] {
+        // type, strike, spot, q, r, t, vol, value, tol
+        new BasketOptionOneData(Option.Type.Put, 100.00,  80.00, 0.0, 0.06, 0.5, 0.4, 21.6059, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 100.00,  85.00, 0.0, 0.06, 0.5, 0.4, 18.0374, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 100.00,  90.00, 0.0, 0.06, 0.5, 0.4, 14.9187, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 100.00,  95.00, 0.0, 0.06, 0.5, 0.4, 12.2314, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 100.00, 100.00, 0.0, 0.06, 0.5, 0.4,  9.9458, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 100.00, 105.00, 0.0, 0.06, 0.5, 0.4,  8.0281, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 100.00, 110.00, 0.0, 0.06, 0.5, 0.4,  6.4352, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 100.00, 115.00, 0.0, 0.06, 0.5, 0.4,  5.1265, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 100.00, 120.00, 0.0, 0.06, 0.5, 0.4,  4.0611, 1e-2),
+
+        // Longstaff-Schwartz 1D example (Laguerre + 100k paths in original).
+        new BasketOptionOneData(Option.Type.Put, 40.00, 36.00, 0.0, 0.06, 1.0, 0.2,  4.478, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 36.00, 0.0, 0.06, 2.0, 0.2,  4.840, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 36.00, 0.0, 0.06, 1.0, 0.4,  7.101, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 36.00, 0.0, 0.06, 2.0, 0.4,  8.508, 1e-2),
+
+        new BasketOptionOneData(Option.Type.Put, 40.00, 38.00, 0.0, 0.06, 1.0, 0.2,  3.250, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 38.00, 0.0, 0.06, 2.0, 0.2,  3.745, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 38.00, 0.0, 0.06, 1.0, 0.4,  6.148, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 38.00, 0.0, 0.06, 2.0, 0.4,  7.670, 1e-2),
+
+        new BasketOptionOneData(Option.Type.Put, 40.00, 40.00, 0.0, 0.06, 1.0, 0.2,  2.314, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 40.00, 0.0, 0.06, 2.0, 0.2,  2.885, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 40.00, 0.0, 0.06, 1.0, 0.4,  5.312, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 40.00, 0.0, 0.06, 2.0, 0.4,  6.920, 1e-2),
+
+        new BasketOptionOneData(Option.Type.Put, 40.00, 42.00, 0.0, 0.06, 1.0, 0.2,  1.617, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 42.00, 0.0, 0.06, 2.0, 0.2,  2.212, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 42.00, 0.0, 0.06, 1.0, 0.4,  4.582, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 42.00, 0.0, 0.06, 2.0, 0.4,  6.248, 1e-2),
+
+        new BasketOptionOneData(Option.Type.Put, 40.00, 44.00, 0.0, 0.06, 1.0, 0.2,  1.110, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 44.00, 0.0, 0.06, 2.0, 0.2,  1.690, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 44.00, 0.0, 0.06, 1.0, 0.4,  3.948, 1e-2),
+        new BasketOptionOneData(Option.Type.Put, 40.00, 44.00, 0.0, 0.06, 2.0, 0.4,  5.647, 1e-2),
+    };
+
+    /**
+     * Three-asset American max-call against Tavella 2002 reference 18.082.
+     *
+     * <p>Mirrors C++ {@code testTavellaValues}: {@code MaxBasket Call K=100,
+     * S1=S2=S3=100, q=0.10, r=0.05, T=3y, sigma1=sigma2=sigma3=0.20,
+     * rho_{12}=-0.25, rho_{13}=0.25, rho_{23}=0.30}.</p>
+     *
+     * <p>C++ uses 10000 samples + {@code calibrationSamples = samples/4 = 2500}
+     * + 20 time steps + antithetic + seed 0; tolerance is 1% relative.
+     * Mirrors C++ exactly; this also matches {@link
+     * org.jquantlib.testsuite.pricingengines.basket.MCAmericanBasketEngineTest#testTavellaValues3D
+     * MCAmericanBasketEngineTest.testTavellaValues3D} which already exercises
+     * the identical scenario.</p>
+     *
+     * <p>Reference: Tavella, D. A., "Quantitative Methods in Derivatives
+     * Pricing", Wiley 2002.</p>
+     */
+    @Test
+    public void testTavellaValues() {
+        QL.info("Testing three-asset American basket options against Tavella's values...");
+
+        final BasketOptionThreeData[] values = new BasketOptionThreeData[] {
+            // basketType, type, strike, s1, s2, s3, r, t (years), v1, v2, v3, rho, euroValue, amValue
+            new BasketOptionThreeData(BasketType.MaxBasket, Option.Type.Call,
+                    100.0, 100.0, 100.0, 100.0, 0.05, 3.0, 0.20, 0.20, 0.20, 0.0,
+                    -999.0, 18.082),
+        };
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        // Strong references for observers (Phase 2x A.4).
+        final SimpleQuote spot1 = new SimpleQuote(0.0);
+        final SimpleQuote spot2 = new SimpleQuote(0.0);
+        final SimpleQuote spot3 = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.10);
+        final SimpleQuote rRate = new SimpleQuote(0.05);
+        final SimpleQuote vol1 = new SimpleQuote(0.0);
+        final SimpleQuote vol2 = new SimpleQuote(0.0);
+        final SimpleQuote vol3 = new SimpleQuote(0.0);
+
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final BlackVolTermStructure volTS1 = Utilities.flatVol(today, vol1, dc);
+        final BlackVolTermStructure volTS2 = Utilities.flatVol(today, vol2, dc);
+        final BlackVolTermStructure volTS3 = Utilities.flatVol(today, vol3, dc);
+
+        final double mcRelativeErrorTolerance = 0.01;
+        final int requiredSamples = 10000;
+        final int timeSteps = 20;
+        final long seed = 0L;
+
+        final BasketOptionThreeData v = values[0];
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(v.type, v.strike);
+
+        final Date exDate = today.add(timeToDays(v.t));
+        final Exercise exercise = new AmericanExercise(today, exDate);
+
+        spot1.setValue(v.s1);
+        spot2.setValue(v.s2);
+        spot3.setValue(v.s3);
+        vol1.setValue(v.v1);
+        vol2.setValue(v.v2);
+        vol3.setValue(v.v3);
+
+        final StochasticProcess1D p1 = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot1), new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS), new Handle<BlackVolTermStructure>(volTS1));
+        final StochasticProcess1D p2 = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot2), new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS), new Handle<BlackVolTermStructure>(volTS2));
+        final StochasticProcess1D p3 = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot3), new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS), new Handle<BlackVolTermStructure>(volTS3));
+
+        final List<StochasticProcess1D> procs = new ArrayList<StochasticProcess1D>();
+        procs.add(p1);
+        procs.add(p2);
+        procs.add(p3);
+
+        final Matrix correlation = new Matrix(3, 3);
+        for (int j = 0; j < 3; ++j) {
+            correlation.set(j, j, 1.0);
+        }
+        correlation.set(1, 0, -0.25);
+        correlation.set(0, 1, -0.25);
+        correlation.set(2, 0, 0.25);
+        correlation.set(0, 2, 0.25);
+        correlation.set(2, 1, 0.30);
+        correlation.set(1, 2, 0.30);
+
+        final StochasticProcessArray process = new StochasticProcessArray(procs, correlation);
+
+        final MCAmericanBasketEngine mcLSMCEngine = new MCAmericanBasketEngine(
+                process,
+                /* timeSteps */ timeSteps,
+                /* timeStepsPerYear */ McSimulation.NULL_SAMPLES,
+                /* brownianBridge */ false,
+                /* antitheticVariate */ true,
+                /* requiredSamples */ requiredSamples,
+                /* requiredTolerance */ McSimulation.NULL_TOLERANCE,
+                /* maxSamples */ McSimulation.NULL_SAMPLES,
+                /* seed */ seed,
+                /* nCalibrationSamples */ requiredSamples / 4,
+                /* polynomialOrder */ 2,
+                LsmBasisSystem.PolynomialType.Monomial);
+
+        final BasketOption basketOption = new BasketOption(
+                basketTypeToPayoff(v.basketType, payoff), exercise);
+        basketOption.setPricingEngine(mcLSMCEngine);
+
+        final double calculated = basketOption.NPV();
+        final double expected = v.amValue;
+        final double relError = relativeError(calculated, expected, v.s1);
+        if (relError > mcRelativeErrorTolerance) {
+            fail("MC LSMC Tavella value: " + v.basketType + " " + v.type + ":\n"
+                    + "  expected   = " + expected + "\n"
+                    + "  calculated = " + calculated + "\n"
+                    + "  relError   = " + relError + "\n"
+                    + "  tolerance  = " + mcRelativeErrorTolerance);
+        }
+    }
+
+    /**
+     * One-asset American max basket options, sliced over the 29-row
+     * {@link #ONE_D_VALUES} dataset. Mirrors C++
+     * {@code testOneDAmericanValues} (which uses Boost slice templates
+     * to split into 5 sub-cases). Java consolidates into a single test
+     * since the slicing was a Boost runtime-throughput tweak, not a
+     * semantic distinction.
+     *
+     * <p>Each row prices an American max-payoff basket containing a
+     * single 1-D underlying (degenerate basket) using
+     * {@link MCAmericanBasketEngine}; expected values are 1-D American
+     * put references from Longstaff-Schwartz (2001) and other sources
+     * (see C++ comment block).</p>
+     *
+     * <p>10000 samples + 52 time steps + antithetic + seed 0,
+     * tolerance per row 1% relative.</p>
+     */
+    @Test
+    public void testOneDAmericanValues() {
+        QL.info("Testing basket American options against 1-D case...");
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        // Strong references for observers (Phase 2x A.4).
+        final SimpleQuote spot1 = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final SimpleQuote rRate = new SimpleQuote(0.05);
+        final SimpleQuote vol1 = new SimpleQuote(0.0);
+
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final BlackVolTermStructure volTS1 = Utilities.flatVol(today, vol1, dc);
+
+        final int requiredSamples = 10000;
+        final int timeSteps = 52;
+        final long seed = 0L;
+
+        final StochasticProcess1D stochProcess1 = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot1), new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS1));
+
+        final List<StochasticProcess1D> procs = new ArrayList<StochasticProcess1D>();
+        procs.add(stochProcess1);
+
+        final Matrix correlation = new Matrix(1, 1);
+        correlation.set(0, 0, 1.0);
+
+        final StochasticProcessArray process = new StochasticProcessArray(procs, correlation);
+
+        final MCAmericanBasketEngine mcLSMCEngine = new MCAmericanBasketEngine(
+                process,
+                /* timeSteps */ timeSteps,
+                /* timeStepsPerYear */ McSimulation.NULL_SAMPLES,
+                /* brownianBridge */ false,
+                /* antitheticVariate */ true,
+                /* requiredSamples */ requiredSamples,
+                /* requiredTolerance */ McSimulation.NULL_TOLERANCE,
+                /* maxSamples */ McSimulation.NULL_SAMPLES,
+                /* seed */ seed,
+                /* nCalibrationSamples */ requiredSamples / 4,
+                /* polynomialOrder */ 2,
+                LsmBasisSystem.PolynomialType.Monomial);
+
+        for (int i = 0; i < ONE_D_VALUES.length; ++i) {
+            final BasketOptionOneData v = ONE_D_VALUES[i];
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(v.type, v.strike);
+
+            final Date exDate = today.add(timeToDays(v.t));
+            final Exercise exercise = new AmericanExercise(today, exDate);
+
+            spot1.setValue(v.s);
+            vol1.setValue(v.v);
+            rRate.setValue(v.r);
+            qRate.setValue(v.q);
+
+            final BasketOption basketOption = new BasketOption(
+                    basketTypeToPayoff(BasketType.MaxBasket, payoff), exercise);
+            basketOption.setPricingEngine(mcLSMCEngine);
+
+            final double calculated = basketOption.NPV();
+            final double expected = v.result;
+            final double relError = relativeError(calculated, expected, v.s);
+
+            if (relError > v.tol) {
+                fail("Row " + i + " (S=" + v.s + ", t=" + v.t + ", vol=" + v.v
+                        + ", r=" + v.r + "):\n"
+                        + "  expected   = " + expected + "\n"
+                        + "  calculated = " + calculated + "\n"
+                        + "  relError   = " + relError + "\n"
+                        + "  tol        = " + v.tol);
+            }
+        }
+    }
+
+    /**
+     * Regression test for an antithetic-variate sample-array sizing crash
+     * when {@code requiredSamples} is odd. Mirrors C++ {@code testOddSamples}
+     * (Brennan-Schwartz). The single row is the in-the-money put from the
+     * top of {@link #ONE_D_VALUES}; the goal is structural (no crash) +
+     * value within 1% relative.
+     *
+     * <p>10001 samples (the odd number that triggered the historical bug),
+     * 53 time steps, antithetic, seed 0.</p>
+     */
+    @Test
+    public void testOddSamples() {
+        QL.info("Testing antithetic engine using odd sample number...");
+
+        final int requiredSamples = 10001; // The important line — odd.
+        final int timeSteps = 53;
+        final BasketOptionOneData[] values = new BasketOptionOneData[] {
+            // type, strike, spot, q, r, t, vol, value, tol
+            new BasketOptionOneData(Option.Type.Put, 100.00, 80.00, 0.0, 0.06, 0.5, 0.4, 21.6059, 1e-2),
+        };
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        // Strong references for observers (Phase 2x A.4).
+        final SimpleQuote spot1 = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final SimpleQuote rRate = new SimpleQuote(0.05);
+        final SimpleQuote vol1 = new SimpleQuote(0.0);
+
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final BlackVolTermStructure volTS1 = Utilities.flatVol(today, vol1, dc);
+
+        final long seed = 0L;
+
+        final StochasticProcess1D stochProcess1 = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot1), new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS1));
+
+        final List<StochasticProcess1D> procs = new ArrayList<StochasticProcess1D>();
+        procs.add(stochProcess1);
+
+        final Matrix correlation = new Matrix(1, 1);
+        correlation.set(0, 0, 1.0);
+
+        final StochasticProcessArray process = new StochasticProcessArray(procs, correlation);
+
+        final MCAmericanBasketEngine mcLSMCEngine = new MCAmericanBasketEngine(
+                process,
+                /* timeSteps */ timeSteps,
+                /* timeStepsPerYear */ McSimulation.NULL_SAMPLES,
+                /* brownianBridge */ false,
+                /* antitheticVariate */ true,
+                /* requiredSamples */ requiredSamples,
+                /* requiredTolerance */ McSimulation.NULL_TOLERANCE,
+                /* maxSamples */ McSimulation.NULL_SAMPLES,
+                /* seed */ seed,
+                /* nCalibrationSamples */ requiredSamples / 4,
+                /* polynomialOrder */ 2,
+                LsmBasisSystem.PolynomialType.Monomial);
+
+        for (final BasketOptionOneData value : values) {
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
+
+            final Date exDate = today.add(timeToDays(value.t));
+            final Exercise exercise = new AmericanExercise(today, exDate);
+
+            spot1.setValue(value.s);
+            vol1.setValue(value.v);
+            rRate.setValue(value.r);
+            qRate.setValue(value.q);
+
+            final BasketOption basketOption = new BasketOption(
+                    basketTypeToPayoff(BasketType.MaxBasket, payoff), exercise);
+            basketOption.setPricingEngine(mcLSMCEngine);
+
+            final double calculated = basketOption.NPV();
+            final double expected = value.result;
+            final double relError = relativeError(calculated, expected, value.s);
+
+            // Sanity: NPV strictly positive, no crash.
+            assertTrue("NPV must be > 0 for ITM American put: " + calculated,
+                    calculated > 0.0);
+            if (relError > value.tol) {
+                fail("Odd-sample MC: expected " + expected
+                        + ", got " + calculated
+                        + " (relError " + relError + " > tol " + value.tol + ")");
+            }
+        }
+    }
+
     // ---- Skeleton placeholders (Phase 5k.5b carry-forward) -----------
 
     @Ignore(REASON_BARRAQUAND)         @Test public void testBarraquandThreeValues()                  { fail("not implemented"); }
-    @Ignore(REASON_AMERICAN_BASKET)    @Test public void testTavellaValues()                          { fail("not implemented"); }
-    @Ignore(REASON_AMERICAN_BASKET)    @Test public void testOneDAmericanValues()                     { fail("not implemented"); }
-    @Ignore(REASON_MC_BASKET)          @Test public void testOddSamples()                             { fail("not implemented"); }
     @Ignore(REASON_LOCAL_VOL_SPREAD)   @Test public void testLocalVolatilitySpreadOption()            { fail("not implemented"); }
     @Ignore(REASON_2D_PDE)             @Test public void test2DPDEGreeks()                            { fail("not implemented"); }
     @Ignore(REASON_OPERATOR_SPLITTING) @Test public void testOperatorSplittingSpreadEngine()          { fail("not implemented"); }
@@ -473,7 +908,13 @@ public class BasketOptionTest {
     @Ignore(REASON_FDM_AMERICAN)       @Test public void testAccurateAmericanBasketOptions()          { fail("not implemented"); }
     @Ignore(REASON_NO_DIV_ZERO)        @Test public void testNoDivByZeroOperatorSplitting()           { fail("not implemented"); }
 
-    // Suppress unused-warning for the catch-all reason.
+    // Suppress unused-warning for the catch-all reasons (some have been
+    // body-filled in Phase 4i.5c — REASON_AMERICAN_BASKET and
+    // REASON_MC_BASKET no longer tag any active @Ignore).
     @SuppressWarnings("unused")
     private static final String UNUSED_INSTRUMENT_REASON = REASON_INSTRUMENT;
+    @SuppressWarnings("unused")
+    private static final String UNUSED_AMERICAN_BASKET_REASON = REASON_AMERICAN_BASKET;
+    @SuppressWarnings("unused")
+    private static final String UNUSED_MC_BASKET_REASON = REASON_MC_BASKET;
 }
