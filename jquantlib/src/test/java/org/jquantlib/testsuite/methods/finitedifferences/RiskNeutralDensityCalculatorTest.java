@@ -7,9 +7,40 @@
 package org.jquantlib.testsuite.methods.finitedifferences;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.PlainVanillaPayoff;
+import org.jquantlib.math.Constants;
+import org.jquantlib.math.Ops;
+import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.distributions.InverseCumulativeNormal;
+import org.jquantlib.math.distributions.NormalDistribution;
+import org.jquantlib.math.integrals.GaussLobattoIntegral;
+import org.jquantlib.methods.finitedifferences.utilities.BSMRNDCalculator;
 import org.jquantlib.methods.finitedifferences.utilities.CEVRNDCalculator;
+import org.jquantlib.methods.finitedifferences.utilities.HestonRNDCalculator;
+import org.jquantlib.methods.finitedifferences.utilities.LocalVolRNDCalculator;
+import org.jquantlib.methods.finitedifferences.utilities.SquareRootProcessRNDCalculator;
+import org.jquantlib.pricingengines.BlackCalculator;
+import org.jquantlib.processes.BlackScholesMertonProcess;
+import org.jquantlib.processes.HestonProcess;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.BlackVolTermStructure;
+import org.jquantlib.termstructures.LocalVolTermStructure;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.BlackConstantVol;
+import org.jquantlib.termstructures.volatilities.LocalConstantVol;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.TimeGrid;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -78,9 +109,74 @@ public class RiskNeutralDensityCalculatorTest {
             + "unified RND cluster commit (CEVRNDCalculator exists but the "
             + "test fixture shares helpers with the missing classes).";
 
-    @Ignore(REASON_MISSING)
+    /**
+     * Phase 5h.5-RND-c port of C++ {@code testDensityAgainstOptionPrices}
+     * (lines 54-122). Verifies BSMRNDCalculator's cdf and pdf against the
+     * Black-Scholes put-strike-sensitivity / second-difference, at
+     * tolerance {@code 10*sqrt(QL_EPSILON)} (~1.5e-8).
+     */
     @Test
-    public void testDensityAgainstOptionPrices() { fail("not implemented"); }
+    public void testDensityAgainstOptionPrices() {
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Date todaysDate = new Settings().evaluationDate();
+
+        final double s0 = 100.0;
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+
+        final double r = 0.075;
+        final double q = 0.04;
+        final double v = 0.27;
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(r)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(q)), dayCounter));
+        final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                new BlackConstantVol(todaysDate, new org.jquantlib.time.calendars.NullCalendar(),
+                        new Handle<Quote>(new SimpleQuote(v)), dayCounter));
+
+        final BlackScholesMertonProcess bsmProcess =
+                new BlackScholesMertonProcess(spot, qTS, rTS, volTS);
+        final BSMRNDCalculator bsm = new BSMRNDCalculator(bsmProcess);
+
+        final double[] times = { 0.5, 1.0, 2.0 };
+        final double[] strikes = { 75.0, 100.0, 150.0 };
+
+        for (final double t : times) {
+            final double stdDev = v * Math.sqrt(t);
+            final double df = rTS.currentLink().discount(t);
+            final double fwd = s0 * qTS.currentLink().discount(t) / df;
+
+            for (final double strike : strikes) {
+                final double xs = Math.log(strike);
+                final BlackCalculator blackCalc = new BlackCalculator(
+                        new PlainVanillaPayoff(Option.Type.Put, strike), fwd, stdDev, df);
+
+                final double tol = 10.0 * Math.sqrt(Constants.QL_EPSILON);
+                final double calculatedCDF = bsm.cdf(xs, t);
+                final double expectedCDF = blackCalc.strikeSensitivity() / df;
+
+                assertEquals("BSM cdf t=" + t + " K=" + strike,
+                        expectedCDF, calculatedCDF, tol);
+
+                final double deltaStrike = strike * Math.sqrt(Constants.QL_EPSILON);
+
+                final double calculatedPDF = bsm.pdf(xs, t);
+                final BlackCalculator bcUp = new BlackCalculator(
+                        new PlainVanillaPayoff(Option.Type.Put, strike + deltaStrike),
+                        fwd, stdDev, df);
+                final BlackCalculator bcDown = new BlackCalculator(
+                        new PlainVanillaPayoff(Option.Type.Put, strike - deltaStrike),
+                        fwd, stdDev, df);
+                final double expectedPDF = strike / df *
+                        (bcUp.strikeSensitivity() - bcDown.strikeSensitivity())
+                        / (2.0 * deltaStrike);
+
+                assertEquals("BSM pdf t=" + t + " K=" + strike,
+                        expectedPDF, calculatedPDF, tol);
+            }
+        }
+    }
 
     @Ignore(REASON_MISSING)
     @Test
@@ -117,9 +213,12 @@ public class RiskNeutralDensityCalculatorTest {
      * at large {@code ncp} (~1472 in this fixture). Phase 5h.5-RND-b
      * carry-forward (separate diagnostic + targeted CEVRNDCalculator fix).
      */
-    @Ignore("Phase 5h.5-RND-b: CEVRNDCalculator round-trip fails at beta=1.25 — "
-            + "needs targeted accuracy investigation in the delta>=2 branch / "
-            + "InverseNonCentralCumulativeChiSquaredDistribution at large ncp.")
+    @Ignore("Phase 5h.5-RND-c: still fails after 5h.5-SLV-d exact NCCS PDF — "
+            + "CEVRNDCalculator round-trip at beta=1.25 produces calculated=0.520747 vs expected=1.3 "
+            + "(error ~0.78). Either invX/X are wrong for delta>=2, or "
+            + "InverseNonCentralCumulativeChiSquaredDistribution loses precision at ncp~1472. "
+            + "5h.5-SLV-d only fixed conditional pdf, not invcdf at large ncp. "
+            + "Defer to a targeted fix commit.")
     @Test
     public void testCEVCDF() {
         final double f0 = 2.1;
