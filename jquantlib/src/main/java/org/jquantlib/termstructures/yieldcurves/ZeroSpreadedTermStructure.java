@@ -32,6 +32,7 @@ public class ZeroSpreadedTermStructure extends ZeroYieldStructure  {
             final Handle<YieldTermStructure> h,
             final Handle<Quote> spread, final Compounding comp , final Frequency freq,
             final DayCounter dc){
+        super(dc);
 
         this.originalCurve = h;
         this.spread = spread;
@@ -40,6 +41,30 @@ public class ZeroSpreadedTermStructure extends ZeroYieldStructure  {
 
         this.originalCurve.addObserver(this);
         this.spread.addObserver(this);
+    }
+
+    /**
+     * Convenience constructor mirroring C++ {@code ZeroSpreadedTermStructure(h, spread, comp, freq)}
+     * which inherits its day-counter from the original curve. Used by the
+     * Bates FD operator (which assembles a spread-bumped dividend curve
+     * on the fly).
+     */
+    public ZeroSpreadedTermStructure(
+            final Handle<YieldTermStructure> h,
+            final Handle<Quote> spread, final Compounding comp, final Frequency freq) {
+        this(h, spread, comp, freq,
+                h.currentLink() != null ? h.currentLink().dayCounter()
+                                        : new org.jquantlib.daycounters.Actual365Fixed());
+    }
+
+    /**
+     * Convenience constructor matching the most common C++ defaults
+     * ({@code Compounding.Continuous}, {@code Frequency.NoFrequency}).
+     */
+    public ZeroSpreadedTermStructure(
+            final Handle<YieldTermStructure> h,
+            final Handle<Quote> spread) {
+        this(h, spread, Compounding.Continuous, Frequency.NoFrequency);
     }
 
 
