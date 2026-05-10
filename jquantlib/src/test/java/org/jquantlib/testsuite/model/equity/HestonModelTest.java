@@ -305,9 +305,56 @@ public class HestonModelTest {
         }
     }
 
-    @Ignore(REASON_COS)
+    /**
+     * Phase Body-Fill-4 port of C++ {@code testCosHestonEngineTruncation}
+     * (1943-1987): a deep-OTM 1-day call where the COS truncation bound
+     * trips and the engine must return zero NPV.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:1943-1987} v1.42.1.
+     */
     @Test
-    public void testCosHestonEngineTruncation() { fail("not implemented"); }
+    public void testCosHestonEngineTruncation() {
+        final Date todaysDate = new Date(22, Month.August, 2022);
+        final Date maturity   = new Date(23, Month.August, 2022);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final double underlying    = 100.0;
+        final double strike        = 200.0;
+        final double dividendYield = 0.0;
+        final double riskFreeRate  = 0.0;
+        final DayCounter dayCounter = new Actual365Fixed();
+
+        final Exercise europeanExercise = new EuropeanExercise(maturity);
+        final Handle<Quote> underlyingH = new Handle<Quote>(new SimpleQuote(underlying));
+        final Handle<YieldTermStructure> riskFreeTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate,
+                        new Handle<Quote>(new SimpleQuote(riskFreeRate)), dayCounter));
+        final Handle<YieldTermStructure> dividendTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate,
+                        new Handle<Quote>(new SimpleQuote(dividendYield)), dayCounter));
+
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Call, strike);
+        final EuropeanOption europeanOption = new EuropeanOption(payoff, europeanExercise);
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                riskFreeTS, dividendTS, underlyingH,
+                .007, .8, .007, .1, -.2);
+        final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+        // Java COSHestonEngine takes (model, process); convenience ctor
+        // delegates to L=16, N=200 — same as the C++ default.
+        europeanOption.setPricingEngine(new COSHestonEngine(hestonModel, hestonProcess));
+
+        final double tol = 1e-7;
+        final double error = Math.abs(europeanOption.NPV() - 0.0);
+
+        if (error > tol) {
+            fail("failed to reproduce prices with COSHestonEngine"
+                    + "\n    expected:   " + 0.0
+                    + "\n    calculated: " + europeanOption.NPV()
+                    + "\n    difference: " + error);
+        }
+    }
 
     @Ignore(REASON_AP)
     @Test
