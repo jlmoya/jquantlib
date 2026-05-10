@@ -283,4 +283,169 @@ public class SaddlepointLossModel<P extends CopulaPolicy> extends DefaultLossMod
                                           final double lossLevel) {
         return findSaddleNewton(condProbs, lossInDef, lossLevel, 1.0e-3, 50);
     }
+
+    // ------------------------------------------------------------------------
+    //  Phase 4m.7c WI-6 — high-order saddle-point evaluators (static kernels)
+    // ------------------------------------------------------------------------
+
+    /** Quasi-epsilon equivalent of QL_EPSILON. */
+    private static final double QL_EPSILON_LOCAL = 2.2204460492503131e-16;
+
+    /**
+     * Probability of portfolio loss exceeding the threshold {@code relativeLoss}
+     * conditional on a market-factor sample. Mirrors C++
+     * {@code SaddlePointLossModel::probOverLossPortfCond} with the higher-
+     * order corrections {@code (1 - s^3 K3 / 6 + s^4 K4 / 24 + s^6 K3^2 / 72)}.
+     *
+     * <p>Static-kernel form: the caller is responsible for converting
+     * unconditional probabilities and per-name LGD weights into the
+     * {@code condProbs} and {@code lossInDef} arrays.
+     *
+     * <p>Numerical robustness: returns 0 if the saddle-evaluator exponent
+     * exceeds 700 (would otherwise overflow {@code exp}); returns 0 / 1 at
+     * the loss-fraction extremes; returns 0.5 at the saddle-zero pivot.
+     *
+     * @param condProbs    per-name conditional default probabilities
+     * @param lossInDef    per-name fractional LGD weights
+     * @param relativeLoss target loss as a fraction of the (sub-)portfolio
+     *                     notional (in [0, 1])
+     * @return P(L > L0 | systemic factor) using the saddle-point expansion
+     */
+    public static double probOverLossPortfCond(final double[] condProbs,
+                                                final double[] lossInDef,
+                                                final double relativeLoss) {
+        if (relativeLoss <= QL_EPSILON_LOCAL) return 1.0;
+        if (relativeLoss >= 1.0 - QL_EPSILON_LOCAL) return 0.0;
+
+        final double saddlePt = findSaddleNewton(condProbs, lossInDef, relativeLoss);
+        final double[] cgf = cgf0234DerivCond(condProbs, lossInDef, saddlePt);
+        final double K0 = cgf[0];
+        final double K2 = cgf[1];
+        final double K3 = cgf[2];
+        final double K4 = cgf[3];
+
+        final double s2 = saddlePt * saddlePt;
+        final double s3 = s2 * saddlePt;
+        final double s4 = s3 * saddlePt;
+        final double s6 = s4 * s2;
+        final double K3Sq = K3 * K3;
+
+        if (saddlePt > 0.0) {
+            final double exponent = K0 - relativeLoss * saddlePt + 0.5 * s2 * K2;
+            if (Math.abs(exponent) > 700.0) return 0.0;
+            return Math.exp(exponent)
+                    * standardNormalCdf(-Math.abs(saddlePt) * Math.sqrt(K2))
+                    * (1.0 - s3 * K3 / 6.0 + s4 * K4 / 24.0 + s6 * K3Sq / 72.0);
+        } else if (saddlePt == 0.0) {
+            return 0.5;
+        } else {
+            final double exponent = K0 - relativeLoss * saddlePt + 0.5 * s2 * K2;
+            if (Math.abs(exponent) > 700.0) return 0.0;
+            return 1.0 - Math.exp(exponent)
+                    * standardNormalCdf(-Math.abs(saddlePt) * Math.sqrt(K2))
+                    * (1.0 - s3 * K3 / 6.0 + s4 * K4 / 24.0 + s6 * K3Sq / 72.0);
+        }
+    }
+
+    /**
+     * Probability density at portfolio loss {@code relativeLoss} conditional
+     * on a market-factor sample. Mirrors C++
+     * {@code SaddlePointLossModel::probDensityCond} with the saddle-point
+     * higher-order density correction
+     * {@code 1 + K4/(8 K2^2) - 5 K3^2/(24 K2^3)}.
+     *
+     * @return f(L | systemic factor)
+     */
+    public static double probDensityCond(final double[] condProbs,
+                                          final double[] lossInDef,
+                                          final double relativeLoss) {
+        if (relativeLoss <= QL_EPSILON_LOCAL) return 0.0;
+        final double saddlePt = findSaddleNewton(condProbs, lossInDef, relativeLoss);
+        final double[] cgf = cgf0234DerivCond(condProbs, lossInDef, saddlePt);
+        final double K0 = cgf[0];
+        final double K2 = cgf[1];
+        final double K3 = cgf[2];
+        final double K4 = cgf[3];
+        final double K2Sq = K2 * K2;
+        final double K2Cb = K2Sq * K2;
+        return (1.0
+                + K4 / (8.0 * K2Sq)
+                - 5.0 * K3 * K3 / (24.0 * K2Cb))
+                * Math.exp(K0 - saddlePt * relativeLoss)
+                / Math.sqrt(2.0 * Math.PI * K2);
+    }
+
+    /**
+     * Per-name loss contribution at the requested loss level. Mirrors C++
+     * {@code SaddlePointLossModel::splitLossCond}: returns sensitivities
+     * (untranched) such that summing the result yields the requested loss.
+     *
+     * <p>See "VAR: who contributes and how much?" by R.Martin, K.Thompson,
+     * C.Browne, Risk August 2001 eq 8.
+     *
+     * <p>Static-kernel form: takes raw conditional probabilities, per-name
+     * absolute LGD ({@code lossInDefAbs[i]} = name's exposure × (1 − R)) and
+     * the {@code remainingNotional} for the sensitivity-saddle scaling.
+     *
+     * @param condProbs        per-name conditional default probabilities
+     * @param lossInDefAbs     per-name absolute LGD (in notional units)
+     * @param remainingNotional total remaining notional (sum of survivors)
+     * @param loss             absolute loss level
+     * @return per-name absolute loss contributions; {@code sum(result) == loss}
+     */
+    public static double[] splitLossCond(final double[] condProbs,
+                                         final double[] lossInDefAbs,
+                                         final double remainingNotional,
+                                         final double loss) {
+        final int n = condProbs.length;
+        final double[] contrib = new double[n];
+        if (loss <= QL_EPSILON_LOCAL) return contrib;
+
+        final double[] lossInDefRel = new double[n];
+        for (int i = 0; i < n; ++i) lossInDefRel[i] = lossInDefAbs[i] / remainingNotional;
+        final double saddlePt = findSaddleNewton(condProbs, lossInDefRel,
+                loss / remainingNotional);
+        for (int i = 0; i < n; ++i) {
+            final double pBuf = condProbs[i];
+            final double midFactor = pBuf * Math.exp(lossInDefAbs[i] * saddlePt / remainingNotional);
+            final double denom = 1.0 - pBuf + midFactor;
+            contrib[i] = lossInDefAbs[i] * midFactor / denom;
+        }
+        return contrib;
+    }
+
+    /**
+     * Conditional expected portfolio loss (untranched). Mirrors C++
+     * {@code SaddlePointLossModel::conditionalExpectedLoss}: a basic
+     * weighted sum {@code Σ p_i × LGD_i} with no saddle-point machinery.
+     */
+    public static double conditionalExpectedLoss(final double[] condProbs,
+                                                  final double[] lossInDefAbs) {
+        double e = 0.0;
+        for (int i = 0; i < condProbs.length; ++i) {
+            e += condProbs[i] * lossInDefAbs[i];
+        }
+        return e;
+    }
+
+    /**
+     * Conditional expected tranche loss. Mirrors C++
+     * {@code SaddlePointLossModel::conditionalExpectedTrancheLoss}.
+     */
+    public static double conditionalExpectedTrancheLoss(final double[] condProbs,
+                                                         final double[] lossInDefAbs,
+                                                         final double attachAmount,
+                                                         final double detachAmount) {
+        final double e = conditionalExpectedLoss(condProbs, lossInDefAbs);
+        return Math.min(Math.max(e - attachAmount, 0.0), detachAmount - attachAmount);
+    }
+
+    // -- helpers --
+
+    private static final org.jquantlib.math.distributions.CumulativeNormalDistribution PHI =
+            new org.jquantlib.math.distributions.CumulativeNormalDistribution();
+
+    private static double standardNormalCdf(final double x) {
+        return PHI.op(x);
+    }
 }

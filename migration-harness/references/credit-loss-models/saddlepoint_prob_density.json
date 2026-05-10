@@ -1,0 +1,312 @@
+{
+  "cases": [
+    {
+      "expected": 0.6421353124027347,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.05
+      },
+      "name": "probOverLoss_5n_L5"
+    },
+    {
+      "expected": 0.5,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.1
+      },
+      "name": "probOverLoss_5n_L10"
+    },
+    {
+      "expected": 0.3543752783488481,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.15
+      },
+      "name": "probOverLoss_5n_L15"
+    },
+    {
+      "expected": 0.2324836453302414,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.2
+      },
+      "name": "probOverLoss_5n_L20"
+    },
+    {
+      "expected": 0.07977646332461485,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.3
+      },
+      "name": "probOverLoss_5n_L30"
+    },
+    {
+      "expected": 2.516021603441139,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.05
+      },
+      "name": "probDensity_5n_L5"
+    },
+    {
+      "expected": 2.4918192244845807,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.1
+      },
+      "name": "probDensity_5n_L10"
+    },
+    {
+      "expected": 2.101989897306236,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.15
+      },
+      "name": "probDensity_5n_L15"
+    },
+    {
+      "expected": 1.6469231449910433,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.2
+      },
+      "name": "probDensity_5n_L20"
+    },
+    {
+      "expected": 0.8498008741290975,
+      "inputs": {
+        "condProbs": [
+          0.1,
+          0.05,
+          0.15,
+          0.08,
+          0.12
+        ],
+        "lossInDef": [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.2
+        ],
+        "relLoss": 0.3
+      },
+      "name": "probDensity_5n_L30"
+    },
+    {
+      "expected": 0.617300022909119,
+      "inputs": {
+        "condProbs": [
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "lossInDef": [
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "relLoss": 0.05
+      },
+      "name": "probOverLoss_10n_L50"
+    },
+    {
+      "expected": 0.5,
+      "inputs": {
+        "condProbs": [
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "lossInDef": [
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "relLoss": 0.075
+      },
+      "name": "probOverLoss_10n_L75"
+    },
+    {
+      "expected": 0.38175925204779876,
+      "inputs": {
+        "condProbs": [
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.05,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "lossInDef": [
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1,
+          0.1
+        ],
+        "relLoss": 0.1
+      },
+      "name": "probOverLoss_10n_L100"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-10T01:33:25Z",
+  "generated_by": "saddlepoint_prob_density_probe.cpp (Phase 4m.7c)",
+  "test_group": "credit-loss-models/saddlepoint_prob_density"
+}
