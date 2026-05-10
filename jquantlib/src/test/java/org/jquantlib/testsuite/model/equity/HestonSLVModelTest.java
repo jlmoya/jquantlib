@@ -158,9 +158,83 @@ public class HestonSLVModelTest {
     @Test
     public void testBlackScholesFokkerPlanckFwdEquation() { fail("not implemented"); }
 
-    @Ignore(REASON_FP)
+    /**
+     * Tests the Fokker-Planck forward equation for the square-root process
+     * with a Dirac start. Mirrors C++
+     * {@code testSquareRootFokkerPlanckFwdEquation}
+     * (test-suite/hestonslvmodel.cpp:1077). Tolerance 0.002 absolute.
+     *
+     * <p>Initialises the density from the analytic PDF at small time
+     * {@code 5*dt}, evolves to maturity via Douglas scheme on
+     * {@code FdmSquareRootFwdOp.Plain}, and checks the FDM-evolved density
+     * matches the analytic PDF at maturity.
+     *
+     * <p><strong>Java tolerance status:</strong> {@link SquareRootProcessRNDCalculator#pdf}
+     * is a CDF central-difference approximation (~1e-4 slack vs Boost's
+     * exact non-central chi-squared PDF). Body-fill exercises the FDM
+     * operator but fails at boundary point {@code v ~ 0.0023} where the
+     * pdf approximation error (~2.3e-3) exceeds the 2e-3 test tolerance.
+     * Will pass once Java has an exact non-central chi-squared PDF (or
+     * modified Bessel functions of fractional order).
+     */
+    @Ignore("Phase 5h.5-SLV-c — needs exact non-central chi-squared PDF "
+            + "(boundary point fails by ~2.3e-3 vs 2e-3 tol due to CDF central-difference "
+            + "approximation in Java SquareRootProcessRNDCalculator.pdf).")
     @Test
-    public void testSquareRootFokkerPlanckFwdEquation() { fail("not implemented"); }
+    public void testSquareRootFokkerPlanckFwdEquation() {
+        final double kappa = 1.2;
+        final double theta = 0.4;
+        final double sigma = 0.7;
+        final double v0 = theta;
+
+        final double maturity = 1.0;
+
+        final int xGrid = 1001;
+        final int tGrid = 500;
+
+        final double vol = sigma * Math.sqrt(theta / (2.0 * kappa));
+        final double upperBound = theta + 6.0 * vol;
+        final double lowerBound = Math.max(0.0002, theta - 6.0 * vol);
+
+        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(1);
+        ms.add(new Uniform1dMesher(lowerBound, upperBound, xGrid));
+        final FdmMesher mesher = new FdmMesherComposite(ms);
+
+        final Array x = mesher.locations(0);
+
+        final FdmSquareRootFwdOp op =
+                new FdmSquareRootFwdOp(mesher, kappa, theta, sigma, 0);
+
+        final double dt = maturity / tGrid;
+        final int n = 5;
+
+        final Array p = new Array(xGrid);
+        final SquareRootProcessRNDCalculator rnd =
+                new SquareRootProcessRNDCalculator(v0, kappa, theta, sigma);
+        for (int i = 0; i < p.size(); ++i) {
+            p.set(i, rnd.pdf(x.get(i), n * dt));
+        }
+
+        final DouglasScheme evolver = new DouglasScheme(0.5, op);
+        evolver.setStep(dt);
+
+        for (double t = (n + 1) * dt; t <= maturity + 20.0 * 1.0e-16; t += dt) {
+            evolver.step(p, t);
+        }
+
+        final double tol = 0.002;
+        for (int i = 0; i < x.size(); ++i) {
+            final double expected = rnd.pdf(x.get(i), maturity);
+            final double calculated = p.get(i);
+            if (Math.abs(expected - calculated) > tol) {
+                fail("failed to reproduce pdf at"
+                        + "\n   x:          " + x.get(i)
+                        + "\n   calculated: " + calculated
+                        + "\n   expected:   " + expected
+                        + "\n   tolerance:  " + tol);
+            }
+        }
+    }
 
     @Ignore(REASON_FP)
     @Test
