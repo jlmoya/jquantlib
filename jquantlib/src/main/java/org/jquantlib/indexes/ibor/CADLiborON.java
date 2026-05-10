@@ -40,7 +40,7 @@
 package org.jquantlib.indexes.ibor;
 
 import org.jquantlib.currencies.America.CADCurrency;
-import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.AbstractYieldTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -73,10 +73,14 @@ public class CADLiborON extends DailyTenorLibor {
 
 	public CADLiborON(final Period tenor,
 			final Handle<YieldTermStructure> h) {
+		// align(indexes.ibor): match C++ v1.42.1 cadlibor.hpp (CADLiborON)
+		// dayCounter=Actual365Fixed (was Actual360). Same correction as the
+		// (overnight) CAD LIBOR template per OpenGamma "Interest Rate
+		// Instruments and Market Conventions Guide".
 		super("CADLibor", 0,
 				new CADCurrency(),
 				new Canada(),
-				new Actual360(), h);
+				new Actual365Fixed(), h);
 	}
 
 }

@@ -40,7 +40,7 @@
 package org.jquantlib.indexes.ibor;
 
 import org.jquantlib.currencies.America.CADCurrency;
-import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.AbstractYieldTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -73,10 +73,16 @@ public class CADLibor extends Libor {
 
 	public CADLibor(final Period tenor,
 			final Handle<YieldTermStructure> h) {
-		super("CADLibor", tenor, 2,
+		// align(indexes.ibor): match C++ v1.42.1 cadlibor.hpp settlementDays=0
+		// (was 2) and dayCounter=Actual365Fixed (was Actual360). Per OpenGamma
+		// "Interest Rate Instruments and Market Conventions Guide", BBG, IKON
+		// — CAD LIBOR (London BBA fixing, discontinued 2013) used CAD
+		// Actual/365 day count and a same-day value-date convention, contrary
+		// to the typical 2-day Actual/360 LIBOR template.
+		super("CADLibor", tenor, 0,
 				new CADCurrency(),
 				new Canada(),
-				new Actual360(), h);
+				new Actual365Fixed(), h);
 	}
 
 }
