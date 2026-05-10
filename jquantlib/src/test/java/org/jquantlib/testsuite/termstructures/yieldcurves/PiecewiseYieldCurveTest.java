@@ -34,6 +34,7 @@ import org.jquantlib.indexes.Euribor;
 import org.jquantlib.indexes.Euribor3M;
 import org.jquantlib.indexes.Euribor6M;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.indexes.IndexManager;
 import org.jquantlib.indexes.ibor.JPYLibor;
 import org.jquantlib.indexes.ibor.USDLibor;
 import org.jquantlib.instruments.BMASwap;
@@ -87,6 +88,7 @@ import org.jquantlib.time.calendars.Japan;
 import org.jquantlib.time.calendars.JointCalendar;
 import org.jquantlib.time.calendars.JointCalendar.JointCalendarRule;
 import org.jquantlib.time.calendars.Target;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -95,6 +97,23 @@ import org.junit.Test;
  * @author Richard Gomes
  */
 public class PiecewiseYieldCurveTest {
+
+    /**
+     * Phase Bug-Fix-3: align to v1.42.1 — TopLevelFixture (test-suite/toplevelfixture.hpp)
+     * runs {@code IndexManager::instance().clearHistories()} after every test to
+     * isolate index-fixing state. Body-Fill-3 un-ignored {@code testLiborFixing}
+     * which calls {@code index.addFixing(today, 0.0425)}; without cleanup, the
+     * fixing leaks across tests and causes 6 sister consistency tests
+     * (testLogLinearDiscountConsistency, testLinearDiscountConsistency,
+     * testLogLinearZeroConsistency, testLinearZeroConsistency,
+     * testLinearForwardConsistency, testFlatForwardConsistency) to read the
+     * cached 0.0425 fixing instead of forecasting from the bootstrapped curve.
+     */
+    @After
+    public void clearIndexHistories() {
+        IndexManager.getInstance().clearHistories();
+    }
+
 
 	private final Datum depositData[] = new Datum[] {
     	new Datum( 1, TimeUnit.Weeks,  4.559 ),
