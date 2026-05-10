@@ -6,8 +6,10 @@
  */
 package org.jquantlib.testsuite.methods.finitedifferences;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import org.jquantlib.methods.finitedifferences.utilities.CEVRNDCalculator;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -41,22 +43,25 @@ import org.junit.Test;
  *       (β &lt; 1 absorbing, β = 1 lognormal, β &gt; 1 reflecting).</li>
  * </ul>
  *
- * <p><strong>Phase 5h.5 carry-forward:</strong> Java has only two of the
- * five C++ RND calculators ported:
+ * <p><strong>Phase 5h.5-RND status (this commit):</strong>
  * <ul>
  *   <li>{@code GBSMRNDCalculator} — present (Phase 2m).</li>
- *   <li>{@code CEVRNDCalculator} — present (Phase 2m); enables the
- *       {@code testMassAtZeroCEVProcessRND} and {@code testCEVCDF}
- *       tests in principle.</li>
- *   <li>{@code BSMRNDCalculator} — <strong>missing</strong>.</li>
- *   <li>{@code HestonRNDCalculator} — <strong>missing</strong>.</li>
- *   <li>{@code LocalVolRNDCalculator} — <strong>missing</strong>.</li>
- *   <li>{@code SquareRootProcessRNDCalculator} — <strong>missing</strong>.</li>
+ *   <li>{@code CEVRNDCalculator} — present (Phase 2m).</li>
+ *   <li>{@code BSMRNDCalculator} — <strong>ported</strong> (Phase 5h.5-RND).</li>
+ *   <li>{@code HestonRNDCalculator} — <strong>ported</strong> (Phase 5h.5-RND).</li>
+ *   <li>{@code SquareRootProcessRNDCalculator} — <strong>ported</strong> (Phase 5h.5-RND).</li>
+ *   <li>{@code LocalVolRNDCalculator} — <strong>not yet ported</strong>
+ *       (needs FdmLocalVolFwdOp + Predefined1dMesher + DiscreteSimpsonIntegral
+ *       which are themselves Phase 5h.5-RND-b carry-forward).</li>
  * </ul>
- * The two CEV tests could be implemented standalone, but porting them
- * piecemeal without the rest of the family would inflate the diff with
- * helper code that is best added as part of a unified Phase 5h.5 RND
- * cluster commit.  For Phase 5h all seven cases are deferred together.
+ * Each port has its own dedicated Test class
+ * ({@code BSMRNDCalculatorTest}, {@code HestonRNDCalculatorTest},
+ * {@code SquareRootProcessRNDCalculatorTest}) that cross-validates against
+ * the C++ probes. The 7 tests below mirror the C++ test-suite cases and
+ * remain {@code @Ignore}'d pending LocalVolRNDCalculator (or
+ * implementation of the integration-based round-trip checks at the same
+ * {@code 1e-10} tolerance the C++ test uses, which our CDF-based PDF
+ * approximation does not yet reach for SquareRootProcessRNDCalculator).
  *
  * <p>Source: {@code test-suite/riskneutraldensitycalculator.cpp} v1.42.1
  * @ {@code 099987f0ca}.
@@ -97,7 +102,43 @@ public class RiskNeutralDensityCalculatorTest {
     @Test
     public void testMassAtZeroCEVProcessRND() { fail("not implemented"); }
 
-    @Ignore(REASON_CEV)
+    /**
+     * Phase 5h.5-RND port of C++ {@code testCEVCDF} (lines 748-781).
+     *
+     * <p>Note the C++ loop starts at {@code i=1} (i.e. only {@code beta = 1.25}
+     * is actually tested — the {@code beta = 0.45} entry is dead code).
+     * We mirror that behaviour exactly to preserve cross-validation.
+     *
+     * <p>Status: ignored. The Java {@link CEVRNDCalculator} produces a
+     * round-trip error of order 0.78 (calculated 0.52 vs expected 1.30) at
+     * beta = 1.25, alpha = 0.1, x = 1.3 — symptomatic of either an
+     * implementation issue in the delta &gt;= 2 branch or insufficient
+     * precision in {@code InverseNonCentralCumulativeChiSquaredDistribution}
+     * at large {@code ncp} (~1472 in this fixture). Phase 5h.5-RND-b
+     * carry-forward (separate diagnostic + targeted CEVRNDCalculator fix).
+     */
+    @Ignore("Phase 5h.5-RND-b: CEVRNDCalculator round-trip fails at beta=1.25 — "
+            + "needs targeted accuracy investigation in the delta>=2 branch / "
+            + "InverseNonCentralCumulativeChiSquaredDistribution at large ncp.")
     @Test
-    public void testCEVCDF() { fail("not implemented"); }
+    public void testCEVCDF() {
+        final double f0 = 2.1;
+        final double t  = 0.75;
+        final double alpha = 0.1;
+        final double[] betas = { 0.45, 1.25 };
+        final double tol = 1.0e-6;
+
+        for (int i = 1; i < betas.length; ++i) {
+            final double beta = betas[i];
+            final CEVRNDCalculator calc = new CEVRNDCalculator(f0, alpha, beta);
+
+            for (double x = 1.3; x < 3.1; x += 0.1) {
+                final double cdfValue = calc.cdf(x, t);
+                final double calculated = calc.invcdf(cdfValue, t);
+                assertEquals("CEV invcdf round-trip failed (alpha=" + alpha
+                                + " beta=" + beta + " x=" + x + ")",
+                        x, calculated, tol);
+            }
+        }
+    }
 }
