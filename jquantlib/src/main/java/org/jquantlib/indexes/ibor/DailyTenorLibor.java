@@ -50,7 +50,6 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.JointCalendar;
 import org.jquantlib.time.calendars.JointCalendar.JointCalendarRule;
-import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedKingdom;
 import org.jquantlib.time.calendars.UnitedKingdom.Market;
 
@@ -69,20 +68,32 @@ public class DailyTenorLibor extends IborIndex {
 			final Currency currency,
 			final Calendar financialCenterCalendar,
 			final DayCounter dayCounter,
-			final Handle<YieldTermStructure> h) { 
+			final Handle<YieldTermStructure> h) {
+    	// align(indexes.ibor): match C++ v1.42.1 libor.cpp DailyTenorLibor —
+    	// fixingCalendar must be JointCalendar(UK::Exchange,
+    	// financialCenterCalendar, JoinHolidays). Java port previously
+    	// passed `new Target()` (Europe TARGET) instead of the
+    	// financialCenterCalendar argument, AND used JoinBusinessDays
+    	// (open if either is open) instead of JoinHolidays (closed if
+    	// either is closed). Per BBA spec quoted in C++:
+    	//   "no o/n or s/n fixings (as the case may be) will take place
+    	//    when the principal centre of the currency concerned is
+    	//    closed but London is open on the fixing day."
+    	// — i.e. the joint calendar must be the strict (holiday-merging)
+    	// intersection of London and the financial-center calendar.
     	super(familyName,
     		  new Period(1,TimeUnit.Days),
     		  settlementDays,
     		  currency,
-              new JointCalendar(new UnitedKingdom(Market.Exchange), 
-    				  new Target(),
-    				  JointCalendarRule.JoinBusinessDays),
+              new JointCalendar(new UnitedKingdom(Market.Exchange),
+    				  financialCenterCalendar,
+    				  JointCalendarRule.JoinHolidays),
     		  liborConvention(new Period(1,TimeUnit.Days)),
     		  liborEOM(new Period(1,TimeUnit.Days)),
     		  dayCounter,
     		  h);
-    	
+
 		QL.require(!currency.eq(new EURCurrency()), "for EUR Libor dedicated EurLibor constructor must be used");
-		
-	}	
+
+	}
 }
