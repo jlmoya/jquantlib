@@ -434,7 +434,125 @@ public class HestonModelTest {
     @Test
     public void testLocalVolFromHestonModel() { fail("not implemented"); }
 
-    @Ignore(REASON_PDF)
+    /**
+     * Phase Body-Fill-4 port of C++ {@code testAnalyticPDFHestonEngine}
+     * (3358-3465): cross-validate {@link AnalyticPDFHestonEngine} against
+     * {@link AnalyticHestonEngine} for plain-vanilla calls and digital
+     * (cash-or-nothing) calls.
+     *
+     * <p>Java port: {@link AnalyticPDFHestonEngine} takes
+     * (model, process, eps, maxIter) — see Phase 5h.5-RND.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:3358-3465} v1.42.1.
+     */
     @Test
-    public void testAnalyticPDFHestonEngine() { fail("not implemented"); }
+    public void testAnalyticPDFHestonEngine() {
+        final Date settlementDate = new Date(5, Month.January, 2014);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.07)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.185)), dayCounter));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final double v0    =  0.1;
+        final double rho   = -0.5;
+        final double sigma =  1.0;
+        final double kappa =  4.0;
+        final double theta =  0.05;
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+
+        final double tol = 1e-6;
+        final AnalyticPDFHestonEngine pdfEngine =
+                new AnalyticPDFHestonEngine(model, process, tol, 10000);
+
+        // C++ uses n=178; Java GaussLaguerreIntegration only embeds the
+        // n=128 table (Phase 2f §C.2). For the smooth Heston Gatheral
+        // integrand at these parameters both orders are well past
+        // convergence — empirical cross-check delta is far below 3*tol.
+        final PricingEngine analyticEngine =
+                new AnalyticHestonEngine(model, process, 128);
+
+        final Date maturityDate = new Date(5, Month.July, 2014);
+        final double maturity = dayCounter.yearFraction(settlementDate, maturityDate);
+        final Exercise exercise = new EuropeanExercise(maturityDate);
+
+        // 1. plain vanilla call (strikes 40,60,80,100,120,140,160,180)
+        for (double strike = 40; strike < 190; strike += 20) {
+            final PlainVanillaPayoff vanillaPayoff =
+                    new PlainVanillaPayoff(Option.Type.Call, strike);
+            final EuropeanOption planVanillaOption =
+                    new EuropeanOption(vanillaPayoff, exercise);
+
+            planVanillaOption.setPricingEngine(pdfEngine);
+            final double calculated = planVanillaOption.NPV();
+
+            planVanillaOption.setPricingEngine(analyticEngine);
+            final double expected = planVanillaOption.NPV();
+
+            if (Math.abs(calculated - expected) > 3 * tol) {
+                fail("failed to reproduce plain vanilla european prices with"
+                        + " the analytic probability density engine"
+                        + "\n    strike     : " + strike
+                        + "\n    expected   : " + expected
+                        + "\n    calculated : " + calculated
+                        + "\n    diff       : " + Math.abs(calculated - expected)
+                        + "\n    tol        : " + tol);
+            }
+        }
+
+        // 2. digital call option (call spread approximation)
+        for (double strike = 40; strike < 190; strike += 10) {
+            final org.jquantlib.instruments.CashOrNothingPayoff digiPayoff =
+                    new org.jquantlib.instruments.CashOrNothingPayoff(
+                            Option.Type.Call, strike, 1.0);
+            final EuropeanOption digitalOption = new EuropeanOption(digiPayoff, exercise);
+            digitalOption.setPricingEngine(pdfEngine);
+            final double calculated = digitalOption.NPV();
+
+            final double eps = 0.01;
+            final EuropeanOption longCall = new EuropeanOption(
+                    new PlainVanillaPayoff(Option.Type.Call, strike - eps),
+                    exercise);
+            longCall.setPricingEngine(analyticEngine);
+
+            final EuropeanOption shortCall = new EuropeanOption(
+                    new PlainVanillaPayoff(Option.Type.Call, strike + eps),
+                    exercise);
+            shortCall.setPricingEngine(analyticEngine);
+
+            final double expected = (longCall.NPV() - shortCall.NPV()) / (2 * eps);
+            if (Math.abs(calculated - expected) > tol) {
+                fail("failed to reproduce european digital prices with"
+                        + " the analytic probability density engine"
+                        + "\n    strike     : " + strike
+                        + "\n    expected   : " + expected
+                        + "\n    calculated : " + calculated
+                        + "\n    diff       : " + Math.abs(calculated - expected)
+                        + "\n    tol        : " + tol);
+            }
+
+            final double d = rTS.currentLink().discount(maturityDate);
+            final double expectedCDF = 1.0 - expected / d;
+            final double calculatedCDF = pdfEngine.cdf(strike, maturity);
+
+            if (Math.abs(expectedCDF - calculatedCDF) > tol) {
+                fail("failed to reproduce cumulative distribution function"
+                        + "\n    strike        : " + strike
+                        + "\n    expected CDF  : " + expectedCDF
+                        + "\n    calculated CDF: " + calculatedCDF
+                        + "\n    diff          : "
+                        + Math.abs(calculatedCDF - expectedCDF)
+                        + "\n    tol           : " + tol);
+            }
+        }
+    }
 }
