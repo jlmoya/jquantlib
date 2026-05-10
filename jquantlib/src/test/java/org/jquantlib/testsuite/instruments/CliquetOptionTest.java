@@ -20,8 +20,11 @@ import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.instruments.CliquetOption;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PercentageStrikePayoff;
+import org.jquantlib.pricingengines.McSimulation;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.cliquet.AnalyticCliquetEngine;
+import org.jquantlib.pricingengines.cliquet.AnalyticPerformanceEngine;
+import org.jquantlib.pricingengines.cliquet.MCPerformanceEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -30,6 +33,8 @@ import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Period;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -116,5 +121,77 @@ public class CliquetOptionTest {
 
     @Ignore(REASON_GREEKS)      @Test public void testGreeks()              { fail("not implemented"); }
     @Ignore(REASON_PERF_GREEKS) @Test public void testPerformanceGreeks()   { fail("not implemented"); }
-    @Ignore(REASON_MC_PERF)     @Test public void testMcPerformance()       { fail("not implemented"); }
+
+    /**
+     * Mirrors C++ test-suite/cliquetoption.cpp::testMcPerformance.
+     * Smoke test: cross-validate a single representative configuration
+     * via {@link MCPerformanceEngine} against {@link AnalyticPerformanceEngine}
+     * with absolute tolerance 1.5e-2 (matches C++).
+     *
+     * <p>The C++ test sweeps all combinations (2 types x 2 moneyness
+     * x 2 lengths x 2 frequencies x 2 q x 2 r x 2 vol = 256 cases). For
+     * Java we exercise one representative case so the test stays under a
+     * second; full sweep is a Phase 4h.5c carry-forward.
+     */
+    @Test
+    public void testMcPerformance() {
+        QL.info("Testing Monte Carlo performance engine against analytic results...");
+
+        final DayCounter dc = new Actual360();
+        final Date today = Date.todaysDate();
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot = new SimpleQuote(100.0);
+        final SimpleQuote qRate = new SimpleQuote(0.04);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.10);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final SimpleQuote vol = new SimpleQuote(0.10);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot),
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final Period tenor = new Period(Frequency.Semiannual);
+        final int length = 2;
+        final EuropeanExercise maturity = new EuropeanExercise(today.add(tenor.mul(length)));
+
+        final PercentageStrikePayoff payoff = new PercentageStrikePayoff(Option.Type.Call, 1.1);
+
+        final List<Date> reset = new ArrayList<Date>();
+        Date d = today.add(tenor);
+        while (d.lt(maturity.lastDate())) {
+            reset.add(d);
+            d = d.add(tenor);
+        }
+
+        final CliquetOption option = new CliquetOption(payoff, maturity, reset);
+
+        // Reference: AnalyticPerformanceEngine
+        final PricingEngine refEngine = new AnalyticPerformanceEngine(process);
+        option.setPricingEngine(refEngine);
+        final double refValue = option.NPV();
+
+        // MC engine
+        final PricingEngine mcEngine = new MCPerformanceEngine(
+                process,
+                /* brownianBridge */ true,
+                /* antitheticVariate */ false,
+                /* requiredSamples */ McSimulation.NULL_SAMPLES,
+                /* requiredTolerance */ 5.0e-3,
+                /* maxSamples */ McSimulation.NULL_SAMPLES,
+                /* seed */ 42L);
+        option.setPricingEngine(mcEngine);
+        final double value = option.NPV();
+
+        final double error = Math.abs(refValue - value);
+        final double tolerance = 1.5e-2;
+        assertEquals("MCPerformanceEngine NPV vs AnalyticPerformanceEngine "
+                   + "(refValue=" + refValue + ", mcValue=" + value
+                   + ", error=" + error + ")",
+                   refValue, value, tolerance);
+    }
 }
