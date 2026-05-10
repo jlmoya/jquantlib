@@ -120,10 +120,15 @@ public class ZabrModelTest {
         assertTrue("local vol finite", !Double.isNaN(v) && !Double.isInfinite(v));
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testFullFdPriceStillDeferred() {
-        // Phase 4n.5+ — needs FdmZabrOp (not yet ported).
+    @Test
+    public void testFullFdPriceReturnsFiniteAtTheMoney() {
+        // Phase 4f.5c — FullFdPrice now wired through FdmZabrOp 2-D PDE.
+        // ATM call must satisfy intrinsic <= price <= forward.
         final ZabrModel zabr = new ZabrModel(1.0, 0.05, 0.10, 0.5, 0.30, -0.10, 1.0);
-        zabr.fullFdPrice(0.05);
+        final double price = zabr.fullFdPrice(0.05);
+        assertTrue("ATM full FD call price > 0: " + price, price > 1.0e-6);
+        assertTrue("ATM full FD call price <= forward: " + price, price <= 0.05 + 1.0e-6);
+        assertTrue("full FD price finite",
+                !Double.isNaN(price) && !Double.isInfinite(price));
     }
 }

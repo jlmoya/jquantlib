@@ -48,18 +48,31 @@ public class ZabrSmileSectionTest {
         assertTrue(sec instanceof SmileSection);
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testLocalVolatilityFlavorDeferred() {
-        new ZabrSmileSection(1.0, 0.05,
+    @Test
+    public void testLocalVolatilityFlavor_constructionAndCallPrice() {
+        // Phase 4f.5c — LocalVolatility now wired through ZabrModel.fdPrice.
+        // Use a tiny moneyness × refinement grid for speed.
+        final ZabrSmileSection s = new ZabrSmileSection(1.0, 0.05,
                 new double[]{0.10, 0.5, 0.30, -0.10, 1.0},
-                Evaluation.LocalVolatility);
+                Evaluation.LocalVolatility, new double[]{0.5, 1.0, 1.5}, 1);
+        assertEquals(Evaluation.LocalVolatility, s.evaluation());
+        // Sanity: ATM call price within the no-arb envelope.
+        final double atmCall = s.optionPrice(0.05, Option.Type.Call);
+        assertTrue("ATM LocalVol call > 0: " + atmCall, atmCall > 1.0e-6);
+        assertTrue("ATM LocalVol call <= forward: " + atmCall, atmCall <= 0.05 + 1.0e-6);
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testFullFdFlavorDeferred() {
-        new ZabrSmileSection(1.0, 0.05,
+    @Test
+    public void testFullFdFlavor_constructionAndCallPrice() {
+        // Phase 4f.5c — FullFd now wired through ZabrModel.fullFdPrice.
+        // Use a 2-tick × refinement=2 grid (4 FullFd evaluations × ~1-3s each).
+        final ZabrSmileSection s = new ZabrSmileSection(1.0, 0.05,
                 new double[]{0.10, 0.5, 0.30, -0.10, 1.0},
-                Evaluation.FullFd);
+                Evaluation.FullFd, new double[]{0.5, 1.5}, 2);
+        assertEquals(Evaluation.FullFd, s.evaluation());
+        final double atmCall = s.optionPrice(0.05, Option.Type.Call);
+        assertTrue("ATM FullFd call > 0: " + atmCall, atmCall > 1.0e-6);
+        assertTrue("ATM FullFd call <= forward: " + atmCall, atmCall <= 0.05 + 1.0e-6);
     }
 
     /**

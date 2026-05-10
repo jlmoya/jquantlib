@@ -29,10 +29,15 @@
 
 package org.jquantlib.experimental.volatility;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.Option;
+import org.jquantlib.math.interpolations.CubicInterpolation;
+import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.model.VolatilityType;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.termstructures.volatilities.SmileSection;
@@ -45,16 +50,26 @@ import org.jquantlib.time.Date;
  *
  * <p>The C++ class is a template parameterized over an evaluation tag
  * (one of {@code ZabrShortMaturityLognormal}, {@code ZabrShortMaturityNormal},
- * {@code ZabrLocalVolatility}, {@code ZabrFullFd}). This Java port mirrors
- * the surface for {@link Evaluation#ShortMaturityLognormal} and
- * {@link Evaluation#ShortMaturityNormal} (which only require the closed-form
- * {@link ZabrModel#lognormalVolatility(double)} / {@link ZabrModel#normalVolatility(double)}
- * helpers — implemented for {@code gamma == 1.0}). The remaining
- * {@link Evaluation#LocalVolatility} and {@link Evaluation#FullFd} flavors
- * defer to Phase 4n.5 (require FD machinery).
+ * {@code ZabrLocalVolatility}, {@code ZabrFullFd}). This Java port collapses
+ * the four template specializations into a single class with an
+ * {@link Evaluation enum} discriminator and runtime dispatch in
+ * {@link #init init} / {@link #optionPrice optionPrice} /
+ * {@link #volatilityImpl volatilityImpl}.
  *
- * <p>Phase 4f.5 partial port. ZABR with non-unit gamma additionally requires
- * the adaptive Runge-Kutta ODE solver — deferred.
+ * <h2>Phase history</h2>
+ *
+ * <ul>
+ *   <li><b>Phase 4f.5</b> — {@link Evaluation#ShortMaturityLognormal} +
+ *       {@link Evaluation#ShortMaturityNormal} flavors (closed-form vols).</li>
+ *   <li><b>Phase 4f.5c</b> — {@link Evaluation#LocalVolatility} +
+ *       {@link Evaluation#FullFd} flavors. The LocalVol path uses
+ *       {@link ZabrModel#fdPrice(double)} (Dupire 1-D FD); the FullFd path
+ *       uses {@link ZabrModel#fullFdPrice(double)} (FdmZabrOp 2-D FD).
+ *       Both flavors build a strike grid (default 21-pt moneyness ×
+ *       {@code fdRefinement} subgrid), evaluate FD prices on it, then
+ *       interpolate via cubic spline with exponential right-tail extrapolation
+ *       (matches C++ {@code init3(ZabrLocalVolatility)} / {@code init3(ZabrFullFd)}).</li>
+ * </ul>
  */
 public class ZabrSmileSection extends SmileSection {
 
@@ -67,15 +82,29 @@ public class ZabrSmileSection extends SmileSection {
         ShortMaturityLognormal,
         /** Short-maturity normal expansion (uses {@code ZabrModel.normalVolatility}). */
         ShortMaturityNormal,
-        /** Local-volatility flavor (deferred — needs FD machinery). */
+        /** Local-volatility flavor — uses {@code ZabrModel.fdPrice} (Phase 4f.5c). */
         LocalVolatility,
-        /** Full 2-factor FD flavor (deferred — needs FdmZabrOp). */
+        /** Full 2-factor FD flavor — uses {@code ZabrModel.fullFdPrice} (Phase 4f.5c). */
         FullFd
     }
+
+    /** Default moneyness grid — mirror C++ defaultMoney[21] (zabrsmilesection.hpp lines 168-170). */
+    private static final double[] DEFAULT_MONEYNESS = {
+            0.0, 0.01, 0.05, 0.10, 0.25, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
+            1.0, 1.25, 1.5,  1.75, 2.0,  5.0,  7.5,  10.0, 15.0, 20.0
+    };
 
     private final ZabrModel model_;
     private final double forward_;
     private final Evaluation evaluation_;
+    private final int fdRefinement_;
+
+    // FD-flavor state — populated by initFd() for LocalVolatility / FullFd.
+    private double[] strikes_;
+    private double[] callPrices_;
+    private CubicInterpolation callPriceFct_;
+    private double a_;
+    private double b_;
 
     /**
      * Time-based constructor — mirrors C++ first ctor (zabrsmilesection.hpp lines 117-125).
@@ -93,15 +122,34 @@ public class ZabrSmileSection extends SmileSection {
             final double forward,
             final double[] zabrParameters,
             final Evaluation evaluation) {
+        this(timeToExpiry, forward, zabrParameters, evaluation, null, 5);
+    }
+
+    /**
+     * Full-args time constructor — supports LocalVolatility / FullFd flavors
+     * (zabrsmilesection.hpp lines 117-125 + init).
+     *
+     * @param moneyness     optional moneyness grid (null/empty → default 21-pt)
+     * @param fdRefinement  number of sub-grid refinements between two
+     *                      moneyness ticks (default 5; ignored for non-FD flavors)
+     */
+    public ZabrSmileSection(
+            final double timeToExpiry,
+            final double forward,
+            final double[] zabrParameters,
+            final Evaluation evaluation,
+            final double[] moneyness,
+            final int fdRefinement) {
         super(timeToExpiry, null, VolatilityType.ShiftedLognormal, 0.0);
         QL.require(zabrParameters != null && zabrParameters.length >= 5,
                 "zabrParameters must be length >= 5 (alpha, beta, nu, rho, gamma)");
         this.forward_ = forward;
         this.evaluation_ = evaluation;
+        this.fdRefinement_ = fdRefinement;
         this.model_ = new ZabrModel(timeToExpiry, forward,
                 zabrParameters[0], zabrParameters[1], zabrParameters[2],
                 zabrParameters[3], zabrParameters[4]);
-        validateForFlavor();
+        initFd(moneyness);
     }
 
     /**
@@ -123,25 +171,121 @@ public class ZabrSmileSection extends SmileSection {
             final double[] zabrParameters,
             final DayCounter dc,
             final Evaluation evaluation) {
+        this(d, forward, zabrParameters, dc, evaluation, null, 5);
+    }
+
+    /**
+     * Full-args date constructor — supports LocalVolatility / FullFd flavors
+     * (zabrsmilesection.hpp lines 127-137 + init).
+     */
+    public ZabrSmileSection(
+            final Date d,
+            final double forward,
+            final double[] zabrParameters,
+            final DayCounter dc,
+            final Evaluation evaluation,
+            final double[] moneyness,
+            final int fdRefinement) {
         super(d, dc == null ? new Actual365Fixed() : dc, new Date(),
                 VolatilityType.ShiftedLognormal, 0.0);
         QL.require(zabrParameters != null && zabrParameters.length >= 5,
                 "zabrParameters must be length >= 5 (alpha, beta, nu, rho, gamma)");
         this.forward_ = forward;
         this.evaluation_ = evaluation;
+        this.fdRefinement_ = fdRefinement;
         this.model_ = new ZabrModel(exerciseTime(), forward,
                 zabrParameters[0], zabrParameters[1], zabrParameters[2],
                 zabrParameters[3], zabrParameters[4]);
-        validateForFlavor();
+        initFd(moneyness);
     }
 
-    private void validateForFlavor() {
-        if (evaluation_ == Evaluation.LocalVolatility
-                || evaluation_ == Evaluation.FullFd) {
-            throw new UnsupportedOperationException(
-                    "ZabrSmileSection " + evaluation_ + " deferred to Phase 4n.5 "
-                            + "(requires FD machinery — fdmDupire1dOp/fdmZabrOp).");
+    /**
+     * For FD flavors (LocalVolatility / FullFd): build the strike grid,
+     * evaluate FD prices on it, then build the cubic-spline interpolation +
+     * exponential right-tail extrapolation parameters {@code a_}, {@code b_}.
+     * Mirror C++ {@code init/init2/init3(ZabrLocalVolatility|ZabrFullFd)}
+     * (zabrsmilesection.hpp lines 154-260).
+     *
+     * <p>For non-FD flavors this method is a no-op.
+     */
+    private void initFd(final double[] moneyness) {
+        if (evaluation_ != Evaluation.LocalVolatility
+                && evaluation_ != Evaluation.FullFd) {
+            return;
         }
+
+        // ----- init() — strike grid (zabrsmilesection.hpp lines 154-195)
+        final double[] tmp = (moneyness == null || moneyness.length == 0)
+                ? DEFAULT_MONEYNESS
+                : moneyness;
+
+        final List<Double> strikesList = new ArrayList<Double>();
+        double lastF = 0.0;
+        boolean firstStrike = true;
+        for (final double i : tmp) {
+            final double f = i * forward_;
+            if (f > 0.0) {
+                if (!firstStrike) {
+                    for (int j = 1; j <= fdRefinement_; ++j) {
+                        strikesList.add(lastF + ((double) j) * (f - lastF)
+                                / (fdRefinement_ + 1));
+                    }
+                }
+                firstStrike = false;
+                lastF = f;
+                strikesList.add(f);
+            }
+        }
+
+        // ----- init2() — fill callPrices_ (zabrsmilesection.hpp lines 209-221)
+        final int nStrike = strikesList.size();
+        final double[] cp = new double[nStrike];
+        if (evaluation_ == Evaluation.LocalVolatility) {
+            // C++ uses callPrices_ = model_->fdPrice(strikes_) which builds
+            // the FD grid once then evaluates the spline at every requested
+            // strike. The Java ZabrModel only exposes the scalar form, so we
+            // call it per strike (slower but element-by-element identical
+            // because the FD grid parameters depend only on the model + the
+            // single strike argument; calling it per-strike rebuilds the grid
+            // each time but produces the same value at the requested point).
+            for (int i = 0; i < nStrike; ++i) {
+                cp[i] = model_.fdPrice(strikesList.get(i));
+            }
+        } else { // FullFd
+            // C++ uses #pragma omp parallel for; Java port runs sequentially.
+            for (int i = 0; i < nStrike; ++i) {
+                cp[i] = model_.fullFdPrice(strikesList.get(i));
+            }
+        }
+
+        // ----- init3() — insert (0, forward) at front + cubic spline
+        //                + exponential right-tail extrapolation
+        //                (zabrsmilesection.hpp lines 230-254)
+        strikes_ = new double[nStrike + 1];
+        callPrices_ = new double[nStrike + 1];
+        strikes_[0] = 0.0;
+        callPrices_[0] = forward_;
+        for (int i = 0; i < nStrike; ++i) {
+            strikes_[i + 1] = strikesList.get(i);
+            callPrices_[i + 1] = cp[i];
+        }
+
+        callPriceFct_ = new CubicInterpolation(
+                new Array(strikes_), new Array(callPrices_),
+                CubicInterpolation.DerivativeApprox.Spline, true,
+                CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0,
+                CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0);
+        callPriceFct_.enableExtrapolation();
+
+        // Exponential right-tail extrapolation (matches C++ init3).
+        // C++: eps = 1e-5 — gap for first derivative.
+        final double eps = 1.0e-5;
+        final double last = strikes_[strikes_.length - 1];
+        final double c0 = callPriceFct_.op(last);
+        final double c0p = (callPriceFct_.op(last - eps) - c0) / eps;
+
+        a_ = c0p / c0;
+        b_ = Math.log(c0) + a_ * last;
     }
 
     @Override
@@ -171,19 +315,33 @@ public class ZabrSmileSection extends SmileSection {
 
     @Override
     protected double volatilityImpl(final double strikeIn) {
-        // Mirror C++ ZabrShortMaturityLognormal volatilityImpl
-        // (zabrsmilesection.hpp lines 297-303): strike clamp at 1e-6
-        final double strike = Math.max(1.0e-6, strikeIn);
         switch (evaluation_) {
-            case ShortMaturityLognormal:
+            case ShortMaturityLognormal: {
+                // Mirror C++ ZabrShortMaturityLognormal volatilityImpl
+                // (zabrsmilesection.hpp lines 297-303): strike clamp at 1e-6.
+                final double strike = Math.max(1.0e-6, strikeIn);
                 return model_.lognormalVolatility(strike);
+            }
             case ShortMaturityNormal:
-                // C++ ZabrShortMaturityNormal::volatilityImpl uses an
-                // implied-vol root-find on Bachelier price (zabrsmilesection.hpp
-                // lines 305-323). Returning the model normal vol directly is
-                // a reasonable approximation but not what the tests expect:
-                // override optionPrice for this flavor to use Bachelier directly.
-                return model_.normalVolatility(strike);
+            case LocalVolatility:
+            case FullFd: {
+                // Mirror C++ ZabrShortMaturityNormal volatilityImpl + the
+                // LocalVol/FullFd specializations that delegate to it
+                // (zabrsmilesection.hpp lines 305-335): implied vol via Black
+                // inversion of the model's call/put price; on failure return 0.
+                double impliedVol = 0.0;
+                try {
+                    final Option.Type type = (strikeIn >= model_.forward())
+                            ? Option.Type.Call : Option.Type.Put;
+                    impliedVol = BlackFormula.blackFormulaImpliedStdDev(
+                            type, strikeIn, model_.forward(),
+                            optionPrice(strikeIn, type, 1.0), 1.0)
+                            / Math.sqrt(exerciseTime());
+                } catch (final Exception ignored) {
+                    // C++ catches all and returns 0 — matches.
+                }
+                return impliedVol;
+            }
             default:
                 throw new UnsupportedOperationException(
                         "ZabrSmileSection volatility for flavor " + evaluation_
@@ -193,19 +351,44 @@ public class ZabrSmileSection extends SmileSection {
 
     /**
      * Mirrors C++ {@code optionPrice(strike, type, discount)} dispatch
-     * (zabrsmilesection.hpp lines 263-294). For {@link Evaluation#ShortMaturityNormal}
-     * the price uses the Bachelier formula on the model's normalVolatility
-     * (zabrsmilesection.hpp lines 269-276). For other flavors, defers to
-     * {@link SmileSection#optionPrice(double, Option.Type, double)}.
+     * (zabrsmilesection.hpp lines 263-294).
+     * <ul>
+     *   <li>{@link Evaluation#ShortMaturityLognormal} — defers to
+     *       {@link SmileSection#optionPrice(double, Option.Type, double)}
+     *       which uses the Black formula on
+     *       {@link #volatilityImpl(double)}.</li>
+     *   <li>{@link Evaluation#ShortMaturityNormal} — Bachelier formula on
+     *       {@link ZabrModel#normalVolatility(double)} (lines 269-276).</li>
+     *   <li>{@link Evaluation#LocalVolatility} / {@link Evaluation#FullFd} —
+     *       reads call price directly from the cubic-spline interpolation +
+     *       exponential right-tail extrapolation (lines 278-288); converts
+     *       to put via parity {@code P = C - (F - K)}.</li>
+     * </ul>
      */
     @Override
     public double optionPrice(final double strike, final Option.Type type, final double discount) {
-        if (evaluation_ == Evaluation.ShortMaturityNormal) {
-            final double k = Math.max(1.0e-6, strike);
-            final double normalVol = model_.normalVolatility(k);
-            return BlackFormula.bachelierBlackFormula(type, k, forward_,
-                    normalVol * Math.sqrt(exerciseTime()), discount);
+        switch (evaluation_) {
+            case ShortMaturityNormal: {
+                final double k = Math.max(1.0e-6, strike);
+                final double normalVol = model_.normalVolatility(k);
+                return BlackFormula.bachelierBlackFormula(type, k, forward_,
+                        normalVol * Math.sqrt(exerciseTime()), discount);
+            }
+            case LocalVolatility:
+            case FullFd: {
+                final double last = strikes_[strikes_.length - 1];
+                final double call = (strike <= last)
+                        ? callPriceFct_.op(strike)
+                        : Math.exp(-a_ * strike + b_);
+                if (type == Option.Type.Call) {
+                    return call * discount;
+                }
+                // Put-call parity.
+                return (call - (forward_ - strike)) * discount;
+            }
+            case ShortMaturityLognormal:
+            default:
+                return super.optionPrice(strike, type, discount);
         }
-        return super.optionPrice(strike, type, discount);
     }
 }
