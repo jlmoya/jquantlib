@@ -68,40 +68,37 @@ public class CapFloorTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CF-1 — needs MakeCapFloor fluent builder "
-            + "(C++ ql/instruments/makecapfloor.hpp).")
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp::testVega.")
     @Test
     public void testVega() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CF-1 — needs MakeCapFloor fluent builder.")
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp.")
     @Test
     public void testStrikeDependency() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CF-1 — needs MakeCapFloor fluent builder.")
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp.")
     @Test
     public void testConsistency() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CF-1 — needs MakeCapFloor fluent builder.")
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp.")
     @Test
     public void testParity() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CF-1 — needs MakeCapFloor fluent builder.")
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — needs full port from C++ capfloor.cpp.")
     @Test
     public void testATMRate() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CF-1 — needs MakeCapFloor fluent builder + "
-            + "implied-volatility solver wiring on CapFloor.")
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — also needs implied-volatility solver wiring on CapFloor.")
     @Test
     public void testImpliedVolatility() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CF-1 — needs MakeCapFloor fluent builder; "
-            + "cached NPVs need regenerating from C++ v1.42.1.")
+    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); empty test body — also needs cached NPVs regenerated from C++ v1.42.1.")
     @Test
     public void testCachedValue() {
     }

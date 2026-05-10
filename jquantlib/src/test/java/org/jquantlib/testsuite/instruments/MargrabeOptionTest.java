@@ -40,16 +40,19 @@ import org.junit.Test;
 public class MargrabeOptionTest {
 
     private static final String REASON_EURO =
-            "Phase 5i.5 — requires MargrabeOption multi-asset instrument + "
-          + "AnalyticEuropeanMargrabeEngine port (no Java equivalent yet)";
+            "Phase 5i.5: MargrabeOption + AnalyticEuropeanMargrabeEngine now ported "
+          + "(see org.jquantlib.instruments.MargrabeOption + "
+          + "org.jquantlib.pricingengines.exchange.AnalyticEuropeanMargrabeEngine); "
+          + "test body is `fail(\"not implemented\")` — needs full port from C++ margrabeoption.cpp";
 
     private static final String REASON_GREEKS =
-            "Phase 5i.5 — requires Margrabe instrument + numerical-derivative "
-          + "Greeks harness for two-asset payoffs";
+            "Phase 5i.5: MargrabeOption ported; numerical-derivative Greeks harness for "
+          + "two-asset payoffs needs body fill from C++ margrabeoption.cpp::testGreeks";
 
     private static final String REASON_AMERICAN =
-            "Phase 5i.5 — requires MargrabeOption + "
-          + "AnalyticAmericanMargrabeEngine port (no Java equivalent yet)";
+            "Phase 5i.5: MargrabeOption ported; AnalyticAmericanMargrabeEngine now ported "
+          + "(commit 82296b56); test body is `fail(\"not implemented\")` — needs full port "
+          + "from C++ margrabeoption.cpp::testAmericanExchangeTwoAssets";
 
     @Ignore(REASON_EURO)
     @Test

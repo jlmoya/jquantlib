@@ -154,23 +154,23 @@ public class OptionletStripperTest {
         }
     }
 
-    @Ignore("Phase 5f.5 — OptionletStripper1 + CapFloorTermVolSurface not ported")
+    @Ignore("Phase 5f.5: OptionletStripper1 + CapFloorTermVolSurface now ported (commits c1e9cb84, def9b799); test body is `fail(\"not implemented\")` — needs full port from C++ optionletstripper.cpp::testTermVolatilityStripping1")
     @Test
     public void testTermVolatilityStripping1() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — Normal-vol stripping not ported")
+    @Ignore("Phase 5f.5: OptionletStripper1 (Normal mode) ported; test body is `fail(\"not implemented\")` — needs full port from C++ optionletstripper.cpp::testTermVolatilityStrippingNormalVol")
     @Test
     public void testTermVolatilityStrippingNormalVol() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — Shifted-log-normal stripping not ported")
+    @Ignore("Phase 5f.5: OptionletStripper1 (ShiftedLognormal mode) ported; test body is `fail(\"not implemented\")` — needs full port from C++ optionletstripper.cpp::testTermVolatilityStrippingShiftedLogNormalVol")
     @Test
     public void testTermVolatilityStrippingShiftedLogNormalVol() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — OptionletStripper2 not ported")
+    @Ignore("Phase 5f.5: OptionletStripper2 now ported (commit e347e531); test body is `fail(\"not implemented\")` — needs full port from C++ optionletstripper.cpp::testFlatTermVolatilityStripping2")
     @Test
     public void testFlatTermVolatilityStripping2() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — OptionletStripper2 + surface not ported")
+    @Ignore("Phase 5f.5: OptionletStripper2 + surface ported; test body is `fail(\"not implemented\")` — needs full port from C++ optionletstripper.cpp::testTermVolatilityStripping2")
     @Test
     public void testTermVolatilityStripping2() { fail("not implemented"); }
 
@@ -178,7 +178,7 @@ public class OptionletStripperTest {
     @Test
     public void testSwitchStrike() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — overnight-index optionlet stripping not ported")
+    @Ignore("Phase 5f.5 — overnight-index optionlet stripping not ported (needs OvernightIndexedCoupon + OIS-based MakeCapFloor)")
     @Test
     public void testTermVolatilityStripping1ON() { fail("not implemented"); }
 }

@@ -42,9 +42,9 @@ import org.junit.Test;
 public class PagodaOptionTest {
 
     private static final String REASON_CACHED =
-            "Phase 5k.5 — requires MCPagodaEngine (Phase 4h.5 carry-forward); "
-          + "depends on MultiPath / MultiPathGenerator / StochasticProcessArray "
-          + "infrastructure that Java lacks";
+            "Phase 5k.5: MCPagodaEngine + MultiPath + MultiPathGenerator + StochasticProcessArray "
+          + "now ported (commit a40b65cc et al.); test body is `fail(\"not implemented\")` — needs full port from "
+          + "C++ test-suite/pagodaoption.cpp::testCached.";
 
     @Ignore(REASON_CACHED) @Test public void testCached() { fail("not implemented"); }
 }

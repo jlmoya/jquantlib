@@ -41,16 +41,19 @@ import org.junit.Test;
 public class ForwardOptionTest {
 
     private static final String REASON_BS_ANALYTIC =
-            "Phase 5i.5 — requires ForwardEngine (BS analytic) port "
-          + "(no Java equivalent yet)";
+            "Phase 5i.5: ForwardVanillaEngine now ported "
+          + "(see org.jquantlib.pricingengines.forward.ForwardVanillaEngine); "
+          + "test body is `fail(\"not implemented\")` — needs full port from C++ forwardoption.cpp";
 
     private static final String REASON_BS_PERFORMANCE =
-            "Phase 5i.5 — requires ForwardPerformanceEngine port "
-          + "(no Java equivalent yet)";
+            "Phase 5i.5: ForwardPerformanceVanillaEngine now ported "
+          + "(see org.jquantlib.pricingengines.forward.ForwardPerformanceVanillaEngine); "
+          + "test body is `fail(\"not implemented\")` — needs full port from C++ forwardoption.cpp";
 
     private static final String REASON_GREEKS =
-            "Phase 5i.5 — Greeks initialization / cross-check requires the "
-          + "BS forward engines + numerical-derivative harness";
+            "Phase 5i.5: ForwardVanillaEngine + ForwardPerformanceVanillaEngine ported; "
+          + "Greeks-initialization / numerical-derivative harness needs body fill from C++ "
+          + "forwardoption.cpp";
 
     private static final String REASON_MC_BS =
             "Phase 5i.5 — requires MCForwardEuropeanBSEngine port "

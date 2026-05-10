@@ -43,9 +43,9 @@ import org.junit.Test;
 public class HimalayaOptionTest {
 
     private static final String REASON_CACHED =
-            "Phase 5k.5 — requires MCHimalayaEngine (Phase 4h.5 carry-forward); "
-          + "depends on MultiPath / MultiPathGenerator / StochasticProcessArray "
-          + "infrastructure that Java lacks";
+            "Phase 5k.5: MCHimalayaEngine + MultiPath + MultiPathGenerator + StochasticProcessArray "
+          + "now ported (commit a40b65cc et al.); test body is `fail(\"not implemented\")` — needs full port from "
+          + "C++ test-suite/himalayaoption.cpp::testCached.";
 
     @Ignore(REASON_CACHED) @Test public void testCached() { fail("not implemented"); }
 }

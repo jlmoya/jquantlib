@@ -121,8 +121,7 @@ public class AssetSwapTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-1 — needs org.jquantlib.instruments.AssetSwap "
-            + "+ AssetSwapPricingEngine production port (no Java equivalent today).")
+    @Ignore("Phase 5e.5 WI-5e.5-ASW-1: AssetSwap now ported (see org.jquantlib.instruments.AssetSwap); empty test body — needs full port from C++ assetswap.cpp::testConsistency")
     @Test
     public void testConsistency() {
     }
@@ -211,38 +210,37 @@ public class AssetSwapTest {
         }
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-3 — needs AssetSwap.fairCleanPrice / fairSpread.")
+    @Ignore("Phase 5e.5 WI-5e.5-ASW-3: AssetSwap.fairCleanPrice / fairSpread now exist in production; empty test body — needs full port from C++ assetswap.cpp::testMarketASWSpread")
     @Test
     public void testMarketASWSpread() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-4 — needs AssetSwap port; "
-            + "BondFunctions.zSpread solver also needs cross-validation against C++.")
+    @Ignore("Phase 5e.5 WI-5e.5-ASW-4: AssetSwap now ported; empty test body — also needs BondFunctions.zSpread solver cross-validation against C++ assetswap.cpp::testZSpread")
     @Test
     public void testZSpread() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-5 — needs AssetSwap port.")
+    @Ignore("Phase 5e.5 WI-5e.5-ASW-5: AssetSwap now ported; empty test body — needs full port from C++ assetswap.cpp::testGenericBondImplied")
     @Test
     public void testGenericBondImplied() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-6 — needs AssetSwap port.")
+    @Ignore("Phase 5e.5 WI-5e.5-ASW-6: AssetSwap now ported; empty test body — needs full port from C++ assetswap.cpp::testMASWWithGenericBond")
     @Test
     public void testMASWWithGenericBond() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-7 — needs AssetSwap port.")
+    @Ignore("Phase 5e.5 WI-5e.5-ASW-7: AssetSwap now ported; empty test body — needs full port from C++ assetswap.cpp::testZSpreadWithGenericBond")
     @Test
     public void testZSpreadWithGenericBond() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-8 — needs AssetSwap + specialized bond cross-check infra.")
+    @Ignore("Phase 5e.5 WI-5e.5-ASW-8: AssetSwap now ported; empty test body — also needs specialized bond cross-check infra (CmsRateBond etc.) for testSpecializedBondVsGenericBond")
     @Test
     public void testSpecializedBondVsGenericBond() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-ASW-9 — needs AssetSwap convenience constructors.")
+    @Ignore("Phase 5e.5 WI-5e.5-ASW-9: AssetSwap now ported; empty test body — also needs AssetSwap convenience constructors for testSpecializedBondVsGenericBondUsingAsw")
     @Test
     public void testSpecializedBondVsGenericBondUsingAsw() {
     }

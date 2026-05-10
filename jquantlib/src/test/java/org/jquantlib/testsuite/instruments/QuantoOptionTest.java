@@ -37,12 +37,14 @@ import org.junit.Test;
 public class QuantoOptionTest {
 
     private static final String REASON_VANILLA =
-            "Phase 5i.5 — requires QuantoVanillaOption instrument + "
-          + "QuantoEngine port (no Java equivalent yet)";
+            "Phase 5i.5: QuantoVanillaOption + QuantoVanillaEngine now ported "
+          + "(see org.jquantlib.instruments.QuantoVanillaOption + "
+          + "org.jquantlib.pricingengines.quanto.QuantoVanillaEngine); "
+          + "test body is `fail(\"not implemented\")` — needs full port from C++ quantooption.cpp.";
 
     private static final String REASON_FORWARD =
-            "Phase 5i.5 — requires QuantoForwardVanillaOption + "
-          + "QuantoForwardEngine port (no Java equivalent yet)";
+            "Phase 5i.5: QuantoForwardVanillaOption now ported (Phase 5i.5-MGR commit); "
+          + "test body is `fail(\"not implemented\")` — needs full port from C++ quantooption.cpp.";
 
     private static final String REASON_BARRIER =
             "Phase 5i.5 — requires QuantoBarrierOption + QuantoBarrierEngine "

@@ -87,11 +87,14 @@ public class HestonModelTest {
             + "and @Tag(\"slow\") (Phase 5 META D8).";
 
     private static final String REASON_FD =
-            "Phase 5h.5 — requires FdHestonVanillaEngine / FdHestonBarrierEngine "
-            + "(Phase 2m only ported the HHW variant FdHestonHullWhiteVanillaEngine).";
+            "Phase 5h.5: FdHestonVanillaEngine + FdHestonBarrierEngine now ported "
+            + "(commits 7dbb9bd2 + a1dffb9e); test bodies are `fail(\"not implemented\")` — "
+            + "needs full port from C++ hestonmodel.cpp.";
 
     private static final String REASON_MC =
-            "Phase 5h.5 — requires MCEuropeanHestonEngine (not ported).";
+            "Phase 5h.5: MCEuropeanHestonEngine now ported (commit a9cb20bd, "
+            + "Phase 5h.5-Bates-b); test bodies are `fail(\"not implemented\")` — "
+            + "needs full port from C++ hestonmodel.cpp.";
 
     private static final String REASON_ANALYTIC_PARTIAL =
             "Phase 5h — partial coverage in AnalyticHestonEngineTest "
@@ -103,22 +106,27 @@ public class HestonModelTest {
             + "Gauss-Laguerre at order 128.";
 
     private static final String REASON_COS =
-            "Phase 5h.5 — requires COSHestonEngine port (not ported).";
+            "Phase 5h.5: COSHestonEngine now ported (commit 9b757623); "
+            + "test bodies are `fail(\"not implemented\")` — needs full port from "
+            + "C++ hestonmodel.cpp.";
 
     private static final String REASON_AP =
             "Phase 5h.5 — requires Andersen-Piterbarg control-variate engine "
             + "and α-optimization helpers (not ported).";
 
     private static final String REASON_EXPANSION =
-            "Phase 5h.5 — requires HestonExpansion-family engines "
-            + "(Lewis, Forde, Piterbarg, small-σ, exponential-fit) — not ported.";
+            "Phase 5h.5: HestonExpansion family ported (HestonExpansionEngine, FordeHestonExpansion, "
+            + "LPP2HestonExpansion — commits 41966c40 + 24b3a98c); test bodies are "
+            + "`fail(\"not implemented\")` — needs full port from C++ hestonmodel.cpp.";
 
     private static final String REASON_PTD =
-            "Phase 5h.5 — requires PiecewiseTimeDependentHestonModel + "
-            + "AnalyticPTDHestonEngine + MultipleStrikesEngine (not ported).";
+            "Phase 5h.5: PiecewiseTimeDependentHestonModel now ported (commit 6f5a5a33); "
+            + "AnalyticPTDHestonEngine + MultipleStrikesEngine still missing — needs port + "
+            + "body fill from C++ hestonmodel.cpp.";
 
     private static final String REASON_PDF =
-            "Phase 5h.5 — requires AnalyticPDFHestonEngine (not ported).";
+            "Phase 5h.5: AnalyticPDFHestonEngine now ported (commit f5e89141); test bodies "
+            + "are `fail(\"not implemented\")` — needs full port from C++ hestonmodel.cpp.";
 
     private static final String REASON_LOCALVOL =
             "Phase 5h.5 — requires HestonBlackVolSurface + LocalVolSurface "

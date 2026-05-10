@@ -88,23 +88,22 @@ public class SwapTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-1 — needs MakeVanillaSwap.withRule(DateGeneration) "
-            + "to reproduce the C++ CommonVars.makeSwap(length, rate, spread, rule) helper.")
+    @Ignore("Phase 5e.5 WI-5e.5-SWAP-1: MakeVanillaSwap.withRule(DateGeneration) now exists; empty test body — needs full port from C++ swap.cpp::testFairRate")
     @Test
     public void testFairRate() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-1 — same MakeVanillaSwap.withRule prereq as testFairRate.")
+    @Ignore("Phase 5e.5 WI-5e.5-SWAP-1: MakeVanillaSwap.withRule now exists; empty test body — needs full port from C++ swap.cpp::testFairSpread")
     @Test
     public void testFairSpread() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-1 — same MakeVanillaSwap.withRule prereq as testFairRate.")
+    @Ignore("Phase 5e.5 WI-5e.5-SWAP-1: MakeVanillaSwap.withRule now exists; empty test body — needs full port from C++ swap.cpp::testRateDependency")
     @Test
     public void testRateDependency() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-1 — same MakeVanillaSwap.withRule prereq as testFairRate.")
+    @Ignore("Phase 5e.5 WI-5e.5-SWAP-1: MakeVanillaSwap.withRule now exists; empty test body — needs full port from C++ swap.cpp::testSpreadDependency")
     @Test
     public void testSpreadDependency() {
     }

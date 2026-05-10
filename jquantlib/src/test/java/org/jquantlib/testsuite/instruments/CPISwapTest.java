@@ -660,10 +660,8 @@ public class CPISwapTest {
     // BOOST_AUTO_TEST_CASE(cpibondconsistency) — inflationcpiswap.cpp:408-491
     // ===================================================================
     @Test
-    @Ignore("Phase 2v: requires CPIBond — not ported."
-            + " No org.jquantlib.instruments.bonds.CPIBond class exists yet"
-            + " (Phase 2u inflation deferral list explicitly puts"
-            + " inflationcpibond.cpp + CPIBond instrument port out of scope).")
+    @Ignore("Phase 2v: CPIBond now ported (org.jquantlib.instruments.bonds.CPIBond exists);"
+            + " test body is comments-only — needs full port from C++ inflationcpiswap.cpp::cpibondconsistency.")
     public void cpibondconsistency() {
         // C++ flow:
         //   - Build same CPISwap as in `consistency` but with

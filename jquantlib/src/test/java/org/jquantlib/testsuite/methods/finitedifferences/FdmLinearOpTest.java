@@ -451,19 +451,19 @@ public class FdmLinearOpTest {
      * {@code FdHestonVanillaEngine} which are NOT yet ported (Phase 4n.5
      * carry-forward).  See Phase 5j.5 plan.
      */
-    @Ignore("Phase 5j.5 — requires FdmHestonOp + FdHestonBarrierEngine (Phase 4n.5 carry)")
+    @Ignore("Phase 5j.5: FdmHestonOp + FdHestonBarrierEngine now ported (commits 7dbb9bd2 + a1dffb9e); test body is `fail(\"not implemented\")` — needs full port from C++ test-suite/fdmlinearop.cpp::testFdmHestonBarrier")
     @Test
     public void testFdmHestonBarrier() {
         fail("not implemented");
     }
 
-    @Ignore("Phase 5j.5 — requires FdmHestonOp + FdHestonVanillaEngine")
+    @Ignore("Phase 5j.5: FdmHestonOp + FdHestonVanillaEngine now ported (commit 7dbb9bd2); test body is `fail(\"not implemented\")` — needs full port from C++ test-suite/fdmlinearop.cpp::testFdmHestonAmerican")
     @Test
     public void testFdmHestonAmerican() {
         fail("not implemented");
     }
 
-    @Ignore("Phase 5j.5 — requires FdmHestonOp + FdHestonVanillaEngine")
+    @Ignore("Phase 5j.5: FdmHestonOp + FdHestonVanillaEngine now ported (commit 7dbb9bd2); test body is `fail(\"not implemented\")` — needs full port from C++ test-suite/fdmlinearop.cpp::testFdmHestonExpress")
     @Test
     public void testFdmHestonExpress() {
         fail("not implemented");

@@ -66,14 +66,14 @@ public class CapFlooredCouponTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CFC-1 — needs BlackIborCouponPricer + "
-            + "leg-wide setCouponPricer helper for capped/floored ibor legs.")
+    @Ignore("Phase 5e.5 WI-5e.5-CFC-1: BlackIborCouponPricer now ported (Phase 5e.5/6); empty test body — "
+            + "needs full port from C++ capflooredcoupon.cpp::testLargeRates plus leg-wide setCouponPricer wiring.")
     @Test
     public void testLargeRates() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CFC-2 — needs MakeCapFloor (see WI-5e.5-CF-1) "
-            + "to build the decomposition reference legs.")
+    @Ignore("Phase 5e.5 WI-5e.5-CFC-2: MakeCapFloor now ported (commit c1e9cb84); empty test body — "
+            + "needs full port from C++ capflooredcoupon.cpp::testDecomposition.")
     @Test
     public void testDecomposition() {
     }

@@ -43,9 +43,9 @@ import org.junit.Test;
 public class EverestOptionTest {
 
     private static final String REASON_CACHED =
-            "Phase 5k.5 — requires MCEverestEngine (Phase 4h.5 carry-forward); "
-          + "depends on MultiPath / MultiPathGenerator / StochasticProcessArray "
-          + "infrastructure that Java lacks";
+            "Phase 5k.5: MCEverestEngine + MultiPath + MultiPathGenerator + StochasticProcessArray "
+          + "now ported (commit a40b65cc et al.); test body is `fail(\"not implemented\")` — needs full port from "
+          + "C++ test-suite/everestoption.cpp::testCached.";
 
     @Ignore(REASON_CACHED) @Test public void testCached() { fail("not implemented"); }
 }

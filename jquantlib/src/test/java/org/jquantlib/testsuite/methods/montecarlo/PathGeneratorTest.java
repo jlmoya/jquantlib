@@ -48,15 +48,12 @@ public class PathGeneratorTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no PseudoRandom.make_sequence_generator "
-            + "static helper matching the C++ template; cached path values are bit-exact "
-            + "MT-dependent. Add the helper, validate against probe-harness, then enable.")
+    @Ignore("Phase 5a.5: PseudoRandom.makeSequenceGenerator now exists; empty test body — needs full port from C++ pathgenerator.cpp::testPathGenerator with cached MT-dependent path values.")
     @Test
     public void testPathGenerator() {
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no MultiPathGenerator class "
-            + "(C++ ql/methods/montecarlo/multipathgenerator.hpp). Port then enable.")
+    @Ignore("Phase 5a.5: MultiPathGenerator now ported (commit ebb9e3e7); empty test body — needs full port from C++ pathgenerator.cpp::testMultiPathGenerator. Note: a structural MultiPathGeneratorTest already exists (commit c9717fb1).")
     @Test
     public void testMultiPathGenerator() {
     }
