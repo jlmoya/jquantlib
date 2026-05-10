@@ -185,8 +185,16 @@ public abstract class InterestRateIndex extends Index implements Observer {
     }
 
     public Date fixingDate(final Date valueDate) {
-        final Date fixingDate = fixingCalendar().advance(valueDate, fixingDays, TimeUnit.Days);
-        QL.ensure(isValidFixingDate(fixingDate) , "fixing date " + fixingDate + " is not valid"); 
+        // Phase Bug-Fix-2 align: v1.42.1 advances BACKWARD by fixingDays
+        // (interestrateindex.hpp:104-108). The Java port had positive
+        // fixingDays here, which sent the fixing date FORWARD by 2 BD
+        // instead of backward, breaking the entire IborIndex.fixing(today)
+        // contract during PiecewiseYieldCurve bootstrap. The forward sign
+        // was the root cause of "1 week deposit estimated rate -34.286"
+        // failures across all PiecewiseYieldCurveTest consistency tests
+        // (Linear/LogLinear-Discount, *-Zero, *-Forward, FlatForward).
+        final Date fixingDate = fixingCalendar().advance(valueDate, -fixingDays, TimeUnit.Days);
+        QL.ensure(isValidFixingDate(fixingDate) , "fixing date " + fixingDate + " is not valid");
         return fixingDate;
     }
 

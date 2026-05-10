@@ -309,7 +309,15 @@ public class InterpolatedForwardCurve<I extends Interpolator> extends ForwardRat
 
 	@Override
     public double discountImpl(final double t) {
-		throw new UnsupportedOperationException();
+		// Phase Bug-Fix-2 align: v1.42.1 InterpolatedForwardCurve inherits
+		// from ZeroYieldStructure, which derives discount from zero yield via
+		// exp(-r*t) (zeroyieldstructure.hpp:97). The Java port previously
+		// threw UnsupportedOperationException, breaking
+		// PiecewiseYieldCurveTest#testLinearForwardConsistency &
+		// testFlatForwardConsistency. Delegating to the parent
+		// ForwardRateStructure.discountImpl mirrors the C++ behaviour
+		// (zero is computed from forwards via integration; discount = exp(-r*t)).
+		return super.discountImpl(t);
     }
 	
 	

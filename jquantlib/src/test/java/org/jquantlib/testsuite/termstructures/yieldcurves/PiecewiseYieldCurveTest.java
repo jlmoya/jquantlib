@@ -659,7 +659,6 @@ public class PiecewiseYieldCurveTest {
 //	                     CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0));
 	}
 
-	@Ignore
 	@Test
 	public void testLogLinearDiscountConsistency() {
 
@@ -671,17 +670,6 @@ public class PiecewiseYieldCurveTest {
 	    testBMACurveConsistency(Discount.class, LogLinear.class, IterativeBootstrap.class, vars);
 	}
 
-	@Ignore("Phase Bug-Fix carry-forward — Discount + Linear interpolation produces "
-	        + "wildly wrong deposit fixings (e.g. 1-week deposit estimated rate -34.286 "
-	        + "vs expected 0.04559). The bootstrap completes without throwing, but the "
-	        + "resulting Linear-on-Discount curve evaluates to discount factors > 1 near "
-	        + "the reference date — likely Linear interpolator over D[0]=1 + D[t1] is "
-	        + "producing an extrapolation slope that crosses 1.0 on the wrong side of t=0. "
-	        + "All sister @Ignore'd *DiscountConsistency / *ZeroConsistency / "
-	        + "*ForwardConsistency tests have analogous failures (LogLinear-Discount, "
-	        + "LogLinear-Zero, Linear-Zero, Spline-Zero, Linear-Forward, FlatForward). "
-	        + "Needs PiecewiseYieldCurve / IterativeBootstrap reference-date pillar "
-	        + "alignment with C++ v1.42.1 — out of scope for the bug-fix burst (>100 LOC).")
 	@Test
 	public void testLinearDiscountConsistency() {
 
@@ -693,7 +681,6 @@ public class PiecewiseYieldCurveTest {
 	    testBMACurveConsistency(Discount.class, Linear.class, IterativeBootstrap.class, vars);
 	}
 
-	@Ignore
 	@Test
 	public void testLogLinearZeroConsistency() {
 
@@ -705,7 +692,6 @@ public class PiecewiseYieldCurveTest {
 	    testBMACurveConsistency(ZeroYield.class, LogLinear.class, IterativeBootstrap.class, vars);
 	}
 
-	@Ignore
 	@Test
 	public void testLinearZeroConsistency() {
 
@@ -739,7 +725,6 @@ public class PiecewiseYieldCurveTest {
 	                              CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0));
 	}
 
-	@Ignore
 	@Test
 	public void testLinearForwardConsistency() {
 
@@ -751,7 +736,6 @@ public class PiecewiseYieldCurveTest {
 	    testBMACurveConsistency(ForwardRate.class, Linear.class, IterativeBootstrap.class, vars);
 	}
 
-	@Ignore
 	@Test
 	public void testFlatForwardConsistency() {
 
