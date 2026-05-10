@@ -7,7 +7,9 @@ import org.jquantlib.termstructures.InterestRate;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
 
 // TODO: code review :: license, class comments, comments for access modifiers, comments for @Override
 public class FixedRateLeg extends Leg {
@@ -19,11 +21,33 @@ public class FixedRateLeg extends Leg {
     private DayCounter firstPeriodDayCounter_;
     private DayCounter lastPeriodDayCounter_;
     private BusinessDayConvention paymentAdjustment_;
+    /** Phase 5d.5-Bonds-b — payment calendar (defaults to schedule.calendar()). */
+    private Calendar paymentCalendar_;
+    /** Phase 5d.5-Bonds-b — payment-lag in business days (default 0). */
+    private int paymentLag_;
+    /** Phase 5d.5-Bonds-b — ex-coupon period (default empty). */
+    private Period exCouponPeriod_;
+    /** Phase 5d.5-Bonds-b — ex-coupon calendar (default empty). */
+    private Calendar exCouponCalendar_;
+    /** Phase 5d.5-Bonds-b — ex-coupon adjustment (default Following). */
+    private BusinessDayConvention exCouponAdjustment_;
+    /** Phase 5d.5-Bonds-b — ex-coupon end-of-month flag (default false). */
+    private boolean exCouponEndOfMonth_;
 
     public FixedRateLeg(final Schedule schedule, final DayCounter paymentDayCounter){
         this.schedule_=(schedule);
         this.paymentDayCounter_=(paymentDayCounter);
         this.paymentAdjustment_ = BusinessDayConvention.Following;
+        // Phase 5d.5-Bonds-b — default payment calendar matches C++
+        // FixedRateLeg::operator Leg() which uses paymentCalendar_.advance(...)
+        // and falls back to schedule.calendar() when paymentCalendar_ is empty.
+        // Java has no Calendar.empty(); default to schedule.calendar() up front.
+        this.paymentCalendar_ = schedule.calendar();
+        this.paymentLag_ = 0;
+        this.exCouponPeriod_ = new Period();
+        this.exCouponCalendar_ = new Calendar();
+        this.exCouponAdjustment_ = BusinessDayConvention.Following;
+        this.exCouponEndOfMonth_ = false;
     }
 
     public FixedRateLeg withNotionals(/* Real */final double notional) {
@@ -82,6 +106,50 @@ public class FixedRateLeg extends Leg {
         return this;
     }
 
+    /** Mirror of C++ {@code FixedRateLeg::withPaymentCalendar}
+     *  (ql/cashflows/fixedratecoupon.cpp:154-157). Overrides the calendar
+     *  used to advance to the payment date. */
+    public FixedRateLeg withPaymentCalendar(final Calendar calendar) {
+        this.paymentCalendar_ = calendar;
+        return this;
+    }
+
+    /** Mirror of C++ {@code FixedRateLeg::withPaymentLag}
+     *  (ql/cashflows/fixedratecoupon.cpp:159-162). Number of business days
+     *  to advance the period-end date when computing the payment date. */
+    public FixedRateLeg withPaymentLag(final int lag) {
+        this.paymentLag_ = lag;
+        return this;
+    }
+
+    /** Mirror of C++ {@code FixedRateLeg::withExCouponPeriod}
+     *  (ql/cashflows/fixedratecoupon.cpp:164-174). Records ex-coupon
+     *  parameters for downstream coupon construction.
+     *
+     *  <p>NOTE: Java {@link FixedRateCoupon} does not yet expose an
+     *  {@code exCouponDate} parameter (mirrors the gap noted in
+     *  {@code CPICoupon} comments). The values are recorded and the
+     *  {@code exCouponDate} is computed inside {@link #Leg()} for future
+     *  threading; for now the date is computed but discarded. Tracked as
+     *  Phase 5d.5-Bonds-c carry-forward (FixedRateCoupon ex-coupon
+     *  parameter + Coupon.exCouponDate accessor). */
+    public FixedRateLeg withExCouponPeriod(final Period period,
+                                           final Calendar cal,
+                                           final BusinessDayConvention convention,
+                                           final boolean endOfMonth) {
+        this.exCouponPeriod_ = period;
+        this.exCouponCalendar_ = cal;
+        this.exCouponAdjustment_ = convention;
+        this.exCouponEndOfMonth_ = endOfMonth;
+        return this;
+    }
+
+    public FixedRateLeg withExCouponPeriod(final Period period,
+                                           final Calendar cal,
+                                           final BusinessDayConvention convention) {
+        return withExCouponPeriod(period, cal, convention, false);
+    }
+
 
     public Leg Leg() {
         QL.require(couponRates_ != null && couponRates_.length>0 , "coupon rates not specified"); // TODO: message
@@ -89,12 +157,21 @@ public class FixedRateLeg extends Leg {
 
         final Leg leg = new Leg();
 
-        // the following is not always correct
+        // the following is not always correct (for ref-date adjustments)
         final Calendar calendar = schedule_.calendar();
+        // Phase 5d.5-Bonds-b — payment dates advance via paymentCalendar_
+        // (defaults to schedule_.calendar()) by paymentLag_ business days
+        // before applying paymentAdjustment_. Mirrors C++
+        // ql/cashflows/fixedratecoupon.cpp:186 et al.
+        final boolean hasExCoupon = exCouponPeriod_ != null && exCouponPeriod_.length() != 0;
 
         // first period might be short or long
         Date start = schedule_.date(0), end = schedule_.date(1);
-        Date paymentDate = calendar.adjust(end, paymentAdjustment_);
+        Date paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
+        // exCouponDate (computed for future threading; FixedRateCoupon ctor
+        // does not yet accept it — see Phase 5d.5-Bonds-c carry-forward)
+        @SuppressWarnings("unused")
+        Date exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
         InterestRate rate = couponRates_[0];
         /*@Real*/ double nominal = notionals_[0];
         if (schedule_.isRegular(1)) {
@@ -111,7 +188,8 @@ public class FixedRateLeg extends Leg {
         for (int i = 2; i < schedule_.size() - 1; ++i) {
             start = end;
             end = schedule_.date(i);
-            paymentDate = calendar.adjust(end, paymentAdjustment_);
+            paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
+            exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
             if ((i - 1) < couponRates_.length) {
                 rate = couponRates_[i - 1];
             } else {
@@ -130,7 +208,8 @@ public class FixedRateLeg extends Leg {
             final int N = schedule_.size();
             start = end;
             end = schedule_.date(N - 1);
-            paymentDate = calendar.adjust(end, paymentAdjustment_);
+            paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
+            exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
             if ((N - 2) < couponRates_.length) {
                 rate = couponRates_[N - 2];
             } else {
@@ -158,5 +237,21 @@ public class FixedRateLeg extends Leg {
             }
         }
         return leg;
+    }
+
+    /** Mirrors C++ {@code FixedRateLeg::operator Leg()} ex-coupon block
+     *  (ql/cashflows/fixedratecoupon.cpp:191-196 and similar). Computes
+     *  the ex-coupon date as {@code exCouponCalendar.advance(paymentDate,
+     *  -exCouponPeriod, exCouponAdjustment, exCouponEndOfMonth)} when an
+     *  ex-coupon period is configured; returns {@code Date()} otherwise. */
+    private Date computeExCouponDate(final Date paymentDate, final boolean hasExCoupon) {
+        if (!hasExCoupon) {
+            return new Date();
+        }
+        return exCouponCalendar_.advance(
+                paymentDate,
+                exCouponPeriod_.negative(),
+                exCouponAdjustment_,
+                exCouponEndOfMonth_);
     }
 }
