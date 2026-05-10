@@ -493,9 +493,70 @@ public class HestonModelTest {
     @Test
     public void testHestonEngineIntegration() { fail("not implemented"); }
 
-    @Ignore(REASON_INTEGRATION)
+    /**
+     * Phase Body-Fill-4 port of C++ {@code testCharacteristicFct}
+     * (1989-2034): the Heston characteristic function {@code φ(u, t)}
+     * computed by {@link COSHestonEngine#chF(double, double)} and
+     * {@link AnalyticHestonEngine#chF(Complex, double)} must agree
+     * to within {@code 100*ε ≈ 2.22e-14}.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:1989-2034} v1.42.1.
+     */
     @Test
-    public void testCharacteristicFct() { fail("not implemented"); }
+    public void testCharacteristicFct() {
+        final Date settlementDate = new Date(30, Month.March, 2017);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.35)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.17)), dayCounter));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final double v0    =  0.1;
+        final double rho   = -0.85;
+        final double sigma =  0.8;
+        final double kappa =  2.0;
+        final double theta =  0.15;
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+
+        final double[] u = { 1.0, 0.45, 3, 4 };
+        final double[] t = { 0.01, 23.2, 3.2 };
+
+        final COSHestonEngine cosEngine = new COSHestonEngine(model, process);
+        final AnalyticHestonEngine analyticEngine =
+                new AnalyticHestonEngine(model, process, 128);
+
+        // C++ tolerance is 100 * QL_EPSILON ≈ 2.22e-14.
+        final double tol = 100.0 * 2.220446049250313e-16;
+        for (final double i : u) {
+            for (final double j : t) {
+                final org.jquantlib.math.Complex c = cosEngine.chF(i, j);
+                final org.jquantlib.math.Complex a = analyticEngine.chF(
+                        org.jquantlib.math.Complex.real(i), j);
+
+                final double dRe = a.real() - c.real();
+                final double dIm = a.imag() - c.imag();
+                final double error = Math.sqrt(dRe * dRe + dIm * dIm);
+                if (error > tol) {
+                    fail(" failed to reproduce prices with characteristic Fct"
+                            + "\n    Cos Engine:      (" + c.real() + ", " + c.imag() + "i)"
+                            + "\n    analytic engine: (" + a.real() + ", " + a.imag() + "i)"
+                            + "\n    difference:      " + error
+                            + "\n    tol:             " + tol
+                            + "\n    u:               " + i
+                            + "\n    t:               " + j);
+                }
+            }
+        }
+    }
 
     /* ---- 6. COS / Andersen-Piterbarg / Expansions -------------------- */
 
