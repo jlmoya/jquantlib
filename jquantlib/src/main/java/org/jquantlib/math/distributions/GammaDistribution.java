@@ -100,6 +100,13 @@ public class GammaDistribution implements Ops.DoubleOp {
                     return sum * Math.exp(-x + a * Math.log(x) - gln);
             }
         } else {
+            // Continued-fraction branch (Numerical Recipes gcf): produces
+            // Q(a,x) * Γ(a) * exp(...) which equals (1 - P(a,x)). Therefore
+            // we must return 1 - h * exp(...) to get P(a,x). C++ v1.42.1
+            // gammadistribution.cpp line 56 is correct; previous JQuantLib
+            // code dropped the leading 1.0 -, returning Q(a,x) instead of
+            // P(a,x) and breaking monotonicity at x = a + 1. Phase 5h.5-RND
+            // align: needed by SquareRootProcessRNDCalculator.stationary_*.
             double b = x + 1.0 - a;
             double c = Constants.QL_MAX_REAL;
             double d = 1.0 / b;
@@ -118,7 +125,7 @@ public class GammaDistribution implements Ops.DoubleOp {
                 final double del = d * c;
                 h *= del;
                 if (Math.abs(del - 1.0) < Constants.QL_EPSILON)
-                    return h * Math.exp(-x + a * Math.log(x) - gln);
+                    return 1.0 - h * Math.exp(-x + a * Math.log(x) - gln);
             }
         }
 
