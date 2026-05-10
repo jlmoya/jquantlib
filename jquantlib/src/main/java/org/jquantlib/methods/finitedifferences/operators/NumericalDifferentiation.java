@@ -1,0 +1,206 @@
+/*
+ Copyright (C) 2015 Klaus Spanderen
+ Copyright (C) 2026 JQuantLib migration contributors.
+
+ This file is part of JQuantLib, a free-software/open-source library
+ for financial quantitative analysts and developers - http://jquantlib.org/
+
+ JQuantLib is free software: you can redistribute it and/or modify it
+ under the terms of the QuantLib license.  You should have received a
+ copy of the license along with this program; if not, please email
+ <jquant-devel@lists.sourceforge.net>. The license is also available online at
+ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
+
+ This program is distributed in the hope that it will be useful, but WITHOUT
+ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ FOR A PARTICULAR PURPOSE.  See the license for more details.
+
+ JQuantLib is based on QuantLib. http://quantlib.org/
+ When applicable, the original copyright notice follows this notice.
+ */
+package org.jquantlib.methods.finitedifferences.operators;
+
+import java.util.function.DoubleUnaryOperator;
+
+import org.jquantlib.QL;
+import org.jquantlib.math.matrixutilities.Array;
+
+/**
+ * Numerical differentiation of arbitrary order on irregularly spaced grids.
+ *
+ * <p>Java port of v1.42.1
+ * {@code ql/methods/finitedifferences/operators/numericaldifferentiation.{hpp,cpp}}.
+ *
+ * <p>Implements the algorithm of B. Fornberg, 1998
+ * (<a href="https://amath.colorado.edu/faculty/fornberg/Docs/sirev_cl.pdf">
+ * Calculation of Weights in Finite Difference Formulas</a>) for computing
+ * stencil weights for the {@code M}-th derivative on an arbitrarily-spaced
+ * grid of {@code N} points.
+ *
+ * <p>The C++ class accepts a {@code std::function<Real(Real)>} payload; the
+ * Java port mirrors that with {@link DoubleUnaryOperator}, which can be
+ * {@code null} if the caller only needs {@link #weights()} (matching the
+ * {@code emptyFct} idiom used by {@link NthOrderDerivativeOp}).
+ *
+ * <p>Phase 5b.5b — JQuantLib migration.
+ */
+public class NumericalDifferentiation {
+
+    /** Stencil layout for the helper {@code (h, n, scheme)} constructor. */
+    public enum Scheme { Central, Backward, Forward }
+
+    private final Array offsets;
+    private final Array w;
+    private final DoubleUnaryOperator f;
+
+    /**
+     * Build a differentiation stencil from explicit offsets relative to the
+     * evaluation point.
+     *
+     * @param f                 sampler {@code f(x + offset)}; may be {@code null}
+     *                          if only weights are needed
+     * @param orderOfDerivative {@code M} — order of the derivative
+     * @param xOffsets          stencil offsets (length {@code > M})
+     */
+    public NumericalDifferentiation(final DoubleUnaryOperator f,
+                                    final int orderOfDerivative,
+                                    final Array xOffsets) {
+        this.offsets = xOffsets;
+        this.w = calcWeights(xOffsets, orderOfDerivative);
+        this.f = f;
+    }
+
+    /**
+     * Build a differentiation stencil with regularly-spaced offsets generated
+     * by {@link Scheme}.
+     *
+     * @param f                 sampler; may be {@code null}
+     * @param orderOfDerivative {@code M}
+     * @param stepSize          grid spacing {@code h}
+     * @param steps             number of stencil points {@code n}
+     * @param scheme            placement of offsets relative to {@code x}
+     */
+    public NumericalDifferentiation(final DoubleUnaryOperator f,
+                                    final int orderOfDerivative,
+                                    final double stepSize,
+                                    final int steps,
+                                    final Scheme scheme) {
+        this(f, orderOfDerivative, calcOffsets(stepSize, steps, scheme));
+    }
+
+    /**
+     * Evaluate {@code f^{(M)}(x)} using the stored stencil and sampler.
+     * Mirrors C++ {@code operator()(Real x)}.
+     */
+    public double evaluate(final double x) {
+        QL.require(f != null, "no function payload supplied");
+        // Match C++ filter: skip weights smaller than QL_EPSILON^2 for noise
+        // suppression around the structural zero of the central scheme.
+        final double tinyW = QL_EPSILON_SQUARED;
+        double s = 0.0;
+        for (int i = 0; i < w.size(); ++i) {
+            final double wi = w.get(i);
+            if (Math.abs(wi) > tinyW) {
+                s += wi * f.applyAsDouble(x + offsets.get(i));
+            }
+        }
+        return s;
+    }
+
+    /** Stencil offsets (boost {@code Array} reference, here a defensive view). */
+    public Array offsets() {
+        return offsets;
+    }
+
+    /** Stencil weights. */
+    public Array weights() {
+        return w;
+    }
+
+    // -----------------------------------------------------------------------
+    // Internal helpers (anonymous-namespace in C++)
+
+    private static Array calcOffsets(final double h, final int n, final Scheme scheme) {
+        QL.require(n > 1, "number of steps must be greater than one");
+        final double[] retVal = new double[n];
+        switch (scheme) {
+          case Central:
+            QL.require(n > 2 && (n % 2) == 1,
+                "number of steps must be an odd number greater than two");
+            for (int i = 0; i < n; ++i) {
+                retVal[i] = (i - n / 2) * h;
+            }
+            break;
+          case Backward:
+            for (int i = 0; i < n; ++i) {
+                retVal[i] = -(i * h);
+            }
+            break;
+          case Forward:
+            for (int i = 0; i < n; ++i) {
+                retVal[i] = i * h;
+            }
+            break;
+          default:
+            QL.error("unknown numerical differentiation scheme");
+        }
+        return new Array(retVal);
+    }
+
+    /**
+     * Fornberg (1998) weight calculation for the {@code M}-th derivative on
+     * the supplied stencil {@code x}.
+     *
+     * <p>The C++ version uses a {@code boost::multi_array<Real,3>} of shape
+     * {@code [M+1][N][N]}; we use a flat {@code double[]} indexed by
+     * {@code m + (M+1) * (n + N * nu)} for cache-friendly access.
+     */
+    private static Array calcWeights(final Array x, final int M) {
+        final int N = x.size();
+        QL.require(N > M, "number of points must be greater than the order of the derivative");
+
+        // d[m][n][nu] with extents [M+1][N][N], row-major flat layout:
+        //   index = m * (N*N) + n * N + nu
+        final int strideM = N * N;
+        final int strideN = N;
+        final double[] d = new double[(M + 1) * strideM];
+
+        // d[0][0][0] = 1.0
+        d[0] = 1.0;
+
+        double c1 = 1.0;
+        for (int n = 1; n < N; ++n) {
+            double c2 = 1.0;
+            for (int nu = 0; nu < n; ++nu) {
+                final double c3 = x.get(n) - x.get(nu);
+                c2 *= c3;
+                final int mMax = Math.min(n, M);
+                for (int m = 0; m <= mMax; ++m) {
+                    final double prev = d[m * strideM + (n - 1) * strideN + nu];
+                    final double mTerm = (m > 0)
+                        ? (m * d[(m - 1) * strideM + (n - 1) * strideN + nu])
+                        : 0.0;
+                    d[m * strideM + n * strideN + nu] = (x.get(n) * prev - mTerm) / c3;
+                }
+            }
+
+            for (int m = 0; m <= M; ++m) {
+                final double mTerm = (m > 0)
+                    ? (m * d[(m - 1) * strideM + (n - 1) * strideN + (n - 1)])
+                    : 0.0;
+                final double prev = d[m * strideM + (n - 1) * strideN + (n - 1)];
+                d[m * strideM + n * strideN + n] = c1 / c2 * (mTerm - x.get(n - 1) * prev);
+            }
+            c1 = c2;
+        }
+
+        final double[] retVal = new double[N];
+        for (int i = 0; i < N; ++i) {
+            retVal[i] = d[M * strideM + (N - 1) * strideN + i];
+        }
+        return new Array(retVal);
+    }
+
+    /** {@code QL_EPSILON^2} — same magnitude check as the C++ implementation. */
+    private static final double QL_EPSILON_SQUARED = 2.2204460492503131e-16 * 2.2204460492503131e-16;
+}
