@@ -420,7 +420,13 @@ public class InterpolationTest {
     }
 
 
-    @Ignore
+    @Ignore("Phase Bug-Fix carry-forward — requires porting C++ MultiCubicSpline<5> "
+            + "(ql/math/interpolations/multicubicspline.hpp, 571 LOC of templated code "
+            + "with SplineGrid + data_table). Current Java test-body is a stub: "
+            + "grid[i] are size-0 Arrays, MultiCubicSpline is an inner class whose op() "
+            + "throws UnsupportedOperationException, and the loop fails with "
+            + "ArrayIndexOutOfBoundsException at line 472 (grid[0].get(i) on empty Array). "
+            + "Out of scope for the bug-fix burst (need full template port).")
     @Test
     public void testMultiSpline() {
         QL.info("Testing N-dimensional cubic spline...");
