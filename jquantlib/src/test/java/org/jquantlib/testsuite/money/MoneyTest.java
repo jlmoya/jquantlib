@@ -34,7 +34,6 @@ import org.jquantlib.currencies.Europe.EURCurrency;
 import org.jquantlib.currencies.Europe.GBPCurrency;
 import org.jquantlib.math.Closeness;
 import org.jquantlib.math.Rounding;
-import org.junit.Ignore;
 import org.junit.Test;
 
 //FIXME: http://bugs.jquantlib.org/view.php?id=474
@@ -45,9 +44,6 @@ public class MoneyTest {
         QL.info("see testsuite.money.cpp/hpp");
     }
 
-    // FIXME: Remove @Ignore when ExchangeRateManager becomes available (and reviewed!)
-    // See: http://bugs.jquantlib.org/view.php?id=466
-    @Ignore
     @Test
     public void testBaseCurrency(){
         QL.info("Testing money arithmetic with conversion to base currency...");
@@ -98,7 +94,6 @@ public class MoneyTest {
     }
 
 
-    @Ignore
     @Test
     public void testNone() {
         QL.info("Testing money arithmetic without conversions...");

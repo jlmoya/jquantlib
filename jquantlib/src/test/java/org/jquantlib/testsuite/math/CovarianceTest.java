@@ -63,9 +63,6 @@ public class CovarianceTest {
     public void testRankReduction() {
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib PseudoSqrt.pseudoSqrt is a "
-            + "'work in progress' stub (throws UnsupportedOperationException). "
-            + "Complete the port then enable. Test body retained verbatim.")
     @Test
     public void testSalvagingMatrix() {
         QL.info("Testing positive semi-definiteness salvaging algorithms...");
