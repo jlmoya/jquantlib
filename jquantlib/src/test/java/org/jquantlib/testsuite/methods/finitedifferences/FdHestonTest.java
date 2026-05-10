@@ -12,8 +12,11 @@ import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.exercise.AmericanExercise;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
+import org.jquantlib.instruments.BarrierOption;
+import org.jquantlib.instruments.BarrierType;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
@@ -22,6 +25,7 @@ import org.jquantlib.methods.finitedifferences.meshers.FdmHestonVarianceMesher;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
+import org.jquantlib.pricingengines.barrier.FdHestonBarrierEngine;
 import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.processes.HestonProcess;
@@ -128,26 +132,194 @@ public class FdHestonTest {
         fail("not implemented");
     }
 
-    @Ignore("Phase 5j.5 — requires FdHestonBarrierEngine (Phase 4n.5 carry)")
+    /**
+     * {@code testFdmHestonBarrier} — Up-and-Out call on Heston model
+     * vs C++ test-suite/fdheston.cpp lines 346-396.
+     */
     @Test
     public void testFdmHestonBarrier() {
-        fail("not implemented");
+        new Settings().setEvaluationDate(new Date(28, Month.March, 2004));
+        final Date exerciseDate = new Date(28, Month.March, 2005);
+
+        final DayCounter dc = new Actual365Fixed();
+        final YieldTermStructure rTSObj = new FlatForward(
+                new Date(28, Month.March, 2004),
+                new Handle<Quote>(new SimpleQuote(0.05)),
+                dc, Compounding.Continuous, Frequency.Annual);
+        final YieldTermStructure qTSObj = new FlatForward(
+                new Date(28, Month.March, 2004),
+                new Handle<Quote>(new SimpleQuote(0.0)),
+                dc, Compounding.Continuous, Frequency.Annual);
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(rTSObj);
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(qTSObj);
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, s0,
+                0.04, 2.5, 0.04, 0.66, -0.8);
+        final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+        final Exercise exercise = new EuropeanExercise(exerciseDate);
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Call, 100.0);
+        final BarrierOption barrierOption = new BarrierOption(
+                BarrierType.UpOut, 135.0, 0.0, payoff, exercise);
+
+        // C++ defaults: tGrid=50, xGrid=400, vGrid=100, dampingSteps=0.
+        barrierOption.setPricingEngine(new FdHestonBarrierEngine(
+                hestonModel, hestonProcess, 50, 400, 100, 0,
+                FdmSchemeDesc.Hundsdorfer()));
+
+        final double tol = 0.01;
+        final double npvExpected   =  9.1530;
+        final double deltaExpected =  0.5218;
+        final double gammaExpected = -0.0354;
+
+        final double npv = barrierOption.NPV();
+        if (Math.abs(npv - npvExpected) > tol) {
+            fail("UpOut Heston NPV mismatch: expected=" + npvExpected
+                    + " calculated=" + npv + " tol=" + tol);
+        }
+        final double delta = barrierOption.delta();
+        if (Math.abs(delta - deltaExpected) > tol) {
+            fail("UpOut Heston delta mismatch: expected=" + deltaExpected
+                    + " calculated=" + delta + " tol=" + tol);
+        }
+        final double gamma = barrierOption.gamma();
+        if (Math.abs(gamma - gammaExpected) > tol) {
+            fail("UpOut Heston gamma mismatch: expected=" + gammaExpected
+                    + " calculated=" + gamma + " tol=" + tol);
+        }
     }
 
-    @Ignore("Phase 5j.5 — requires FdHestonVanillaEngine + FdmAmericanStepCondition wiring")
+    /**
+     * {@code testFdmHestonAmerican} — American Put on Heston model.
+     * Mirrors C++ test-suite/fdheston.cpp lines 398-447 verbatim.
+     * <p>
+     * Uses {@code rho=-0.8} which is now allowed via the
+     * {@code BoundaryConstraint(-1,1)} on rho (Phase 2o A.1 align).
+     * The American exercise step condition is wired through the existing
+     * {@link org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite#vanillaComposite
+     * vanillaComposite} factory in {@link FdHestonVanillaEngine#getSolverDesc}.
+     */
     @Test
     public void testFdmHestonAmerican() {
-        fail("not implemented");
+        new Settings().setEvaluationDate(new Date(28, Month.March, 2004));
+        final Date exerciseDate = new Date(28, Month.March, 2005);
+
+        final DayCounter dc = new Actual365Fixed();
+        final YieldTermStructure rTSObj = new FlatForward(
+                new Date(28, Month.March, 2004),
+                new Handle<Quote>(new SimpleQuote(0.05)),
+                dc, Compounding.Continuous, Frequency.Annual);
+        final YieldTermStructure qTSObj = new FlatForward(
+                new Date(28, Month.March, 2004),
+                new Handle<Quote>(new SimpleQuote(0.0)),
+                dc, Compounding.Continuous, Frequency.Annual);
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(rTSObj);
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(qTSObj);
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, s0,
+                0.04,    // v0
+                2.5,     // kappa
+                0.04,    // theta
+                0.66,    // sigma
+                -0.8);   // rho — allowed via BoundaryConstraint(-1,1)
+        final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+        // C++ AmericanExercise(exerciseDate) defaults earliestDate to today;
+        // Java requires both. Use eval date as earliestDate.
+        final Exercise exercise = new AmericanExercise(
+                new Date(28, Month.March, 2004), exerciseDate);
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 100.0);
+        final VanillaOption option = new VanillaOption(payoff, exercise);
+
+        // C++ defaults: tGrid=200, xGrid=100, vGrid=50, dampingSteps=0,
+        // scheme=Hundsdorfer.
+        option.setPricingEngine(new FdHestonVanillaEngine(
+                hestonModel, hestonProcess, 200, 100, 50, 0,
+                FdmSchemeDesc.Hundsdorfer()));
+
+        final double tol = 0.01;
+        final double npvExpected   =  5.66032;
+        final double deltaExpected = -0.30065;
+        final double gammaExpected =  0.02202;
+
+        final double npv = option.NPV();
+        if (Math.abs(npv - npvExpected) > tol) {
+            fail("American Heston NPV mismatch: expected=" + npvExpected
+                    + " calculated=" + npv + " tol=" + tol);
+        }
+        final double delta = option.delta();
+        if (Math.abs(delta - deltaExpected) > tol) {
+            fail("American Heston delta mismatch: expected=" + deltaExpected
+                    + " calculated=" + delta + " tol=" + tol);
+        }
+        final double gamma = option.gamma();
+        if (Math.abs(gamma - gammaExpected) > tol) {
+            fail("American Heston gamma mismatch: expected=" + gammaExpected
+                    + " calculated=" + gamma + " tol=" + tol);
+        }
     }
 
-    /** {@code testFdmHestonIkonenToivanen} — Ikonen-Toivanen splitting
-     * scheme for American Heston.  Needs FdHestonVanillaEngine + IT scheme
-     * wiring.
+    /**
+     * {@code testFdmHestonIkonenToivanen} — Ikonen-Toivanen American-Put
+     * regression suite. Mirrors C++ test-suite/fdheston.cpp lines 449-494.
+     * <p>
+     * Reference values from Ikonen &amp; Toivanen, "Efficient numerical
+     * methods for pricing American options under stochastic volatility"
+     * (reportB12-05).
      */
-    @Ignore("Phase 5j.5 — requires FdHestonVanillaEngine + Ikonen-Toivanen scheme")
     @Test
     public void testFdmHestonIkonenToivanen() {
-        fail("not implemented");
+        new Settings().setEvaluationDate(new Date(28, Month.March, 2004));
+        final Date exerciseDate = new Date(26, Month.June, 2004);
+
+        final DayCounter dc = new Actual360();
+        final YieldTermStructure rTSObj = new FlatForward(
+                new Date(28, Month.March, 2004),
+                new Handle<Quote>(new SimpleQuote(0.10)),
+                dc, Compounding.Continuous, Frequency.Annual);
+        final YieldTermStructure qTSObj = new FlatForward(
+                new Date(28, Month.March, 2004),
+                new Handle<Quote>(new SimpleQuote(0.0)),
+                dc, Compounding.Continuous, Frequency.Annual);
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(rTSObj);
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(qTSObj);
+
+        final Exercise exercise = new AmericanExercise(
+                new Date(28, Month.March, 2004), exerciseDate);
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 10.0);
+        final VanillaOption option = new VanillaOption(payoff, exercise);
+
+        final double[] strikes  = {8.0, 9.0, 10.0, 11.0, 12.0};
+        final double[] expected = {2.00000, 1.10763, 0.520038, 0.213681, 0.082046};
+        // C++ tol = 0.001 — Java's BicubicSpline uses spline-derivative for
+        // delta/gamma where C++ uses analytic-derivative; for value queries
+        // (interpolateAt) the tier matches C++ within 1e-3.
+        final double tol = 0.001;
+
+        for (int i = 0; i < strikes.length; ++i) {
+            final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(strikes[i]));
+            final HestonProcess hestonProcess = new HestonProcess(
+                    rTS, qTS, s0,
+                    0.0625, 5.0, 0.16, 0.9, 0.1);
+            final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+            // C++ uses (100t, 400x) and default vGrid=50.
+            option.setPricingEngine(new FdHestonVanillaEngine(
+                    hestonModel, hestonProcess, 100, 400, 50, 0,
+                    FdmSchemeDesc.Hundsdorfer()));
+
+            final double calculated = option.NPV();
+            if (Math.abs(calculated - expected[i]) > tol) {
+                fail("Ikonen-Toivanen NPV mismatch for strike=" + strikes[i]
+                        + ": expected=" + expected[i]
+                        + " calculated=" + calculated
+                        + " tol=" + tol);
+            }
+        }
     }
 
     /** {@code testFdmHestonBlackScholes} — degenerate-vol Heston should
@@ -274,9 +446,93 @@ public class FdHestonTest {
         fail("not implemented");
     }
 
-    @Ignore("Phase 5j.5 — requires FdHestonVanillaEngine + American-call-put parity check")
+    /**
+     * {@code testAmericanCallPutParity} — Battauz/De Donno/Sbuelz American
+     * put-call symmetry under Heston. Mirrors C++
+     * test-suite/fdheston.cpp lines 946-1052.
+     * <p>
+     * Uses {@code rho=-0.75} and {@code rho=-0.9} which require the
+     * {@code BoundaryConstraint(-1,1)} on rho.
+     */
     @Test
     public void testAmericanCallPutParity() {
-        fail("not implemented");
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(15, Month.April, 2022);
+        new Settings().setEvaluationDate(today);
+
+        // OptionSpec: spot, strike, maturityDays, r, q, v0, kappa, theta, sig, rho
+        final double[][] testCases = {
+                {100.0, 90.0, 365, 0.02, 0.15, 0.25, 1.0, 0.09, 0.5, -0.75},
+                {100.0, 90.0, 365, 0.05, 0.20, 0.5,  1.0, 0.05, 0.75, -0.9}
+        };
+
+        final int xGrid = 200, vGrid = 25;
+        final int timeStepsPerYear = 50;
+
+        for (final double[] s : testCases) {
+            final double spot = s[0], strike = s[1];
+            final int maturityDays = (int) s[2];
+            final double r = s[3], q = s[4], v0 = s[5];
+            final double kappa = s[6], theta = s[7], sig = s[8], rho = s[9];
+
+            final Date maturityDate = today.add(maturityDays);
+            final double maturityTime = dc.yearFraction(today, maturityDate);
+            final int tGrid = (int) (maturityTime * timeStepsPerYear);
+
+            final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                    new FlatForward(today, new Handle<Quote>(new SimpleQuote(r)),
+                            dc, Compounding.Continuous, Frequency.Annual));
+            final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                    new FlatForward(today, new Handle<Quote>(new SimpleQuote(q)),
+                            dc, Compounding.Continuous, Frequency.Annual));
+            final Handle<Quote> spotH = new Handle<Quote>(new SimpleQuote(spot));
+
+            final Exercise exercise = new AmericanExercise(today, maturityDate);
+
+            // Call leg
+            final HestonProcess callProcess = new HestonProcess(
+                    rTS, qTS, spotH, v0, kappa, theta, sig, rho);
+            final HestonModel callModel = new HestonModel(callProcess);
+            final VanillaOption callOption = new VanillaOption(
+                    new PlainVanillaPayoff(Option.Type.Call, strike), exercise);
+            callOption.setPricingEngine(new FdHestonVanillaEngine(
+                    callModel, callProcess, tGrid, xGrid, vGrid, 0,
+                    FdmSchemeDesc.Hundsdorfer()));
+            final double callNpv = callOption.NPV();
+
+            // Put leg with parity-mapped Heston parameters
+            final double newSpot   = strike;
+            final double newStrike = spot;
+            final double newR      = q;
+            final double newQ      = r;
+            final double newKappa  = kappa - sig * rho;
+            final double newTheta  = (kappa * theta) / newKappa;
+            final double newRho    = -rho;
+
+            final Handle<YieldTermStructure> rTS2 = new Handle<YieldTermStructure>(
+                    new FlatForward(today, new Handle<Quote>(new SimpleQuote(newR)),
+                            dc, Compounding.Continuous, Frequency.Annual));
+            final Handle<YieldTermStructure> qTS2 = new Handle<YieldTermStructure>(
+                    new FlatForward(today, new Handle<Quote>(new SimpleQuote(newQ)),
+                            dc, Compounding.Continuous, Frequency.Annual));
+            final Handle<Quote> spot2 = new Handle<Quote>(new SimpleQuote(newSpot));
+
+            final HestonProcess putProcess = new HestonProcess(
+                    rTS2, qTS2, spot2, v0, newKappa, newTheta, sig, newRho);
+            final HestonModel putModel = new HestonModel(putProcess);
+            final VanillaOption putOption = new VanillaOption(
+                    new PlainVanillaPayoff(Option.Type.Put, newStrike), exercise);
+            putOption.setPricingEngine(new FdHestonVanillaEngine(
+                    putModel, putProcess, tGrid, xGrid, vGrid, 0,
+                    FdmSchemeDesc.Hundsdorfer()));
+            final double putNpv = putOption.NPV();
+
+            final double diff = Math.abs(putNpv - callNpv);
+            final double tol = 0.025;
+            if (diff > tol) {
+                fail("American call/put parity failed: callNpv=" + callNpv
+                        + " putNpv=" + putNpv + " diff=" + diff + " tol=" + tol);
+            }
+        }
     }
 }
