@@ -32,7 +32,9 @@ package org.jquantlib.experimental.volatility;
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.instruments.Option;
 import org.jquantlib.model.VolatilityType;
+import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.time.Date;
 
@@ -177,15 +179,33 @@ public class ZabrSmileSection extends SmileSection {
                 return model_.lognormalVolatility(strike);
             case ShortMaturityNormal:
                 // C++ ZabrShortMaturityNormal::volatilityImpl uses an
-                // implied-vol root-find on Bachelier price; we surface the
-                // model's normalVolatility directly. For ATM and near-ATM
-                // strikes (where the test compares vs SABR) the two are
-                // consistent up to short-maturity terms.
+                // implied-vol root-find on Bachelier price (zabrsmilesection.hpp
+                // lines 305-323). Returning the model normal vol directly is
+                // a reasonable approximation but not what the tests expect:
+                // override optionPrice for this flavor to use Bachelier directly.
                 return model_.normalVolatility(strike);
             default:
                 throw new UnsupportedOperationException(
                         "ZabrSmileSection volatility for flavor " + evaluation_
                                 + " not yet ported.");
         }
+    }
+
+    /**
+     * Mirrors C++ {@code optionPrice(strike, type, discount)} dispatch
+     * (zabrsmilesection.hpp lines 263-294). For {@link Evaluation#ShortMaturityNormal}
+     * the price uses the Bachelier formula on the model's normalVolatility
+     * (zabrsmilesection.hpp lines 269-276). For other flavors, defers to
+     * {@link SmileSection#optionPrice(double, Option.Type, double)}.
+     */
+    @Override
+    public double optionPrice(final double strike, final Option.Type type, final double discount) {
+        if (evaluation_ == Evaluation.ShortMaturityNormal) {
+            final double k = Math.max(1.0e-6, strike);
+            final double normalVol = model_.normalVolatility(k);
+            return BlackFormula.bachelierBlackFormula(type, k, forward_,
+                    normalVol * Math.sqrt(exerciseTime()), discount);
+        }
+        return super.optionPrice(strike, type, discount);
     }
 }
