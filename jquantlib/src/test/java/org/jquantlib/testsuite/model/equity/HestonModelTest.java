@@ -27,7 +27,10 @@ import org.jquantlib.pricingengines.vanilla.AnalyticPDFHestonEngine;
 import org.jquantlib.pricingengines.vanilla.COSHestonEngine;
 import org.jquantlib.pricingengines.McSimulation;
 import org.jquantlib.pricingengines.barrier.FdHestonBarrierEngine;
+import org.jquantlib.pricingengines.vanilla.FordeHestonExpansion;
 import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
+import org.jquantlib.pricingengines.vanilla.HestonExpansion;
+import org.jquantlib.pricingengines.vanilla.LPP2HestonExpansion;
 import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.MCEuropeanHestonEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
@@ -660,9 +663,77 @@ public class HestonModelTest {
     @Test
     public void testExpansionOnAlanLewisReference() { fail("not implemented"); }
 
-    @Ignore(REASON_EXPANSION)
+    /**
+     * Phase Body-Fill-4 partial port of C++
+     * {@code testExpansionOnFordeReference} (1503-1565). C++ tests three
+     * expansions (LPP2, LPP3, Forde); Java has LPP2 + Forde — LPP3 is
+     * not yet ported, so its block is skipped (the Java test still
+     * exercises 2 of 3 expansions across the full strike/maturity grid).
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:1503-1565} v1.42.1.
+     */
     @Test
-    public void testExpansionOnFordeReference() { fail("not implemented"); }
+    public void testExpansionOnFordeReference() {
+        final double forward = 100.0;
+        final double v0      =  0.04;
+        final double rho     = -0.4;
+        final double sigma   =  0.2;
+        final double kappa   =  1.15;
+        final double theta   =  0.04;
+
+        final double[] terms = {0.1, 1.0, 5.0, 10.0};
+
+        final double[] strikes = { 60, 80, 90, 100, 110, 120, 140 };
+
+        final double[][] referenceVols = {
+           {0.27284673574924445, 0.22360758200372477, 0.21023988547031242, 0.1990674789471587, 0.19118230678920461, 0.18721342919371017, 0.1899869903378507},
+           {0.25200775151345, 0.2127275920953156, 0.20286528150874591, 0.19479398358151515, 0.18872591728967686, 0.18470857955411824, 0.18204457060905446},
+           {0.21637821506229973, 0.20077227130455172, 0.19721753043236154, 0.1942233023784151, 0.191693211401571, 0.18955229722896752, 0.18491727548069495},
+           {0.20672925973965342, 0.198583062164427, 0.19668274423922746, 0.1950420231354201, 0.193610364344706, 0.1923502827886502, 0.18934360917857015}
+        };
+
+        // Tolerances per (expansion, term). Order: [k=0 LPP2, k=1 Forde]
+        // (skipping C++ k=1 LPP3 — not ported in Java).
+        final double[][] tol = {
+            {0.06, 0.03, 0.03, 0.02},  // LPP2
+            {0.06, 0.08, 1.0, 1.0}     // Forde (breaks down for long maturities)
+        };
+        final double[][] tolAtm = {
+            {4e-6, 7e-4, 2e-3, 9e-4},  // LPP2
+            {4e-4, 3e-2, 0.28, 1.0}    // Forde
+        };
+
+        for (int j = 0; j < terms.length; ++j) {
+            final double term = terms[j];
+            final HestonExpansion lpp2 = new LPP2HestonExpansion(
+                    kappa, theta, sigma, v0, rho, term);
+            final HestonExpansion forde = new FordeHestonExpansion(
+                    kappa, theta, sigma, v0, rho, term);
+            final HestonExpansion[] expansions = { lpp2, forde };
+
+            for (int i = 0; i < strikes.length; ++i) {
+                final double strike = strikes[i];
+                for (int k = 0; k < expansions.length; ++k) {
+                    final HestonExpansion expansion = expansions[k];
+
+                    final double expected = referenceVols[j][i];
+                    final double calculated = expansion.impliedVolatility(strike, forward);
+                    final double relError = Math.abs(calculated - expected) / expected;
+                    final double refTol = (strike == forward) ? tolAtm[k][j] : tol[k][j];
+                    if (relError > refTol) {
+                        fail("failed to reproduce Forde reference vols "
+                                + "\n    strike        : " + strike
+                                + "\n    expansion type: " + (k == 0 ? "LPP2" : "Forde")
+                                + "\n    term          : " + term
+                                + "\n    expected      : " + expected
+                                + "\n    calculated    : " + calculated
+                                + "\n    rel. error    : " + relError
+                                + "\n    refTol        : " + refTol);
+                    }
+                }
+            }
+        }
+    }
 
     @Ignore(REASON_EXPANSION)
     @Test
