@@ -51,25 +51,28 @@ import org.junit.Test;
  *       {@code testDiffusionAndDriftSlvProcess}.</li>
  * </ol>
  *
- * <p><strong>Phase 5h.5 carry-forward:</strong> the Java port has
- * <em>none</em> of the SLV-specific infrastructure required:
+ * <p><strong>Phase 5h.5-SLV-b status:</strong> Java now has most of the
+ * SLV-specific infrastructure. Body-fills can land in Phase 5h.5-SLV-c:
  * <ul>
- *   <li>{@code FokkerPlanckFwdEquation} solver — missing;</li>
- *   <li>{@code SquareRootProcessFwdSolver} — missing;</li>
- *   <li>{@code HestonStochasticLocalVolProcess} — missing;</li>
- *   <li>{@code HestonSLVMCModel} (Monte-Carlo SLV calibrator) — missing;</li>
- *   <li>{@code HestonSLVFDMModel} (FDM SLV calibrator) — missing;</li>
- *   <li>{@code FixedLocalVolSurface}, {@code NoExceptLocalVolSurface},
- *       {@code GridModelLocalVolSurface} — missing;</li>
- *   <li>{@code FdmSquareRootFwdOp}, {@code FdmHestonFwdOp} forward
- *       operators — missing.</li>
+ *   <li>{@code FdmSquareRootFwdOp} — landed (Phase 5h.5-SLV WI-1);</li>
+ *   <li>{@code FdmHestonFwdOp} — landed (Phase 5h.5-SLV WI-2);</li>
+ *   <li>{@code HestonStochasticLocalVolProcess} — landed (Phase 5h.5-SLV WI-3);</li>
+ *   <li>{@code FdmLocalVolFwdOp}, {@code LocalVolRNDCalculator},
+ *       {@code FixedLocalVolSurface} — landed (Phase 5h.5-RND-b);</li>
+ *   <li>{@code FdmHestonGreensFct}, {@code FdmMesherIntegral} —
+ *       landed (Phase 5h.5-SLV-b);</li>
+ *   <li>{@code HestonSLVFDMModel}, {@code HestonSLVMCModel} —
+ *       body-filled (Phase 5h.5-SLV-b).</li>
  * </ul>
- *
- * <p>Phase 5 META D9 explicitly notes: "{@code hestonslvmodel.cpp}
- * requires both the AndreasenHuge local vol surface (Phase 2m) and the
- * FdmHestonSolver (Phase 2m) — confirm complete before Phase 5h."  Java
- * has the AndreasenHuge port but not {@code FdmHestonSolver} or any of
- * the forward Fokker-Planck operators, so all 15 cases are deferred.
+ * Still missing:
+ * <ul>
+ *   <li>{@code NoExceptLocalVolSurface}, {@code GridModelLocalVolSurface};</li>
+ *   <li>{@code SquareRootProcessFwdSolver}, generic
+ *       {@code FokkerPlanckFwdEquation} backward-PDE adapters;</li>
+ *   <li>Multi-cPoint {@code Concentrating1dMesher} variant;</li>
+ *   <li>{@code HestonProcess.pdf()} (Fourier inversion) for
+ *       FdmHestonGreensFct.SemiAnalytical algorithm.</li>
+ * </ul>
  *
  * <p>Slow-test discipline (Phase 5 META D8): once enabled,
  * {@code testMonteCarloCalibration} and {@code testMonteCarloVsFdmPricing}
