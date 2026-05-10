@@ -906,32 +906,16 @@ public class OptionletStripperTest {
      * through OptionletStripper1.
      *
      * <p>Phase 5g.5e — body fully ported. UnitedStates.Market.FederalReserve
-     * calendar variant landed in Phase 5g.5d (commit b8dfc6ec) covers the
-     * named upstream blocker. Currently @Ignore'd because of two residual
-     * production gaps surfaced by the body-fill:
-     * <ol>
-     *   <li>{@link OptionletStripper1#performCalculations} bootstraps caps
-     *       via {@link MakeCapFloor}, which delegates to
-     *       {@link org.jquantlib.instruments.MakeVanillaSwap}. The Java
-     *       MakeVanillaSwap hard-codes an IborCoupon floating-leg path; it
-     *       has no special-case handling for an OvernightIndex passed as
-     *       {@code iborIndex_}. Result: bootstrap throws "null accrual
-     *       period" inside {@link
-     *       org.jquantlib.cashflow.BlackIborCouponPricer#initialize}.
-     *       The C++ MakeVanillaSwap goes through the same code path but
-     *       its VanillaSwap floating leg builds OvernightIndexedCoupons
-     *       transparently — Java needs an OvernightIndex branch in
-     *       MakeVanillaSwap (or OptionletStripper1 needs an OvernightIndex
-     *       fallback).
-     *   <li>{@link CapFloor.ArgumentsImpl#indexes} is referenced by Java
-     *       Phase 2j WI-2.2 alignment but on a SOFR OvernightIndex leg the
-     *       upstream BlackIborCouponPricer cast fails before we get to the
-     *       engine's Bachelier branch.
-     * </ol>
-     * Tracking as Phase 5g.5e carry-forward — production touch deferred per
-     * agent contract (test-only scope).
+     * calendar variant landed in Phase 5g.5d (commit b8dfc6ec). Phase 5g.5f
+     * production fix: {@link org.jquantlib.instruments.MakeVanillaSwap} now
+     * detects {@link org.jquantlib.indexes.OvernightIndex} and substitutes
+     * the floating-leg slot with an {@link org.jquantlib.cashflow.OvernightLeg},
+     * matching the C++ behavior where MakeVanillaSwap → VanillaSwap
+     * transparently builds OvernightIndexedCoupons when handed an
+     * OvernightIndex. Bootstrap path through MakeCapFloor →
+     * OptionletStripper1.performCalculations on a SOFR OvernightIndex now
+     * succeeds, and the Bachelier-engine round-trip identity holds.
      */
-    @Ignore("Phase 5g.5e body fully ported but @Ignore'd: Java MakeVanillaSwap (used by MakeCapFloor inside OptionletStripper1.performCalculations) has no OvernightIndex branch — bootstrap throws 'null accrual period' inside BlackIborCouponPricer.initialize when iborIndex_ is a SOFR OvernightIndex. Production fix needed: add OvernightIndex special-case to MakeVanillaSwap.value() (or OvernightIndex fallback in OptionletStripper1.performCalculations). Carry-forward to next production-touching phase.")
     @Test
     public void testTermVolatilityStripping1ON() {
         // CommonVarsON setup

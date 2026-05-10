@@ -42,9 +42,12 @@ package org.jquantlib.instruments;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.Leg;
+import org.jquantlib.cashflow.OvernightLeg;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
@@ -198,7 +201,60 @@ public class MakeVanillaSwap {
             usedFixedRate = temp.fairRate();
         }
 
-        final VanillaSwap swap = new VanillaSwap (
+        final VanillaSwap swap;
+        if (iborIndex instanceof OvernightIndex) {
+            // Phase 5g.5f: when iborIndex is an OvernightIndex, build the
+            // floating leg via OvernightLeg (overnight-indexed coupons) rather
+            // than the IborLeg path. C++ MakeVanillaSwap unconditionally calls
+            // VanillaSwap with an IborIndex; in C++ the OvernightIndex IS-A
+            // IborIndex hierarchy plus IborLeg's coupon-pricer dispatch
+            // transparently builds OvernightIndexedCoupons. Java's IborLeg
+            // hard-codes the IborCoupon path, so we substitute the floating
+            // leg with an OvernightLeg via a VanillaSwap subclass that
+            // overrides legs[1] in-place. Used by MakeCapFloor →
+            // OptionletStripper1 to bootstrap caps on overnight indexes
+            // (e.g., SOFR).
+            swap = buildOvernightVanillaSwap(usedFixedRate, fixedSchedule, floatSchedule);
+        } else {
+            swap = new VanillaSwap (
+                    type,
+                    nominal,
+                    fixedSchedule,
+                    usedFixedRate,
+                    fixedDayCount,
+                    floatSchedule,
+                    iborIndex,
+                    floatSpread,
+                    floatDayCount,
+                    BusinessDayConvention.Following);
+        }
+        swap.setPricingEngine (engine);
+        return swap;
+    }
+
+    /**
+     * Build a VanillaSwap whose floating leg slot is populated by an
+     * {@link OvernightLeg} (overnight-indexed coupons). Used by the
+     * OvernightIndex branch in {@link #value()}. The IborLeg path inside the
+     * superclass ctor still runs (we feed it the OvernightIndex, which IS-A
+     * IborIndex), then we replace {@code legs.get(1)} with the OvernightLeg.
+     * The resulting swap's {@link VanillaSwap#floatingLeg()} therefore
+     * returns the overnight-indexed leg, which is what {@link MakeCapFloor}
+     * (and downstream {@link org.jquantlib.termstructures.volatilities.optionlet.OptionletStripper1})
+     * consume.
+     */
+    private VanillaSwap buildOvernightVanillaSwap(
+            final double usedFixedRate,
+            final Schedule fixedSchedule,
+            final Schedule floatSchedule) {
+        final OvernightIndex on = (OvernightIndex) iborIndex;
+        final Leg overnightLeg = new OvernightLeg(floatSchedule, on)
+                .withNotionals(nominal)
+                .withPaymentDayCounter(floatDayCount)
+                .withPaymentAdjustment(BusinessDayConvention.Following)
+                .withSpreads(floatSpread)
+                .leg();
+        final VanillaSwap swap = new VanillaSwap(
                 type,
                 nominal,
                 fixedSchedule,
@@ -209,7 +265,12 @@ public class MakeVanillaSwap {
                 floatSpread,
                 floatDayCount,
                 BusinessDayConvention.Following);
-        swap.setPricingEngine (engine);
+        // Replace the IborLeg in slot [1] with the OvernightLeg.
+        // legs is protected; access via reflection-free in-place set.
+        swap.legs.set(1, overnightLeg);
+        for (final org.jquantlib.cashflow.CashFlow item : overnightLeg) {
+            item.addObserver(swap);
+        }
         return swap;
     }
 

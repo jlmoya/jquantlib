@@ -23,6 +23,7 @@ import org.jquantlib.QL;
 import org.jquantlib.cashflow.FloatingRateCoupon;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.instruments.CapFloor;
 import org.jquantlib.instruments.MakeCapFloor;
 import org.jquantlib.math.Constants;
@@ -141,13 +142,23 @@ public class OptionletStripper1 extends OptionletStripper {
         // pull fixing/payment dates from the constructed cap.
         final BlackCapFloorEngine dummy = new BlackCapFloorEngine(
                 iborIndex_.termStructure(), 0.20, dc);
+        // Phase 5g.5f: when iborIndex is an OvernightIndex, the index's
+        // native tenor() is 1*Days; OvernightLeg.leg() needs a payment-period
+        // schedule (e.g., 3M) to build OvernightIndexedCoupons whose internal
+        // sub-schedule is non-degenerate. Use the configured
+        // optionletFrequency_ as the floating-leg tenor in that case.
+        // (For an IborIndex this stays at the default index.tenor().)
+        final boolean indexIsOvernight = iborIndex_ instanceof OvernightIndex;
         for (int i = 0; i < nOptionletTenors_; ++i) {
-            final CapFloor temp = new MakeCapFloor(CapFloor.Type.Cap,
+            final MakeCapFloor mcf = new MakeCapFloor(CapFloor.Type.Cap,
                     capFloorLengths_.get(i), iborIndex_,
                     0.04, // dummy strike
                     new Period(0, TimeUnit.Days))
-                    .withPricingEngine(dummy)
-                    .value();
+                    .withPricingEngine(dummy);
+            if (indexIsOvernight) {
+                mcf.withTenor(optionletFrequency_);
+            }
+            final CapFloor temp = mcf.value();
             final FloatingRateCoupon lFRC = (FloatingRateCoupon)
                     temp.floatingLeg().get(temp.floatingLeg().size() - 1);
             optionletDates_.set(i, lFRC.fixingDate());
@@ -201,11 +212,14 @@ public class OptionletStripper1 extends OptionletStripper {
                 capFloorVols_.set(i, j, termVolSurface_.volatility(
                         capFloorLengths_.get(i), strikes[j], true));
                 volQuote.setValue(capFloorVols_.get(i, j));
-                final CapFloor capFloor = new MakeCapFloor(capFloorType,
+                final MakeCapFloor mcf = new MakeCapFloor(capFloorType,
                         capFloorLengths_.get(i), iborIndex_, strikes[j],
                         new Period(0, TimeUnit.Days))
-                        .withPricingEngine(capFloorEngine)
-                        .value();
+                        .withPricingEngine(capFloorEngine);
+                if (indexIsOvernight) {
+                    mcf.withTenor(optionletFrequency_);
+                }
+                final CapFloor capFloor = mcf.value();
                 final double price = capFloor.NPV();
                 capFloorPrices_.set(i, j, price);
                 optionletPrices_.set(i, j, price - previousCapFloorPrice);
