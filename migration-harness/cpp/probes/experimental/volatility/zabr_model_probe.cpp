@@ -82,6 +82,21 @@ void addFdPriceCase(ReferenceWriter& w, const std::string& name,
               {{"fd_price", results}});
 }
 
+void addFullFdPriceCase(ReferenceWriter& w, const std::string& name,
+                        Real expiry, Real fwd, Real alpha, Real beta,
+                        Real nu, Real rho, Real gamma,
+                        const std::vector<Real>& strikes) {
+    ZabrModel m(expiry, fwd, alpha, beta, nu, rho, gamma);
+    json results = json::array();
+    for (Real k : strikes) {
+        results.push_back(m.fullFdPrice(k));
+    }
+    w.addCase(name,
+              {{"expiry", expiry}, {"forward", fwd}, {"alpha", alpha}, {"beta", beta},
+               {"nu", nu}, {"rho", rho}, {"gamma", gamma}, {"strikes", strikes}},
+              {{"full_fd_price", results}});
+}
+
 } // namespace
 
 int main() {
@@ -122,6 +137,15 @@ int main() {
     std::vector<Real> strikes_fd = {0.015, 0.025, 0.03, 0.035, 0.045};
     addFdPriceCase(writer, "fd_price_gamma1",
                    expiry, fwd, alpha, beta, nu, rho, 1.0, strikes_fd);
+
+    // === fullFdPrice (2-D Glued1dMesher × Concentrating1dMesher) ===
+    // Phase 4f.5c: each call builds a 100x100 mesh with steps=24*5+1=121
+    // and Hundsdorfer scheme. Use a small strike list to bound runtime.
+    std::vector<Real> strikes_full_fd = {0.025, 0.03, 0.035};
+    addFullFdPriceCase(writer, "full_fd_price_gamma1",
+                       expiry, fwd, alpha, beta, nu, rho, 1.0, strikes_full_fd);
+    addFullFdPriceCase(writer, "full_fd_price_gamma075",
+                       expiry, fwd, alpha, beta, nu, rho, 0.75, strikes_full_fd);
 
     // === beta = 1 case (degenerate y formula) ===
     std::vector<Real> strikes_b1 = {0.01, 0.02, 0.03, 0.04, 0.05};

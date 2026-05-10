@@ -24,13 +24,19 @@
 
 package org.jquantlib.experimental.volatility;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 import org.jquantlib.QL;
 import org.jquantlib.experimental.finitedifferences.FdmDupire1dOp;
+import org.jquantlib.experimental.finitedifferences.FdmZabrOp;
+import org.jquantlib.experimental.finitedifferences.Glued1dMesher;
 import org.jquantlib.math.Closeness;
+import org.jquantlib.math.distributions.InverseCumulativeNormal;
+import org.jquantlib.math.interpolations.BicubicSplineInterpolation;
 import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.ode.AdaptiveRungeKutta;
 import org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
@@ -57,8 +63,16 @@ import org.jquantlib.termstructures.volatilities.Sabr;
  *   <li>{@link #localVolatility(double)} fully implemented (zabr.cpp lines 97-114).</li>
  *   <li>{@link #fdPrice(double)} fully implemented via {@link FdmDupire1dOp}
  *       backward solver (zabr.cpp lines 116-198).</li>
- *   <li>{@link #fullFdPrice(double)} still throws — needs {@code FdmZabrOp}
- *       (deferred to Phase 4n.5+).</li>
+ * </ul>
+ *
+ * <p><b>Phase 4f.5c — full FD price ported.</b>
+ * <ul>
+ *   <li>{@link #fullFdPrice(double)} fully implemented via the 2-factor
+ *       {@link FdmZabrOp} backward solver (Hundsdorfer scheme), with two
+ *       {@link Concentrating1dMesher} pieces glued together by
+ *       {@link Glued1dMesher} for the forward grid and a single
+ *       {@link Concentrating1dMesher} for the alpha grid (zabr.cpp lines
+ *       200-310). Solution interpolated via {@link BicubicSplineInterpolation}.</li>
  * </ul>
  */
 public class ZabrModel {
@@ -202,13 +216,122 @@ public class ZabrModel {
     }
 
     /**
-     * Full FD price under the ZABR 2-factor PDE.
-     * <p>Deferred to Phase 4n.5+ — needs {@code FdmZabrOp} (not yet ported).
+     * Full FD price under the ZABR 2-factor PDE — mirrors C++
+     * {@code ZabrModel::fullFdPrice(strike)} (zabr.cpp lines 200-310).
+     * <p>
+     * Builds a 2-D grid: forward direction uses two {@link Concentrating1dMesher}
+     * pieces (concentrating around {@code min(forward,strike)} and
+     * {@code max(forward,strike)}) glued by {@link Glued1dMesher}; alpha
+     * direction uses a single {@link Concentrating1dMesher} concentrating
+     * around the initial alpha. Backward integration uses Hundsdorfer scheme
+     * via {@link FdmZabrOp}. Solution at {@code (forward, alpha)} is read
+     * back through a {@link BicubicSplineInterpolation}.
      */
     public double fullFdPrice(final double strike) {
-        throw new UnsupportedOperationException(
-                "ZabrModel.fullFdPrice deferred to Phase 4n.5+ "
-                        + "(requires FdmZabrOp).");
+        // Grid parameter constants — mirror C++ zabr.cpp lines 203-225.
+        final double eps = 0.01;
+        final double scaleFactor = 1.5;
+        final double normInvEps = new InverseCumulativeNormal().op(1.0 - eps);
+        // alphaI used for forward-grid scaling — see zabr.cpp line 206.
+        final double alphaI = alpha_ * Math.pow(forward_, beta_ - 1.0);
+        // nu_ has already been transformed in the constructor (== nu * alpha^(1-gamma)).
+        final double sqrtT = Math.sqrt(expiryTime_);
+        double v0 = alpha_ * Math.exp(-scaleFactor * normInvEps * sqrtT * nu_);
+        double v1 = alpha_ * Math.exp( scaleFactor * normInvEps * sqrtT * nu_);
+        double f0 = forward_ * Math.exp(-scaleFactor * normInvEps * sqrtT * alphaI);
+        double f1 = forward_ * Math.exp( scaleFactor * normInvEps * sqrtT * alphaI);
+        v1 = Math.min(v1, 2.0);
+        f0 = Math.min(strike / 2.0, f0);
+        f1 = Math.max(strike * 1.5,
+                Math.min(f1, Math.max(2.0, strike * 1.5)));
+
+        final int sizef = 100;
+        final int sizev = 100;
+        final int steps = (int) (24 * expiryTime_ + 1);
+        final int dampingSteps = 5;
+        final double densityf = 0.1;
+        final double densityv = 0.1;
+
+        QL.require(strike >= f0 && strike <= f1,
+                "strike (" + strike + ") must be inside pde grid ["
+                        + f0 + ";" + f1 + "]");
+
+        // Forward mesher — two concentrating pieces glued at midpoint
+        // x0 = min(forward, strike), x1 = max(forward, strike).
+        // Mirror zabr.cpp lines 240-252.
+        final double x0 = Math.min(forward_, strike);
+        final double x1 = Math.max(forward_, strike);
+        final int sizefa = Math.max(4,
+                (int) Math.ceil(((x0 + x1) / 2.0 - f0) / (f1 - f0) * (double) sizef));
+        // common point so we can spend one more on the right half (matches C++)
+        final int sizefb = sizef - sizefa + 1;
+
+        final Fdm1dMesher mfa = new Concentrating1dMesher(
+                f0, (x0 + x1) / 2.0, sizefa, x0, densityf, true);
+        final Fdm1dMesher mfb = new Concentrating1dMesher(
+                (x0 + x1) / 2.0, f1, sizefb, x1, densityf, true);
+        final Fdm1dMesher mf = new Glued1dMesher(mfa, mfb);
+
+        // Alpha (volatility) mesher concentrating around alpha_.
+        final Fdm1dMesher mv = new Concentrating1dMesher(
+                v0, v1, sizev, alpha_, densityv, true);
+
+        final FdmMesherComposite mesher = new FdmMesherComposite(
+                Arrays.<Fdm1dMesher>asList(mf, mv));
+        final FdmLinearOpLayout layout = mesher.layout();
+        final int n = layout.size();
+
+        // Initial values (call payoff): max(f - strike, 0). Also collect
+        // unique f and v locations (the mesh is a tensor product, so f-locs
+        // come from rows where coord[1]==0 and v-locs from coord[0]==0).
+        final Array rhs = new Array(n);
+        final double[] f_ = new double[mf.size()];
+        final double[] v_ = new double[mv.size()];
+        for (final FdmLinearOpIterator iter : layout) {
+            final double f = mesher.location(iter, 0);
+            rhs.set(iter.index(), Math.max(f - strike, 0.0));
+            if (iter.coordinates()[1] == 0) {
+                f_[iter.coordinates()[0]] = mesher.location(iter, 0);
+            }
+            if (iter.coordinates()[0] == 0) {
+                v_[iter.coordinates()[1]] = mesher.location(iter, 1);
+            }
+        }
+
+        // Boundary conditions — empty (matches C++).
+        final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet();
+
+        // Backward solver — Hundsdorfer scheme (matches C++).
+        final FdmZabrOp op = new FdmZabrOp(mesher, beta_, nu_, rho_, gamma_);
+        final FdmBackwardSolver solver = new FdmBackwardSolver(
+                op, boundaries, null, FdmSchemeDesc.Hundsdorfer());
+        solver.rollback(rhs, expiryTime_, 0.0, steps, dampingSteps);
+
+        // Reshape rhs into a Matrix(f_size, v_size) for bicubic interpolation.
+        // C++ stores: result(j,i) = rhs[j*sizef+i] for i in f, j in v
+        // i.e. row j is the i-th f-value at the j-th v-value.
+        // BicubicSplineInterpolation expects vx (length M), vy (length N), Matrix(N,M)
+        // with mz(j,i) = z(vx[i], vy[j]). So columns indexed by x (=f), rows by y (=v).
+        final int sizeF = f_.length;
+        final int sizeV = v_.length;
+        final Matrix mz = new Matrix(sizeV, sizeF);
+        for (int j = 0; j < sizeV; ++j) {
+            for (int i = 0; i < sizeF; ++i) {
+                // rhs flat index: layout uses spacing [1, sizeF],
+                // so flat = i*1 + j*sizeF.
+                mz.set(j, i, rhs.get(j * sizeF + i));
+            }
+        }
+        final BicubicSplineInterpolation interp = new BicubicSplineInterpolation(
+                new Array(f_), new Array(v_), mz);
+        // C++: interpolation->disableExtrapolation(); — read at (forward_, alpha_).
+        QL.require(forward_ >= f_[0] && forward_ <= f_[sizeF - 1],
+                "forward " + forward_ + " outside f-grid ["
+                        + f_[0] + "," + f_[sizeF - 1] + "]");
+        QL.require(alpha_ >= v_[0] && alpha_ <= v_[sizeV - 1],
+                "alpha " + alpha_ + " outside v-grid ["
+                        + v_[0] + "," + v_[sizeV - 1] + "]");
+        return interp.op(forward_, alpha_);
     }
 
     // ------------------------------------------------------------------
