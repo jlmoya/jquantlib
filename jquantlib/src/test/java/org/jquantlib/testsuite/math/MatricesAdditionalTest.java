@@ -25,8 +25,10 @@ package org.jquantlib.testsuite.math;
 import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Identity;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.matrixutilities.SparseMatrix;
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -288,10 +290,64 @@ public class MatricesAdditionalTest {
         if (m2.get(1, 2) != 6.0) fail("m2(1,2)");
     }
 
-    @Ignore("Phase 5b.5: SparseMatrix not ported")
+    /** Java port of the C++ {@code testSparseMatrixMemory} from
+     * test-suite/matrices.cpp:725.  Phase 5b.5 ported the {@link SparseMatrix}
+     * (CSR storage, boost-compatible accessors).  Verifies entry counts and
+     * row-major iteration order, plus a {@code prod} sanity check.
+     */
     @Test
     public void testSparseMatrixMemory() {
-        // C++ test-suite/matrices.cpp:725 — SparseMatrix memory footprint and CSR ops.
+        final SparseMatrix m = new SparseMatrix(8, 4);
+        // C++ filled1() == 1 for an empty CSR (only the rowPtr origin); Java
+        // exposes filled1() == rows + 1 (matching the boost convention for a
+        // populated row-pointer array).  We check the structural invariant
+        // that's portable: empty matrix has zero entries.
+        if (m.size1() != 8) fail("size1");
+        if (m.size2() != 4) fail("size2");
+        if (m.nrElements() != 0) fail("initially zero entries");
+
+        m.set(3, 1, 42);
+        if (m.nrElements() != 1) fail("one entry after first set");
+        // The entry should live at colIdx[0]=1 with values[0]=42 (row 3 only)
+        if (m.index2Data()[0] != 1) fail("colIdx[0] should be 1");
+        if (m.valueData()[0] != 42.0) fail("values[0] should be 42");
+
+        m.set(1, 2, 6);
+        if (m.nrElements() != 2) fail("two entries after second set");
+        // Row-major: row 1 entry comes before row 3 entry.
+        if (m.index2Data()[0] != 2) fail("after row-major reorg, colIdx[0] should be 2");
+        if (m.valueData()[0] != 6.0) fail("values[0] should be 6");
+
+        final Array x = new Array(new double[] {1, 2, 3, 4});
+        final Array y = m.mul(x);
+        // Expected: row 0=0, row 1=6*3=18, row 2=0, row 3=42*2=84,
+        //          rows 4..7=0.
+        if (y.size() != 8) fail("y size");
+        if (y.get(0) != 0.0) fail("y[0]");
+        if (y.get(1) != 18.0) fail("y[1]=" + y.get(1) + " expected 18");
+        if (y.get(2) != 0.0) fail("y[2]");
+        if (y.get(3) != 84.0) fail("y[3]=" + y.get(3) + " expected 84");
+        for (int i = 4; i < 8; i++) if (y.get(i) != 0.0) fail("y[" + i + "]");
+
+        m.set(3, 2, 43);
+        if (m.nrElements() != 3) fail("three entries");
+        // Insertion within row 3: now row 3 has (3,1)=42 and (3,2)=43.
+        // Last entry (index 2) is at row 3, col 2.
+        if (m.index2Data()[2] != 2) fail("colIdx[2] should be 2");
+        if (m.valueData()[2] != 43.0) fail("values[2] should be 43");
+
+        m.set(7, 3, 44);
+        if (m.nrElements() != 4) fail("four entries");
+        // Row 7 entry comes last in row-major order.
+        if (m.index2Data()[3] != 3) fail("colIdx[3] should be 3");
+        if (m.valueData()[3] != 44.0) fail("values[3] should be 44");
+
+        // Total entries iterated row-by-row (mirrors C++ end-of-test count).
+        int entries = 0;
+        for (int i = 0; i < m.size1(); i++) {
+            entries += m.index1Data()[i + 1] - m.index1Data()[i];
+        }
+        if (entries != 4) fail("total entries should be 4");
     }
 
     @Ignore("Phase 5b.5: principal matrix sqrt not exposed")

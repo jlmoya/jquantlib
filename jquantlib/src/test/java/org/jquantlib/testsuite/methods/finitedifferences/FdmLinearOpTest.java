@@ -13,6 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.matrixutilities.BiCGStab;
+import org.jquantlib.math.matrixutilities.GMRES;
+import org.jquantlib.math.matrixutilities.SparseILUPreconditioner;
+import org.jquantlib.math.matrixutilities.SparseMatrix;
+import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
@@ -470,24 +475,120 @@ public class FdmLinearOpTest {
         fail("not implemented");
     }
 
-    /** {@code testBiCGstab} — requires BiCGstab iterative solver (NOT ported).
-     * Java has GMRES (used in some operators) but BiCGstab is a separate
-     * Phase 5j.5 carry-forward.
+    /** {@code testBiCGstab} — BiCGStab + ILU on a small SparseMatrix system.
+     * Phase 5b.5 ports SparseMatrix + SparseILUPreconditioner; BiCGStab and
+     * GMRES were already ported in Phase 2l.  Mirrors C++ fdmlinearop.cpp:1199.
      */
-    @Ignore("Phase 5j.5 — requires BiCGstab (sparse iterative solver, not yet ported)")
     @Test
     public void testBiCGstab() {
-        fail("not implemented");
+        final int n = 41, m = 21;
+        final double theta = 1.0;
+        final SparseMatrix a = createTestMatrix(n, m, theta);
+
+        final SparseILUPreconditioner ilu = new SparseILUPreconditioner(a, 4);
+
+        final Array b = new Array(n * m);
+        final MersenneTwisterUniformRng rng = new MersenneTwisterUniformRng(1234);
+        for (int i = 0; i < n * m; ++i) {
+            b.set(i, rng.next().value());
+        }
+
+        final double tol = 1.0e-10;
+
+        final BiCGStab biCGstab = new BiCGStab(x -> a.mul(x), n * m, tol,
+                                                x -> ilu.apply(x));
+        final Array x = biCGstab.solve(b).x;
+
+        final Array residual = b.sub(a.mul(x));
+        final double error = Math.sqrt(residual.dotProduct(residual)
+                                       / b.dotProduct(b));
+
+        if (error > tol) {
+            fail("Error calculating the inverse using BiCGstab"
+                    + "\n tolerance:  " + tol
+                    + "\n error:      " + error);
+        }
     }
 
-    /** {@code testGMRES} — Java has {@code GMRES} in matrixutilities but the
-     * test exercises sparse-matrix construction which is not yet wired up.
-     * Defer until matrix sparse infra is fleshed out.
+    /** {@code testGMRES} — GMRES + ILU on a small SparseMatrix system.
+     * Mirrors C++ fdmlinearop.cpp:1236.
      */
-    @Ignore("Phase 5j.5 — requires SparseMatrix infra to feed GMRES test path")
     @Test
     public void testGMRES() {
-        fail("not implemented");
+        final int n = 41, m = 21;
+        final double theta = 1.0;
+        final SparseMatrix a = createTestMatrix(n, m, theta);
+
+        final SparseILUPreconditioner ilu = new SparseILUPreconditioner(a, 4);
+
+        final Array b = new Array(n * m);
+        final MersenneTwisterUniformRng rng = new MersenneTwisterUniformRng(1234);
+        for (int i = 0; i < n * m; ++i) {
+            b.set(i, rng.next().value());
+        }
+
+        final double tol = 1.0e-10;
+
+        final GMRES gmres = new GMRES(x -> a.mul(x), n * m, tol, x -> ilu.apply(x));
+        final GMRES.Result result = gmres.solve(b, b);
+        final Array x = result.x;
+        final double errorCalculated = result.errors.get(result.errors.size() - 1);
+
+        final Array residual = b.sub(a.mul(x));
+        final double error = Math.sqrt(residual.dotProduct(residual)
+                                       / b.dotProduct(b));
+
+        if (error > tol) {
+            fail("Error calculating the inverse using GMRES"
+                    + "\n tolerance:  " + tol
+                    + "\n error:      " + error);
+        }
+
+        if (Math.abs(error - errorCalculated) > 10 * Math.ulp(1.0)) {
+            fail("Calculation if the error in GMRES went wrong"
+                    + "\n calculated: " + errorCalculated
+                    + "\n error:      " + error);
+        }
+
+        final GMRES gmresRestart = new GMRES(x2 -> a.mul(x2), 5, tol,
+                                              x2 -> ilu.apply(x2));
+        final GMRES.Result resultRestart = gmresRestart.solveWithRestart(5, b, b);
+        final double errorWithRestart = resultRestart.errors.get(resultRestart.errors.size() - 1);
+
+        if (errorWithRestart > tol) {
+            fail("Error calculating the inverse using GMRES with restarts"
+                    + "\n tolerance:  " + tol
+                    + "\n error:      " + errorWithRestart);
+        }
+    }
+
+    /** Build the 861x861 (n*m × n*m) test sparse matrix used by
+     * testBiCGstab/testGMRES.  Verbatim port of {@code createTestMatrix}
+     * in C++ fdmlinearop.cpp:228.
+     */
+    private static SparseMatrix createTestMatrix(final int n, final int m,
+                                                 final double theta) {
+        final SparseMatrix a = new SparseMatrix(n * m, n * m);
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                final int k = i * m + j;
+                a.set(k, k, 1.0);
+
+                if (i > 0 && j > 0 && i < n - 1 && j < m - 1) {
+                    final int im1 = i - 1;
+                    final int ip1 = i + 1;
+                    final int jm1 = j - 1;
+                    final int jp1 = j + 1;
+                    final double delta = theta / ((double)((ip1 - im1) * (jp1 - jm1)));
+
+                    a.set(k, im1 * m + jm1,  delta);
+                    a.set(k, im1 * m + jp1, -delta);
+                    a.set(k, ip1 * m + jm1, -delta);
+                    a.set(k, ip1 * m + jp1,  delta);
+                }
+            }
+        }
+        return a;
     }
 
     /** {@code testCrankNicolsonWithDamping} — requires
@@ -501,19 +602,81 @@ public class FdmLinearOpTest {
         fail("not implemented");
     }
 
-    /** Sparse matrix tests — Java does not yet have a {@code SparseMatrix}
-     * class compatible with C++'s Boost-uBLAS form.  Phase 5b carry-forward.
+    /** Sparse matrix tests — Phase 5b.5 ports SparseMatrix (CSR form,
+     * boost-compat semantics).  C++ test in fdmlinearop.cpp:1380.
+     *
+     * <p>Builds {@code nMatrices} sparse matrices, fills them with random
+     * additions, and verifies that summing them via {@code add} matches the
+     * cumulative single-target accumulation.  This corresponds exactly to
+     * the C++ {@code SparseMatrixReference} aliasing pattern (Java doesn't
+     * need explicit references because all object access is by reference).
      */
-    @Ignore("Phase 5j.5 — requires SparseMatrix (Phase 5b prereq)")
     @Test
     public void testSpareMatrixReference() {
-        fail("not implemented");
+        final int rows      = 10;
+        final int columns   = 10;
+        final int nMatrices = 5;
+        final int nElements = 50;
+
+        final MersenneTwisterUniformRng rng = new MersenneTwisterUniformRng(1234);
+
+        final SparseMatrix expected = new SparseMatrix(rows, columns);
+        final List<SparseMatrix> v = new ArrayList<SparseMatrix>(nMatrices);
+        for (int i = 0; i < nMatrices; ++i) v.add(new SparseMatrix(rows, columns));
+
+        for (final SparseMatrix m : v) {
+            for (int j = 0; j < nElements; ++j) {
+                final int row    = (int) (rng.next().value() * rows);
+                final int column = (int) (rng.next().value() * columns);
+                final double value = rng.next().value();
+                m.addAt(row, column, value);
+                expected.addAt(row, column, value);
+            }
+        }
+
+        // Java equivalent of std::accumulate(refs.begin()+1, refs.end(),
+        // SparseMatrix(refs.front())): start from copy of v[0], add v[1..end].
+        SparseMatrix calculated = new SparseMatrix(v.get(0));
+        for (int i = 1; i < nMatrices; ++i) {
+            calculated = calculated.add(v.get(i));
+        }
+
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < columns; ++j) {
+                if (Math.abs(calculated.get(i, j) - expected.get(i, j))
+                        > 100 * Math.ulp(1.0)) {
+                    fail("Error using sparse matrix references in"
+                            + " Element (" + i + ", " + j + ")"
+                            + "\n expected  : " + expected.get(i, j)
+                            + "\n calculated: " + calculated.get(i, j));
+                }
+            }
+        }
     }
 
-    @Ignore("Phase 5j.5 — requires SparseMatrix (Phase 5b prereq)")
+    /** {@code testSparseMatrixZeroAssignment} — verifies boost
+     * compressed_matrix semantics that zero-valued assignments still
+     * allocate entries.  C++ test in fdmlinearop.cpp:1423.
+     */
     @Test
     public void testSparseMatrixZeroAssignment() {
-        fail("not implemented");
+        final SparseMatrix m = new SparseMatrix(5, 5);
+        if (m.nrElements() != 0) {
+            fail("non zero return for an emtpy matrix");
+        }
+        m.set(0, 0, 0.0);
+        m.set(1, 2, 0.0);
+        if (m.nrElements() != 2) {
+            fail("two elements expected");
+        }
+        m.set(1, 3, 1.0);
+        if (m.nrElements() != 3) {
+            fail("three elements expected");
+        }
+        m.set(1, 3, 0.0);
+        if (m.nrElements() != 3) {
+            fail("three elements expected");
+        }
     }
 
     /** {@code testFdmMesherIntegral} — requires
