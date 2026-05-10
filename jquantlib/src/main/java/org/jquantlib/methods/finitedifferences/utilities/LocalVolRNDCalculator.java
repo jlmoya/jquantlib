@@ -145,6 +145,68 @@ public class LocalVolRNDCalculator extends RiskNeutralDensityCalculator {
         this.calculated = false;
     }
 
+    /**
+     * TimeGrid-input constructor — mirrors C++ v1.42.1 overload taking an
+     * external {@link TimeGrid}. Required by the Heston SLV FDM calibration
+     * loop (Phase 5h.5-SLV-b), which uses an exponential-decay step schedule
+     * synchronised with the FDM iteration time grid.
+     *
+     * <p>Note: storage arrays are sized to {@code timeGrid.size()-1} (the
+     * number of steps), matching the convention of the time-size-derived
+     * constructor where {@code xm.size() == tGrid} and the time grid has
+     * {@code tGrid+1} sample points.
+     */
+    public LocalVolRNDCalculator(final Quote spot,
+                                 final YieldTermStructure rTS,
+                                 final YieldTermStructure qTS,
+                                 final LocalVolTermStructure localVol,
+                                 final TimeGrid timeGrid,
+                                 final int xGrid,
+                                 final double x0Density,
+                                 final double localVolProbEps,
+                                 final int maxIter) {
+        this(spot, rTS, qTS, localVol, timeGrid, xGrid,
+                x0Density, localVolProbEps, maxIter, NULL_TIME);
+    }
+
+    /** Full TimeGrid-input constructor with a custom Gaussian step. */
+    public LocalVolRNDCalculator(final Quote spot,
+                                 final YieldTermStructure rTS,
+                                 final YieldTermStructure qTS,
+                                 final LocalVolTermStructure localVol,
+                                 final TimeGrid timeGrid,
+                                 final int xGrid,
+                                 final double x0Density,
+                                 final double localVolProbEps,
+                                 final int maxIter,
+                                 final double gaussianStepSize) {
+        this.xGrid = xGrid;
+        // Storage size = number of time steps (= timeGrid.size() - 1) to mirror
+        // the size-derived constructor's convention where pm/xm/pFct are indexed 0..tGrid-1
+        // and timeGrid has tGrid+1 points (0 inclusive).
+        this.tGrid = Math.max(1, timeGrid.size() - 1);
+        this.x0Density = x0Density;
+        this.localVolProbEps = localVolProbEps;
+        this.maxIter = maxIter;
+        this.gaussianStepSize = gaussianStepSize;
+        this.spot = spot;
+        this.localVol = localVol;
+        this.rTS = rTS;
+        this.qTS = qTS;
+        this.timeGrid = timeGrid;
+        this.xm = new ArrayList<Fdm1dMesher>(tGrid);
+        for (int i = 0; i < tGrid; ++i) {
+            this.xm.add(null);
+        }
+        this.pm = new Matrix(tGrid, xGrid);
+        this.rescaleTimeSteps = new ArrayList<Integer>();
+        this.pFct = new ArrayList<NaturalCubicInterpolation>(tGrid);
+        for (int i = 0; i < tGrid; ++i) {
+            this.pFct.add(null);
+        }
+        this.calculated = false;
+    }
+
     /** Convenience constructor matching the C++ default arguments. */
     public LocalVolRNDCalculator(final Quote spot,
                                  final YieldTermStructure rTS,
