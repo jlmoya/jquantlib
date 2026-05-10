@@ -58,6 +58,7 @@ import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
 
 /**
  * Cash flow vector builder
@@ -99,6 +100,36 @@ public class FloatingLeg< InterestRateIndexType extends InterestRateIndex,
             final Array floors,
             final boolean isInArrears,
             final boolean isZero) {
+        this(typeIRT, typeFCT, typeCFC, nominals, schedule, index,
+                paymentDayCounter, paymentAdj,
+                fixingDays, gearings, spreads, caps, floors,
+                isInArrears, isZero,
+                /* paymentCalendar */ null, /* paymentLag */ 0);
+	}
+
+    /** Phase 5d.5-Bonds-b — extended ctor accepting payment calendar and
+     *  payment lag (mirrors C++ IborLeg::operator Leg() at
+     *  ql/cashflows/iborcoupon.cpp). When {@code paymentCalendar} is
+     *  {@code null}, falls back to {@code schedule.calendar()} so existing
+     *  call sites are unchanged. */
+	public FloatingLeg(
+	        final Class<?> typeIRT,
+	        final Class<?> typeFCT,
+	        final Class<?> typeCFC,
+            final Array nominals,
+            final Schedule schedule,
+            final InterestRateIndexType index,
+            final DayCounter paymentDayCounter,
+            final BusinessDayConvention paymentAdj,
+            final Array fixingDays,
+            final Array gearings,
+            final Array spreads,
+            final Array caps,
+            final Array floors,
+            final boolean isInArrears,
+            final boolean isZero,
+            final Calendar paymentCalendar,
+            final int paymentLag) {
         super(schedule.size() - 1);
         this.typeIRT = typeIRT;
         this.typeFCT = typeFCT;
@@ -109,7 +140,8 @@ public class FloatingLeg< InterestRateIndexType extends InterestRateIndex,
                 index,
                 paymentDayCounter, paymentAdj,
                 fixingDays, gearings, spreads, caps, floors,
-                isInArrears, isZero);
+                isInArrears, isZero,
+                paymentCalendar, paymentLag);
 	}
 
 	private void constructor(
@@ -124,7 +156,9 @@ public class FloatingLeg< InterestRateIndexType extends InterestRateIndex,
             final Array caps,
             final Array floors,
             final boolean isInArrears,
-            final boolean isZero) {
+            final boolean isZero,
+            final Calendar paymentCalendar,
+            final int paymentLag) {
         final int n = schedule.size()-1;
         QL.require(nominals != null && nominals.size() <= n,
                    "too many nominals (" + nominals.size() +
@@ -146,15 +180,21 @@ public class FloatingLeg< InterestRateIndexType extends InterestRateIndex,
 
         // the following is not always correct
         final Calendar calendar = schedule.calendar();
+        // Phase 5d.5-Bonds-b — payment-date calendar may be overridden by
+        // IborLeg.withPaymentCalendar; defaults to schedule.calendar().
+        // paymentLag advances the period-end by N business days before
+        // the BusinessDayConvention is applied. Mirrors C++
+        // IborLeg::operator Leg() in ql/cashflows/iborcoupon.cpp.
+        final Calendar payCal = (paymentCalendar == null) ? calendar : paymentCalendar;
 
         Date refStart, start, refEnd, end;
-        final Date lastPaymentDate = calendar.adjust(schedule.date(n), paymentAdj);
+        final Date lastPaymentDate = payCal.advance(schedule.date(n), paymentLag, TimeUnit.Days, paymentAdj, false);
 
         for (int i=0; i<n; ++i) {
             refStart = start = schedule.date(i);
             refEnd   =   end = schedule.date(i+1);
             final Date paymentDate =
-                isZero ? lastPaymentDate : calendar.adjust(end, paymentAdj);
+                isZero ? lastPaymentDate : payCal.advance(end, paymentLag, TimeUnit.Days, paymentAdj, false);
             if (i==0   && !schedule.isRegular(i+1)) {
                 final BusinessDayConvention bdc = schedule.businessDayConvention();
                 refStart = calendar.adjust(end.sub(schedule.tenor()), bdc);

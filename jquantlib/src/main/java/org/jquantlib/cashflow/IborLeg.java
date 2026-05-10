@@ -48,6 +48,8 @@ import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 
 /**
@@ -68,6 +70,18 @@ public class IborLeg {
     private Array spreads_;
     private Array caps_, floors_;
     private boolean inArrears_, zeroPayments_;
+    /** Phase 5d.5-Bonds-b — payment-date calendar (null = use schedule's). */
+    private Calendar paymentCalendar_;
+    /** Phase 5d.5-Bonds-b — business-day payment lag (default 0). */
+    private int paymentLag_;
+    /** Phase 5d.5-Bonds-b — ex-coupon period (default empty). */
+    private Period exCouponPeriod_;
+    /** Phase 5d.5-Bonds-b — ex-coupon calendar (default empty). */
+    private Calendar exCouponCalendar_;
+    /** Phase 5d.5-Bonds-b — ex-coupon adjustment (default Unadjusted, per C++). */
+    private BusinessDayConvention exCouponAdjustment_;
+    /** Phase 5d.5-Bonds-b — ex-coupon end-of-month flag (default false). */
+    private boolean exCouponEndOfMonth_;
 
     public IborLeg(final Schedule schedule, final IborIndex index) {
         schedule_ = (schedule);
@@ -92,6 +106,14 @@ public class IborLeg {
         floors_ = new Array(0);
         inArrears_ = false;
         zeroPayments_ = false;
+
+        // Phase 5d.5-Bonds-b — payment / ex-coupon defaults match C++.
+        paymentCalendar_ = null;
+        paymentLag_ = 0;
+        exCouponPeriod_ = new Period();
+        exCouponCalendar_ = new Calendar();
+        exCouponAdjustment_ = BusinessDayConvention.Unadjusted;
+        exCouponEndOfMonth_ = false;
     }
 
     public final IborLeg withNotionals(/* @Real */final double notional) {
@@ -169,18 +191,80 @@ public class IborLeg {
         return this;
     }
 
+    /** Phase 5d.5-Bonds-b — convenience overload mirroring C++
+     *  default {@code IborLeg::inArrears(bool flag = true)}
+     *  (ql/cashflows/iborcoupon.hpp:155). */
+    public IborLeg inArrears() {
+        return inArrears(true);
+    }
+
     public IborLeg withZeroPayments(final boolean flag) {
         zeroPayments_ = flag;
         return this;
     }
 
+    /** Phase 5d.5-Bonds-b — overload mirroring C++ default flag=true
+     *  ({@code IborLeg::withZeroPayments(bool flag = true)}). */
+    public IborLeg withZeroPayments() {
+        return withZeroPayments(true);
+    }
+
+    /** Phase 5d.5-Bonds-b — mirror of C++
+     *  {@code IborLeg::withPaymentLag(Integer lag)}
+     *  (ql/cashflows/iborcoupon.cpp).  Number of business days to advance
+     *  from the period-end before applying the payment adjustment. */
+    public IborLeg withPaymentLag(final int lag) {
+        paymentLag_ = lag;
+        return this;
+    }
+
+    /** Phase 5d.5-Bonds-b — mirror of C++
+     *  {@code IborLeg::withPaymentCalendar(const Calendar&)}.  Overrides
+     *  the calendar used for payment-date advancement; defaults to
+     *  schedule.calendar(). */
+    public IborLeg withPaymentCalendar(final Calendar cal) {
+        paymentCalendar_ = cal;
+        return this;
+    }
+
+    /** Phase 5d.5-Bonds-b — mirror of C++
+     *  {@code IborLeg::withExCouponPeriod(Period, Calendar,
+     *  BusinessDayConvention, bool endOfMonth = false)}. Records ex-coupon
+     *  parameters for downstream coupon construction.
+     *
+     *  <p>NOTE: the Java {@link FloatingRateCoupon} hierarchy does not yet
+     *  carry an exCouponDate field (mirrors the gap noted on
+     *  {@code FixedRateCoupon}/{@code CPICoupon}). The values are recorded
+     *  on the builder and a TODO carry-forward is tracked for Phase
+     *  5d.5-Bonds-c (FloatingRateCoupon ex-coupon parameter +
+     *  Coupon.exCouponDate accessor). */
+    public IborLeg withExCouponPeriod(final Period period,
+                                      final Calendar cal,
+                                      final BusinessDayConvention convention,
+                                      final boolean endOfMonth) {
+        exCouponPeriod_ = period;
+        exCouponCalendar_ = cal;
+        exCouponAdjustment_ = convention;
+        exCouponEndOfMonth_ = endOfMonth;
+        return this;
+    }
+
+    public IborLeg withExCouponPeriod(final Period period,
+                                      final Calendar cal,
+                                      final BusinessDayConvention convention) {
+        return withExCouponPeriod(period, cal, convention, false);
+    }
+
     public Leg Leg() /* @ReadOnly */{
 
+        // Phase 5d.5-Bonds-b — thread paymentCalendar_/paymentLag_ through
+        // to FloatingLeg's extended ctor.
         final Leg cashflows = new FloatingLeg(
         		IborIndex.class, IborCoupon.class, CappedFlooredIborCoupon.class,
                 notionals_, schedule_, index_,
                 paymentDayCounter_, paymentAdjustment_, fixingDays_,
-                gearings_, spreads_, caps_, floors_, inArrears_, zeroPayments_);
+                gearings_, spreads_, caps_, floors_, inArrears_, zeroPayments_,
+                paymentCalendar_, paymentLag_);
 
         if (caps_.empty() && floors_.empty() && !inArrears_) {
             PricerSetter.setCouponPricer(cashflows, new BlackIborCouponPricer(new Handle <OptionletVolatilityStructure>()));
