@@ -8,6 +8,21 @@ package org.jquantlib.testsuite.cashflows;
 
 import static org.junit.Assert.fail;
 
+import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.cashflow.OvernightIndexedCoupon;
+import org.jquantlib.cashflow.RateAveraging;
+import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.indexes.OvernightIndex;
+import org.jquantlib.indexes.ibor.Sofr;
+import org.jquantlib.math.Constants;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.RelinkableHandle;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.testsuite.util.Utilities;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -15,46 +30,23 @@ import org.junit.Test;
  * Phase 5d skeleton port of {@code test-suite/overnightindexedcoupon.cpp}
  * v1.42.1 (1,130 LOC, 35 cases).
  *
- * <p>Exercises the {@code OvernightIndexedCoupon} family — coupons whose
- * payoff is the compounded (geometric, classic-OIS) or arithmetic-averaged
- * value of an overnight index (SOFR/EONIA/SONIA/etc.) over the accrual
- * period. Covers all the post-Libor reform variants:
- * <ul>
- *   <li><strong>Past / current / future coupon rates</strong> — coupon
- *       rate computation when the period is fully realized, partially
- *       realized, or fully forecast;
- *   <li><strong>Lookback / observation-shift / lockout</strong> —
- *       conventions for SOFR-style overnight rates that are observed
- *       earlier than payment to allow operational lag;
- *   <li><strong>Black caplet/floorlet pricers</strong> — Black ON-coupon
- *       and Black averaging-ON pricers for capped/floored overnight
- *       coupons (with vol consistency checks);
- *   <li><strong>OvernightLeg builder</strong> — gearings/spreads,
- *       lookback, lockout, observation-shift, simple averaging,
- *       caps/floors, NPV, error-condition coverage;
- *   <li><strong>Telescopic value-dates</strong> — error when telescopic
- *       value-dates conflict with lookback;
- *   <li><strong>Payment-before-accrual-end</strong> — corner case of OIS
- *       payment scheduled before the accrual period ends.
- * </ul>
+ * <p>Phase Body-Fill (2026-05-09) — 1 case body-filled
+ * (testFutureCouponRate, the simplest single-coupon all-future case).
  *
- * <p><strong>All 35 cases deferred to Phase 5d.5</strong> — Java has no
- * {@code OvernightIndexedCoupon} family:
+ * <p>Remaining 34 cases stay deferred to Phase 5d.5 — they need either:
  * <ul>
- *   <li>No {@code OvernightIndex} hierarchy
- *       (Java has only IBOR-style indices in {@code org.jquantlib.indexes});
- *   <li>No {@code OvernightIndexedCoupon} class;
- *   <li>No averaging mode enum (compounded vs simple);
- *   <li>No lookback / observation-shift / lockout machinery;
- *   <li>No {@code OvernightLeg} builder;
- *   <li>No Black ON pricer / Black averaging-ON pricer for capped/floored
- *       overnight coupons.
+ *   <li>past-fixings setup (the C++ {@code CommonVars} fixture seeds 56
+ *       SOFR fixings spanning 2019-06-21..2021-11-22 for past/spanning-today
+ *       coupons);</li>
+ *   <li>lookback / observation-shift / lockout machinery (Java
+ *       OvernightIndexedCoupon ctor currently rejects non-default lookback /
+ *       lockout / observationShift via QL.require — Phase 5d.5 MVP);</li>
+ *   <li>OvernightLeg builder coverage (Phase 5d.5);</li>
+ *   <li>Black ON / Black averaging-ON pricer integration with
+ *       CappedFlooredOvernightIndexedCoupon (Phase 5d.5);</li>
+ *   <li>telescopicValueDates handling and
+ *       payment-before-accrual-end corner case.</li>
  * </ul>
- *
- * <p>Phase 5d.5 carry-forward: the overnight-index family is a major
- * production-code subsystem (overnight indices + SOFR/EONIA/SONIA index
- * classes + coupon + leg + Black pricer hierarchy + telescopic-dates
- * helpers). It is the most material gap in the bond-instrument test suite.
  *
  * <p>Source: {@code test-suite/overnightindexedcoupon.cpp} v1.42.1 @
  * {@code 099987f0ca}.
@@ -63,45 +55,120 @@ public class OvernightIndexedCouponTest {
 
     private static final String REASON_PAST =
             "Phase 5d.5: OvernightIndex + OvernightIndexedCoupon now ported (commits fa38ff70, 41f7102a); "
-          + "test bodies are `fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
+          + "needs full port from C++ overnightindexedcoupon.cpp + 56-row CommonVars past-fixings table.";
 
     private static final String REASON_CURRENT =
             "Phase 5d.5: OvernightIndex + OvernightIndexedCoupon now ported (commits fa38ff70, 41f7102a); "
-          + "test bodies are `fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
-
-    private static final String REASON_FUTURE =
-            "Phase 5d.5: OvernightIndex + OvernightIndexedCoupon now ported (commits fa38ff70, 41f7102a); "
-          + "test bodies are `fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
+          + "needs full port from C++ overnightindexedcoupon.cpp + 56-row CommonVars past-fixings table "
+          + "(coupon spans today, requires both historical and forecast fixings).";
 
     private static final String REASON_ACCRUED =
             "Phase 5d.5: OvernightIndex + OvernightIndexedCoupon now ported (commits fa38ff70, 41f7102a); "
-          + "test bodies are `fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
+          + "needs full port from C++ overnightindexedcoupon.cpp + accrued-amount cached references.";
 
     private static final String REASON_LOOKBACK =
-            "Phase 5d.5: OvernightIndexedCoupon ported; lookback / observation-shift / lockout "
-          + "machinery still TODO. Test bodies need full port from C++ overnightindexedcoupon.cpp.";
+            "Phase 5d.5: OvernightIndexedCoupon ported but lookback / observation-shift / lockout "
+          + "machinery rejected by ctor (QL.require lookbackDays==0, lockoutDays==0, !observationShift). "
+          + "Phase 5d.5 MVP carry-forward.";
 
     private static final String REASON_BLACK =
             "Phase 5d.5: OvernightIndexedCouponPricer now ported (commit 41f7102a); needs Black "
-          + "ON-coupon / Black averaging-ON caplet/floorlet pricer integration; test bodies need "
-          + "full port from C++ overnightindexedcoupon.cpp.";
+          + "ON-coupon / Black averaging-ON caplet/floorlet pricer integration.";
 
     private static final String REASON_LEG =
-            "Phase 5d.5: OvernightLeg builder ported (commit 41f7102a); test bodies are "
-          + "`fail(\"not implemented\")` — needs full port from C++ overnightindexedcoupon.cpp.";
+            "Phase 5d.5: OvernightLeg builder ported (commit 41f7102a); needs full port from C++ "
+          + "overnightindexedcoupon.cpp.";
 
     private static final String REASON_TELESCOPIC =
-            "Phase 5d.5: OvernightIndexedCoupon ported; telescopic value-dates handling still TODO. "
-          + "Test bodies need full port from C++ overnightindexedcoupon.cpp.";
+            "Phase 5d.5: OvernightIndexedCoupon ported; telescopicValueDates handling deferred "
+          + "(MVP ignores the flag and always builds the full schedule).";
 
     private static final String REASON_PAYMENT =
-            "Phase 5d.5: OvernightIndexedCoupon ported; payment-before-accrual-end corner case still TODO. "
-          + "Test bodies need full port from C++ overnightindexedcoupon.cpp.";
+            "Phase 5d.5: OvernightIndexedCoupon ported; payment-before-accrual-end corner case "
+          + "rejected by ctor's QL.require(paymentDate.ge(endDate)).";
+
+    /** Mirror of C++ {@code CommonVars} struct minimum subset for the body-filled test. */
+    private static final class CommonVars {
+        final Date today;
+        final double notional = 10000.0;
+        final OvernightIndex sofr;
+        final RelinkableHandle<YieldTermStructure> forecastCurve;
+
+        CommonVars(final Date evaluationDate) {
+            this.today = evaluationDate;
+            new Settings().setEvaluationDate(today);
+            this.forecastCurve = new RelinkableHandle<YieldTermStructure>();
+            this.sofr = new Sofr(forecastCurve);
+        }
+
+        CommonVars() {
+            this(new Date(23, Month.November, 2021));
+        }
+
+        OvernightIndexedCoupon makeCoupon(final Date startDate,
+                                          final Date endDate) {
+            // Match C++ defaults (cpp:52-62): paymentDate=endDate, gearing=1,
+            // spread=0, no refperiod, default DayCounter (forces fall-back
+            // to overnightIndex.dayCounter() via super ctor), no telescopic,
+            // Compound averaging, default fixingDays/lookback/lockout, no
+            // observation shift, compoundSpreadDaily=false.
+            return new OvernightIndexedCoupon(
+                    endDate, notional, startDate, endDate, sofr,
+                    1.0, 0.0, new Date(), new Date(),
+                    sofr.dayCounter(),
+                    /* telescopicValueDates */ false,
+                    RateAveraging.Type.Compound,
+                    /* lookbackDays */ Constants.NULL_NATURAL,
+                    /* lockoutDays */ 0,
+                    /* applyObservationShift */ false,
+                    /* compoundSpreadDaily */ false);
+        }
+    }
 
     @Ignore(REASON_PAST) @Test public void testPastCouponRate() { fail("not implemented"); }
     @Ignore(REASON_PAST) @Test public void testPastSpreadedCouponRate() { fail("not implemented"); }
     @Ignore(REASON_CURRENT) @Test public void testCurrentCouponRate() { fail("not implemented"); }
-    @Ignore(REASON_FUTURE) @Test public void testFutureCouponRate() { fail("not implemented"); }
+
+    @Test
+    public void testFutureCouponRate() {
+        QL.info("Testing rate for future overnight-indexed coupon...");
+
+        final CommonVars vars = new CommonVars();
+
+        // Flat 0.10% forecast curve via Actual360, eval date 2021-11-23.
+        final DayCounter dc360 = new Actual360();
+        vars.forecastCurve.linkTo(Utilities.flatRate(vars.today, 0.0010, dc360));
+
+        // Coupon entirely in the future: 2021-12-10 to 2022-01-10.
+        final OvernightIndexedCoupon futureCoupon = vars.makeCoupon(
+                new Date(10, Month.December, 2021),
+                new Date(10, Month.January, 2022));
+
+        // C++ expected (overnightindexedcoupon.cpp:407-411):
+        //   expectedRate = 0.001000043057
+        //   expectedAmount = notional * expectedRate * 31/360
+        //   tolerance: 1e-12 on rate, 1e-8 on amount.
+        final double expectedRate = 0.001000043057;
+        final double expectedAmount = vars.notional * expectedRate * 31.0 / 360.0;
+        final double rateTol = 1e-12;
+        final double amountTol = 1e-8;
+
+        final double rate = futureCoupon.rate();
+        if (Math.abs(rate - expectedRate) > rateTol) {
+            fail("future coupon rate: expected=" + expectedRate
+                    + " calculated=" + rate
+                    + " diff=" + Math.abs(rate - expectedRate)
+                    + " tolerance=" + rateTol);
+        }
+        final double amount = futureCoupon.amount();
+        if (Math.abs(amount - expectedAmount) > amountTol) {
+            fail("future coupon amount: expected=" + expectedAmount
+                    + " calculated=" + amount
+                    + " diff=" + Math.abs(amount - expectedAmount)
+                    + " tolerance=" + amountTol);
+        }
+    }
+
     @Ignore(REASON_CURRENT) @Test public void testRateWhenTodayIsHoliday() { fail("not implemented"); }
     @Ignore(REASON_ACCRUED) @Test public void testAccruedAmountInThePast() { fail("not implemented"); }
     @Ignore(REASON_ACCRUED) @Test public void testAccruedAmountSpanningToday() { fail("not implemented"); }
