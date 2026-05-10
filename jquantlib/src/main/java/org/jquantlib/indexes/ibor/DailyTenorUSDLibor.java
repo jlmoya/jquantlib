@@ -73,9 +73,13 @@ public class DailyTenorUSDLibor extends DailyTenorLibor {
 
 	public DailyTenorUSDLibor(final int settlementDays,
 			final Handle<YieldTermStructure> h) {
+		// align(indexes.ibor): match C++ v1.42.1 usdlibor.hpp
+		// (DailyTenorUSDLibor) fixingCalendar=UnitedStates(LiborImpact)
+		// (was SETTLEMENT). Same correction as the term-tenor USDLibor —
+		// USDLiborON inherits this through DailyTenorUSDLibor.
 		super("USDLibor", settlementDays,
 				new USDCurrency(),
-				new UnitedStates(UnitedStates.Market.SETTLEMENT),
+				new UnitedStates(UnitedStates.Market.LiborImpact),
 				new Actual360(), h);
 	}
 
