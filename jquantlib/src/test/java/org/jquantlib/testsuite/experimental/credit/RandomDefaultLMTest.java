@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
 import org.jquantlib.Settings;
@@ -236,6 +237,116 @@ public class RandomDefaultLMTest {
         if (etlLow > 1e-3) {
             assertEquals("ratio ~ (1-0.6)/(1-0.0) = 0.4",
                     0.4, etlHigh / etlLow, 0.05);
+        }
+    }
+
+    // ====== Phase 4m.7c WI-3 — loss-distribution / VaR tests =================
+
+    @Test
+    public void lossDistributionIsMonotoneNonDecreasing() {
+        final Basket basket = buildBasket(0.10);
+        final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
+        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+                new SobolRsg(model.copula().numFactors(), 42), model.copula());
+        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+                model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
+        mc.setBasket(basket);
+
+        final Date oneYear = today.add(new Period(1, TimeUnit.Years));
+        final Map<Double, Double> dist = mc.lossDistribution(oneYear);
+        assertTrue("non-empty distribution", !dist.isEmpty());
+
+        // Cumulative-prob map must be non-decreasing in loss key, end <= 1.
+        Double prevKey = null;
+        Double prevVal = null;
+        for (final Map.Entry<Double, Double> e : dist.entrySet()) {
+            if (prevKey != null) {
+                assertTrue("loss key increases: prev=" + prevKey + " cur=" + e.getKey(),
+                        e.getKey() >= prevKey);
+                assertTrue("cumulative prob non-decreasing: prev=" + prevVal + " cur=" + e.getValue(),
+                        e.getValue() >= prevVal - 1.0e-12);
+            }
+            prevKey = e.getKey();
+            prevVal = e.getValue();
+            assertTrue("prob in [0,1]", e.getValue() >= 0.0 && e.getValue() <= 1.0 + 1.0e-12);
+        }
+        assertEquals("final cumulative prob ≈ 1", 1.0, prevVal, 1.0e-9);
+    }
+
+    @Test
+    public void expectedShortfallExceedsPercentile() {
+        final Basket basket = buildBasket(0.30);  // bigger lambda for more loss
+        final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
+        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+                new SobolRsg(model.copula().numFactors(), 42), model.copula());
+        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+                model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
+        mc.setBasket(basket);
+
+        final Date oneYear = today.add(new Period(1, TimeUnit.Years));
+        final double q90 = mc.percentile(oneYear, 0.90);
+        final double es90 = mc.expectedShortfall(oneYear, 0.90);
+        // ES is the conditional mean above the quantile -> >= quantile.
+        assertTrue("ES90 >= q90: q90=" + q90 + " es90=" + es90,
+                es90 >= q90 - 1.0e-9);
+        // both are bounded above by tranche width (300).
+        assertTrue("q90 <= 300", q90 <= 300.0);
+        assertTrue("es90 <= 300", es90 <= 300.0);
+    }
+
+    @Test
+    public void percentileMonotoneInP() {
+        final Basket basket = buildBasket(0.30);
+        final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
+        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+                new SobolRsg(model.copula().numFactors(), 42), model.copula());
+        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+                model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
+        mc.setBasket(basket);
+
+        final Date oneYear = today.add(new Period(1, TimeUnit.Years));
+        final double q50 = mc.percentile(oneYear, 0.50);
+        final double q75 = mc.percentile(oneYear, 0.75);
+        final double q90 = mc.percentile(oneYear, 0.90);
+        // monotone non-decreasing in p.
+        assertTrue("q50 <= q75", q50 <= q75 + 1.0e-9);
+        assertTrue("q75 <= q90", q75 <= q90 + 1.0e-9);
+    }
+
+    @Test
+    public void splitVaRLevelSumsToTotalLoss() {
+        final Basket basket = buildBasket(0.30);
+        final DefaultLatentModel<GaussianCopulaPolicy> model = buildModel(Math.sqrt(0.20));
+        final FactorSampler<GaussianCopulaPolicy> sampler = new FactorSampler<>(
+                new SobolRsg(model.copula().numFactors(), 42), model.copula());
+        final RandomDefaultLM<GaussianCopulaPolicy> mc = new RandomDefaultLM<>(
+                model, sampler, /*recoveries=*/null, /*nSims=*/500, /*accuracy=*/1.0e-4);
+        mc.setBasket(basket);
+
+        final Date oneYear = today.add(new Period(1, TimeUnit.Years));
+        // Pick a moderate threshold strictly inside the loss range so >0 paths
+        // exceed it (avoids the degenerate "no paths > targetLoss" case where
+        // splitStats are all empty by C++ design).
+        final double targetLoss = mc.percentile(oneYear, 0.50);  // median
+        // Split should be a 3-element vector with non-negative entries summing
+        // approximately to targetLoss (per-name relative attributions sum to 1
+        // by construction within each path that exceeds the threshold; over
+        // many such paths the means sum to ~1 -> times targetLoss = targetLoss).
+        if (targetLoss > 0.0 && targetLoss < 290.0) {
+            final double[] split = mc.splitVaRLevel(oneYear, targetLoss);
+            assertEquals("splitVaRLevel returns one entry per live name",
+                    basket.remainingSize(), split.length);
+            double sum = 0.0;
+            for (final double s : split) {
+                assertTrue("each split >= 0", s >= -1.0e-9);
+                sum += s;
+            }
+            assertEquals("sum of splits ≈ targetLoss",
+                    targetLoss, sum, 0.20 * targetLoss + 1.0);
+        } else {
+            // Degenerate case: percentile sits at edge; just verify shape.
+            final double[] split = mc.splitVaRLevel(oneYear, 50.0);
+            assertEquals(basket.remainingSize(), split.length);
         }
     }
 }
