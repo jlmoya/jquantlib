@@ -95,22 +95,24 @@ public class HestonSLVModelSmokeTest {
     }
 
     @Test
-    public void testFdmModelPerformCalculationsCarryForward() {
+    public void testFdmModelPerformCalculationsBodyFill() {
+        // Phase 5h.5-SLV-b body-fill: the FDM bootstrap now runs end-to-end.
+        // With a small-grid Plain config + Gaussian Greens fct, the calibration
+        // returns a non-null leverage surface whose value at (T/2, spot) is in
+        // [0.001, 50] (the C++-mirrored clamp range).
         final HestonSLVFokkerPlanckFdmParams p = new HestonSLVFokkerPlanckFdmParams(
                 21, 11, 100, 10, 2.0, 1, 1, 0.1, 1e-6, 1000,
                 1e-6, 1e-6, 1e-4, 1.0, 1e-6, 1e-6, 1e-8,
-                GreensFctAlgorithm.ZeroCorrelation, TransformationType.Plain,
+                GreensFctAlgorithm.Gaussian, TransformationType.Plain,
                 FdmSchemeDesc.Douglas());
         final HestonSLVFDMModel m = new HestonSLVFDMModel(
                 buildLocalVol(), buildHestonModel(),
                 new Date(15, Month.May, 2027), p);
-        try {
-            m.leverageFunction();
-            fail("expected UnsupportedOperationException — Phase 5h.5-SLV-b carry-forward");
-        } catch (final UnsupportedOperationException e) {
-            assertTrue("must mention carry-forward",
-                    e.getMessage().contains("Phase 5h.5-SLV-b"));
-        }
+        final LocalVolTermStructure lev = m.leverageFunction();
+        assertNotNull("leverage surface must be non-null", lev);
+        final double l = lev.localVol(0.5, 100.0);
+        assertTrue("leverage in clamp range [0.001, 50]: " + l,
+                l >= 0.001 && l <= 50.0);
     }
 
     @Test
