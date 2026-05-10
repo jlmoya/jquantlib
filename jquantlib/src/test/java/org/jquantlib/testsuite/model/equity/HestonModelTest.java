@@ -26,16 +26,21 @@ import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticPDFHestonEngine;
 import org.jquantlib.pricingengines.vanilla.COSHestonEngine;
 import org.jquantlib.pricingengines.McSimulation;
+import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.MCEuropeanHestonEngine;
+import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.BlackConstantVol;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
+import org.jquantlib.time.calendars.NullCalendar;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -247,9 +252,66 @@ public class HestonModelTest {
     @Test
     public void testFdVanillaWithDividendsVsCached() { fail("not implemented"); }
 
-    @Ignore(REASON_FD)
+    /**
+     * Phase Body-Fill-4 port of C++ {@code testFdAmerican} (743-787):
+     * FD vanilla Heston engine with American exercise; cross-validate
+     * against FdBlackScholesVanillaEngine using the BSM degenerate
+     * limit (sigma_v=0.001, theta=v0, kappa=1.0). Tolerance 1e-3.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:743-787} v1.42.1.
+     */
     @Test
-    public void testFdAmerican() { fail("not implemented"); }
+    public void testFdAmerican() {
+        final Date settlementDate = new Date(27, Month.December, 2004);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISDA);
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.05)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.03)), dayCounter));
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                0.04, 1.0, 0.04, 0.001, 0.0);
+        final HestonModel model = new HestonModel(process);
+
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 95.0);
+        final Date exerciseDate = new Date(28, Month.March, 2006);
+        final Exercise exercise = new org.jquantlib.exercise.AmericanExercise(
+                settlementDate, exerciseDate);
+
+        final org.jquantlib.instruments.VanillaOption option =
+                new org.jquantlib.instruments.VanillaOption(payoff, exercise);
+        option.setPricingEngine(new FdHestonVanillaEngine(model, process,
+                /* tGrid */ 200, /* xGrid */ 400, /* vGrid */ 100,
+                /* dampingSteps */ 0, FdmSchemeDesc.Hundsdorfer()));
+        final double calculated = option.NPV();
+
+        // Reference: BSM with sqrt(v0)=0.2 vol.
+        final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                new BlackConstantVol(settlementDate, new NullCalendar(), 0.2, dayCounter));
+        final BlackScholesMertonProcess refProcess = new BlackScholesMertonProcess(
+                s0, qTS, rTS, volTS);
+        final PricingEngine refEngine = new FdBlackScholesVanillaEngine(
+                refProcess, /* tGrid */ 200, /* xGrid */ 400,
+                /* dampingSteps */ 0, FdmSchemeDesc.Douglas());
+        option.setPricingEngine(refEngine);
+        final double expected = option.NPV();
+
+        final double error = Math.abs(calculated - expected);
+        final double tolerance = 1.0e-3;
+        if (error > tolerance) {
+            fail("failed to reproduce american option price with FD engine"
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected
+                    + "\n    error:      " + error);
+        }
+        assertEquals("FdHestonVanillaEngine American", expected, calculated, tolerance);
+    }
 
     /* ---- 4. MC engines ------------------------------------------------- */
 
