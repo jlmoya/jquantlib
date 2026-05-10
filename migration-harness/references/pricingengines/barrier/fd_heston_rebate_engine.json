@@ -1,0 +1,129 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "delta": -0.005155971038005232,
+        "gamma": 0.0006826326025506402,
+        "npv": 9.55299821825593
+      },
+      "inputs": {
+        "barrier": 80.0,
+        "barrier_type": "DownOut",
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "rebate": 10.0,
+        "strike": 100.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "down_out_call_K100_B80_rebate10_1y"
+    },
+    {
+      "expected": {
+        "delta": 0.008583621588907204,
+        "gamma": 0.0007179711393894674,
+        "npv": 9.603132890679195
+      },
+      "inputs": {
+        "barrier": 120.0,
+        "barrier_type": "UpOut",
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "rebate": 10.0,
+        "strike": 100.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "up_out_call_K100_B120_rebate10_1y"
+    },
+    {
+      "expected": {
+        "delta": -0.005155971038005232,
+        "gamma": 0.0006826326025506402,
+        "npv": 9.55299821825593
+      },
+      "inputs": {
+        "barrier": 80.0,
+        "barrier_type": "DownIn",
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "rebate": 10.0,
+        "strike": 100.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "down_in_call_K100_B80_rebate10_1y"
+    },
+    {
+      "expected": {
+        "delta": 0.008583621588907204,
+        "gamma": 0.0007179711393894674,
+        "npv": 9.603132890679195
+      },
+      "inputs": {
+        "barrier": 120.0,
+        "barrier_type": "UpIn",
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "rebate": 10.0,
+        "strike": 100.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "up_in_call_K100_B120_rebate10_1y"
+    },
+    {
+      "expected": {
+        "delta": -0.005155971038005232,
+        "gamma": 0.0006826326025506402,
+        "npv": 9.55299821825593
+      },
+      "inputs": {
+        "barrier": 80.0,
+        "barrier_type": "DownOut",
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "rebate": 10.0,
+        "strike": 100.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "down_out_put_K100_B80_rebate10_1y"
+    },
+    {
+      "expected": {
+        "delta": -0.005155971038005232,
+        "gamma": 0.0006826326025506402,
+        "npv": 9.55299821825593
+      },
+      "inputs": {
+        "barrier": 80.0,
+        "barrier_type": "DownIn",
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "rebate": 10.0,
+        "strike": 100.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "down_in_put_K100_B80_rebate10_1y"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-10T02:00:34Z",
+  "generated_by": "fd_heston_rebate_engine_probe",
+  "test_group": "pricingengines/barrier/fd_heston_rebate_engine"
+}
