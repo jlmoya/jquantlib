@@ -20,11 +20,11 @@ import java.util.List;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
-import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.Date;
 
 /**
@@ -46,6 +46,15 @@ import org.jquantlib.time.Date;
 public class CompoundingOvernightIndexedCouponPricer extends OvernightIndexedCouponPricer {
 
     private double swapletRate_;
+
+    public CompoundingOvernightIndexedCouponPricer() {
+        super();
+    }
+
+    public CompoundingOvernightIndexedCouponPricer(final Handle<OptionletVolatilityStructure> v,
+                                                   final boolean effectiveVolatilityInput) {
+        super(v, effectiveVolatilityInput);
+    }
 
     @Override
     public double swapletRate() {
