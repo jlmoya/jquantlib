@@ -18,7 +18,6 @@ import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
-import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.distributions.NormalDistribution;
 import org.jquantlib.math.integrals.GaussLobattoIntegral;
 import org.jquantlib.methods.finitedifferences.utilities.BSMRNDCalculator;
@@ -74,40 +73,40 @@ import org.junit.Test;
  *       (β &lt; 1 absorbing, β = 1 lognormal, β &gt; 1 reflecting).</li>
  * </ul>
  *
- * <p><strong>Phase 5h.5-RND status (this commit):</strong>
+ * <p><strong>Phase 5h.5-RND-c status:</strong>
  * <ul>
  *   <li>{@code GBSMRNDCalculator} — present (Phase 2m).</li>
- *   <li>{@code CEVRNDCalculator} — present (Phase 2m).</li>
- *   <li>{@code BSMRNDCalculator} — <strong>ported</strong> (Phase 5h.5-RND).</li>
- *   <li>{@code HestonRNDCalculator} — <strong>ported</strong> (Phase 5h.5-RND).</li>
- *   <li>{@code SquareRootProcessRNDCalculator} — <strong>ported</strong> (Phase 5h.5-RND).</li>
- *   <li>{@code LocalVolRNDCalculator} — <strong>not yet ported</strong>
- *       (needs FdmLocalVolFwdOp + Predefined1dMesher + DiscreteSimpsonIntegral
- *       which are themselves Phase 5h.5-RND-b carry-forward).</li>
+ *   <li>{@code CEVRNDCalculator} — present (Phase 2m); missing
+ *       {@code pdf(f, t)} → testMassAtZeroCEVProcessRND deferred.</li>
+ *   <li>{@code BSMRNDCalculator} — ported (Phase 5h.5-RND).</li>
+ *   <li>{@code HestonRNDCalculator} — ported (Phase 5h.5-RND).</li>
+ *   <li>{@code SquareRootProcessRNDCalculator} — ported (Phase 5h.5-RND);
+ *       Phase 5h.5-SLV-d added the exact non-central chi-squared PDF.</li>
+ *   <li>{@code LocalVolRNDCalculator} — ported (Phase 5h.5-RND-b);
+ *       constant-vol portion of testLocalVolatilityRND now active.</li>
  * </ul>
- * Each port has its own dedicated Test class
+ *
+ * <p><strong>This commit (Phase 5h.5-RND-c):</strong> 4 of 7 tests
+ * un-ignored and body-filled. Remaining 3 deferred:
+ * <ul>
+ *   <li>{@code testMassAtZeroCEVProcessRND} — needs CEVRNDCalculator.pdf
+ *       port (production work, deferred).</li>
+ *   <li>{@code testBlackScholesWithSkew} — needs HestonBlackVolSurface +
+ *       NoExceptLocalVolSurface ports (production work, Phase 5h.5-RND-d).</li>
+ *   <li>{@code testCEVCDF} — body-filled but @Ignore'd; CEVRNDCalculator
+ *       round-trip at beta=1.25 has accuracy issue at large ncp ~1472
+ *       (production-fix work, separate commit).</li>
+ * </ul>
+ *
+ * <p>Each ported calculator also has its own dedicated Test class
  * ({@code BSMRNDCalculatorTest}, {@code HestonRNDCalculatorTest},
- * {@code SquareRootProcessRNDCalculatorTest}) that cross-validates against
- * the C++ probes. The 7 tests below mirror the C++ test-suite cases and
- * remain {@code @Ignore}'d pending LocalVolRNDCalculator (or
- * implementation of the integration-based round-trip checks at the same
- * {@code 1e-10} tolerance the C++ test uses, which our CDF-based PDF
- * approximation does not yet reach for SquareRootProcessRNDCalculator).
+ * {@code SquareRootProcessRNDCalculatorTest},
+ * {@code LocalVolRNDCalculatorTest}) that cross-validates against C++ probes.
  *
  * <p>Source: {@code test-suite/riskneutraldensitycalculator.cpp} v1.42.1
  * @ {@code 099987f0ca}.
  */
 public class RiskNeutralDensityCalculatorTest {
-
-    private static final String REASON_MISSING =
-            "Phase 5h.5 — requires BSMRNDCalculator + HestonRNDCalculator + "
-            + "LocalVolRNDCalculator + SquareRootProcessRNDCalculator port "
-            + "(Phase 2m carry-forward; only GBSMRND + CEVRND exist in Java).";
-
-    private static final String REASON_CEV =
-            "Phase 5h.5 — defer alongside the other RND calculators for a "
-            + "unified RND cluster commit (CEVRNDCalculator exists but the "
-            + "test fixture shares helpers with the missing classes).";
 
     /**
      * Phase 5h.5-RND-c port of C++ {@code testDensityAgainstOptionPrices}
