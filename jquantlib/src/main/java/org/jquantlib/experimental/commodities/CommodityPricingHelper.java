@@ -19,19 +19,20 @@
 
 package org.jquantlib.experimental.commodities;
 
+import java.util.List;
+
 import org.jquantlib.currencies.Currency;
 import org.jquantlib.currencies.ExchangeRate;
 import org.jquantlib.currencies.ExchangeRateManager;
+import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
 
 /**
  * Static commodity-pricing helpers (FX/UoM conversion and unit cost).
  * <p>
  * Java port of QuantLib v1.42.1 {@code commoditypricinghelpers.{hpp,cpp}}.
- * <p>
- * Note: {@code createPricingPeriods} from the C++ helper is omitted from
- * this commit; it depends on a full Schedule/Calendar arithmetic model
- * that is being addressed in a follow-up commit.
  */
 public final class CommodityPricingHelper {
 
@@ -88,5 +89,65 @@ public final class CommodityPricingHelper {
             return unitCost.amount().value() * uomFactor * fxFactor;
         }
         return 0.0;
+    }
+
+    /**
+     * Build {@link PricingPeriod} entries between {@code startDate} and
+     * {@code endDate}, partitioning by {@code deliverySchedule}, scaling
+     * the period quantity according to {@code qtyPeriodicity}, and
+     * computing payment dates via {@code paymentTerm}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code CommodityPricingHelper::createPricingPeriods}
+     * which currently supports {@code Daily} and {@code Monthly} delivery
+     * schedules. Other delivery schedules will throw a
+     * {@link LibraryException} (matching {@code QL_FAIL} in C++).
+     * <p>
+     * The resulting {@link PricingPeriod} instances are appended to
+     * {@code pricingPeriods}.
+     */
+    public static void createPricingPeriods(final Date startDate,
+                                            final Date endDate,
+                                            final Quantity quantity,
+                                            final EnergyCommodity.DeliverySchedule deliverySchedule,
+                                            final EnergyCommodity.QuantityPeriodicity qtyPeriodicity,
+                                            final PaymentTerm paymentTerm,
+                                            final List<PricingPeriod> pricingPeriods) {
+        if (deliverySchedule == EnergyCommodity.DeliverySchedule.Monthly) {
+            final Quantity periodQuantity;
+            if (qtyPeriodicity == EnergyCommodity.QuantityPeriodicity.PerMonth) {
+                periodQuantity = quantity;
+            } else {
+                throw new LibraryException(
+                        "Invalid period quantity/pricing period combination.");
+            }
+
+            for (Date periodStartDate = startDate; periodStartDate.lt(endDate); ) {
+                final Date periodEndDate =
+                        periodStartDate.add(new Period(1, TimeUnit.Months)).sub(1);
+                final Date paymentDate = paymentTerm.getPaymentDate(periodEndDate);
+                pricingPeriods.add(new PricingPeriod(
+                        periodStartDate, periodEndDate, paymentDate, periodQuantity));
+                periodStartDate = periodEndDate.add(1);
+            }
+        } else if (deliverySchedule == EnergyCommodity.DeliverySchedule.Daily) {
+            if (qtyPeriodicity != EnergyCommodity.QuantityPeriodicity.PerDay) {
+                throw new LibraryException(
+                        "Invalid period quantity/pricing period combination.");
+            }
+
+            for (Date periodStartDate = startDate; periodStartDate.lt(endDate); ) {
+                final Date periodEndDate =
+                        periodStartDate.add(new Period(1, TimeUnit.Months)).sub(1);
+                final long days = periodEndDate.sub(periodStartDate);
+                final Quantity periodQuantity = new Quantity(
+                        quantity.commodityType(),
+                        quantity.unitOfMeasure(),
+                        quantity.amount() * days);
+                final Date paymentDate = paymentTerm.getPaymentDate(periodEndDate);
+                pricingPeriods.add(new PricingPeriod(
+                        periodStartDate, periodEndDate, paymentDate, periodQuantity));
+                periodStartDate = periodEndDate.add(1);
+            }
+        }
     }
 }
