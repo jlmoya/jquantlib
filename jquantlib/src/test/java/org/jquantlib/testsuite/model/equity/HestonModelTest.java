@@ -655,9 +655,105 @@ public class HestonModelTest {
     @Test
     public void testOptimalAlphaKmax() { fail("not implemented"); }
 
-    @Ignore(REASON_EXPANSION)
+    /**
+     * Phase Body-Fill-4 partial port of C++
+     * {@code testAlanLewisReferencePrices} (1288-1413). C++ exercises 7
+     * engines (Laguerre, GaussLobatto, COS, AndersenPiterbarg, ExpFitting,
+     * AngledContour, OptimalCV); Java only has Laguerre +
+     * COS — the other 5 require integration-method enum / advanced
+     * AnalyticHesto­nEngine variants not yet ported. Java covers 2 of 7.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:1288-1413} v1.42.1.
+     */
     @Test
-    public void testAlanLewisReferencePrices() { fail("not implemented"); }
+    public void testAlanLewisReferencePrices() {
+        final Date settlementDate = new Date(5, Month.July, 2002);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final Date maturityDate = new Date(5, Month.July, 2003);
+        final Exercise exercise = new EuropeanExercise(maturityDate);
+
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.01)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.02)), dayCounter));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final double v0    =  0.04;
+        final double rho   = -0.5;
+        final double sigma =  1.0;
+        final double kappa =  4.0;
+        final double theta =  0.25;
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+
+        final PricingEngine laguerreEngine =
+                new AnalyticHestonEngine(model, process, 128);
+        // COS — same defaults as C++ test (L=20, N=400).
+        final PricingEngine cosEngine =
+                new COSHestonEngine(model, process, 20.0, 400);
+
+        final double[] strikes = { 80, 90, 100, 110, 120 };
+        final Option.Type[] types = { Option.Type.Put, Option.Type.Call };
+        final PricingEngine[] engines = { laguerreEngine, cosEngine };
+        final String[] engineNames = { "Laguerre", "COS" };
+
+        // C++ reference prices (Alan Lewis, Wilmott forum).
+        final double[][] expectedResults = {
+            { 7.958878113256768285213263077598987193482161301733,
+              26.774758743998854221382195325726949201687074848341 },
+            { 12.017966707346304987709573290236471654992071308187,
+              20.933349000596710388139445766564068085476194042256 },
+            { 17.055270961270109413522653999411000974895436309183,
+              16.070154917028834278213466703938231827658768230714 },
+            { 23.017825898442800538908781834822560777763225722188,
+              12.132211516709844867860534767549426052805766831181 },
+            { 29.811026202682471843340682293165857439167301370697,
+              9.024913483457835636553375454092357136489051667150  }
+        };
+
+        // C++ tolerance 1e-12. The Laguerre engine reproduces this on
+        // the smooth Alan-Lewis Heston Gatheral integrand at sigma=1.0,
+        // kappa=4, theta=0.25 — well past convergence at n=128.
+        final double tol = 1e-12;
+
+        for (int i = 0; i < strikes.length; ++i) {
+            final double strike = strikes[i];
+
+            for (int j = 0; j < types.length; ++j) {
+                final Option.Type type = types[j];
+
+                for (int k = 0; k < engines.length; ++k) {
+                    final PricingEngine engine = engines[k];
+
+                    final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+
+                    final EuropeanOption option = new EuropeanOption(payoff, exercise);
+                    option.setPricingEngine(engine);
+
+                    final double expected = expectedResults[i][j];
+                    final double calculated = option.NPV();
+                    final double relError = Math.abs(calculated - expected) / expected;
+
+                    if (relError > tol || Double.isNaN(calculated)) {
+                        fail("failed to reproduce Alan Lewis Reference prices "
+                                + "\n    strike     : " + strike
+                                + "\n    option type: " + type
+                                + "\n    engine     : " + engineNames[k]
+                                + "\n    expected   : " + expected
+                                + "\n    calculated : " + calculated
+                                + "\n    rel. error : " + relError);
+                    }
+                }
+            }
+        }
+    }
 
     @Ignore(REASON_EXPANSION)
     @Test
