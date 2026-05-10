@@ -701,7 +701,24 @@ public class FdHestonTest {
         }
     }
 
-    @Ignore("Phase 5j.5 — requires FdHestonVanillaEngine + intraday-clock integration")
+    /**
+     * {@code testFdmHestonIntradayPricing} — verifies intraday gamma values
+     * for an ATM put on Heston as the evaluation timestamp advances by 15
+     * minutes from 15:00 to 17:15 (just before 17:30 maturity). Mirrors C++
+     * test-suite/fdheston.cpp lines 693-751.
+     * <p>
+     * <strong>Phase 5j.5b carry — not portable to JQuantLib until intraday
+     * Date support lands.</strong> The C++ test is gated on
+     * {@code #ifdef QL_HIGH_RESOLUTION_DATE} which enables the
+     * {@code Date(day, month, year, hours, minutes, seconds)} constructor.
+     * The Java {@link org.jquantlib.time.Date} only supports day-resolution
+     * (constructors at lines 220, 231, 242, 255 of Date.java). To port this
+     * test, JQuantLib must first grow an intraday Date implementation
+     * matching the C++ {@code QL_HIGH_RESOLUTION_DATE} build (sub-day
+     * serial format, hours/minutes/seconds accessors, year-fraction
+     * arithmetic, and intraday-aware {@code Settings.evaluationDate}).
+     */
+    @Ignore("Phase 5j.5b — requires intraday Date support (Date(d,m,y,h,m,s) ctor; matches C++ QL_HIGH_RESOLUTION_DATE)")
     @Test
     public void testFdmHestonIntradayPricing() {
         fail("not implemented");
