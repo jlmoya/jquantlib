@@ -8,6 +8,20 @@ package org.jquantlib.testsuite.cashflows;
 
 import static org.junit.Assert.fail;
 
+import org.jquantlib.QL;
+import org.jquantlib.cashflow.CashFlow;
+import org.jquantlib.cashflow.Leg;
+import org.jquantlib.cashflow.MultipleResetsCoupon;
+import org.jquantlib.cashflow.MultipleResetsLeg;
+import org.jquantlib.cashflow.RateAveraging;
+import org.jquantlib.indexes.Euribor1M;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.MakeSchedule;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.calendars.Target;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -61,7 +75,46 @@ public class MultipleResetsCouponsTest {
     @Test
     public void testMultipleResetsLegConsistencyChecks() { fail("not implemented"); }
 
-    @Ignore(REASON)
+    /**
+     * Phase Body-Fill (2026-05-09) — port of C++
+     * {@code multipleresetscoupons.cpp::testMultipleResetsLegRegression}.
+     *
+     * <p>Builds a 1Y monthly schedule with {@code resetsPerCoupon = 3}
+     * (so each coupon spans 3 sub-periods) and asserts every coupon in
+     * the resulting leg has exactly 3 fixing dates.
+     *
+     * <p>This is a pure structural test that does not depend on cached
+     * reference values or pricing-engine integration.
+     */
     @Test
-    public void testMultipleResetsLegRegression() { fail("not implemented"); }
+    public void testMultipleResetsLegRegression() {
+        QL.info("Testing number of fixing dates in multiple-resets coupons...");
+
+        final Schedule schedule = new MakeSchedule(
+                new Date(1, Month.August, 2024),
+                new Date(1, Month.August, 2025),
+                new Period(Frequency.Monthly),
+                new Target(),
+                org.jquantlib.time.BusinessDayConvention.Following)
+                .schedule();
+
+        final int resetsPerCoupon = 3;
+        final Leg leg = new MultipleResetsLeg(
+                schedule, new Euribor1M(), resetsPerCoupon)
+                .withNotionals(100.0)
+                .withAveragingMethod(RateAveraging.Type.Compound)
+                .Leg();
+
+        for (final CashFlow cf : leg) {
+            if (!(cf instanceof MultipleResetsCoupon)) {
+                fail("expected MultipleResetsCoupon, got " + cf.getClass());
+            }
+            final MultipleResetsCoupon c = (MultipleResetsCoupon) cf;
+            final int n = c.fixingDates().size();
+            if (n != resetsPerCoupon) {
+                fail("Unexpected number of fixing dates (" + n
+                        + ") in coupon paying on " + c.date());
+            }
+        }
+    }
 }
