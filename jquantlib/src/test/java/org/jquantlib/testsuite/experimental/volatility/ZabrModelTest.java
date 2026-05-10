@@ -100,16 +100,30 @@ public class ZabrModelTest {
         }
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testGammaNonUnitLognormalVolThrows() {
-        // gamma != 1 needs adaptive RK — deferred
+    @Test
+    public void testGammaNonUnitLognormalVolReturnsFinite() {
+        // Phase 4f.5b — gamma != 1 now uses adaptive Runge-Kutta. Verify the
+        // result is finite and positive (cross-validated against C++ in
+        // ZabrModelCrossValidationTest).
         final ZabrModel zabr = new ZabrModel(1.0, 0.05, 0.10, 0.5, 0.30, -0.10, 0.5);
-        zabr.lognormalVolatility(0.05);
+        final double v = zabr.lognormalVolatility(0.05);
+        assertTrue("gamma!=1 lognormal vol > 0", v > 0);
+        assertTrue("gamma!=1 lognormal vol finite", !Double.isNaN(v) && !Double.isInfinite(v));
+    }
+
+    @Test
+    public void testLocalVolReturnsFinite() {
+        // Phase 4f.5b — localVolatility now wired through F(y(f), x(f)).
+        final ZabrModel zabr = new ZabrModel(1.0, 0.05, 0.10, 0.5, 0.30, -0.10, 1.0);
+        final double v = zabr.localVolatility(0.05);
+        assertTrue("local vol > 0", v > 0);
+        assertTrue("local vol finite", !Double.isNaN(v) && !Double.isInfinite(v));
     }
 
     @Test(expected = UnsupportedOperationException.class)
-    public void testLocalVolStillDeferred() {
+    public void testFullFdPriceStillDeferred() {
+        // Phase 4n.5+ — needs FdmZabrOp (not yet ported).
         final ZabrModel zabr = new ZabrModel(1.0, 0.05, 0.10, 0.5, 0.30, -0.10, 1.0);
-        zabr.localVolatility(0.05);
+        zabr.fullFdPrice(0.05);
     }
 }
