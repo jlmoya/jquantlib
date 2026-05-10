@@ -48,9 +48,14 @@ import org.jquantlib.math.matrixutilities.SVD;
  * to the only call sites the LSM machinery uses:
  *
  * <ul>
- *   <li>{@link #regress(double[], double[], List)} — single-variate
- *       regression where every basis function takes a {@code double}
- *       state.</li>
+ *   <li>{@code GeneralLinearLeastSquares(double[], double[], List<DoubleOp>)} —
+ *       single-variate regression where every basis function takes a
+ *       {@code double} state.</li>
+ *   <li>{@code GeneralLinearLeastSquares(Array[], double[], List<ObjectToDouble<Array>>)} —
+ *       multi-variate regression (Phase MC-extras) where each basis function
+ *       takes an {@link Array} state. Drives the multi-asset path of
+ *       {@link org.jquantlib.methods.montecarlo.LongstaffSchwartzPathPricer}
+ *       (American basket / max-of-N options).</li>
  * </ul>
  *
  * <p>References:
@@ -99,6 +104,66 @@ public final class GeneralLinearLeastSquares {
                 A.set(i, j, f.op(x[i]));
             }
         }
+
+        solveAndPopulate(A, y);
+    }
+
+    /**
+     * Multi-variate constructor (Phase MC-extras): regress {@code y} on the
+     * multi-state basis {@code v} evaluated at points {@code x}.
+     *
+     * <p>Mirrors the C++ template instantiation
+     * {@code GeneralLinearLeastSquares<std::vector<Array>, std::vector<Real>,
+     * std::vector<std::function<Real(Array)>>>} used by the multi-asset
+     * Longstaff-Schwartz machinery (see
+     * {@code longstaffschwartzpathpricer.hpp::LongstaffSchwartzPathPricer<MultiPath>}).
+     *
+     * @param x  sample state vectors, length {@code n} (each element an Array)
+     * @param y  observed values, length {@code n}
+     * @param v  multi-state basis system, size {@code m} (m &lt;= n)
+     */
+    public GeneralLinearLeastSquares(final Array[] x,
+                                     final double[] y,
+                                     final List<? extends Ops.ObjectToDouble<Array>> v) {
+        QL.require(x != null && y != null && v != null,
+                "x, y and v must be non-null");
+        final int n = y.length;
+        final int m = v.size();
+        QL.require(x.length == n,
+                "sample set need to be of the same size");
+        QL.require(n >= m, "sample set is too small");
+
+        this.a_ = new Array(m);
+        this.err_ = new Array(m);
+        this.residuals_ = new Array(n);
+        this.standardErrors_ = new Array(m);
+
+        // Build design matrix A_{i,j} = v_j(x_i) for vector-valued x_i.
+        final Matrix A = new Matrix(n, m);
+        for (int j = 0; j < m; ++j) {
+            final Ops.ObjectToDouble<Array> f = v.get(j);
+            for (int i = 0; i < n; ++i) {
+                A.set(i, j, f.op(x[i]));
+            }
+        }
+
+        solveAndPopulate(A, y);
+    }
+
+    /**
+     * Common SVD-based solve: shared between single- and multi-variate
+     * constructors. Computes coefficients, errors, residuals, and standard
+     * errors in place on the pre-built design matrix.
+     *
+     * <p>Mirrors C++ {@code GeneralLinearLeastSquares::calculate(...)}.
+     *
+     * @param A   the design matrix (n × m); destroyed in place by SVD
+     * @param y   the observed values (size n)
+     */
+    private void solveAndPopulate(final Matrix A, final double[] y) {
+        final int n = A.rows();
+        final int m = A.columns();
+
         final Matrix Aorig = A.clone();
 
         // SVD of A (consumes A in place).

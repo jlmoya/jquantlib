@@ -32,6 +32,10 @@ import org.jquantlib.QL;
 import org.jquantlib.math.GeneralLinearLeastSquares;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.methods.montecarlo.LsmBasisSystem;
+import org.jquantlib.testsuite.util.ReferenceReader;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Test;
 
 /**
@@ -107,6 +111,135 @@ public class GeneralLinearLeastSquaresTest {
         assertEquals(-2.0, c.get(1), 1e-10);
         assertEquals(0.5, c.get(2), 1e-11);
         assertEquals(3, lse.dim());
+    }
+
+    //
+    // -------------------------------------------------------------------
+    // Multi-variate (Array-state) regression tests — Phase MC-extras.
+    // Cross-validated bit-exactly against C++ v1.42.1
+    // GeneralLinearLeastSquares<vector<Array>, vector<Real>,
+    //                            vector<function<Real(Array)>>> via probe
+    // migration-harness/references/math/general_linear_least_squares_multi.json.
+    // -------------------------------------------------------------------
+    //
+
+    private static final String MULTI_GROUP = "math/general_linear_least_squares_multi";
+    private static final double TIGHT = 1.0e-12;
+    private static final double REL = 1.0e-10;
+
+
+    private static List<Ops.ObjectToDouble<Array>> linear2dBasis() {
+        final List<Ops.ObjectToDouble<Array>> v = new ArrayList<Ops.ObjectToDouble<Array>>();
+        v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return 1.0; } });
+        v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(0); } });
+        v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(1); } });
+        return v;
+    }
+
+    private static List<Ops.ObjectToDouble<Array>> quadratic2dBasis() {
+        final List<Ops.ObjectToDouble<Array>> v = new ArrayList<Ops.ObjectToDouble<Array>>();
+        v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return 1.0; } });
+        v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(0); } });
+        v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(1); } });
+        v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(0) * a.get(0); } });
+        v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(0) * a.get(1); } });
+        v.add(new Ops.ObjectToDouble<Array>() { @Override public double op(final Array a) { return a.get(1) * a.get(1); } });
+        return v;
+    }
+
+    private static Array[] readArrayInputs(final JSONArray xJson) {
+        final Array[] xs = new Array[xJson.length()];
+        for (int i = 0; i < xJson.length(); ++i) {
+            final JSONArray row = xJson.getJSONArray(i);
+            final double[] v = new double[row.length()];
+            for (int j = 0; j < row.length(); ++j) {
+                v[j] = row.getDouble(j);
+            }
+            xs[i] = new Array(v);
+        }
+        return xs;
+    }
+
+    private static double[] readDoubleArray(final JSONArray ja) {
+        final double[] r = new double[ja.length()];
+        for (int i = 0; i < ja.length(); ++i) {
+            r[i] = ja.getDouble(i);
+        }
+        return r;
+    }
+
+    private static void assertCloseTight(final String label, final double expected,
+                                         final double actual) {
+        final double diff = Math.abs(actual - expected);
+        final double tol = Math.max(TIGHT, REL * Math.abs(expected));
+        assertTrue(label + " expected=" + expected + " actual=" + actual
+                + " diff=" + diff + " tol=" + tol,
+                diff <= tol);
+    }
+
+    private static void assertCoefficientsAndResiduals(final String caseName,
+            final ReferenceReader.Case c, final GeneralLinearLeastSquares lse) {
+        final JSONObject expected = (JSONObject) c.expectedRaw();
+        final JSONArray expCoef = expected.getJSONArray("coefficients");
+        final JSONArray expRes = expected.getJSONArray("residuals");
+        final int expDim = expected.getInt("dim");
+        final int expSize = expected.getInt("size");
+
+        assertEquals(caseName + "/dim", expDim, lse.dim());
+        assertEquals(caseName + "/size", expSize, lse.size());
+        assertEquals(caseName + "/coef.length", expCoef.length(), lse.coefficients().size());
+        assertEquals(caseName + "/res.length", expRes.length(), lse.residuals().size());
+
+        for (int i = 0; i < expCoef.length(); ++i) {
+            assertCloseTight(caseName + "/coef[" + i + "]",
+                    expCoef.getDouble(i), lse.coefficients().get(i));
+        }
+        for (int i = 0; i < expRes.length(); ++i) {
+            assertCloseTight(caseName + "/res[" + i + "]",
+                    expRes.getDouble(i), lse.residuals().get(i));
+        }
+    }
+
+    @Test
+    public void testMultiLinear2dExactRecovery() {
+        final ReferenceReader ref = ReferenceReader.load(MULTI_GROUP);
+        final ReferenceReader.Case c = ref.getCase("linear_2d_exact_recovery");
+        final JSONObject in = c.inputs();
+        final Array[] x = readArrayInputs(in.getJSONArray("x"));
+        final double[] y = readDoubleArray(in.getJSONArray("y"));
+        final GeneralLinearLeastSquares lse =
+                new GeneralLinearLeastSquares(x, y, linear2dBasis());
+        assertCoefficientsAndResiduals("linear_2d_exact_recovery", c, lse);
+    }
+
+    @Test
+    public void testMultiQuadratic2dFullBasisExact() {
+        final ReferenceReader ref = ReferenceReader.load(MULTI_GROUP);
+        final ReferenceReader.Case c = ref.getCase("quadratic_2d_full_basis_exact");
+        final JSONObject in = c.inputs();
+        final Array[] x = readArrayInputs(in.getJSONArray("x"));
+        final double[] y = readDoubleArray(in.getJSONArray("y"));
+        final GeneralLinearLeastSquares lse =
+                new GeneralLinearLeastSquares(x, y, quadratic2dBasis());
+        assertCoefficientsAndResiduals("quadratic_2d_full_basis_exact", c, lse);
+    }
+
+    @Test
+    public void testMultiPathBasisDim2Order2Monomial() {
+        final ReferenceReader ref = ReferenceReader.load(MULTI_GROUP);
+        final ReferenceReader.Case c = ref.getCase("multipath_basis_dim2_order2_monomial");
+        final JSONObject in = c.inputs();
+        final Array[] x = readArrayInputs(in.getJSONArray("x"));
+        final double[] y = readDoubleArray(in.getJSONArray("y"));
+
+        // Use the actual LsmBasisSystem.multiPathBasisSystem call — same as
+        // AmericanMaxPathPricer wires up.
+        final List<Ops.ObjectToDouble<Array>> v =
+                LsmBasisSystem.multiPathBasisSystem(2, 2,
+                        LsmBasisSystem.PolynomialType.Monomial);
+        final GeneralLinearLeastSquares lse =
+                new GeneralLinearLeastSquares(x, y, v);
+        assertCoefficientsAndResiduals("multipath_basis_dim2_order2_monomial", c, lse);
     }
 
     @Test
