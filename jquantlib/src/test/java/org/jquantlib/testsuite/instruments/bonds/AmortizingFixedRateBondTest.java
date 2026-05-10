@@ -32,16 +32,27 @@ package org.jquantlib.testsuite.instruments.bonds;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.Coupon;
+import org.jquantlib.cashflow.FixedRateLeg;
 import org.jquantlib.cashflow.Leg;
+import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.ActualActual;
+import org.jquantlib.daycounters.Business252;
+import org.jquantlib.instruments.Bond;
 import org.jquantlib.instruments.bonds.AmortizingFixedRateBond;
+import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.InterestRate;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.Brazil;
 import org.jquantlib.time.calendars.NullCalendar;
-import org.junit.Ignore;
+import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -141,33 +152,215 @@ public class AmortizingFixedRateBondTest {
     }
 
     /**
-     * Reproduces {@code amortizingbond.cpp:100} — Brazilian onshore corporate
-     * bond. Requires {@code Business252} day counter wired to the Brazilian
-     * holiday calendar, plus per-coupon {@link org.jquantlib.termstructures.InterestRate}
-     * overloads on {@link org.jquantlib.cashflow.FixedRateLeg} that accept a
-     * {@code Compounded/Annual} rate. Java {@code Business252} ignores the
-     * {@code Calendar} ctor argument as of Phase 5d, and the FixedRateLeg
-     * builder does not yet compose with the Brazilian holiday calendar; both
-     * are deferred to Phase 5d.5-Bonds-b.
+     * Reproduces {@code amortizingbond.cpp:100-221} — Brazilian onshore
+     * corporate bond (SND code RISF11, ISIN BRRISFDBS005). Phase 5d.5-Bonds-b
+     * un-blocks: Business252(Brazil) is now wired (calendar ctor used), and
+     * FixedRateLeg builder composes with the Brazilian holiday calendar.
+     *
+     * <p>Coupons match through k=55 within {@code 1e-6} but diverge from
+     * k=56 onward by ~0.02 — beyond the project tolerance ceiling
+     * ({@code 1e-8} loose).  Root cause: Brazil-calendar holiday-table
+     * mismatch between C++ v1.42.1 and JQuant for late-2024 / early-2025
+     * (the C++ {@code amortizingbond.cpp} test fixture pre-existed the
+     * holiday change; both sides correctly include Black Awareness Day
+     * since 2007, so divergence is in another holiday).
+     *
+     * <p>Per project tolerance rules ({@code @Ignore} > loosen-to-force-green),
+     * tracked as Phase 5d.5-Bonds-c carry-forward (Brazilian calendar
+     * reconciliation against C++ v1.42.1).  Test body fully ported and
+     * validated through k=55; final 4 coupons require the calendar fix.
      */
-    @Ignore("Phase 5d.5-Bonds-b: needs Business252(Brazil) wiring + "
-            + "FixedRateLeg.withCouponRates(InterestRate) Brazil holiday composition")
+    @org.junit.Ignore("Phase 5d.5-Bonds-c — Brazilian calendar holiday-table "
+            + "reconciliation against C++ v1.42.1; coupons k=0..55 match, "
+            + "k=56..59 diverge by ~0.02. Full body ported; un-ignore once "
+            + "calendar fixed.")
     @Test
     public void testBrazilianAmortizingFixedRateBond() {
-        fail("not yet implemented — see @Ignore reason (Phase 5d.5-Bonds-b)");
+        final double[] notionals = {
+                1000          , 983.33300000, 966.66648898, 950.00019204,
+                933.33338867, 916.66685434, 900.00001759, 883.33291726,
+                866.66619177, 849.99933423, 833.33254728, 816.66589633,
+                799.99937871, 783.33299165, 766.66601558, 749.99946306,
+                733.33297499, 716.66651646, 699.99971995, 683.33272661,
+                666.66624140, 649.99958536, 633.33294599, 616.66615618,
+                599.99951997, 583.33273330, 566.66633377, 549.99954356,
+                533.33290739, 516.66625403, 499.99963400, 483.33314619,
+                466.66636930, 449.99984658, 433.33320226, 416.66634063,
+                399.99968700, 383.33290004, 366.66635221, 349.99953317,
+                333.33290539, 316.66626012, 299.99948151, 283.33271031,
+                266.66594695, 249.99932526, 233.33262024, 216.66590450,
+                199.99931312, 183.33277035, 166.66617153, 149.99955437,
+                133.33295388, 116.66633464,  99.99973207,  83.33307672,
+                 66.66646137,  49.99984602,  33.33324734,  16.66662367
+        };
+
+        final double[] expectedAmortizations = {
+                16.66700000, 16.66651102, 16.66629694, 16.66680337,
+                16.66653432, 16.66683675, 16.66710033, 16.66672548,
+                16.66685753, 16.66678695, 16.66665095, 16.66651761,
+                16.66638706, 16.66697606, 16.66655251, 16.66648807,
+                16.66645852, 16.66679651, 16.66699333, 16.66648520,
+                16.66665604, 16.66663937, 16.66678981, 16.66663620,
+                16.66678667, 16.66639952, 16.66679021, 16.66663617,
+                16.66665336, 16.66662002, 16.66648780, 16.66677688,
+                16.66652271, 16.66664432, 16.66686163, 16.66665363,
+                16.66678696, 16.66654783, 16.66681904, 16.66662777,
+                16.66664527, 16.66677860, 16.66677119, 16.66676335,
+                16.66662168, 16.66670502, 16.66671573, 16.66659137,
+                16.66654276, 16.66659882, 16.66661715, 16.66660049,
+                16.66661924, 16.66660257, 16.66665534, 16.66661534,
+                16.66661534, 16.66659867, 16.66662367, 16.66662367
+        };
+
+        // C++ note: data changed because source (pentagonotrustee.com.br) does
+        // not include the recently added "Black Awareness Day" holiday.
+        final double[] expectedCoupons = {
+                5.97950399, 4.85474255, 5.27619136, 5.18522454,
+                5.33753111, 5.24221882, 4.91231709, 4.59116258,
+                4.73037674, 4.63940686, 4.54843737, 3.81920094,
+                4.78359948, 3.86733691, 4.38439657, 4.09359456,
+                4.00262671, 4.28531030, 3.82068947, 3.55165259,
+                3.46502778, 3.71720657, 3.62189368, 2.88388676,
+                3.58769952, 2.72800044, 3.38838360, 3.00196900,
+                2.91100034, 3.08940793, 2.59877059, 2.63809514,
+                2.42551945, 2.45615766, 2.59111761, 1.94857222,
+                2.28751141, 1.79268582, 2.19248291, 1.81913832,
+                1.90625855, 1.89350716, 1.48110584, 1.62031828,
+                1.38600825, 1.23425366, 1.39521333, 1.06968563,
+                1.03950542, 1.00065409, 0.90968563, 0.81871706,
+                0.79726493, 0.63678002, 0.57187676, 0.49829046,
+                0.31177086, 0.27290565, 0.19062560, 0.08662552
+        };
+
+        final int settlementDays = 0;
+        final Date issueDate = new Date(2, Month.March, 2020);
+        final Date maturityDate = new Date(2, Month.March, 2025);
+        final Calendar brazilCal = new Brazil(Brazil.Market.SETTLEMENT);
+
+        final Schedule schedule = new Schedule(issueDate, maturityDate,
+                new Period(Frequency.Monthly), brazilCal,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false);
+
+        final InterestRate couponRate = new InterestRate(0.0675,
+                new Business252(new Brazil()),
+                Compounding.Compounded, Frequency.Annual);
+
+        final Leg coupons = new FixedRateLeg(schedule, couponRate.dayCounter())
+                .withNotionals(notionals)
+                .withCouponRates(couponRate)
+                .withPaymentAdjustment(BusinessDayConvention.Following)
+                .Leg();
+
+        // Java path: the public Bond(settlementDays, calendar, issueDate,
+        // coupons) ctor (made public in Phase 5d.5-Bonds-b align commit)
+        // runs addRedemptionsToCashflows() automatically. That method
+        // calls calculateNotionalsFromCashflows() to derive the notional
+        // schedule from per-coupon nominals, then appends one redemption
+        // cashflow per notional change (= notionals[i-1] - notionals[i]).
+        // This matches C++ Bond::addRedemptionsToCashflows.
+        final Bond risf11 = new Bond(settlementDays, schedule.calendar(),
+                issueDate, coupons);
+
+        final double tolerance = 1.0e-6;
+        final Leg cashflows = risf11.cashflows();
+        // After Bond() sorts cashflows by date with the (now-fixed)
+        // EarlierThanCashFlowComparator, the order on equal dates is:
+        // coupon (Coupon), then principal (SimpleCashFlow). C++ test
+        // assumes the same ordering for cashflows[2*k] / cashflows[2*k+1].
+        for (int k = 0; k < cashflows.size() / 2; ++k) {
+            final double couponAmt = cashflows.get(2 * k).amount();
+            final double couponErr = Math.abs(expectedCoupons[k] - couponAmt);
+            if (couponErr > tolerance) {
+                fail("\n " + k + "th cash flow Failed!"
+                        + " Expected Coupon: " + expectedCoupons[k]
+                        + " Calculated Coupon: " + couponAmt);
+            }
+
+            final double amortAmt = cashflows.get(2 * k + 1).amount();
+            final double amortErr = Math.abs(expectedAmortizations[k] - amortAmt);
+            if (amortErr > tolerance) {
+                fail("\n " + k + "th cash flow Failed!"
+                        + " Expected Amortization: " + expectedAmortizations[k]
+                        + " Calculated Amortization: " + amortAmt);
+            }
+        }
     }
 
     /**
-     * Reproduces {@code amortizingbond.cpp:223} — draw-down + amortization.
-     * Requires {@code FixedRateLeg.withPaymentCalendar(Calendar)} which
-     * Java does not yet expose. Once added, the assertion structure
-     * trivially mirrors the C++ test (notional differences = cashflow
-     * amounts at indices 2/5/8). Deferred to Phase 5d.5-Bonds-b.
+     * Reproduces {@code amortizingbond.cpp:223-281} — draw-down + amortization
+     * pattern. Phase 5d.5-Bonds-b unblocks: FixedRateLeg.withPaymentCalendar
+     * is now exposed.
      */
-    @Ignore("Phase 5d.5-Bonds-b: FixedRateLeg.withPaymentCalendar(Calendar) "
-            + "missing on the Java side")
     @Test
     public void testAmortizingFixedRateBondWithDrawDown() {
-        fail("not yet implemented — see @Ignore reason (Phase 5d.5-Bonds-b)");
+        final Date issueDate = new Date(19, Month.May, 2012);
+        final Date maturityDate = new Date(25, Month.May, 2017);
+        final Calendar calendar = new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
+        final int settlementDays = 3;
+
+        final Schedule schedule = new Schedule(issueDate, maturityDate,
+                new Period(Frequency.Semiannual), calendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false);
+
+        final double[] nominals = {
+                100.0, 100.0, 100.5, 100.5, 101.5, 101.5, 90.0, 80.0, 70.0, 60.0
+        };
+        final double[] rates = { 0.042 };
+
+        final Leg leg = new FixedRateLeg(schedule, new Actual360())
+                .withNotionals(nominals)
+                .withCouponRates(rates)
+                .withPaymentAdjustment(BusinessDayConvention.Unadjusted)
+                .withPaymentCalendar(calendar)
+                .Leg();
+
+        // Java Bond(settlementDays, calendar, issueDate, coupons) ctor (now
+        // public per Phase 5d.5-Bonds-b align commit) automatically runs
+        // addRedemptionsToCashflows() to derive principal cashflows from
+        // per-coupon nominals (via calculateNotionalsFromCashflows).
+        final Bond bond = new Bond(settlementDays, calendar, issueDate, leg);
+
+        final Leg cfs = bond.cashflows();
+        final double tolerance = 1.0e-8;
+
+        // first draw-down (negative principal): cashflows index 2 = principal
+        // for period 1 = nominals[1] - nominals[2] = 100.0 - 100.5 = -0.5
+        {
+            final double calculated = cfs.get(2).amount();
+            final double expected = nominals[1] - nominals[2];
+            if (Math.abs(calculated - expected) > tolerance) {
+                fail("Failed to calculate first draw down: \n"
+                        + "    expected:   " + expected + "\n"
+                        + "    calculated: " + calculated);
+            }
+        }
+
+        // second draw-down: cashflows index 5 = principal for period 2 =
+        // nominals[3] - nominals[4] = 100.5 - 101.5 = -1.0
+        {
+            final double calculated = cfs.get(5).amount();
+            final double expected = nominals[3] - nominals[4];
+            if (Math.abs(calculated - expected) > tolerance) {
+                fail("Failed to calculate second draw down: \n"
+                        + "    expected:   " + expected + "\n"
+                        + "    calculated: " + calculated);
+            }
+        }
+
+        // first amortization: cashflows index 8 = principal for period 3 =
+        // nominals[5] - nominals[6] = 101.5 - 90.0 = 11.5
+        {
+            final double calculated = cfs.get(8).amount();
+            final double expected = nominals[5] - nominals[6];
+            if (Math.abs(calculated - expected) > tolerance) {
+                fail("Failed to calculate first amortization: \n"
+                        + "    expected:   " + expected + "\n"
+                        + "    calculated: " + calculated);
+            }
+        }
     }
 }
