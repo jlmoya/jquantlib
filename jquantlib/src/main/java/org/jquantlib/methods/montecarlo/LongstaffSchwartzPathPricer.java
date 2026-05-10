@@ -174,6 +174,11 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
      * Solve the LSM regression at every interior time step using the
      * stored calibration paths. Switches the pricer to the pricing
      * phase.
+     *
+     * <p>Supports both single-variate (StateType=Double, single-asset
+     * Path) and multi-variate (StateType=Array, MultiPath) regression
+     * paths. The state-type is detected at calibrate-time on the first
+     * non-empty ITM sample; mismatched homogeneity throws.
      */
     public void calibrate() {
         final int n = paths_.size();
@@ -189,59 +194,31 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
 
         // Backward induction over interior time steps.
         for (int i = len_ - 2; i > 0; --i) {
-            // Collect in-the-money sub-population and discounted prices.
-            final List<Double> xList = new ArrayList<Double>(n);
+            // Collect in-the-money sub-population: states (homogeneous
+            // type) and discounted prices.
+            final List<StateType> xList = new ArrayList<StateType>(n);
             final List<Double> yList = new ArrayList<Double>(n);
 
             for (int j = 0; j < n; ++j) {
                 exercise[j] = pathPricer_.operator(paths_.get(j), i);
                 if (exercise[j] > 0.0) {
-                    final StateType s = pathPricer_.state(paths_.get(j), i);
-                    // For single-state PathType (StateType=Double) we pack into
-                    // a double[]; multi-state callers can subclass to override
-                    // this mapping. The MC American engine uses
-                    // EarlyExercisePathPricer<Path, Double>, so the cast below
-                    // is safe in that path.
-                    if (s instanceof Double) {
-                        xList.add((Double) s);
-                    } else {
-                        // Multi-path callers (MCBasket etc.) currently route
-                        // through their own LongstaffSchwartzMultiPathPricer;
-                        // this default branch will be replaced when they
-                        // converge on this implementation.
-                        throw new UnsupportedOperationException(
-                                "non-double state regression requires a multi-path subclass override");
-                    }
+                    xList.add(pathPricer_.state(paths_.get(j), i));
                     yList.add(dF_[i] * prices[j]);
                 }
             }
 
             if (v_.size() <= xList.size()) {
-                // Build basis-as-DoubleOp adapters for the LSE solver.
-                final List<Ops.DoubleOp> basisDouble = new ArrayList<Ops.DoubleOp>(v_.size());
-                for (final Ops.Op<StateType, Double> bf : v_) {
-                    basisDouble.add(new Ops.DoubleOp() {
-                        @SuppressWarnings("unchecked")
-                        @Override public double op(final double x) {
-                            return bf.op((StateType) Double.valueOf(x));
-                        }
-                    });
-                }
-                final double[] xArr = new double[xList.size()];
                 final double[] yArr = new double[yList.size()];
-                for (int k = 0; k < xList.size(); ++k) {
-                    xArr[k] = xList.get(k);
+                for (int k = 0; k < yList.size(); ++k) {
                     yArr[k] = yList.get(k);
                 }
-                coeff_[i - 1] = new GeneralLinearLeastSquares(xArr, yArr, basisDouble)
-                        .coefficients();
+                coeff_[i - 1] = solveStepRegression(xList, yArr);
             } else {
                 // Too few ITM paths — early-exercise iff exerciseValue > 0.
                 coeff_[i - 1] = new Array(v_.size());
             }
 
             // Roll back per-path prices.
-            int k = 0;
             for (int j = 0; j < n; ++j) {
                 prices[j] *= dF_[i];
                 if (exercise[j] > 0.0) {
@@ -253,7 +230,6 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
                     if (continuationValue < exercise[j]) {
                         prices[j] = exercise[j];
                     }
-                    ++k;
                 }
             }
         }
@@ -261,6 +237,62 @@ public class LongstaffSchwartzPathPricer<PathType, StateType>
         // Release calibration storage and enter pricing phase.
         paths_.clear();
         calibrationPhase_ = false;
+    }
+
+    /**
+     * Solve one time-step's LSE regression — dispatches on the runtime
+     * state-type of the ITM samples.
+     *
+     * <p>Single-variate ({@code Double}) → routes through the original
+     * {@code GeneralLinearLeastSquares(double[], double[], List&lt;DoubleOp&gt;)}
+     * constructor.
+     *
+     * <p>Multi-variate ({@code Array}) → routes through the new
+     * {@code GeneralLinearLeastSquares(Array[], double[], List&lt;ObjectToDouble&lt;Array&gt;&gt;)}
+     * constructor (Phase MC-extras WI-1).
+     */
+    @SuppressWarnings("unchecked")
+    private Array solveStepRegression(final List<StateType> xList, final double[] yArr) {
+        final int m = xList.size();
+        QL.require(m > 0, "empty regression sample");
+        final StateType first = xList.get(0);
+
+        if (first instanceof Double) {
+            final List<Ops.DoubleOp> basisDouble = new ArrayList<Ops.DoubleOp>(v_.size());
+            for (final Ops.Op<StateType, Double> bf : v_) {
+                basisDouble.add(new Ops.DoubleOp() {
+                    @Override public double op(final double x) {
+                        return bf.op((StateType) Double.valueOf(x));
+                    }
+                });
+            }
+            final double[] xArr = new double[m];
+            for (int k = 0; k < m; ++k) {
+                xArr[k] = (Double) xList.get(k);
+            }
+            return new GeneralLinearLeastSquares(xArr, yArr, basisDouble).coefficients();
+        }
+
+        if (first instanceof Array) {
+            final List<Ops.ObjectToDouble<Array>> basisArr =
+                    new ArrayList<Ops.ObjectToDouble<Array>>(v_.size());
+            for (final Ops.Op<StateType, Double> bf : v_) {
+                basisArr.add(new Ops.ObjectToDouble<Array>() {
+                    @Override public double op(final Array a) {
+                        return bf.op((StateType) a);
+                    }
+                });
+            }
+            final Array[] xArr = new Array[m];
+            for (int k = 0; k < m; ++k) {
+                xArr[k] = (Array) xList.get(k);
+            }
+            return new GeneralLinearLeastSquares(xArr, yArr, basisArr).coefficients();
+        }
+
+        throw new UnsupportedOperationException(
+                "regression state type not supported: " + first.getClass().getName()
+                + " — extend solveStepRegression for this state type");
     }
 
 
