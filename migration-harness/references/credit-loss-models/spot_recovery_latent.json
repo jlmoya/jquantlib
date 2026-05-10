@@ -1,0 +1,183 @@
+{
+  "cases": [
+    {
+      "expected": 0.2448326494110789,
+      "inputs": {
+        "factorWeightsDef": [
+          0.4472135954999579
+        ],
+        "factorWeightsRR": [
+          0.4472135954999579
+        ],
+        "invP": -1.644853625133687,
+        "invRR": -0.2533471028599986,
+        "m": [
+          -2.0
+        ],
+        "modelA": 1.0
+      },
+      "name": "expRR_p5_rr40_modelA1_mn2"
+    },
+    {
+      "expected": 0.36176637065313694,
+      "inputs": {
+        "factorWeightsDef": [
+          0.4472135954999579
+        ],
+        "factorWeightsRR": [
+          0.4472135954999579
+        ],
+        "invP": -1.644853625133687,
+        "invRR": -0.2533471028599986,
+        "m": [
+          -1.0
+        ],
+        "modelA": 1.0
+      },
+      "name": "expRR_p5_rr40_modelA1_mn1"
+    },
+    {
+      "expected": 0.49336134644333013,
+      "inputs": {
+        "factorWeightsDef": [
+          0.4472135954999579
+        ],
+        "factorWeightsRR": [
+          0.4472135954999579
+        ],
+        "invP": -1.644853625133687,
+        "invRR": -0.2533471028599986,
+        "m": [
+          0.0
+        ],
+        "modelA": 1.0
+      },
+      "name": "expRR_p5_rr40_modelA1_mp0"
+    },
+    {
+      "expected": 0.6256896174895479,
+      "inputs": {
+        "factorWeightsDef": [
+          0.4472135954999579
+        ],
+        "factorWeightsRR": [
+          0.4472135954999579
+        ],
+        "invP": -1.644853625133687,
+        "invRR": -0.2533471028599986,
+        "m": [
+          1.0
+        ],
+        "modelA": 1.0
+      },
+      "name": "expRR_p5_rr40_modelA1_mp1"
+    },
+    {
+      "expected": 0.744589052019349,
+      "inputs": {
+        "factorWeightsDef": [
+          0.4472135954999579
+        ],
+        "factorWeightsRR": [
+          0.4472135954999579
+        ],
+        "invP": -1.644853625133687,
+        "invRR": -0.2533471028599986,
+        "m": [
+          2.0
+        ],
+        "modelA": 1.0
+      },
+      "name": "expRR_p5_rr40_modelA1_mp2"
+    },
+    {
+      "expected": 0.40803415542162,
+      "inputs": {
+        "factorWeightsDef": [
+          0.3,
+          0.4
+        ],
+        "factorWeightsRR": [
+          0.5,
+          0.2
+        ],
+        "invP": -1.2815515641401576,
+        "invRR": -0.3853204662702544,
+        "m": [
+          0.0,
+          0.0
+        ],
+        "modelA": 0.8
+      },
+      "name": "expRR_2factor_case0"
+    },
+    {
+      "expected": 0.5109221723733759,
+      "inputs": {
+        "factorWeightsDef": [
+          0.3,
+          0.4
+        ],
+        "factorWeightsRR": [
+          0.5,
+          0.2
+        ],
+        "invP": -1.2815515641401576,
+        "invRR": -0.3853204662702544,
+        "m": [
+          1.0,
+          0.0
+        ],
+        "modelA": 0.8
+      },
+      "name": "expRR_2factor_case1"
+    },
+    {
+      "expected": 0.5453982489314796,
+      "inputs": {
+        "factorWeightsDef": [
+          0.3,
+          0.4
+        ],
+        "factorWeightsRR": [
+          0.5,
+          0.2
+        ],
+        "invP": -1.2815515641401576,
+        "invRR": -0.3853204662702544,
+        "m": [
+          0.0,
+          1.0
+        ],
+        "modelA": 0.8
+      },
+      "name": "expRR_2factor_case2"
+    },
+    {
+      "expected": 0.42493912213910207,
+      "inputs": {
+        "factorWeightsDef": [
+          0.3,
+          0.4
+        ],
+        "factorWeightsRR": [
+          0.5,
+          0.2
+        ],
+        "invP": -1.2815515641401576,
+        "invRR": -0.3853204662702544,
+        "m": [
+          -0.5,
+          0.5
+        ],
+        "modelA": 0.8
+      },
+      "name": "expRR_2factor_case3"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-10T01:17:11Z",
+  "generated_by": "spot_recovery_latent_probe.cpp (Phase 4m.7c)",
+  "test_group": "credit-loss-models/spot_recovery_latent"
+}
