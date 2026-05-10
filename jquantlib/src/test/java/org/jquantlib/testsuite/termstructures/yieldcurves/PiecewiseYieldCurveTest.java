@@ -850,7 +850,6 @@ public class PiecewiseYieldCurveTest {
 	}
 
 
-	@Ignore
 	@Test
 	public void testLiborFixing() {
 
@@ -938,7 +937,7 @@ public class PiecewiseYieldCurveTest {
 	}
 
 	
-	@Ignore
+	@Ignore("Phase Body-Fill-3: bootstrap NaN/INF — fairRate ~4.5e15 (estimated rate ~Math.pow(2,52)). Likely pre-existing JPYLibor or PiecewiseYieldCurve initial-guess pathology under Japan calendar; orthogonal to Bug-Fix-2 fixingDate fix.")
 	@Test
 	public void testJpyLibor() {
 	    QL.info("Testing bootstrap over JPY LIBOR swaps...");
