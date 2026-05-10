@@ -289,6 +289,16 @@ public class InterestRate {
         /* @Time */final double t = time;
         final double f = freq.toInteger();
         QL.require(c > 0.0 , "positive compound factor required"); // TODO: message
+
+        // Mirror C++ v1.42.1 ql/interestrate.cpp::InterestRate::impliedRate:
+        // when the compound factor is exactly 1.0 the implied rate is 0
+        // for any non-negative time (including t=0 — the discount-curve
+        // boundary case used by ZeroSpreadedTermStructure.zeroYieldImpl
+        // and friends). For c != 1.0 we still need t > 0.
+        if (c == 1.0) {
+            QL.require(t >= 0.0, "non negative time required");
+            return new InterestRate(0.0, resultDC, comp, freq);
+        }
         QL.require(t > 0.0 , "positive time required"); // TODO: message
 
         /* @Rate */double rate;
