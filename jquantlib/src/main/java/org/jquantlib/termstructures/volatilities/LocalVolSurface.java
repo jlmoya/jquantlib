@@ -143,7 +143,7 @@ public class LocalVolSurface extends LocalVolTermStructure {
     }
 
     @Override
-    protected final /*@Volatility*/ double localVolImpl(
+    protected /*@Volatility*/ double localVolImpl(
             final /*@Time*/ double time,
             final /*@Real*/ double underlyingLevel) {
 
