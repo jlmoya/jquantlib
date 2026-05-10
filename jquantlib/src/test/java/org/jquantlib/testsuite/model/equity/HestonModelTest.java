@@ -11,6 +11,7 @@ import static org.junit.Assert.fail;
 
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
@@ -18,11 +19,13 @@ import org.jquantlib.instruments.EuropeanOption;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticPDFHestonEngine;
 import org.jquantlib.pricingengines.vanilla.COSHestonEngine;
+import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
 import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -185,9 +188,58 @@ public class HestonModelTest {
     @Test
     public void testFdBarrierVsCached() { fail("not implemented"); }
 
-    @Ignore(REASON_FD)
+    /**
+     * Phase Body-Fill-4 port of C++ {@code testFdVanillaVsCached}
+     * (645-688): FD vanilla Heston engine reproduces cached value
+     * 0.06325 to 1e-4 with grid (T=100, X=200, V=100), Hundsdorfer.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:645-688} v1.42.1.
+     */
     @Test
-    public void testFdVanillaVsCached() { fail("not implemented"); }
+    public void testFdVanillaVsCached() {
+        final Date settlementDate = new Date(27, Month.December, 2004);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISDA);
+        final Date exerciseDate = new Date(28, Month.March, 2005);
+
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 1.05);
+        final Exercise exercise = new EuropeanExercise(exerciseDate);
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.7)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.4)), dayCounter));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(1.05));
+
+        final EuropeanOption option = new EuropeanOption(payoff, exercise);
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                0.3, 1.16, 0.2, 0.8, 0.8);
+        final HestonModel model = new HestonModel(process);
+
+        // C++ uses MakeFdHestonVanillaEngine builder with default
+        // Hundsdorfer scheme, dampingSteps=0.
+        option.setPricingEngine(new FdHestonVanillaEngine(model, process,
+                /* tGrid */ 100, /* xGrid */ 200, /* vGrid */ 100,
+                /* dampingSteps */ 0, FdmSchemeDesc.Hundsdorfer()));
+
+        final double expected = 0.06325;
+        final double calculated = option.NPV();
+        final double error = Math.abs(calculated - expected);
+        final double tolerance = 1.0e-4;
+
+        if (error > tolerance) {
+            fail("failed to reproduce cached price with FD engine"
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected
+                    + "\n    error:      " + error);
+        }
+        assertEquals("FdHestonVanillaEngine cached", expected, calculated, tolerance);
+    }
 
     @Ignore(REASON_FD)
     @Test
