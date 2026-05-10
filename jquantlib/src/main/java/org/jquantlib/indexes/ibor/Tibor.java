@@ -77,12 +77,17 @@ public class Tibor extends IborIndex {
 
 	public Tibor(final Period tenor,
 			final Handle<YieldTermStructure> h) {
-		super("Tibor", tenor, 0,
+		// align(indexes.ibor): match C++ v1.42.1 tibor.hpp settlementDays=2
+		// (was 0). Tokyo Interbank Offered Rate (TIBOR) is fixed by JBA with
+		// the standard 2-day Tokyo value-date convention; Java port's 0
+		// caused fixing/value/maturity-date misalignment of the same shape
+		// as the JPYLibor bug fixed in Phase Bug-Fix-4.
+		super("Tibor", tenor, 2,
 				new JPYCurrency(),
 				new Japan(),
 				BusinessDayConvention.ModifiedFollowing,
 				false,
-				new Actual365Fixed(), 
+				new Actual365Fixed(),
 				h);
 	}
 
