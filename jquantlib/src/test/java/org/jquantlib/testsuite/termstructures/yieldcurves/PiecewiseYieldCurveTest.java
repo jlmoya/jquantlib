@@ -963,8 +963,13 @@ public class PiecewiseYieldCurveTest {
 	    index.clearFixings();
 	}
 
-	
-	@Ignore("Phase Bug-Fix-3: bootstrap fails 'date before reference date' on first JPYLibor swap helper. Phase Bug-Fix-3's IterativeBootstrap throw-on-failure replaced the silent QL.error which previously masked this with a NaN/INF garbage curve (fairRate ~4.5e15). New, useful error: 'iteration 1: failed at 1th alive instrument, pillar October 6, 2008, reference date October 9, 2007: date before reference date'. Root cause: JPYLibor.fixing or SwapRateHelper produces a discount-curve query for a pillar (Oct 6, 2008) before the curve reference (Oct 9, 2007); likely SwapRateHelper.maturityDate computation under Japan calendar with EOM treatment. Orthogonal to bootstrap silent-catch fix.")
+
+	// Phase Bug-Fix-4: JPYLibor.settlementDays was 0 (Java) vs 2 (C++ v1.42.1
+	// jpylibor.hpp); this caused fixing/value/maturity-date misalignment under
+	// Japan calendar that propagated through SwapRateHelper into the bootstrap
+	// solver and triggered "date before reference date" inside Brent (with the
+	// pre-Bug-Fix-3 silent QL.error catch this manifested as fairRate ~4.5e15
+	// = ~2^52 garbage). Fix: align JPYLibor settlementDays to C++ value of 2.
 	@Test
 	public void testJpyLibor() {
 	    QL.info("Testing bootstrap over JPY LIBOR swaps...");
