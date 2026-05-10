@@ -382,8 +382,12 @@ public class SwapTest {
         }
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-3 — depends on regenerating cached NPV "
-            + "(-5.872342992212 with at-par coupons) from C++ v1.42.1 via a probe.")
+    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-3 — cached NPV regression: "
+            + "Java reproduces -1.7764004820236075 vs C++ at-par expected "
+            + "-5.872863313209 (diff ~4.1).  Indicates Euribor / Schedule / "
+            + "coupon-day-counter discrepancy — needs probe to identify which "
+            + "convention diverges; deferred until probe + regenerated NPV "
+            + "validate against C++ v1.42.1.")
     @Test
     public void testCachedValue() {
     }
