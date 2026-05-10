@@ -107,15 +107,13 @@ public class FdmHestonSolver extends LazyObject {
     }
 
     /**
-     * Time derivative at {@code (s, v)}. Java {@link Fdm2DimSolver} does not
-     * yet expose snapshot-based theta, so this returns {@link Double#NaN}.
-     * Engines that use this should treat NaN as "not yet implemented".
+     * Time derivative (theta) at {@code (s, v)}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code FdmHestonSolver::thetaAt}: delegates to
+     * {@link Fdm2DimSolver#thetaAt} in log-spot space.
      */
     public double thetaAt(final double s, final double v) {
         calculate();
-        // TODO: requires a snapshot-condition theta hook on Fdm2DimSolver
-        // (matches C++ solver_->thetaAt(log s, v)). Not load-bearing for
-        // first FdHestonTest un-ignore wave; revisit in Phase 4n.5b.
-        return Double.NaN;
+        return solver.thetaAt(JQuantMath.log(s), v);
     }
 }

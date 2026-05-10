@@ -132,4 +132,46 @@ public class Fdm2DimSolver extends LazyObject {
         calculate();
         return interpolation.op(xq, yq);
     }
+
+    /**
+     * Finite-difference theta estimate at {@code (x, y)}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code Fdm2DimSolver::thetaAt}: returns
+     * {@link Double#NaN} (matching C++ {@code Null<Real>()}) if the first
+     * stopping time is exactly zero. Otherwise, builds a fresh
+     * {@link BicubicSplineInterpolation} from the snapshot recorded by
+     * {@link #thetaCondition} and returns
+     * {@code (snap(x,y) - interpolateAt(x,y)) / thetaCondition.getTime()}.
+     *
+     * <p>The snapshot reshape mirrors {@link #performCalculations()}: flat
+     * index {@code k = j*cols + i} maps to {@code thetaValues[j, i]}.
+     */
+    public double thetaAt(final double xq, final double yq) {
+        if (!conditions.stoppingTimes().isEmpty()
+                && conditions.stoppingTimes().get(0) == 0.0) {
+            return Double.NaN;
+        }
+        calculate();
+
+        final Array snapshot = thetaCondition.getValues();
+        if (snapshot == null) {
+            // No snapshot recorded — should not happen if the snapshot time
+            // lies within the rollback range, but guard anyway.
+            return Double.NaN;
+        }
+
+        final int rows = resultValues.rows();
+        final int cols = resultValues.columns();
+        final Matrix thetaValues = new Matrix(rows, cols);
+        for (int j = 0; j < rows; ++j) {
+            for (int i = 0; i < cols; ++i) {
+                thetaValues.set(j, i, snapshot.get(j * cols + i));
+            }
+        }
+
+        final BicubicSplineInterpolation thetaInterp =
+                new BicubicSplineInterpolation(x, y, thetaValues);
+        return (thetaInterp.op(xq, yq) - interpolation.op(xq, yq))
+               / thetaCondition.getTime();
+    }
 }

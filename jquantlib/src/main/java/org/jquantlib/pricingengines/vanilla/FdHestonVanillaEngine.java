@@ -195,6 +195,6 @@ public class FdHestonVanillaEngine
         r.value             = solver.valueAt(spot, v0);
         r.greeks().delta    = solver.deltaAt(spot, v0);
         r.greeks().gamma    = solver.gammaAt(spot, v0);
-        r.greeks().theta    = solver.thetaAt(spot, v0); // NaN until snapshot-theta wired
+        r.greeks().theta    = solver.thetaAt(spot, v0);
     }
 }
