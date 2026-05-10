@@ -1,0 +1,233 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "implied_vol_choi": 0.009999999999999988,
+        "implied_vol_jaeckel": 0.009999999999999998
+      },
+      "inputs": {
+        "bachelier_vol": 0.01,
+        "discount": 1.0,
+        "forward": 0.05,
+        "option_type": "Call",
+        "price": 0.003989422804014327,
+        "strike": 0.05,
+        "tte": 1.0
+      },
+      "name": "atm_call_1y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.009999999999999988,
+        "implied_vol_jaeckel": 0.009999999999999998
+      },
+      "inputs": {
+        "bachelier_vol": 0.01,
+        "discount": 1.0,
+        "forward": 0.05,
+        "option_type": "Put",
+        "price": 0.003989422804014327,
+        "strike": 0.05,
+        "tte": 1.0
+      },
+      "name": "atm_put_1y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.00999999999999999,
+        "implied_vol_jaeckel": 0.01
+      },
+      "inputs": {
+        "bachelier_vol": 0.01,
+        "discount": 0.95,
+        "forward": 0.05,
+        "option_type": "Call",
+        "price": 0.008474589551725663,
+        "strike": 0.05,
+        "tte": 5.0
+      },
+      "name": "atm_call_5y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.009999999999996964,
+        "implied_vol_jaeckel": 0.010000000000000002
+      },
+      "inputs": {
+        "bachelier_vol": 0.01,
+        "discount": 1.0,
+        "forward": 0.05,
+        "option_type": "Call",
+        "price": 0.000833154705876864,
+        "strike": 0.06,
+        "tte": 1.0
+      },
+      "name": "otm_call_1y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.012000000000006313,
+        "implied_vol_jaeckel": 0.012000000000000002
+      },
+      "inputs": {
+        "bachelier_vol": 0.012,
+        "discount": 0.98,
+        "forward": 0.05,
+        "option_type": "Call",
+        "price": 0.0009749242259058901,
+        "strike": 0.07,
+        "tte": 2.0
+      },
+      "name": "otm_call_2y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.009999999999996971,
+        "implied_vol_jaeckel": 0.01
+      },
+      "inputs": {
+        "bachelier_vol": 0.01,
+        "discount": 1.0,
+        "forward": 0.05,
+        "option_type": "Put",
+        "price": 0.0008331547058768627,
+        "strike": 0.04,
+        "tte": 1.0
+      },
+      "name": "otm_put_1y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.015000000000001555,
+        "implied_vol_jaeckel": 0.014999999999999994
+      },
+      "inputs": {
+        "bachelier_vol": 0.015,
+        "discount": 0.97,
+        "forward": 0.05,
+        "option_type": "Put",
+        "price": 0.003193976230323353,
+        "strike": 0.03,
+        "tte": 3.0
+      },
+      "name": "otm_put_3y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.009999999999996971,
+        "implied_vol_jaeckel": 0.01
+      },
+      "inputs": {
+        "bachelier_vol": 0.01,
+        "discount": 1.0,
+        "forward": 0.05,
+        "option_type": "Call",
+        "price": 0.010833154705876865,
+        "strike": 0.04,
+        "tte": 1.0
+      },
+      "name": "itm_call_1y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.012000000000000977,
+        "implied_vol_jaeckel": 0.012
+      },
+      "inputs": {
+        "bachelier_vol": 0.012,
+        "discount": 0.95,
+        "forward": 0.05,
+        "option_type": "Call",
+        "price": 0.022370510143113934,
+        "strike": 0.03,
+        "tte": 5.0
+      },
+      "name": "itm_call_5y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.009999999999996963,
+        "implied_vol_jaeckel": 0.009999999999999998
+      },
+      "inputs": {
+        "bachelier_vol": 0.01,
+        "discount": 1.0,
+        "forward": 0.05,
+        "option_type": "Put",
+        "price": 0.010833154705876858,
+        "strike": 0.06,
+        "tte": 1.0
+      },
+      "name": "itm_put_1y"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.04999999999999991,
+        "implied_vol_jaeckel": 0.05000000000000001
+      },
+      "inputs": {
+        "bachelier_vol": 0.05,
+        "discount": 1.0,
+        "forward": 0.05,
+        "option_type": "Call",
+        "price": 0.01534473179316383,
+        "strike": 0.06,
+        "tte": 1.0
+      },
+      "name": "high_vol_call"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.0012986741331954212,
+        "implied_vol_jaeckel": 0.001000000000000006
+      },
+      "inputs": {
+        "bachelier_vol": 0.001,
+        "discount": 1.0,
+        "forward": 0.05,
+        "option_type": "Call",
+        "price": 7.474560254589688e-28,
+        "strike": 0.06,
+        "tte": 1.0
+      },
+      "name": "low_vol_call"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.00999999999999697,
+        "implied_vol_jaeckel": 0.010000000000000004
+      },
+      "inputs": {
+        "bachelier_vol": 0.01,
+        "discount": 1.0,
+        "forward": -0.005,
+        "option_type": "Call",
+        "price": 0.0008331547058768635,
+        "strike": 0.005,
+        "tte": 1.0
+      },
+      "name": "neg_fwd_call"
+    },
+    {
+      "expected": {
+        "implied_vol_choi": 0.01000000000000001,
+        "implied_vol_jaeckel": 0.01
+      },
+      "inputs": {
+        "bachelier_vol": 0.01,
+        "discount": 1.0,
+        "forward": -0.005,
+        "option_type": "Put",
+        "price": 0.001977965574013061,
+        "strike": -0.01,
+        "tte": 1.0
+      },
+      "name": "neg_fwd_put"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-10T02:12:46Z",
+  "generated_by": "bachelier_implied_vol_probe",
+  "test_group": "pricingengines/bachelier-impl/bachelier_implied_vol"
+}

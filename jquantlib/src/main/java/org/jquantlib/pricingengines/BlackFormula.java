@@ -984,6 +984,132 @@ public class BlackFormula {
     }
 
 
+    /**
+     * Bachelier (normal) implied vol from a Bachelier-formula price.
+     *
+     * <p>Port of C++ QuantLib v1.42.1
+     * {@code QuantLib::bachelierBlackFormulaImpliedVol} (Jäckel inverse-PhiTilde
+     * closed-form approximation; <em>not</em> the Choi rational h(eta) form).
+     * Inputs/outputs follow C++ exactly:
+     * <pre>
+     *   bachelierPrice = discount * E[max(theta*(F_T - K), 0)]
+     *   sigma          = bachelierBlackFormulaImpliedVol(...)  // absolute vol
+     *   stdDev         = sigma * sqrt(tte)
+     * </pre>
+     *
+     * <p>Closed-form path branches:
+     * <ul>
+     *   <li><b>strike == forward</b> (close enough): {@code sigma = price / (sqrt(tte) * phi(0))}.</li>
+     *   <li><b>strike != forward</b>: invert {@code PhiTilde(x) = Phi(x) + phi(x)/x}
+     *       at {@code -|timeValue/(strike-forward)|} via Jäckel's two-region
+     *       rational approximation followed by a single Newton-Houseolder
+     *       refinement step.</li>
+     * </ul>
+     *
+     * @param optionType     Call or Put
+     * @param strike         strike rate
+     * @param forward        forward rate
+     * @param tte            time to expiry (positive)
+     * @param bachelierPrice option price under Bachelier model
+     * @param discount       discount factor (positive); price is divided by it internally
+     * @return absolute (normal) volatility
+     */
+    public static /*@Real*/ double bachelierBlackFormulaImpliedVol(
+            final Option.Type optionType,
+            @Real final double strike,
+            @Real final double forward,
+            @Real final double tte,
+            @Real final double bachelierPrice,
+            @Real final double discount) {
+
+        QL.require(tte > 0.0, "tte must be positive");
+        QL.require(discount > 0.0, "discount must be positive");
+
+        final double theta = (optionType == Option.Type.Call) ? 1.0 : -1.0;
+
+        // compound bachelierPrice so that effectively discount = 1
+        final double price = bachelierPrice / discount;
+
+        // handle case strike == forward (closed form)
+        if (Closeness.isCloseEnough(strike, forward)) {
+            return price / (Math.sqrt(tte) * BACHELIER_PHI_AT_ZERO);
+        }
+
+        final double timeValue = price - Math.max(theta * (forward - strike), 0.0);
+
+        if (Closeness.isCloseEnough(timeValue, 0.0)) {
+            return 0.0;
+        }
+
+        QL.require(timeValue > 0.0,
+                "bachelierBlackFormulaImpliedVolExact(theta=" + theta
+                        + ",strike=" + strike + ",forward=" + forward
+                        + ",tte=" + tte + ",price=" + bachelierPrice
+                        + "): option price implies negative time value ("
+                        + timeValue + ")");
+
+        final double phiTildeStar = -Math.abs(timeValue / (strike - forward));
+        final double xstar = inversePhiTilde(phiTildeStar);
+        return Math.abs((strike - forward) / (xstar * Math.sqrt(tte)));
+    }
+
+    /** {@code phi(0) = 1/sqrt(2*pi)}; standard normal pdf at zero. */
+    private static final double BACHELIER_PHI_AT_ZERO = 1.0 / Math.sqrt(2.0 * Math.PI);
+
+    /** Standard normal pdf {@code phi(x)}. */
+    private static double phi(final double x) {
+        return Math.exp(-0.5 * x * x) * BACHELIER_PHI_AT_ZERO;
+    }
+
+    /** Standard normal cdf {@code Phi(x)}. */
+    private static double Phi(final double x) {
+        return new CumulativeNormalDistribution().op(x);
+    }
+
+    /** {@code PhiTilde(x) = Phi(x) + phi(x)/x}. */
+    private static double phiTilde(final double x) {
+        return Phi(x) + phi(x) / x;
+    }
+
+    /**
+     * Jäckel's inverse of {@code PhiTilde} at {@code y < 0} via two-region
+     * rational approximation + a single Newton step. Mirrors C++
+     * {@code inversePhiTilde} (anonymous namespace in blackformula.cpp).
+     */
+    private static double inversePhiTilde(final double phiTildeStar) {
+        QL.require(phiTildeStar < 0.0,
+                "inversePhiTilde(" + phiTildeStar + "): negative argument required");
+        final double xbar;
+        if (phiTildeStar < -0.001882039271) {
+            final double g  = 1.0 / (phiTildeStar - 0.5);
+            final double g2 = g * g;
+            final double xibar =
+                    (0.032114372355
+                            - g2 * (0.016969777977
+                                    - g2 * (2.6207332461E-3 - 9.6066952861E-5 * g2)))
+                            / (1.0
+                                    - g2 * (0.6635646938
+                                            - g2 * (0.14528712196 - 0.010472855461 * g2)));
+            xbar = g * (0.3989422804014326 + xibar * g2);
+        } else {
+            final double h  = Math.sqrt(-Math.log(-phiTildeStar));
+            xbar =
+                    (9.4883409779
+                            - h * (9.6320903635 - h * (0.58556997323 + 2.1464093351 * h)))
+                            / (1.0
+                                    - h * (0.65174820867
+                                            + h * (1.5120247828 + 6.6437847132E-5 * h)));
+        }
+        final double q = (phiTilde(xbar) - phiTildeStar) / phi(xbar);
+        // Householder-style refinement (C++ inversePhiTilde):
+        //   xstar = xbar + 3*q*xbar^2 * (2 - q*xbar*(2 + xbar^2))
+        //                  / (6 + q*xbar*(-12 + xbar*(6q + xbar*(-6 + q*xbar*(3 + xbar^2)))))
+        final double xb2 = xbar * xbar;
+        final double num = 3.0 * q * xb2 * (2.0 - q * xbar * (2.0 + xb2));
+        final double den = 6.0 + q * xbar
+                * (-12.0 + xbar * (6.0 * q + xbar * (-6.0 + q * xbar * (3.0 + xb2))));
+        return xbar + num / den;
+    }
 
 
     //

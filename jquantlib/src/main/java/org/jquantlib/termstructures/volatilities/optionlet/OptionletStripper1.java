@@ -56,9 +56,9 @@ import org.jquantlib.time.TimeUnit;
  *      maxIter parameter (hardcoded to 100 inside Java BlackFormula); the
  *      ctor's {@code maxIter} parameter is therefore stored only and not
  *      forwarded.</li>
- *  <li>{@code bachelierBlackFormulaImpliedVol} is not yet ported; the
- *      Normal-vol bootstrap path raises {@link UnsupportedOperationException}
- *      pending Phase 5g.5b. ShiftedLognormal (the default) is fully
+ *  <li>Normal-vol bootstrap path uses {@link BlackFormula#bachelierBlackFormulaImpliedVol}
+ *      (Jäckel inverse-PhiTilde closed-form, ported in Phase 5g.5b) — both
+ *      ShiftedLognormal (default) and Normal volatility types are now
  *      operational.</li>
  * </ul>
  */
@@ -218,11 +218,15 @@ public class OptionletStripper1 extends OptionletStripper {
                                 optionletStDevs_.get(i, j), accuracy_, displacement_);
                         optionletStDevs_.set(i, j, stdDev);
                     } else if (volatilityType_ == VolatilityType.Normal) {
-                        // Phase 5g.5b carry-forward: bachelierBlackFormulaImpliedVol
-                        // not yet ported. Throw to surface the gap clearly.
-                        throw new UnsupportedOperationException(
-                                "Normal-vol stripping requires bachelierBlackFormulaImpliedVol "
-                                        + "(Phase 5g.5b carry-forward)");
+                        // Phase 5g.5b: bachelierBlackFormulaImpliedVol now ported.
+                        // Mirrors C++ optionletstripper1.cpp lines 149-155:
+                        //   stdDev = sqrt(tte) * bachelierBlackFormulaImpliedVol(...)
+                        final double stdDev = Math.sqrt(optionletTimes_.get(i))
+                                * BlackFormula.bachelierBlackFormulaImpliedVol(
+                                        optionletType, strikes[j], atmOptionletRate_.get(i),
+                                        optionletTimes_.get(i), optionletPrices_.get(i, j),
+                                        optionletAnnuity);
+                        optionletStDevs_.set(i, j, stdDev);
                     } else {
                         QL.error("Unknown volatility type: " + volatilityType_);
                     }
