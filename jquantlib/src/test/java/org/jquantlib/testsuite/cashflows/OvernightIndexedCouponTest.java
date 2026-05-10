@@ -10,6 +10,11 @@ import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.ArithmeticAveragedOvernightIndexedCouponPricer;
+import org.jquantlib.cashflow.BlackAveragingOvernightIndexedCouponPricer;
+import org.jquantlib.cashflow.BlackOvernightIndexedCouponPricer;
+import org.jquantlib.cashflow.CappedFlooredOvernightIndexedCoupon;
+import org.jquantlib.cashflow.CompoundingOvernightIndexedCouponPricer;
 import org.jquantlib.cashflow.OvernightIndexedCoupon;
 import org.jquantlib.cashflow.RateAveraging;
 import org.jquantlib.daycounters.Actual360;
@@ -20,9 +25,13 @@ import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.testsuite.util.Utilities;
+import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
+import org.jquantlib.time.calendars.Target;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -125,6 +134,49 @@ public class OvernightIndexedCouponTest {
         }
     }
 
+    /**
+     * Mirror of C++ {@code BlackONPricerVars} — flat 4% forecast curve,
+     * flat 10% optionlet vol, eval date 1-Jul-2025, all dates in the future
+     * so no past fixings are needed.
+     */
+    private static final class BlackONPricerVars {
+        final Date today = new Date(1, Month.July, 2025);
+        final double notional = 1_000_000.0;
+        final RelinkableHandle<YieldTermStructure> forecastCurve =
+                new RelinkableHandle<YieldTermStructure>();
+        final RelinkableHandle<OptionletVolatilityStructure> vol =
+                new RelinkableHandle<OptionletVolatilityStructure>();
+        final OvernightIndex sofr;
+        final DayCounter dc = new Actual360();
+
+        BlackONPricerVars() {
+            new Settings().setEvaluationDate(today);
+            forecastCurve.linkTo(Utilities.flatRate(today, 0.04, dc));
+            sofr = new Sofr(forecastCurve);
+        }
+
+        OvernightIndexedCoupon makeBaseCoupon(final Date start, final Date end,
+                                              final RateAveraging.Type avgMethod) {
+            final OvernightIndexedCoupon onCoupon = new OvernightIndexedCoupon(
+                    end, notional, start, end, sofr, 1.0, 0.0, new Date(), new Date(),
+                    dc, false, avgMethod,
+                    Constants.NULL_NATURAL, 0, false, false);
+            if (avgMethod == RateAveraging.Type.Compound) {
+                onCoupon.setPricer(new CompoundingOvernightIndexedCouponPricer());
+            } else {
+                onCoupon.setPricer(new ArithmeticAveragedOvernightIndexedCouponPricer());
+            }
+            return onCoupon;
+        }
+
+        CappedFlooredOvernightIndexedCoupon makeCoupon(final Date start, final Date end,
+                                                       final double cap, final double floor,
+                                                       final RateAveraging.Type avgMethod) {
+            return new CappedFlooredOvernightIndexedCoupon(
+                    makeBaseCoupon(start, end, avgMethod), cap, floor);
+        }
+    }
+
     @Ignore(REASON_PAST) @Test public void testPastCouponRate() { fail("not implemented"); }
     @Ignore(REASON_PAST) @Test public void testPastSpreadedCouponRate() { fail("not implemented"); }
     @Ignore(REASON_CURRENT) @Test public void testCurrentCouponRate() { fail("not implemented"); }
@@ -189,8 +241,89 @@ public class OvernightIndexedCouponTest {
     @Ignore(REASON_LOOKBACK) @Test public void testErrorWhenLookbackOrLockoutAppliedForSimpleAveraging() { fail("not implemented"); }
     @Ignore(REASON_BLACK) @Test public void testBlackOvernightIndexedCouponPricerCapletFloorlet() { fail("not implemented"); }
     @Ignore(REASON_BLACK) @Test public void testBlackAverageONIndexedCouponPricerCapletFloorlet() { fail("not implemented"); }
-    @Ignore(REASON_BLACK) @Test public void testBlackONPricerConsistencyWithNoVol() { fail("not implemented"); }
-    @Ignore(REASON_BLACK) @Test public void testBlackONAveragingPricerConsistencyWithNoVol() { fail("not implemented"); }
+
+    @Test
+    public void testBlackONPricerConsistencyWithNoVol() {
+        QL.info("Testing Black compounding pricer with zero volatility "
+              + "(should match vanilla pricer)...");
+
+        // Mirror C++ BlackONPricerVars + zero-vol ConstantOptionletVolatility.
+        final BlackONPricerVars vars = new BlackONPricerVars();
+        vars.vol.linkTo(new ConstantOptionletVolatility(
+                vars.today, new Target(), BusinessDayConvention.Following, 0.0, vars.dc));
+
+        final Date start = new Date(1, Month.July, 2035);
+        final Date end = new Date(1, Month.October, 2035);
+
+        // Capped+floored coupon priced with Black pricer at zero vol must
+        // match the vanilla compounding pricer rate (intrinsic only).
+        final CappedFlooredOvernightIndexedCoupon cf = vars.makeCoupon(
+                start, end, 0.045, 0.035, RateAveraging.Type.Compound);
+        final BlackOvernightIndexedCouponPricer blackPricer =
+                new BlackOvernightIndexedCouponPricer(vars.vol);
+        cf.setPricer(blackPricer);
+        final double blackRate = cf.rate();
+
+        final OvernightIndexedCoupon base = vars.makeBaseCoupon(
+                start, end, RateAveraging.Type.Compound);
+        // base already has CompoundingOvernightIndexedCouponPricer set.
+        final double vanillaRate = base.rate();
+
+        // C++ tolerance: 1e-10.
+        if (Math.abs(blackRate - vanillaRate) > 1e-10) {
+            fail("Zero capped coupon rate: black=" + blackRate
+                    + " vanilla=" + vanillaRate
+                    + " diff=" + Math.abs(blackRate - vanillaRate));
+        }
+
+        // Also check: the same Black pricer applied to the un-capped
+        // coupon must still equal the vanilla rate at zero vol.
+        base.setPricer(blackPricer);
+        final double vanillaRate2 = base.rate();
+        if (Math.abs(blackRate - vanillaRate2) > 1e-10) {
+            fail("Zero capped coupon rate (same pricer): black=" + blackRate
+                    + " vanilla=" + vanillaRate2
+                    + " diff=" + Math.abs(blackRate - vanillaRate2));
+        }
+    }
+
+    @Test
+    public void testBlackONAveragingPricerConsistencyWithNoVol() {
+        QL.info("Testing Black averaging pricer with zero volatility "
+              + "(should match vanilla pricer)...");
+
+        final BlackONPricerVars vars = new BlackONPricerVars();
+        vars.vol.linkTo(new ConstantOptionletVolatility(
+                vars.today, new Target(), BusinessDayConvention.Following, 0.0, vars.dc));
+
+        final Date start = new Date(1, Month.July, 2035);
+        final Date end = new Date(1, Month.October, 2035);
+
+        final CappedFlooredOvernightIndexedCoupon cf = vars.makeCoupon(
+                start, end, 0.045, 0.035, RateAveraging.Type.Simple);
+        final BlackAveragingOvernightIndexedCouponPricer blackPricer =
+                new BlackAveragingOvernightIndexedCouponPricer(vars.vol);
+        cf.setPricer(blackPricer);
+        final double blackRate = cf.rate();
+
+        final OvernightIndexedCoupon base = vars.makeBaseCoupon(
+                start, end, RateAveraging.Type.Simple);
+        final double vanillaRate = base.rate();
+
+        if (Math.abs(blackRate - vanillaRate) > 1e-10) {
+            fail("Zero capped coupon rate: black=" + blackRate
+                    + " vanilla=" + vanillaRate
+                    + " diff=" + Math.abs(blackRate - vanillaRate));
+        }
+
+        base.setPricer(blackPricer);
+        final double vanillaRate2 = base.rate();
+        if (Math.abs(blackRate - vanillaRate2) > 1e-10) {
+            fail("Zero capped coupon rate (same pricer): black=" + blackRate
+                    + " vanilla=" + vanillaRate2
+                    + " diff=" + Math.abs(blackRate - vanillaRate2));
+        }
+    }
     @Ignore(REASON_LEG) @Test public void testOvernightLegBasicFunctionality() { fail("not implemented"); }
     @Ignore(REASON_LEG) @Test public void testOvernightLegWithLookback() { fail("not implemented"); }
     @Ignore(REASON_LEG) @Test public void testOvernightLegWithLockout() { fail("not implemented"); }
