@@ -27,7 +27,10 @@ import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.pricingengines.barrier.AnalyticBarrierEngine;
 import org.jquantlib.pricingengines.barrier.FdHestonBarrierEngine;
+import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
 import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
+import org.jquantlib.methods.finitedifferences.solvers.FdmHestonSolver;
+import org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc;
 import org.jquantlib.cashflow.FixedDividend;
 import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.processes.BlackScholesMertonProcess;
@@ -599,10 +602,103 @@ public class FdHestonTest {
         }
     }
 
-    @Ignore("Phase 5j.5 — requires FdHestonVanillaEngine convergence regression suite")
+    /**
+     * {@code testFdmHestonConvergence} — convergence of {@link FdHestonVanillaEngine}
+     * against the {@link AnalyticHestonEngine} reference across 4 parameter sets
+     * × 6 ADI schemes (Hundsdorfer, ModifiedCraigSneyd, ModifiedHundsdorfer,
+     * CraigSneyd, TR-BDF2, Crank-Nicolson). Mirrors C++
+     * test-suite/fdheston.cpp lines 614-690 (based on K.J. in 't Hout &amp;
+     * S. Foulon, "ADI finite difference schemes for option pricing in the
+     * Heston model with correlation"). Reference NPV computed analytically
+     * per case, then asserted within the C++ tolerance: rel-diff &gt; 0.02
+     * AND abs-diff &gt; 0.002 fails.
+     * <p>
+     * Java port note: C++ uses {@code AnalyticHestonEngine} with Gauss-Laguerre
+     * order 144; Java port uses 128 (the only embedded quadrature table — see
+     * {@code GaussLaguerreIntegration.SUPPORTED_ORDER}). Convergence is well
+     * past 64 for Gatheral integration, so 128 is more than adequate.
+     */
     @Test
     public void testFdmHestonConvergence() {
-        fail("not implemented");
+        // [kappa, theta, sigma, rho, r, q, T, K]
+        final double[][] values = {
+                { 1.5,    0.04,   0.3,    -0.9,    0.025, 0.0,    1.0,  100 },
+                { 3.0,    0.12,   0.04,    0.6,    0.01,  0.04,   1.0,  100 },
+                { 0.6067, 0.0707, 0.2928, -0.7571, 0.03,  0.0,    3.0,  100 },
+                { 2.5,    0.06,   0.5,    -0.1,    0.0507,0.0469, 0.25, 100 }
+        };
+
+        final FdmSchemeDesc[] schemes = {
+                FdmSchemeDesc.Hundsdorfer(),
+                FdmSchemeDesc.ModifiedCraigSneyd(),
+                FdmSchemeDesc.ModifiedHundsdorfer(),
+                FdmSchemeDesc.CraigSneyd(),
+                FdmSchemeDesc.TrBDF2(),
+                FdmSchemeDesc.CrankNicolson()
+        };
+
+        final int tn = 60;
+        final double v0 = 0.04;
+
+        final Date todaysDate = new Date(28, Month.March, 2004);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(75.0));
+        final DayCounter dc = new Actual365Fixed();
+
+        for (final FdmSchemeDesc scheme : schemes) {
+            for (final double[] v : values) {
+                final double kappa = v[0];
+                final double theta = v[1];
+                final double sigma = v[2];
+                final double rho   = v[3];
+                final double r     = v[4];
+                final double q     = v[5];
+                final double T     = v[6];
+                final double K     = v[7];
+
+                final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                        new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(r)),
+                                dc, Compounding.Continuous, Frequency.Annual));
+                final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                        new FlatForward(todaysDate, new Handle<Quote>(new SimpleQuote(q)),
+                                dc, Compounding.Continuous, Frequency.Annual));
+
+                final HestonProcess hestonProcess = new HestonProcess(
+                        rTS, qTS, s0, v0, kappa, theta, sigma, rho);
+                final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+                final int days = (int) (T * 365);
+                final Date exerciseDate = todaysDate.add(days);
+                final Exercise exercise = new EuropeanExercise(exerciseDate);
+                final StrikedTypePayoff payoff =
+                        new PlainVanillaPayoff(Option.Type.Call, K);
+
+                final VanillaOption option = new VanillaOption(payoff, exercise);
+
+                option.setPricingEngine(new FdHestonVanillaEngine(
+                        hestonModel, hestonProcess, tn, 101, 51, 0, scheme));
+                final double calculated = option.NPV();
+
+                option.setPricingEngine(
+                        new AnalyticHestonEngine(hestonModel, hestonProcess, 128));
+                final double expected = option.NPV();
+
+                final double absDiff = Math.abs(expected - calculated);
+                final double relDiff = absDiff / expected;
+                if (relDiff > 0.02 && absDiff > 0.002) {
+                    fail("Failed to reproduce expected npv:"
+                            + "\n    scheme=" + scheme.type
+                            + " kappa=" + kappa + " theta=" + theta
+                            + " sigma=" + sigma + " rho=" + rho
+                            + " r=" + r + " q=" + q + " T=" + T
+                            + "\n    calculated: " + calculated
+                            + "\n    expected:   " + expected
+                            + "\n    absDiff:    " + absDiff
+                            + "\n    relDiff:    " + relDiff);
+                }
+            }
+        }
     }
 
     @Ignore("Phase 5j.5 — requires FdHestonVanillaEngine + intraday-clock integration")
