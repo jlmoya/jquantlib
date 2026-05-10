@@ -656,7 +656,7 @@ public class PiecewiseYieldCurveTest {
 	  }
 
     
-	@Ignore
+	@Ignore("Phase Bug-Fix-3: LogCubic interpolator's global() flag causes IterativeBootstrap to throw 'no chance to fix it in a later iteration' on first try — root cause is incorrect early-iteration handling for global interpolators when extending point-by-point. Deferred — needs Java port of C++ iterativebootstrap.hpp:295-311 fallback-to-Linear logic adapted to current Java structure.")
 	@Test
 	public void testLogCubicDiscountConsistency() {
 
@@ -722,7 +722,6 @@ public class PiecewiseYieldCurveTest {
 	    testBMACurveConsistency(ZeroYield.class, Linear.class, IterativeBootstrap.class, vars);
 	}
 
-	@Ignore
 	@Test
 	public void testSplineZeroConsistency() {
 
@@ -766,7 +765,7 @@ public class PiecewiseYieldCurveTest {
 	    testBMACurveConsistency(ForwardRate.class, BackwardFlat.class, IterativeBootstrap.class, vars);
 	}
 
-	@Ignore
+	@Ignore("Phase Bug-Fix-3: Brent solver fails 'root not bracketed' at 13th alive instrument (pillar 2033) — ForwardRate.minValueAfter/maxValueAfter return constant ±maxRate (=1.0) which is too loose for Cubic spline at long pillars (curve overshoots). C++ uses pillar-aware data[i-1]*exp(±maxRate*dt) bracket via min/max of data[]. Deferred — needs Traits API extension to access times[].")
 	@Test
 	public void testSplineForwardConsistency() {
 
@@ -965,7 +964,7 @@ public class PiecewiseYieldCurveTest {
 	}
 
 	
-	@Ignore("Phase Body-Fill-3: bootstrap NaN/INF — fairRate ~4.5e15 (estimated rate ~Math.pow(2,52)). Likely pre-existing JPYLibor or PiecewiseYieldCurve initial-guess pathology under Japan calendar; orthogonal to Bug-Fix-2 fixingDate fix.")
+	@Ignore("Phase Bug-Fix-3: bootstrap fails 'date before reference date' on first JPYLibor swap helper. Phase Bug-Fix-3's IterativeBootstrap throw-on-failure replaced the silent QL.error which previously masked this with a NaN/INF garbage curve (fairRate ~4.5e15). New, useful error: 'iteration 1: failed at 1th alive instrument, pillar October 6, 2008, reference date October 9, 2007: date before reference date'. Root cause: JPYLibor.fixing or SwapRateHelper produces a discount-curve query for a pillar (Oct 6, 2008) before the curve reference (Oct 9, 2007); likely SwapRateHelper.maturityDate computation under Japan calendar with EOM treatment. Orthogonal to bootstrap silent-catch fix.")
 	@Test
 	public void testJpyLibor() {
 	    QL.info("Testing bootstrap over JPY LIBOR swaps...");
