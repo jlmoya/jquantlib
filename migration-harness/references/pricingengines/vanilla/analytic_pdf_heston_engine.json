@@ -1,0 +1,186 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 52.61971192450172
+      },
+      "inputs": {
+        "maturityYears": 0.4958904109589041,
+        "strike": 40.0,
+        "type": "call"
+      },
+      "name": "call_strike_040"
+    },
+    {
+      "expected": {
+        "npv": 33.57738636276562
+      },
+      "inputs": {
+        "maturityYears": 0.4958904109589041,
+        "strike": 60.0,
+        "type": "call"
+      },
+      "name": "call_strike_060"
+    },
+    {
+      "expected": {
+        "npv": 15.953515484193975
+      },
+      "inputs": {
+        "maturityYears": 0.4958904109589041,
+        "strike": 80.0,
+        "type": "call"
+      },
+      "name": "call_strike_080"
+    },
+    {
+      "expected": {
+        "npv": 3.714511041467535
+      },
+      "inputs": {
+        "maturityYears": 0.4958904109589041,
+        "strike": 100.0,
+        "type": "call"
+      },
+      "name": "call_strike_100"
+    },
+    {
+      "expected": {
+        "npv": 0.4023294445972584
+      },
+      "inputs": {
+        "maturityYears": 0.4958904109589041,
+        "strike": 120.0,
+        "type": "call"
+      },
+      "name": "call_strike_120"
+    },
+    {
+      "expected": {
+        "npv": 0.050156063078672077
+      },
+      "inputs": {
+        "maturityYears": 0.4958904109589041,
+        "strike": 140.0,
+        "type": "call"
+      },
+      "name": "call_strike_140"
+    },
+    {
+      "expected": {
+        "npv": 0.008260420440666702
+      },
+      "inputs": {
+        "maturityYears": 0.4958904109589041,
+        "strike": 160.0,
+        "type": "call"
+      },
+      "name": "call_strike_160"
+    },
+    {
+      "expected": {
+        "pdf": 0.5861626624331704
+      },
+      "inputs": {
+        "t": 0.4958904109589041,
+        "x": 4.2902446675051005
+      },
+      "name": "Pv_k-2"
+    },
+    {
+      "expected": {
+        "pdf": 1.535884499869523
+      },
+      "inputs": {
+        "t": 0.4958904109589041,
+        "x": 4.447707426746597
+      },
+      "name": "Pv_k-1"
+    },
+    {
+      "expected": {
+        "pdf": 2.831827824427959
+      },
+      "inputs": {
+        "t": 0.4958904109589041,
+        "x": 4.605170185988092
+      },
+      "name": "Pv_k+0"
+    },
+    {
+      "expected": {
+        "pdf": 0.907249470905129
+      },
+      "inputs": {
+        "t": 0.4958904109589041,
+        "x": 4.762632945229587
+      },
+      "name": "Pv_k+1"
+    },
+    {
+      "expected": {
+        "pdf": 0.09974521031765837
+      },
+      "inputs": {
+        "t": 0.4958904109589041,
+        "x": 4.920095704471083
+      },
+      "name": "Pv_k+2"
+    },
+    {
+      "expected": {
+        "cdf": 0.1015167949114385
+      },
+      "inputs": {
+        "S": 72.98432320758096,
+        "t": 0.4958904109589041
+      },
+      "name": "cdf_k-2"
+    },
+    {
+      "expected": {
+        "cdf": 0.25683804312943614
+      },
+      "inputs": {
+        "S": 85.43086281173862,
+        "t": 0.4958904109589041
+      },
+      "name": "cdf_k-1"
+    },
+    {
+      "expected": {
+        "cdf": 0.6183887691024698
+      },
+      "inputs": {
+        "S": 100.00000000000004,
+        "t": 0.4958904109589041
+      },
+      "name": "cdf_k+0"
+    },
+    {
+      "expected": {
+        "cdf": 0.9341771256946825
+      },
+      "inputs": {
+        "S": 117.05371654780899,
+        "t": 0.4958904109589041
+      },
+      "name": "cdf_k+1"
+    },
+    {
+      "expected": {
+        "cdf": 0.9931410839441959
+      },
+      "inputs": {
+        "S": 137.0157255765482,
+        "t": 0.4958904109589041
+      },
+      "name": "cdf_k+2"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-10T00:18:00Z",
+  "generated_by": "analytic_pdf_heston_engine_probe",
+  "test_group": "pricingengines/vanilla/analytic_pdf_heston_engine"
+}
