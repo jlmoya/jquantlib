@@ -33,6 +33,7 @@ import org.jquantlib.cashflow.IborLeg;
 import org.jquantlib.cashflow.Leg;
 import org.jquantlib.cashflow.PricerSetter;
 import org.jquantlib.currencies.Europe.EURCurrency;
+import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.SimpleDayCounter;
@@ -50,11 +51,13 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
@@ -124,68 +127,72 @@ public class SwapTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    /**
-     * Java analog of C++ {@code CommonVars} from swap.cpp:42-99. Builds a
-     * Euribor-Annual/Semiannual swap fixture against a flat 5% term
-     * structure on a Target-equivalent calendar (Euribor's fixingCalendar).
-     */
+    /** Mirror of C++ {@code CommonVars} struct (swap.cpp:49-99). */
     private static final class CommonVars {
-        VanillaSwap.Type type = VanillaSwap.Type.Payer;
-        int settlementDays = 2;
-        double nominal = 100.0;
-        BusinessDayConvention fixedConvention = BusinessDayConvention.Unadjusted;
-        BusinessDayConvention floatingConvention = BusinessDayConvention.ModifiedFollowing;
-        Frequency fixedFrequency = Frequency.Annual;
-        Frequency floatingFrequency = Frequency.Semiannual;
-        DayCounter fixedDayCount = new Thirty360(Thirty360.Convention.BondBasis);
-        IborIndex index;
-        Calendar calendar;
-        Date today;
-        Date settlement;
-        RelinkableHandle<YieldTermStructure> termStructure = new RelinkableHandle<YieldTermStructure>();
+        final Date today;
+        final Date settlement;
+        final VanillaSwap.Type type = VanillaSwap.Type.Payer;
+        final double nominal = 100.0;
+        final Calendar calendar;
+        final BusinessDayConvention fixedConvention =
+                BusinessDayConvention.Unadjusted;
+        final BusinessDayConvention floatingConvention =
+                BusinessDayConvention.ModifiedFollowing;
+        final Frequency fixedFrequency = Frequency.Annual;
+        final Frequency floatingFrequency = Frequency.Semiannual;
+        final DayCounter fixedDayCount =
+                new Thirty360(Thirty360.Convention.BondBasis);
+        final IborIndex index;
+        final int settlementDays = 2;
+        final RelinkableHandle<YieldTermStructure> termStructure;
 
         CommonVars() {
-            index = new Euribor(new Period(floatingFrequency), termStructure);
-            calendar = index.fixingCalendar();
-            today = calendar.adjust(new Settings().evaluationDate());
-            new Settings().setEvaluationDate(today);
-            settlement = calendar.advance(today, settlementDays, TimeUnit.Days);
-            termStructure.linkTo(new FlatForward(settlement,
-                    new Handle<org.jquantlib.quotes.Quote>(new SimpleQuote(0.05)),
+            this.termStructure = new RelinkableHandle<YieldTermStructure>();
+            this.index = new Euribor(
+                    new Period(floatingFrequency), termStructure);
+            this.calendar = index.fixingCalendar();
+            this.today = calendar.adjust(
+                    new Settings().evaluationDate());
+            this.settlement = calendar.advance(today,
+                    settlementDays, TimeUnit.Days);
+            this.termStructure.linkTo(Utilities.flatRate(settlement, 0.05,
                     new Actual365Fixed()));
         }
 
         VanillaSwap makeSwap(final int length, final double fixedRate,
                              final double floatingSpread,
                              final DateGeneration.Rule rule) {
-            final Date maturity = calendar.advance(settlement, length,
-                    TimeUnit.Years, floatingConvention, false);
-            final Schedule fixedSchedule = new Schedule(settlement, maturity,
-                    new Period(fixedFrequency), calendar,
-                    fixedConvention, fixedConvention, rule, false);
-            final Schedule floatSchedule = new Schedule(settlement, maturity,
-                    new Period(floatingFrequency), calendar,
-                    floatingConvention, floatingConvention, rule, false);
+            final Date maturity = calendar.advance(settlement,
+                    new Period(length, TimeUnit.Years), floatingConvention);
+            final Schedule fixedSchedule = new Schedule(
+                    settlement, maturity, new Period(fixedFrequency),
+                    calendar, fixedConvention, fixedConvention,
+                    rule, false);
+            final Schedule floatSchedule = new Schedule(
+                    settlement, maturity, new Period(floatingFrequency),
+                    calendar, floatingConvention, floatingConvention,
+                    rule, false);
             final VanillaSwap swap = new VanillaSwap(type, nominal,
                     fixedSchedule, fixedRate, fixedDayCount,
-                    floatSchedule, index, floatingSpread, index.dayCounter());
+                    floatSchedule, index, floatingSpread,
+                    index.dayCounter());
             swap.setPricingEngine(new DiscountingSwapEngine(termStructure));
             return swap;
         }
 
         VanillaSwap makeSwap(final int length, final double fixedRate,
                              final double floatingSpread) {
-            return makeSwap(length, fixedRate, floatingSpread, DateGeneration.Rule.Forward);
+            return makeSwap(length, fixedRate, floatingSpread,
+                    DateGeneration.Rule.Forward);
         }
     }
 
-    /** Phase 5d.5-Bonds-b WI-5e.5-SWAP-1 — port of swap.cpp:102-124
-     *  ({@code testFairRate}). For each (length, spread) pair, recompute
-     *  the fair fixed rate then re-price the swap; result must be within
-     *  {@code 1e-10} of zero. */
     @Test
     public void testFairRate() {
+        QL.info("Testing vanilla-swap calculation of fair fixed rate...");
+
         final CommonVars vars = new CommonVars();
+
         final int[] lengths = { 1, 2, 5, 10, 20 };
         final double[] spreads = { -0.001, -0.01, 0.0, 0.01, 0.001 };
 
@@ -203,35 +210,35 @@ public class SwapTest {
         }
     }
 
-    /** Phase 5d.5-Bonds-b WI-5e.5-SWAP-1 — port of swap.cpp:126-149
-     *  ({@code testFairSpread}). Symmetric to testFairRate but recomputes
-     *  the implied floating spread. */
     @Test
     public void testFairSpread() {
+        QL.info("Testing vanilla-swap calculation of fair floating spread...");
+
         final CommonVars vars = new CommonVars();
+
         final int[] lengths = { 1, 2, 5, 10, 20 };
         final double[] rates = { 0.04, 0.05, 0.06, 0.07 };
 
         for (final int length : lengths) {
-            for (final double j : rates) {
-                VanillaSwap swap = vars.makeSwap(length, j, 0.0);
-                swap = vars.makeSwap(length, j, swap.fairSpread());
+            for (final double rate : rates) {
+                VanillaSwap swap = vars.makeSwap(length, rate, 0.0);
+                swap = vars.makeSwap(length, rate, swap.fairSpread());
                 if (Math.abs(swap.NPV()) > 1.0e-10) {
                     fail("recalculating with implied spread:\n"
                             + "    length: " + length + " years\n"
-                            + "    fixed rate: " + j + "\n"
+                            + "    fixed rate: " + rate + "\n"
                             + "    swap value: " + swap.NPV());
                 }
             }
         }
     }
 
-    /** Phase 5d.5-Bonds-b WI-5e.5-SWAP-1 — port of swap.cpp:151-182
-     *  ({@code testRateDependency}). Verifies NPV is monotonically
-     *  decreasing as the fixed rate increases (payer-side). */
     @Test
     public void testRateDependency() {
+        QL.info("Testing vanilla-swap dependency on fixed rate...");
+
         final CommonVars vars = new CommonVars();
+
         final int[] lengths = { 1, 2, 5, 10, 20 };
         final double[] spreads = { -0.001, -0.01, 0.0, 0.01, 0.001 };
         final double[] rates = { 0.03, 0.04, 0.05, 0.06, 0.07 };
@@ -242,43 +249,48 @@ public class SwapTest {
                 for (int i = 0; i < rates.length; ++i) {
                     swapValues[i] = vars.makeSwap(length, rates[i], spread).NPV();
                 }
-                for (int i = 0; i < swapValues.length - 1; ++i) {
+                // Payer swap NPV must be non-increasing in fixed rate.
+                for (int i = 0; i + 1 < rates.length; ++i) {
                     if (swapValues[i] < swapValues[i + 1]) {
                         fail("NPV is increasing with the fixed rate in a swap:\n"
                                 + "    length: " + length + " years\n"
-                                + "    value:  " + swapValues[i] + " paying fixed rate: " + rates[i] + "\n"
-                                + "    value:  " + swapValues[i + 1] + " paying fixed rate: " + rates[i + 1]);
+                                + "    value:  " + swapValues[i]
+                                + " paying fixed rate: " + rates[i] + "\n"
+                                + "    value:  " + swapValues[i + 1]
+                                + " paying fixed rate: " + rates[i + 1]);
                     }
                 }
             }
         }
     }
 
-    /** Phase 5d.5-Bonds-b WI-5e.5-SWAP-1 — port of swap.cpp:184-216
-     *  ({@code testSpreadDependency}). Verifies NPV is monotonically
-     *  increasing as the floating spread increases (payer pays floating
-     *  + spread, so a larger spread reduces NPV — but C++ uses
-     *  {@code std::greater<>} adjacency check which fires when
-     *  swapValues[i] > swapValues[i+1], i.e. NPV is decreasing). */
     @Test
     public void testSpreadDependency() {
+        QL.info("Testing vanilla-swap dependency on floating spread...");
+
         final CommonVars vars = new CommonVars();
+
         final int[] lengths = { 1, 2, 5, 10, 20 };
         final double[] rates = { 0.04, 0.05, 0.06, 0.07 };
-        final double[] spreads = { -0.01, -0.002, -0.001, 0.0, 0.001, 0.002, 0.01 };
+        final double[] spreads = {
+                -0.01, -0.002, -0.001, 0.0, 0.001, 0.002, 0.01
+        };
 
         for (final int length : lengths) {
-            for (final double j : rates) {
+            for (final double rate : rates) {
                 final double[] swapValues = new double[spreads.length];
                 for (int i = 0; i < spreads.length; ++i) {
-                    swapValues[i] = vars.makeSwap(length, j, spreads[i]).NPV();
+                    swapValues[i] = vars.makeSwap(length, rate, spreads[i]).NPV();
                 }
-                for (int i = 0; i < swapValues.length - 1; ++i) {
+                // Payer swap NPV must be non-decreasing in floating spread.
+                for (int i = 0; i + 1 < spreads.length; ++i) {
                     if (swapValues[i] > swapValues[i + 1]) {
                         fail("NPV is decreasing with the floating spread in a swap:\n"
                                 + "    length: " + length + " years\n"
-                                + "    value:  " + swapValues[i] + " receiving spread: " + spreads[i] + "\n"
-                                + "    value:  " + swapValues[i + 1] + " receiving spread: " + spreads[i + 1]);
+                                + "    value:  " + swapValues[i]
+                                + " receiving spread: " + spreads[i] + "\n"
+                                + "    value:  " + swapValues[i + 1]
+                                + " receiving spread: " + spreads[i + 1]);
                     }
                 }
             }
