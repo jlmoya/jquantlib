@@ -153,27 +153,14 @@ public class AmortizingFixedRateBondTest {
 
     /**
      * Reproduces {@code amortizingbond.cpp:100-221} — Brazilian onshore
-     * corporate bond (SND code RISF11, ISIN BRRISFDBS005). Phase 5d.5-Bonds-b
-     * un-blocks: Business252(Brazil) is now wired (calendar ctor used), and
-     * FixedRateLeg builder composes with the Brazilian holiday calendar.
+     * corporate bond (SND code RISF11, ISIN BRRISFDBS005).
      *
-     * <p>Coupons match through k=55 within {@code 1e-6} but diverge from
-     * k=56 onward by ~0.02 — beyond the project tolerance ceiling
-     * ({@code 1e-8} loose).  Root cause: Brazil-calendar holiday-table
-     * mismatch between C++ v1.42.1 and JQuant for late-2024 / early-2025
-     * (the C++ {@code amortizingbond.cpp} test fixture pre-existed the
-     * holiday change; both sides correctly include Black Awareness Day
-     * since 2007, so divergence is in another holiday).
-     *
-     * <p>Per project tolerance rules ({@code @Ignore} > loosen-to-force-green),
-     * tracked as Phase 5d.5-Bonds-c carry-forward (Brazilian calendar
-     * reconciliation against C++ v1.42.1).  Test body fully ported and
-     * validated through k=55; final 4 coupons require the calendar fix.
+     * <p>Phase 5d.5-Bonds-c un-blocks: aligns
+     * {@link Brazil.Market#SETTLEMENT} holiday table with C++ v1.42.1 — adds
+     * Black Awareness Day (Nov 20) for years &ge; 2024 (Lei 14.759/2023). The
+     * Nov 2024 coupon period (k=56) was the only one that crossed the new
+     * holiday; all 60 coupons + 60 amortizations now match within {@code 1e-6}.
      */
-    @org.junit.Ignore("Phase 5d.5-Bonds-c — Brazilian calendar holiday-table "
-            + "reconciliation against C++ v1.42.1; coupons k=0..55 match, "
-            + "k=56..59 diverge by ~0.02. Full body ported; un-ignore once "
-            + "calendar fixed.")
     @Test
     public void testBrazilianAmortizingFixedRateBond() {
         final double[] notionals = {
