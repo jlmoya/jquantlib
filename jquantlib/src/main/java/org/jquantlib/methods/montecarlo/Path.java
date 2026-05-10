@@ -44,38 +44,53 @@ import org.jquantlib.time.TimeGrid;
 /**
  * Single-factor random walk
  *
- * @note The path includes the initial asset value as its first point.
+ * <p>The path includes the initial asset value as its first point.
+ *
+ * <p>Java port of {@code QuantLib v1.42.1 ql/methods/montecarlo/path.hpp}
+ * (Phase 5h.5-MC-INFRA). The legacy {@code getValues_()} accessors are
+ * retained for backward source compatibility with the few in-tree
+ * call-sites; new code must use the C++-aligned API ({@code get},
+ * {@code at}, {@code value}, {@code front}, {@code back}, {@code set},
+ * {@code timeGrid}).
  *
  * @author Richard Gomes
  */
-
-// FIXME: code review: verify if DoubleReference should be used here
-
 public class Path {
 
     //
     // private fields
     //
 
-    /**
-     * This field represents the {@link TimeGrid} held by this Path.
-     * <p>
-     * This field can has public read access via getter
-     * but can only be written by friend classes (same package)
-     */
     private TimeGrid timeGrid_;
-
-    /**
-     * This field represents contains a double[] held by this Path.
-     * <p>
-     * This field can has public read access via getter
-     * but can only be written by friend classes (same package)
-     */
     private double[] values_;
 
 
     //
-    // public getters
+    // public constructors
+    //
+
+    public Path(final TimeGrid timeGrid) {
+        this(timeGrid, null);
+    }
+
+    public Path(final TimeGrid timeGrid, final double[] values) {
+        this.timeGrid_ = timeGrid;
+        if (values == null || values.length == 0) {
+            this.values_ = new double[timeGrid_.size()];
+        } else {
+            this.values_ = values;
+        }
+        if (this.values_.length != timeGrid_.size()) {
+            throw new IllegalArgumentException(
+                    "different number of times and asset values"
+                            + " (timeGrid.size=" + timeGrid_.size()
+                            + ", values.length=" + this.values_.length + ")");
+        }
+    }
+
+
+    //
+    // legacy accessors (kept for source compat with existing call-sites)
     //
 
     public TimeGrid getTimeGrid_() {
@@ -89,10 +104,6 @@ public class Path {
     public double getValues_(final int i) {
         return values_[i];
     }
-
-    //
-    // package private setters
-    //
 
     /*@PackagePrivate*/ void setTimeGrid_(final TimeGrid timeGrid_) {
         this.timeGrid_ = timeGrid_;
@@ -108,107 +119,110 @@ public class Path {
 
 
     //
-    // public constructors
+    // C++-aligned inspectors (Phase 5h.5-MC-INFRA)
     //
 
-    public Path(final TimeGrid timeGrid) {
-        this(timeGrid, null);
-    }
-
-    public Path(final TimeGrid timeGrid, final double[] values) {
-        this.timeGrid_ = timeGrid;
-        if (values == null || values.length == 0) {
-            values_ = new double[timeGrid_.size()];
-        } else {
-            this.values_ = values; // TODO: clone() ?
-        }
-        if (values_.length != timeGrid_.size())
-            throw new IllegalArgumentException("different number of times and asset values"); // FIXME: message
-    }
-
-
-    //
-    // public methods
-    //
-
-    public boolean empty() /* @ReadOnly */{
+    /**
+     * Mirrors {@code Path::empty()} from C++.
+     */
+    public boolean empty() /* @ReadOnly */ {
         return timeGrid_.empty();
     }
 
-    public/* @NonNegative */int length() /* @ReadOnly */{
+    /**
+     * Mirrors {@code Path::length()} from C++.
+     */
+    public /* @NonNegative */ int length() /* @ReadOnly */ {
         return timeGrid_.size();
     }
 
-    public/* @Time */double time(/* @NonNegative */final int i) /* @ReadOnly */{
+    /**
+     * Asset value at the i-th point (mirrors C++ {@code operator[](Size)}
+     * and {@code value(Size)} const).
+     */
+    public /* @Real */ double get(final /* @NonNegative */ int i) /* @ReadOnly */ {
+        return values_[i];
+    }
+
+    /**
+     * Bounds-checked asset value at the i-th point (mirrors C++
+     * {@code Path::at(Size)}; throws on out-of-range).
+     */
+    public /* @Real */ double at(final /* @NonNegative */ int i) /* @ReadOnly */ {
+        if (i < 0 || i >= values_.length) {
+            throw new IndexOutOfBoundsException("Path.at: index " + i
+                    + " out of range [0," + values_.length + ")");
+        }
+        return values_[i];
+    }
+
+    /**
+     * Alias of {@link #get(int)} for parity with the C++ {@code value()}
+     * accessor.
+     */
+    public /* @Real */ double value(final /* @NonNegative */ int i) /* @ReadOnly */ {
+        return values_[i];
+    }
+
+    /**
+     * Mirrors {@code Path::front()}: initial asset value.
+     */
+    public /* @Real */ double front() /* @ReadOnly */ {
+        return values_[0];
+    }
+
+    /**
+     * Mirrors {@code Path::back()}: final asset value.
+     */
+    public /* @Real */ double back() /* @ReadOnly */ {
+        return values_[values_.length - 1];
+    }
+
+    /**
+     * Mirrors {@code Path::operator[](Size)} non-const and
+     * {@code Path::value(Size)} non-const: write-access setter.
+     */
+    public void set(final /* @NonNegative */ int i, final /* @Real */ double value) {
+        values_[i] = value;
+    }
+
+    /**
+     * Sets the initial asset value (mirrors {@code Path::front()}
+     * non-const reference returned by C++).
+     */
+    public void setFront(final /* @Real */ double value) {
+        values_[0] = value;
+    }
+
+    /**
+     * Sets the final asset value (mirrors {@code Path::back()}
+     * non-const reference returned by C++).
+     */
+    public void setBack(final /* @Real */ double value) {
+        values_[values_.length - 1] = value;
+    }
+
+    /**
+     * Mirrors {@code Path::time(Size)}: time at the i-th point.
+     */
+    public /* @Time */ double time(final /* @NonNegative */ int i) /* @ReadOnly */ {
         return timeGrid_.get(i);
     }
 
-//XXX
-//    public final TimeGrid timeGrid() /* @ReadOnly */{
-//        return timeGrid_;
-//    }
+    /**
+     * Mirrors {@code Path::timeGrid()}: read-only access to the
+     * underlying time grid.
+     */
+    public TimeGrid timeGrid() /* @ReadOnly */ {
+        return timeGrid_;
+    }
 
-//XXX
-//    public DoubleForwardIterator forwardIterator() /* @ReadOnly */{
-//        return values_.forwardIterator();
-//    }
-//
-//    public DoubleReverseIterator reverseIterator() /* @ReadOnly */{
-//        return values_.reverseIterator();
-//    }
-
-
-//
-//XXX
-//
-//    //
-//    // read-only versions of get, at, value, front and back
-//    //
-//
-//    public/* @Real */double get(/* @NonNegative */int i) /* @ReadOnly */{
-//        return values_.get(i);
-//    }
-//
-//    public/* @Real */double at(/* @NonNegative */int i) /* @ReadOnly */{
-//        return values_.at(i);
-//    }
-//
-//    public/* @Real */double value(/* @NonNegative */int i) /* @ReadOnly */{
-//        return values_.get(i);
-//    }
-//
-//    public/* @Real */double front() /* @ReadOnly */{
-//        return values_.get(0);
-//    }
-//
-//    public/* @Real */double back() /* @ReadOnly */{
-//        return values_.get(values_.size() - 1);
-//    }
-//
-//
-//
-//    //
-//    // read-write versions of get, at, value, front and back
-//    //
-//
-//    public DoubleReference getReference(/*@NonNegative*/ int i) {
-//        return values_.getReference(i);
-//    }
-//
-//    public DoubleReference atReference(/*@NonNegative*/ int i) {
-//        return values_.atReference(i);
-//    }
-//
-//    public DoubleReference valueReference(/*@NonNegative*/ int i) {
-//        return values_.getReference(i);
-//    }
-//
-//    public DoubleReference frontReference() {
-//        return values_.frontReference();
-//    }
-//
-//    public DoubleReference backReference() {
-//        return values_.backReference();
-//    }
-//
+    /**
+     * Returns the underlying values array. Caller must not retain or
+     * mutate this array between successive {@link PathGenerator#next()}
+     * calls — the path generator reuses the array for each draw.
+     */
+    public double[] values() /* @ReadOnly */ {
+        return values_;
+    }
 }
