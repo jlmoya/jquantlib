@@ -1,0 +1,94 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "delta": 0.563176520553143,
+        "gamma": 0.022315966318870957,
+        "npv": 8.88261483077809
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "eur_call_atm_1y"
+    },
+    {
+      "expected": {
+        "delta": -0.4194645245438263,
+        "gamma": 0.02228520474887598,
+        "npv": 5.969467146415224
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 100.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "eur_put_atm_1y"
+    },
+    {
+      "expected": {
+        "delta": 0.36162419107885424,
+        "gamma": 0.018913530383181935,
+        "npv": 5.158680755966772
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Call",
+        "strike": 110.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "eur_call_otm_1y"
+    },
+    {
+      "expected": {
+        "delta": -0.2053200690794311,
+        "gamma": 0.01678923727599756,
+        "npv": 2.317297188676427
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "maturity_years": 1.0,
+        "option_type": "Put",
+        "strike": 90.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "eur_put_otm_1y"
+    },
+    {
+      "expected": {
+        "delta": 0.5931222804913016,
+        "gamma": 0.015246414129958316,
+        "npv": 13.016634291014425
+      },
+      "inputs": {
+        "damping_steps": 0,
+        "maturity_years": 2.0,
+        "option_type": "Call",
+        "strike": 100.0,
+        "t_grid": 50,
+        "v_grid": 20,
+        "x_grid": 50
+      },
+      "name": "eur_call_atm_2y"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-10T00:22:54Z",
+  "generated_by": "fd_heston_vanilla_engine_probe",
+  "test_group": "pricingengines/vanilla/fd_heston_vanilla_engine"
+}
