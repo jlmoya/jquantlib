@@ -53,15 +53,14 @@ import org.jquantlib.time.calendars.NullCalendar;
  *
  * <p>Mirrors C++ v1.42.1 ql/pricingengines/capfloor/blackcapfloorengine.{hpp,cpp}.
  * Java's {@link OptionletVolatilityStructure} does not yet expose
- * {@code volatilityType()} or {@code displacement()} (C++ adds them in
- * v1.42.1 but Java has not been retrofitted), so this port hardcodes the
- * displacement at 0.0 and assumes ShiftedLognormal volatility surface.
- * That covers every Java call-site in the current codebase, including
- * Phase 2e CapHelper. A full port of those two accessors plus the
- * non-zero displacement / Normal vol path is deferred to the work item
- * that ports VolatilityType into the optionlet hierarchy.
+ * {@code displacement()} (C++ adds it in v1.42.1 but Java has not been
+ * retrofitted), so the {@code (YTS, Handle<OVS>)} ctor still defaults the
+ * displacement to 0.0 unless overridden via the
+ * {@code (YTS, Handle<OVS>, double displacement)} overload.
+ * Phase 5g.5d adds the {@code displacement} parameter to all ctors,
+ * matching v1.42.1's API.
  *
- * <p>Phase 2e WI-2.
+ * <p>Phase 2e WI-2; displacement parameter added Phase 5g.5d.
  */
 public class BlackCapFloorEngine extends CapFloor.Engine {
 
@@ -73,6 +72,14 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
             final Handle<YieldTermStructure> discountCurve,
             final double v,
             final DayCounter dc) {
+        this(discountCurve, v, dc, 0.0);
+    }
+
+    public BlackCapFloorEngine(
+            final Handle<YieldTermStructure> discountCurve,
+            final double v,
+            final DayCounter dc,
+            final double displacement) {
         this.discountCurve_ = discountCurve;
         // Wrap the fixed double in a SimpleQuote so the engine can hold
         // a Handle<OptionletVolatilityStructure> uniformly.
@@ -80,7 +87,7 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
                 new ConstantOptionletVolatility(0, new NullCalendar(),
                         BusinessDayConvention.Following,
                         new Handle<Quote>(new SimpleQuote(v)), dc));
-        this.displacement_ = 0.0;
+        this.displacement_ = displacement;
         this.discountCurve_.addObserver(this);
     }
 
@@ -88,11 +95,19 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
             final Handle<YieldTermStructure> discountCurve,
             final Handle<Quote> v,
             final DayCounter dc) {
+        this(discountCurve, v, dc, 0.0);
+    }
+
+    public BlackCapFloorEngine(
+            final Handle<YieldTermStructure> discountCurve,
+            final Handle<Quote> v,
+            final DayCounter dc,
+            final double displacement) {
         this.discountCurve_ = discountCurve;
         this.vol_ = new Handle<OptionletVolatilityStructure>(
                 new ConstantOptionletVolatility(0, new NullCalendar(),
                         BusinessDayConvention.Following, v, dc));
-        this.displacement_ = 0.0;
+        this.displacement_ = displacement;
         this.discountCurve_.addObserver(this);
         this.vol_.addObserver(this);
     }
@@ -100,12 +115,29 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
     public BlackCapFloorEngine(
             final Handle<YieldTermStructure> discountCurve,
             final Handle<OptionletVolatilityStructure> volatility) {
+        this(discountCurve, volatility, 0.0);
+    }
+
+    /**
+     * Mirrors C++ v1.42.1 ctor with displacement parameter.
+     *
+     * <p>C++ asserts the OVS uses ShiftedLognormal model and compares the
+     * caller-provided displacement to the OVS-stored displacement when the
+     * caller passes a non-Null value. Java's OVS has not yet been
+     * retrofitted with {@code displacement()}, so we only store the
+     * caller-supplied value. Pass {@code 0.0} (or use the no-displacement
+     * overload) for the legacy zero-shift behavior.
+     */
+    public BlackCapFloorEngine(
+            final Handle<YieldTermStructure> discountCurve,
+            final Handle<OptionletVolatilityStructure> volatility,
+            final double displacement) {
         this.discountCurve_ = discountCurve;
         this.vol_ = volatility;
-        // Java OVS lacks volatilityType()/displacement(); see class
-        // javadoc. The C++ engine asserts ShiftedLognormal and matches
-        // the curve's stored displacement here. We assume both.
-        this.displacement_ = 0.0;
+        // Java OVS lacks displacement(); see class javadoc.
+        // The C++ engine asserts ShiftedLognormal and matches the curve's
+        // stored displacement here. Java only stores the caller value.
+        this.displacement_ = displacement;
         this.discountCurve_.addObserver(this);
         this.vol_.addObserver(this);
     }
