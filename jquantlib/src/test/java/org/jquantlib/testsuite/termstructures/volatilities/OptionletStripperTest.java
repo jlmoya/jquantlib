@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.OvernightLeg;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.Euribor6M;
@@ -892,7 +893,205 @@ public class OptionletStripperTest {
                 error <= tolerance);
     }
 
-    @Ignore("Phase 5g.5d unblocked the production gap (UnitedStates.Market.FederalReserve calendar variant added, mirroring C++ v1.42.1 UnitedStates::FederalReserveImpl). Test body still needs to be ported from C++ optionletstripper.cpp::testTermVolatilityStripping1ON — body-fill TBD.")
+    /**
+     * Faithful port of C++ test-suite/optionletstripper.cpp::
+     * {@code testTermVolatilityStripping1ON} (lines 923-987).
+     *
+     * <p>SOFR overnight-index test: builds a 5Y SOFR leg, strips a 10x3
+     * normal-vol cap surface using the SOFR index with an explicit
+     * 3-month optionletFrequency, then verifies that two independent
+     * {@link StrippedOptionletAdapter} wrappers around the SAME stripper
+     * (via two BachelierCapFloorEngines) produce identical NPVs to TIGHT
+     * (2.5e-8). This is a sanity check for the OvernightIndex code path
+     * through OptionletStripper1.
+     *
+     * <p>Phase 5g.5e — body fully ported. UnitedStates.Market.FederalReserve
+     * calendar variant landed in Phase 5g.5d (commit b8dfc6ec) covers the
+     * named upstream blocker. Currently @Ignore'd because of two residual
+     * production gaps surfaced by the body-fill:
+     * <ol>
+     *   <li>{@link OptionletStripper1#performCalculations} bootstraps caps
+     *       via {@link MakeCapFloor}, which delegates to
+     *       {@link org.jquantlib.instruments.MakeVanillaSwap}. The Java
+     *       MakeVanillaSwap hard-codes an IborCoupon floating-leg path; it
+     *       has no special-case handling for an OvernightIndex passed as
+     *       {@code iborIndex_}. Result: bootstrap throws "null accrual
+     *       period" inside {@link
+     *       org.jquantlib.cashflow.BlackIborCouponPricer#initialize}.
+     *       The C++ MakeVanillaSwap goes through the same code path but
+     *       its VanillaSwap floating leg builds OvernightIndexedCoupons
+     *       transparently — Java needs an OvernightIndex branch in
+     *       MakeVanillaSwap (or OptionletStripper1 needs an OvernightIndex
+     *       fallback).
+     *   <li>{@link CapFloor.ArgumentsImpl#indexes} is referenced by Java
+     *       Phase 2j WI-2.2 alignment but on a SOFR OvernightIndex leg the
+     *       upstream BlackIborCouponPricer cast fails before we get to the
+     *       engine's Bachelier branch.
+     * </ol>
+     * Tracking as Phase 5g.5e carry-forward — production touch deferred per
+     * agent contract (test-only scope).
+     */
+    @Ignore("Phase 5g.5e body fully ported but @Ignore'd: Java MakeVanillaSwap (used by MakeCapFloor inside OptionletStripper1.performCalculations) has no OvernightIndex branch — bootstrap throws 'null accrual period' inside BlackIborCouponPricer.initialize when iborIndex_ is a SOFR OvernightIndex. Production fix needed: add OvernightIndex special-case to MakeVanillaSwap.value() (or OvernightIndex fallback in OptionletStripper1.performCalculations). Carry-forward to next production-touching phase.")
     @Test
-    public void testTermVolatilityStripping1ON() { fail("not implemented"); }
+    public void testTermVolatilityStripping1ON() {
+        // CommonVarsON setup
+        final Date today = new Date(15, Month.April, 2025);
+        final Date startDate = new Date(17, Month.April, 2025);
+        final Date endDate = new Date(17, Month.April, 2030);
+        final Calendar calendar = new org.jquantlib.time.calendars.UnitedStates(
+                org.jquantlib.time.calendars.UnitedStates.Market.FederalReserve);
+        final BusinessDayConvention convention = BusinessDayConvention.ModifiedFollowing;
+        final DayCounter dc = new org.jquantlib.daycounters.Actual360();
+
+        new Settings().setEvaluationDate(today);
+
+        // C++: vars.tenor is default-constructed (0-length). Schedule with
+        // tenor.length() == 0 takes the DateGeneration.Zero branch — a single
+        // [start, end] period.
+        final org.jquantlib.time.Schedule schedule = new org.jquantlib.time.Schedule(
+                startDate, endDate, new Period(),
+                calendar, convention, convention,
+                org.jquantlib.time.DateGeneration.Rule.Forward, false);
+
+        // setSofrHandle — Linear-interpolated zero curve with 17 dates / rates
+        final Date[] sofrDates = new Date[] {
+            new Date(15, Month.April, 2025),
+            new Date(16, Month.April, 2025),
+            new Date(28, Month.April, 2025),
+            new Date(21, Month.May,   2025),
+            new Date(21, Month.July,  2025),
+            new Date(21, Month.October, 2025),
+            new Date(21, Month.April, 2026),
+            new Date(21, Month.April, 2027),
+            new Date(19, Month.April, 2028),
+            new Date(22, Month.April, 2030),
+            new Date(21, Month.April, 2032),
+            new Date(19, Month.April, 2035),
+            new Date(21, Month.April, 2037),
+            new Date(19, Month.April, 2040),
+            new Date(19, Month.April, 2045),
+            new Date(20, Month.April, 2050),
+            new Date(21, Month.April, 2055),
+        };
+        final double[] sofrZeroRates = new double[] {
+            3.039872 / 100.0, 3.082092 / 100.0, 3.67902  / 100.0,
+            3.791077 / 100.0, 4.147655 / 100.0, 4.498917 / 100.0,
+            4.688082 / 100.0, 4.486636 / 100.0, 4.228873 / 100.0,
+            3.949601 / 100.0, 3.814579 / 100.0, 3.731412 / 100.0,
+            3.718794 / 100.0, 3.704788 / 100.0, 3.599069 / 100.0,
+            3.401666 / 100.0, 3.221372 / 100.0,
+        };
+        // C++ uses ZeroCurve (= InterpolatedZeroCurve<Linear>). C++ also passes
+        // Actual365Fixed as the ZeroCurve dayCounter (separate from vars.dc=Actual360).
+        final Handle<YieldTermStructure> sofrCurveHandle =
+                new Handle<YieldTermStructure>(
+                        new InterpolatedZeroCurve<Linear>(
+                                Linear.class, sofrDates, sofrZeroRates,
+                                new Actual365Fixed(), calendar));
+
+        // setRealCapFloorVolSurface — 10x3 cap-vol surface for SOFR
+        final double[] strikes1ON = new double[] { 0.03, 0.035, 0.04 };
+        final List<Period> expiries = new ArrayList<Period>();
+        for (int i = 1; i <= 10; ++i) {
+            expiries.add(new Period(i, TimeUnit.Years));
+        }
+        final double[][] rawVols = new double[][] {
+            { 12.52, 24.73, 26.8 },
+            { 15.81, 24.94, 27.95 },
+            { 18.91, 41.48, 38.94 },
+            { 21.0,  40.14, 37.17 },
+            { 22.46, 41.69, 38.96 },
+            { 23.39, 43.06, 38.48 },
+            { 23.95, 43.98, 39.61 },
+            { 24.29, 44.58, 39.51 },
+            { 24.42, 44.7,  39.09 },
+            { 24.42, 44.36, 37.41 },
+        };
+        final Matrix vols = new Matrix(expiries.size(), strikes1ON.length);
+        for (int i = 0; i < expiries.size(); ++i) {
+            for (int j = 0; j < strikes1ON.length; ++j) {
+                vols.set(i, j, rawVols[i][j] / 10000.0);
+            }
+        }
+        // C++: settlementDays=2, calendar, convention, expiries, strikes, vols, dc
+        final CapFloorTermVolSurface capfloorVol = new CapFloorTermVolSurface(
+                2, calendar, convention,
+                expiries, strikes1ON, vols, dc);
+
+        final org.jquantlib.indexes.OvernightIndex sofrIndex =
+                new org.jquantlib.indexes.ibor.Sofr(sofrCurveHandle);
+        sofrIndex.addFixing(new Date(15, Month.April, 2025), 3.04 / 100.0);
+
+        final double notional = 1_000_000.0;
+        final OvernightLeg sofrLeg = new OvernightLeg(schedule, sofrIndex);
+        sofrLeg.withNotionals(notional)
+               .withPaymentAdjustment(BusinessDayConvention.ModifiedFollowing)
+               .withPaymentLag(2);
+
+        final double strikeRate = 0.04;
+        final List<Double> strikesList = new ArrayList<Double>();
+        strikesList.add(strikeRate);
+
+        // C++: Cap cap(sofrLeg, strikes); Cap cap1(sofrLeg, strikes);
+        // Cap is just CapFloor(Cap, leg, strikes, vector<Rate>()).
+        // Java's CapFloor(Type, Leg, strikes, termStructure, engine) maps directly.
+        final CapFloor cap = new CapFloor(CapFloor.Type.Cap, sofrLeg.leg(),
+                strikesList, null, null);
+        final CapFloor cap1 = new CapFloor(CapFloor.Type.Cap, sofrLeg.leg(),
+                strikesList, null, null);
+
+        // Stripper #1: SOFR overnight + Period(3, Months) optionletFrequency.
+        final OptionletStripper1 optionletSurf = new OptionletStripper1(
+                capfloorVol, sofrIndex,
+                Constants.NULL_REAL,
+                1e-6, 100,
+                sofrCurveHandle,
+                org.jquantlib.model.VolatilityType.Normal,
+                0.0, true, new Period(3, TimeUnit.Months));
+
+        final Handle<OptionletVolatilityStructure> ovsHandle =
+                new Handle<OptionletVolatilityStructure>(
+                        new StrippedOptionletAdapter(optionletSurf));
+
+        // Stripper #2: 3M IborIndex SOFR (constructed but UNUSED in pricing —
+        // see C++ lines 967-970: 'ovs' wraps optionletSurf, NOT optionletSurf1).
+        final IborIndex sofr3m = new IborIndex(
+                "SOFR", new Period(3, TimeUnit.Months), 2,
+                new org.jquantlib.currencies.America.USDCurrency(),
+                calendar, convention, false, dc, sofrCurveHandle);
+
+        // optionletSurf1 is constructed in C++ but never plumbed into the
+        // pricing path (the second Handle wraps a fresh adapter around
+        // optionletSurf, not optionletSurf1). Mirroring exactly.
+        @SuppressWarnings("unused")
+        final OptionletStripper1 optionletSurf1 = new OptionletStripper1(
+                capfloorVol, sofr3m,
+                Constants.NULL_REAL,
+                1e-6, 100, sofrCurveHandle,
+                org.jquantlib.model.VolatilityType.Normal,
+                0.0, false, null);
+
+        // Second adapter wraps optionletSurf again (NOT optionletSurf1) —
+        // matches C++ line 968 verbatim.
+        final Handle<OptionletVolatilityStructure> ovsHandle1 =
+                new Handle<OptionletVolatilityStructure>(
+                        new StrippedOptionletAdapter(optionletSurf));
+
+        // Use optionlet surface for pricing
+        final BachelierCapFloorEngine engineOvs = new BachelierCapFloorEngine(
+                sofrCurveHandle, ovsHandle);
+        cap.setPricingEngine(engineOvs);
+        final BachelierCapFloorEngine engineOvs1 = new BachelierCapFloorEngine(
+                sofrCurveHandle, ovsHandle1);
+        cap1.setPricingEngine(engineOvs1);
+
+        final double tolerance = 2.5e-8;
+        final double capPrice = cap.NPV();
+        final double cap1Price = cap1.NPV();
+        final double error = Math.abs(capPrice - cap1Price);
+        assertTrue("SOFR ON cap NPV mismatch: capPrice=" + capPrice
+                + " cap1Price=" + cap1Price
+                + " error=" + error + " tol=" + tolerance,
+                error <= tolerance);
+    }
 }
