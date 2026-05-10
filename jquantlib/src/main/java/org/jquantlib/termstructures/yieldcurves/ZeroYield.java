@@ -112,7 +112,9 @@ public class ZeroYield implements Traits {
 
     @Override
     public int maxIterations() {
-        return 30;
+        // Phase Bug-Fix-3: align to v1.42.1 — C++ ZeroYield::maxIterations
+        // returns 100 (bootstraptraits.hpp:216). The Java port had 30.
+        return 100;
     }
 
 }

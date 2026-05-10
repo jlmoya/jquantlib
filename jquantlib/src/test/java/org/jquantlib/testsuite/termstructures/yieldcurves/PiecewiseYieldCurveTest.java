@@ -656,7 +656,7 @@ public class PiecewiseYieldCurveTest {
 	  }
 
     
-	@Ignore("Phase Bug-Fix-3: bootstrap converges slowly under LogCubic+Discount; after 50 iterations (Discount.maxIterations) improvement stuck at ~0.015 vs required 1e-12. Phase Bug-Fix-3 fixed the inverted-condition bug in IterativeBootstrap (was throwing for global() interpolators that should fall back to Linear); test now reaches the iteration loop but oscillates rather than throws. Possible deeper convergence issue: previousData snapshot timing or Discount.maxIterations gap (Java 50 vs C++ 100). Deferred — needs convergence loop + Discount.maxIterations alignment to C++.")
+	@Ignore("Phase Bug-Fix-3: bootstrap oscillates under LogCubic+Discount; even with maxIterations bumped from 50 to 100 (matching C++), improvement stuck at ~0.005 vs required 1e-12. Phase Bug-Fix-3 fixed two IterativeBootstrap bugs (silent QL.error catch + inverted global() condition) which got the test to the iteration loop, but the loop itself oscillates rather than converges. Possible deeper convergence issue: previousData snapshot timing (Java assigns unconditionally, C++ only when loopRequired_ && validData) or interpolation update sequence mid-iteration. Deferred — needs port of C++ iterativebootstrap.hpp:257-388 outer loop structure with proper validData state machine.")
 	@Test
 	public void testLogCubicDiscountConsistency() {
 

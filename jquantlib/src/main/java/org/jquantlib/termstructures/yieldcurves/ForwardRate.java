@@ -114,7 +114,9 @@ public class ForwardRate implements Traits {
 
     @Override
     public int maxIterations() {
-        return 30;
+        // Phase Bug-Fix-3: align to v1.42.1 — C++ ForwardRate::maxIterations
+        // returns 100 (bootstraptraits.hpp:309). The Java port had 30.
+        return 100;
     }
 
 }

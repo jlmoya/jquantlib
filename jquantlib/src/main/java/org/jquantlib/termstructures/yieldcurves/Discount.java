@@ -121,7 +121,12 @@ public class Discount implements Traits {
 
     @Override
     public int maxIterations() {
-        return 50;
+        // Phase Bug-Fix-3: align to v1.42.1 — C++ Discount::maxIterations
+        // returns 100 (bootstraptraits.hpp:123). The Java port had 50,
+        // which is too tight for slow-converging combinations like
+        // LogCubic+Discount where the iteration loop oscillates over
+        // ~50 steps (testLogCubicDiscountConsistency).
+        return 100;
     }
 
 }
