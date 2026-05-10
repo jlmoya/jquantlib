@@ -17,7 +17,9 @@
  */
 package org.jquantlib.math.distributions;
 
+import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.ModifiedBesselFunction;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.transcendental.JQuantMath;
 
@@ -148,5 +150,148 @@ public class NonCentralCumulativeChiSquaredDistribution implements Ops.DoubleOp 
             throw new ArithmeticException(FAILED_TO_CONVERGE);
         }
         return ans;
+    }
+
+    /**
+     * Probability density function evaluated at {@code x}.
+     * <p>
+     * Phase 5h.5-SLV-d port of Boost's
+     * {@code boost::math::pdf(non_central_chi_squared_distribution<>(df, ncp), x)}
+     * — the routine QuantLib v1.42.1 calls under the hood (see e.g.
+     * {@code SquareRootProcessRNDCalculator::pdf}). v1.42.1 does not ship
+     * a non-central chi-squared PDF distribution class itself; the port lives
+     * here so JQuantLib downstream code (Heston SLV, the square-root RND
+     * calculator, the Gauss-quadrature non-central chi-squared polynomial)
+     * can use the exact formula instead of CDF central differences
+     * (~1e-4 slack).
+     * <p>
+     * Two regimes mirroring Boost's {@code non_central_chi_squared.hpp}:
+     * <ul>
+     *   <li>{@code lambda = 0}: degenerates to the central chi-squared PDF.</li>
+     *   <li>{@code lambda <= 50}: closed-form Bessel expression
+     *       {@code (1/2) exp(-(x+lambda)/2) (x/lambda)^((df-2)/4) I_{(df-2)/2}(sqrt(lambda x))}.
+     *       Falls back to the Poisson series form when the prefactor's
+     *       exponent magnitude approaches {@code log(MAX_VALUE)/4} (overflow
+     *       guard, mirrors Boost line 534 — the same {@code log_max_value/4}
+     *       threshold used to avoid an {@code exp} blow-up before the
+     *       Bessel multiply).</li>
+     *   <li>{@code lambda > 50}: Poisson-weighted sum of central chi-squared
+     *       PDFs centred at {@code k = floor(lambda/2)}, summing forward
+     *       until relative term &lt; eps and backward until exhaustion.
+     *       This is Boost's {@code non_central_chi_square_pdf} kernel
+     *       (lines 283-318 of {@code non_central_chi_squared.hpp}).</li>
+     * </ul>
+     */
+    public double pdf(final double x) {
+        QL.require(x >= 0.0, "x must be non-negative");
+        if (x == 0.0) {
+            // Boost: pdf at x=0 is 0 for ncp > 0, and for central chi-squared
+            // is finite only when df < 2. To keep the surface aligned with
+            // Boost's non-central PDF (which short-circuits to 0 at x=0
+            // when ncp != 0), we return 0 for ncp != 0 and dispatch to the
+            // central chi-squared PDF special-cases otherwise.
+            if (ncp_ != 0.0) {
+                return 0.0;
+            }
+            // Central chi-squared at x=0:
+            //   df < 2 → +inf;  df = 2 → 0.5;  df > 2 → 0.
+            if (df_ < 2.0) {
+                return Constants.QL_MAX_REAL;
+            }
+            if (df_ == 2.0) {
+                return 0.5;
+            }
+            return 0.0;
+        }
+        if (ncp_ == 0.0) {
+            // Central chi-squared PDF: gamma_p_derivative(df/2, x/2) * 0.5.
+            return 0.5 * gammaPdfDerivative(0.5 * df_, 0.5 * x);
+        }
+        if (ncp_ > 50.0) {
+            return seriesPdf(x);
+        }
+        // Bessel form. Boost guards on |r| < log_max_value / 4 ≈ 177.6
+        // (since log(DBL_MAX) ≈ 709.78). When the prefactor exponent
+        // would overflow exp() the result is instead routed to the
+        // series form for stability.
+        final double logXOverL = JQuantMath.log(x / ncp_);
+        final double r = logXOverL * (df_ / 4.0 - 0.5) - 0.5 * (x + ncp_);
+        final double logMaxOver4 = Math.log(Constants.QL_MAX_REAL) / 4.0;
+        if (Math.abs(r) >= logMaxOver4) {
+            return seriesPdf(x);
+        }
+        final double bessel = ModifiedBesselFunction.i(df_ / 2.0 - 1.0,
+                Math.sqrt(ncp_ * x));
+        return 0.5 * Math.exp(r) * bessel;
+    }
+
+    /**
+     * Boost's non_central_chi_square_pdf kernel — Poisson series of
+     * central chi-squared PDFs. Returns {@code sum / 2} where each term
+     * is a product of two gamma_p_derivative evaluations and the recurrence
+     * walks outward from the Poisson mode {@code floor(lambda/2)}.
+     */
+    private double seriesPdf(final double x) {
+        final double x2 = 0.5 * x;
+        final double n2 = 0.5 * df_;
+        final double l2 = 0.5 * ncp_;
+        final long k = (long) Math.floor(l2);
+        double pois = gammaPdfDerivative(k + 1.0, l2)
+                * gammaPdfDerivative(n2 + k, x2);
+        if (pois == 0.0) {
+            return 0.0;
+        }
+        double sum = 0.0;
+        double poisb = pois;
+        final double errtol = Constants.QL_EPSILON;
+        final long maxIter = 10000L;
+        // Forward sweep i = k, k+1, ... until relative term below eps.
+        for (long i = k; ; i++) {
+            sum += pois;
+            if (pois / sum < errtol) {
+                break;
+            }
+            QL.require(i - k < maxIter, "non-central chi-squared PDF series did not converge");
+            pois *= l2 * x2 / ((i + 1) * (n2 + i));
+        }
+        // Backward sweep i = k-1, k-2, ..., 0.
+        for (long i = k - 1; i >= 0; i--) {
+            poisb *= (i + 1) * (n2 + i) / (l2 * x2);
+            sum += poisb;
+            if (poisb / sum < errtol) {
+                break;
+            }
+        }
+        return 0.5 * sum;
+    }
+
+    /**
+     * gamma_p_derivative(a, x) = x^(a-1) * exp(-x) / Gamma(a) — the gamma
+     * PDF building block used by both the central chi-squared PDF and the
+     * Poisson series. Falls through to a log-space evaluation when the
+     * naive form would underflow (mirroring Boost's
+     * {@code gamma_p_derivative_imp} fallback at gamma.hpp:2172).
+     */
+    private double gammaPdfDerivative(final double a, final double x) {
+        QL.require(a > 0.0, "a must be positive");
+        QL.require(x >= 0.0, "x must be non-negative");
+        if (x == 0.0) {
+            // a > 1 → 0; a == 1 → 1; a < 1 → +inf (overflow). We map the
+            // a<1 case to QL_MAX_REAL so callers can keep arithmetic flowing
+            // without explicit checks (used by the chi-squared PDF at x=0).
+            if (a > 1.0) {
+                return 0.0;
+            }
+            if (a == 1.0) {
+                return 1.0;
+            }
+            return Constants.QL_MAX_REAL;
+        }
+        // Naive form: x^(a-1) * exp(-x) / Gamma(a). For a near 1 and x
+        // moderate this is well-conditioned. For very small/very large
+        // arguments we fall back to a log-space evaluation to avoid
+        // intermediate under/overflow.
+        final double logTerm = (a - 1.0) * Math.log(x) - x - gammaFunction_.logValue(a);
+        return Math.exp(logTerm);
     }
 }

@@ -56,4 +56,18 @@ public class NonCentralChiSquaredDistribution implements Ops.DoubleOp {
     public double op(final double x) /* @Read-only */ {
         return delegate_.op(x);
     }
+
+    /**
+     * Probability density function evaluated at {@code x}.
+     * <p>
+     * Phase 5h.5-SLV-d: forwards to {@link
+     * NonCentralCumulativeChiSquaredDistribution#pdf(double)}, which is the
+     * exact Boost-equivalent PDF formula (Bessel form for {@code ncp <= 50},
+     * Poisson series otherwise). Replaces the previous CDF central-difference
+     * surrogate (~1e-4 slack) used by callers that needed PDF values from
+     * the legacy alias.
+     */
+    public double pdf(final double x) {
+        return delegate_.pdf(x);
+    }
 }
