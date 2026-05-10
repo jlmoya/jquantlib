@@ -169,8 +169,10 @@ public final class Histogram {
             if (data_[i] > dmax) dmax = data_[i];
         }
 
-        // derive bin count if needed (Integer.MIN_VALUE sentinel = unset)
-        if (bins_ == Integer.MIN_VALUE) {
+        // derive bin count if needed (Integer.MIN_VALUE sentinel = unset).
+        // When explicit breaks were passed, the bin count is set in the
+        // breaks-handling branch below.
+        if (bins_ == Integer.MIN_VALUE && breaks_ == null) {
             switch (algorithm_) {
                 case Sturges:
                     bins_ = (int) Math.ceil(Math.log((double) data_.length) / Math.log(2.0) + 1.0);
