@@ -53,7 +53,7 @@ import org.jquantlib.time.Weekday;
  * <li>Nossa Sra. Aparecida Day, October 12th</li>
  * <li>All Souls Day, November 2nd</li>
  * <li>Republic Day, November 15th</li>
- * <li>Black Awareness Day, November 20th</li>
+ * <li>Black Awareness Day, November 20th (since 2024)</li>
  * <li>Christmas, December 25th</li>
  * <li>Passion of Christ</li>
  * <li>Carnival</li>
@@ -65,15 +65,15 @@ import org.jquantlib.time.Weekday;
  * <li>Saturdays</li>
  * <li>Sundays</li>
  * <li>New Year's Day, JANUARY 1st</li>
- * <li>Sao Paulo City Day, JANUARY 25th</li>
+ * <li>Sao Paulo City Day, JANUARY 25th (until 2021)</li>
  * <li>Tiradentes's Day, April 21th</li>
  * <li>Labour Day, May 1st</li>
- * <li>Revolution Day, July 9th</li>
+ * <li>Revolution Day, July 9th (until 2021)</li>
  * <li>Independence Day, September 21th</li>
  * <li>Nossa Sra. Aparecida Day, October 12th</li>
  * <li>All Souls Day, November 2nd</li>
  * <li>Republic Day, November 15th</li>
- * <li>Black Awareness Day, November 20th (since 2007)</li>
+ * <li>Black Consciousness Day, November 20th (since 2007, except 2022 and 2023)</li>
  * <li>Christmas, December 25th</li>
  * <li>Passion of Christ</li>
  * <li>Carnival</li>
@@ -160,6 +160,8 @@ public class Brazil extends Calendar {
                     || (d == 2 && m == Month.November)
                     // Republic Day
                     || (d == 15 && m == Month.November)
+                    // Black Awareness Day (Lei 14.759/2023; national holiday since 2024)
+                    || (d == 20 && m == Month.November && y >= 2024)
                     // Christmas
                     || (d == 25 && m == Month.December)
                     // Passion of Christ
@@ -194,14 +196,14 @@ public class Brazil extends Calendar {
             if (isWeekend(w)
                     // New Year's Day
                     || (d == 1 && m == January)
-                    // Sao Paulo City Day
-                    || (d == 25 && m == January)
+                    // Sao Paulo City Day (B3 dropped municipal holiday from 2022)
+                    || (d == 25 && m == January && y < 2022)
                     // Tiradentes Day
                     || (d == 21 && m == April)
                     // Labor Day
                     || (d == 1 && m == May)
-                    // Revolution Day
-                    || (d == 9 && m == July)
+                    // Revolution Day (Sao Paulo; B3 dropped from 2022)
+                    || (d == 9 && m == July && y < 2022)
                     // Nossa Sra. Aparecida Day
                     // || (d == 12 && m == OCTOBER)-> not closed at the 12th October
                     // All Souls Day
@@ -210,8 +212,9 @@ public class Brazil extends Calendar {
                     // Republic Day
                     // || (d == 15 && m == NOVEMBER) -> not closed at the 15th
                     // November
-                    // Black Awareness Day
-                    || (d == 20 && m == November && y >= 2007)
+                    // Black Consciousness Day (B3 traded on Nov 20, 2022 and
+                    // 2023 — re-added as national holiday in Lei 14.759/2023)
+                    || (d == 20 && m == November && y >= 2007 && y != 2022 && y != 2023)
                     // Christmas Eve
                     || (d == 24 && m == December)
                     // Christmas
