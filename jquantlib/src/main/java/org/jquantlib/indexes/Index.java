@@ -198,6 +198,30 @@ public abstract class Index implements Observable {
         return fixing(fixingDate, false);
     }
 
+    /**
+     * Returns the historical fixing at the given date, or
+     * {@link Constants#NULL_REAL} if the fixing is not stored.
+     * <p>
+     * Mirrors C++ QuantLib v1.42.1 inline {@code Index::pastFixing(Date)}
+     * (ql/index.hpp:131-134) — used by Black ON-coupon pricers'
+     * {@code optionletRateLocal} path to peek at past daily fixings without
+     * triggering the throw-on-missing semantics of
+     * {@link InterestRateIndex#fixing(Date,boolean)}.
+     * <p>
+     * Phase 5e.5b-CFC-b: returns {@code NULL_REAL} when the date has no
+     * stored fixing (instead of throwing) so callers can branch on
+     * "not yet fixed" cleanly.
+     *
+     * @param fixingDate calendar date of the fixing (no settlement days)
+     * @return the stored fixing, or {@code NULL_REAL} if missing
+     */
+    public double pastFixing(final Date fixingDate) {
+        QL.require(isValidFixingDate(fixingDate),
+                fixingDate + " is not a valid fixing date");
+        final Double v = timeSeries().get(fixingDate);
+        return v == null ? Constants.NULL_REAL : v.doubleValue();
+    }
+
 
 	//
 	// implements Observable
