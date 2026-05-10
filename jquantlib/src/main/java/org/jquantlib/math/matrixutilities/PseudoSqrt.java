@@ -452,9 +452,8 @@ public class PseudoSqrt {
             for (int i=0; i<size; i++) {
                 diagonal.set(i, i, Math.sqrt(Math.max((jd.eigenvalues().get(i)), 0.0)));
             }
-            if(true)
-                throw new UnsupportedOperationException("work in progress");
-            //result = jd.eigenvectors() * diagonal;
+            // Phase 4i.5 align: C++ pseudosqrt.cpp:165 is `eigenvectors() * diagonal`.
+            result = jd.eigenvectors().mul(diagonal);
             normalizePseudoRoot(matrix, result);
             break;
         case Hypersphere:
