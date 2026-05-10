@@ -9,7 +9,6 @@ package org.jquantlib.testsuite.experimental.models;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 
@@ -20,6 +19,7 @@ import org.jquantlib.experimental.models.HestonSLVFokkerPlanckFdmParams;
 import org.jquantlib.experimental.models.HestonSLVFokkerPlanckFdmParams.GreensFctAlgorithm;
 import org.jquantlib.experimental.models.HestonSLVMCModel;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp.TransformationType;
+import org.jquantlib.model.marketmodels.browniangenerators.MTBrownianGeneratorFactory;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.processes.HestonProcess;
@@ -119,24 +119,31 @@ public class HestonSLVModelSmokeTest {
     public void testMcModelConstructorAndGetters() {
         final HestonSLVMCModel m = new HestonSLVMCModel(
                 buildLocalVol(), buildHestonModel(),
-                /* brownianGeneratorFactory */ null,
+                new MTBrownianGeneratorFactory(42L),
                 new Date(15, Month.May, 2027));
         assertNotNull(m);
         assertNotNull(m.localVol());
     }
 
     @Test
-    public void testMcModelPerformCalculationsCarryForward() {
+    public void testMcModelPerformCalculationsBodyFill() {
+        // Phase 5h.5-SLV-b body-fill: MC bootstrap runs end-to-end and
+        // produces a non-null leverage surface. Path count is kept small
+        // (32 paths, 7 bins, 1-month horizon) so the smoke test stays fast;
+        // the calibration is statistically too noisy to assert exact values
+        // but the surface should produce a finite, in-range leverage at
+        // (T/2, spot).
         final HestonSLVMCModel m = new HestonSLVMCModel(
                 buildLocalVol(), buildHestonModel(),
-                /* brownianGeneratorFactory */ null,
-                new Date(15, Month.May, 2027));
-        try {
-            m.leverageFunction();
-            fail("expected UnsupportedOperationException — Phase 5h.5-SLV-b carry-forward");
-        } catch (final UnsupportedOperationException e) {
-            assertTrue("must mention carry-forward",
-                    e.getMessage().contains("Phase 5h.5-SLV-b"));
-        }
+                new MTBrownianGeneratorFactory(42L),
+                new Date(15, Month.June, 2026),
+                /*timeStepsPerYear=*/ 12,
+                /*nBins=*/ 7,
+                /*calibrationPaths=*/ 32,
+                new java.util.ArrayList<Date>(), 1.0);
+        final LocalVolTermStructure lev = m.leverageFunction();
+        assertNotNull("leverage surface must be non-null", lev);
+        final double l = lev.localVol(0.04, 100.0);
+        assertTrue("leverage finite: " + l, !Double.isNaN(l) && !Double.isInfinite(l));
     }
 }
