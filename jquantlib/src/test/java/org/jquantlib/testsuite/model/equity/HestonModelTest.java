@@ -6,8 +6,31 @@
  */
 package org.jquantlib.testsuite.model.equity;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.exercise.EuropeanExercise;
+import org.jquantlib.exercise.Exercise;
+import org.jquantlib.instruments.EuropeanOption;
+import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.PlainVanillaPayoff;
+import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.model.equity.HestonModel;
+import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
+import org.jquantlib.pricingengines.vanilla.AnalyticPDFHestonEngine;
+import org.jquantlib.pricingengines.vanilla.COSHestonEngine;
+import org.jquantlib.processes.HestonProcess;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -208,9 +231,79 @@ public class HestonModelTest {
     @Test
     public void testCosHestonCumulants() { fail("not implemented"); }
 
-    @Ignore(REASON_COS)
+    /**
+     * Phase Body-Fill-4 port of C++ {@code testCosHestonEngine}: prices
+     * four vanilla options under {@link COSHestonEngine}(L=25, N=600) and
+     * checks against the C++ cached values to {@code 1e-10} (tight).
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:1881-1941} v1.42.1.
+     */
     @Test
-    public void testCosHestonEngine() { fail("not implemented"); }
+    public void testCosHestonEngine() {
+        final Date settlementDate = new Date(7, Month.February, 2017);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.15)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.07)), dayCounter));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final double v0    =  0.1;
+        final double rho   = -0.75;
+        final double sigma =  1.8;
+        final double kappa =  4.0;
+        final double theta =  0.22;
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+
+        final Date maturityDate = settlementDate.add(365);  // ~1y
+
+        final Exercise exercise = new EuropeanExercise(maturityDate);
+
+        final PricingEngine cosEngine = new COSHestonEngine(model, process, 25.0, 600);
+
+        final StrikedTypePayoff[] payoffs = {
+            new PlainVanillaPayoff(Option.Type.Call, s0.currentLink().value() + 20),
+            new PlainVanillaPayoff(Option.Type.Call, s0.currentLink().value() + 150),
+            new PlainVanillaPayoff(Option.Type.Put,  s0.currentLink().value() - 20),
+            new PlainVanillaPayoff(Option.Type.Put,  s0.currentLink().value() - 90)
+        };
+
+        // C++ cached expected values (from hestonmodel.cpp:1920-1922).
+        // Note: C++ exercise is `settlementDate + Period(1, Years)` which is
+        // exactly 365 days for 2017-02-07 (no leap-day in the year). Keeping
+        // the C++ tolerance 1e-10. If the date arithmetic differs by 1d the
+        // expected values would shift; we verify empirically.
+        final double[] expected = {
+            9.364410588426075, 0.01036797658132471,
+            5.319092971836708, 0.01032681906278383
+        };
+
+        final double tol = 1e-10;
+        for (int i = 0; i < payoffs.length; ++i) {
+            final EuropeanOption option = new EuropeanOption(payoffs[i], exercise);
+            option.setPricingEngine(cosEngine);
+            final double calculated = option.NPV();
+
+            final double error = Math.abs(expected[i] - calculated);
+            if (error > tol) {
+                fail("failed to reproduce prices with COSHestonEngine"
+                        + "\n    payoff:     " + payoffs[i].optionType()
+                        + " K=" + payoffs[i].strike()
+                        + "\n    expected:   " + expected[i]
+                        + "\n    calculated: " + calculated
+                        + "\n    difference: " + error);
+            }
+            assertEquals("COSHestonEngine NPV", expected[i], calculated, tol);
+        }
+    }
 
     @Ignore(REASON_COS)
     @Test
