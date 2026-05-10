@@ -46,9 +46,9 @@ import org.junit.Test;
  * Greeks via MC performance engine, and end-to-end MC performance
  * pricing (one path per reset period).
  *
- * <p><strong>Phase 4h.5c (Greeks): full 648-case sweeps for testGreeks
- * and testPerformanceGreeks bodied.</strong> testMcPerformance full
- * sweep follow-up.
+ * <p><strong>Phase 4h.5c: full sweeps for testGreeks (648 cases),
+ * testPerformanceGreeks (648 cases) and testMcPerformance (256 cases)
+ * are bodied.</strong>
  *
  * <p>Source: {@code test-suite/cliquetoption.cpp} v1.42.1 @ {@code 099987f0ca}.
  */
@@ -310,30 +310,36 @@ public class CliquetOptionTest {
 
     /**
      * Mirrors C++ test-suite/cliquetoption.cpp::testMcPerformance.
-     * Smoke test: cross-validate a single representative configuration
-     * via {@link MCPerformanceEngine} against {@link AnalyticPerformanceEngine}
-     * with absolute tolerance 1.5e-2 (matches C++).
-     *
-     * <p>The C++ test sweeps all combinations (2 types x 2 moneyness
-     * x 2 lengths x 2 frequencies x 2 q x 2 r x 2 vol = 256 cases). For
-     * Java we exercise one representative case so the test stays under a
-     * second; full sweep is a Phase 4h.5c carry-forward.
+     * Cross-validates {@link MCPerformanceEngine} against
+     * {@link AnalyticPerformanceEngine} for the full Cartesian sweep:
+     * 2 types x 2 moneyness x 2 lengths x 2 frequencies x 1 underlying
+     * x 2 q x 2 r x 2 vol = 256 cases. Absolute tolerance 1.5e-2 (matches C++).
      */
     @Test
     public void testMcPerformance() {
-        QL.info("Testing Monte Carlo performance engine against analytic results...");
+        QL.info("Testing Monte Carlo performance engine against analytic results "
+              + "(full 256-case sweep)...");
+
+        final Option.Type[] types = { Option.Type.Call, Option.Type.Put };
+        final double[] moneyness = { 0.9, 1.1 };
+        final double[] underlyings = { 100.0 };
+        final double[] qRates = { 0.04, 0.06 };
+        final double[] rRates = { 0.01, 0.10 };
+        final int[] lengths = { 2, 4 };
+        final Frequency[] frequencies = { Frequency.Semiannual, Frequency.Quarterly };
+        final double[] vols = { 0.10, 0.90 };
 
         final DayCounter dc = new Actual360();
         final Date today = Date.todaysDate();
         new Settings().setEvaluationDate(today);
 
-        final SimpleQuote spot = new SimpleQuote(100.0);
-        final SimpleQuote qRate = new SimpleQuote(0.04);
-        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
-        final SimpleQuote rRate = new SimpleQuote(0.10);
-        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
-        final SimpleQuote vol = new SimpleQuote(0.10);
-        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+        final SimpleQuote spot  = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final YieldTermStructure qTS = Utilities.flatRate(qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final YieldTermStructure rTS = Utilities.flatRate(rRate, dc);
+        final SimpleQuote vol   = new SimpleQuote(0.0);
+        final BlackVolTermStructure volTS = Utilities.flatVol(vol, dc);
 
         final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
                 new Handle<Quote>(spot),
@@ -341,43 +347,80 @@ public class CliquetOptionTest {
                 new Handle<YieldTermStructure>(rTS),
                 new Handle<BlackVolTermStructure>(volTS));
 
-        final Period tenor = new Period(Frequency.Semiannual);
-        final int length = 2;
-        final EuropeanExercise maturity = new EuropeanExercise(today.add(tenor.mul(length)));
+        for (final Option.Type type : types) {
+            for (final double moneynes : moneyness) {
+                for (final int length : lengths) {
+                    for (final Frequency frequencie : frequencies) {
 
-        final PercentageStrikePayoff payoff = new PercentageStrikePayoff(Option.Type.Call, 1.1);
+                        final Period tenor = new Period(frequencie);
+                        final EuropeanExercise maturity = new EuropeanExercise(
+                                today.add(tenor.mul(length)));
 
-        final List<Date> reset = new ArrayList<Date>();
-        Date d = today.add(tenor);
-        while (d.lt(maturity.lastDate())) {
-            reset.add(d);
-            d = d.add(tenor);
+                        final PercentageStrikePayoff payoff =
+                                new PercentageStrikePayoff(type, moneynes);
+
+                        final List<Date> reset = new ArrayList<Date>();
+                        Date d = today.add(tenor);
+                        while (d.lt(maturity.lastDate())) {
+                            reset.add(d);
+                            d = d.add(tenor);
+                        }
+
+                        final CliquetOption option = new CliquetOption(payoff, maturity, reset);
+
+                        final PricingEngine refEngine =
+                                new AnalyticPerformanceEngine(process);
+
+                        final PricingEngine mcEngine = new MCPerformanceEngine(
+                                process,
+                                /* brownianBridge */ true,
+                                /* antitheticVariate */ false,
+                                /* requiredSamples */ McSimulation.NULL_SAMPLES,
+                                /* requiredTolerance */ 5.0e-3,
+                                /* maxSamples */ McSimulation.NULL_SAMPLES,
+                                /* seed */ 42L);
+
+                        for (final double u : underlyings) {
+                            for (final double m : qRates) {
+                                for (final double n : rRates) {
+                                    for (final double v : vols) {
+
+                                        final double q = m;
+                                        final double r = n;
+                                        spot.setValue(u);
+                                        qRate.setValue(q);
+                                        rRate.setValue(r);
+                                        vol.setValue(v);
+
+                                        option.setPricingEngine(refEngine);
+                                        final double refValue = option.NPV();
+
+                                        option.setPricingEngine(mcEngine);
+                                        final double value = option.NPV();
+
+                                        final double error = Math.abs(refValue - value);
+                                        final double tolerance = 1.5e-2;
+                                        if (error > tolerance) {
+                                            fail(type + " option:\n"
+                                                + "    spot value:       " + u + "\n"
+                                                + "    moneyness:        " + payoff.strike() + "\n"
+                                                + "    dividend yield:   " + q + "\n"
+                                                + "    risk-free rate:   " + r + "\n"
+                                                + "    reference date:   " + today + "\n"
+                                                + "    maturity:         " + maturity.lastDate() + "\n"
+                                                + "    volatility:       " + v + "\n\n"
+                                                + "    expected   value: " + refValue + "\n"
+                                                + "    calculated value: " + value + "\n"
+                                                + "    error:            " + error + "\n"
+                                                + "    tolerance:        " + tolerance);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-
-        final CliquetOption option = new CliquetOption(payoff, maturity, reset);
-
-        // Reference: AnalyticPerformanceEngine
-        final PricingEngine refEngine = new AnalyticPerformanceEngine(process);
-        option.setPricingEngine(refEngine);
-        final double refValue = option.NPV();
-
-        // MC engine
-        final PricingEngine mcEngine = new MCPerformanceEngine(
-                process,
-                /* brownianBridge */ true,
-                /* antitheticVariate */ false,
-                /* requiredSamples */ McSimulation.NULL_SAMPLES,
-                /* requiredTolerance */ 5.0e-3,
-                /* maxSamples */ McSimulation.NULL_SAMPLES,
-                /* seed */ 42L);
-        option.setPricingEngine(mcEngine);
-        final double value = option.NPV();
-
-        final double error = Math.abs(refValue - value);
-        final double tolerance = 1.5e-2;
-        assertEquals("MCPerformanceEngine NPV vs AnalyticPerformanceEngine "
-                   + "(refValue=" + refValue + ", mcValue=" + value
-                   + ", error=" + error + ")",
-                   refValue, value, tolerance);
     }
 }
