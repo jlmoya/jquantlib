@@ -11,11 +11,18 @@ import static org.junit.Assert.fail;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jquantlib.math.Ops;
+import org.jquantlib.math.integrals.GaussLobattoIntegral;
+import org.jquantlib.math.interpolations.NaturalCubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
 import org.jquantlib.methods.finitedifferences.meshers.Predefined1dMesher;
+import org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher;
+import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp;
+import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp.TransformationType;
+import org.jquantlib.methods.finitedifferences.schemes.DouglasScheme;
 import org.jquantlib.methods.finitedifferences.utilities.SquareRootProcessRNDCalculator;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -151,9 +158,80 @@ public class HestonSLVModelTest {
 
     /* ---- 2. Square-root boundary / stationary -------------------------- */
 
-    @Ignore(REASON_FP)
+    /**
+     * Tests Zero Flow BC for the square-root process (probe via 5 different
+     * finite-difference stencils on the conditional PDF). Mirrors C++
+     * {@code testSquareRootZeroFlowBC} (test-suite/hestonslvmodel.cpp:827).
+     *
+     * <p><strong>Java tolerance status:</strong> C++ uses the closed-form
+     * non-central chi-squared PDF (Bessel-based); Java's
+     * {@code SquareRootProcessRNDCalculator.pdf} is a CDF central-difference
+     * approximation (LOOSE 1e-4 — Phase 5h.5-RND). The C++ test compares
+     * derivative values against expected[5][5] within 2e-6 absolute, which
+     * Java cannot meet without porting Boost's non-central chi-squared PDF.
+     *
+     * <p>The {@code expected[5][5]} matrix is kept here as documentation and
+     * the test runs but stays {@code @Ignore}d pending Java having an exact
+     * non-central chi-squared PDF (or modified Bessel functions of fractional
+     * order).
+     */
+    @Ignore("Phase 5h.5-SLV-c — needs exact non-central chi-squared PDF "
+            + "(Java SquareRootProcessRNDCalculator.pdf is CDF central-difference "
+            + "with ~1e-4 slack vs. C++ Boost; test requires 2e-6 derivative tol).")
     @Test
-    public void testSquareRootZeroFlowBC() { fail("not implemented"); }
+    public void testSquareRootZeroFlowBC() {
+        final double kappa = 1.0;
+        final double theta = 0.4;
+        final double sigma = 0.8;
+        final double v_0   = 0.1;
+        final double t     = 1.0;
+
+        final double vmin = 0.0005;
+        final double h    = 0.0001;
+
+        final double[][] expected = {
+            { 0.000548, -0.000245, -0.005657, -0.001167, -0.000024},
+            {-0.000595, -0.000701, -0.003296, -0.000883, -0.000691},
+            {-0.001277, -0.001320, -0.003128, -0.001399, -0.001318},
+            {-0.001979, -0.002002, -0.003425, -0.002047, -0.002001},
+            {-0.002715, -0.002730, -0.003920, -0.002760, -0.002730}
+        };
+
+        for (int i = 0; i < 5; ++i) {
+            final double v = vmin + i * 0.001;
+            final double vm2 = v - 2 * h;
+            final double vm1 = v - h;
+            final double v0  = v;
+            final double v1  = v + h;
+            final double v2  = v + 2 * h;
+
+            final SquareRootProcessRNDCalculator rnd =
+                    new SquareRootProcessRNDCalculator(v_0, kappa, theta, sigma);
+
+            final double pm2 = rnd.pdf(vm2, t);
+            final double pm1 = rnd.pdf(vm1, t);
+            final double p0  = rnd.pdf(v0,  t);
+            final double p1  = rnd.pdf(v1,  t);
+            final double p2  = rnd.pdf(v2,  t);
+
+            final double driftTerm = (kappa * (v0 - theta) + sigma * sigma / 2.0) * p0;
+
+            final double flowSym2Order = sigma * sigma * v0 / (4.0 * h) * (p1 - pm1)        + driftTerm;
+            final double flowSym4Order = sigma * sigma * v0 / (24.0 * h) * (-p2 + 8.0 * p1 - 8.0 * pm1 + pm2) + driftTerm;
+            final double fwd1Order     = sigma * sigma * v0 / (2.0 * h) * (p1 - p0)         + driftTerm;
+            final double fwd2Order     = sigma * sigma * v0 / (4.0 * h) * (4.0 * p1 - 3.0 * p0 - p2) + driftTerm;
+            final double fwd3Order     = sigma * sigma * v0 / (12.0 * h) * (-p2 + 6.0 * p1 - 3.0 * p0 - 2.0 * pm1) + driftTerm;
+
+            final double tol = 0.000002;
+            if (   Math.abs(expected[i][0] - flowSym2Order) > tol
+                || Math.abs(expected[i][1] - flowSym4Order) > tol
+                || Math.abs(expected[i][2] - fwd1Order)     > tol
+                || Math.abs(expected[i][3] - fwd2Order)     > tol
+                || Math.abs(expected[i][4] - fwd3Order)     > tol) {
+                fail("failed to reproduce Zero Flow BC at v=" + v + " tol=" + tol);
+            }
+        }
+    }
 
     /**
      * Verifies the zero-flow boundary condition for the transformed
@@ -218,9 +296,111 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore(REASON_FP)
+    /**
+     * Tests Fokker-Planck forward evolution of the square-root process from
+     * a stationary initial density: after evolving, the density should still
+     * integrate to {@code 1 - 2*eps} on the truncated mesh. Mirrors C++
+     * {@code testSquareRootEvolveWithStationaryDensity}
+     * (test-suite/hestonslvmodel.cpp:938). Tolerance: 0.005 absolute (loose,
+     * matches C++).
+     *
+     * <p>Iterates over sigma in [0.2, 2.0] with step 0.1 (19 sub-cases). For
+     * each sigma it picks the Plain or Power transformation per Feller
+     * condition, builds an FdmSquareRootFwdOp on a Uniform1dMesher, evolves
+     * 100 Douglas time-steps of dt=0.01, then integrates back to check the
+     * total mass.
+     */
     @Test
-    public void testSquareRootEvolveWithStationaryDensity() { fail("not implemented"); }
+    public void testSquareRootEvolveWithStationaryDensity() {
+        final double kappa = 2.5;
+        final double theta = 0.2;
+        final int vGrid = 100;
+        final double eps = 1.0e-2;
+
+        for (double sigma = 0.2; sigma < 2.01; sigma += 0.1) {
+            final double alpha = 1.0 - 2.0 * kappa * theta / (sigma * sigma);
+
+            final SquareRootProcessRNDCalculator rnd =
+                    new SquareRootProcessRNDCalculator(theta, kappa, theta, sigma);
+            final double vMin = rnd.stationary_invcdf(eps);
+            final double vMax = rnd.stationary_invcdf(1.0 - eps);
+
+            final List<Fdm1dMesher> ms1 = new ArrayList<Fdm1dMesher>(1);
+            ms1.add(new Uniform1dMesher(vMin, vMax, vGrid));
+            final FdmMesher mesher = new FdmMesherComposite(ms1);
+
+            final Array v = mesher.locations(0);
+            final TransformationType transform =
+                    (sigma < 0.75) ? TransformationType.Plain : TransformationType.Power;
+
+            final double[] vq = new double[v.size()];
+            final double[] vmq = new double[v.size()];
+            for (int i = 0; i < v.size(); ++i) {
+                vq[i] = Math.pow(v.get(i), alpha);
+                vmq[i] = 1.0 / vq[i];
+            }
+
+            final Array p = new Array(vGrid);
+            for (int i = 0; i < v.size(); ++i) {
+                double pi = rnd.stationary_pdf(v.get(i));
+                if (transform == TransformationType.Power) {
+                    pi *= vq[i];
+                }
+                p.set(i, pi);
+            }
+
+            final FdmSquareRootFwdOp op =
+                    new FdmSquareRootFwdOp(mesher, kappa, theta, sigma, 0, transform);
+
+            final int n = 100;
+            final double dt = 0.01;
+            final DouglasScheme evolver = new DouglasScheme(0.5, op);
+            evolver.setStep(dt);
+
+            for (int i = 1; i <= n; ++i) {
+                evolver.step(p, i * dt);
+            }
+
+            final double expected = 1.0 - 2.0 * eps;
+
+            if (transform == TransformationType.Power) {
+                for (int i = 0; i < v.size(); ++i) {
+                    p.set(i, p.get(i) * vmq[i]);
+                }
+            }
+
+            // Equivalent to C++ q_fct: spline of q[i] = v[i]^alpha * p[i],
+            // integrated as q(v) * v^(-alpha).
+            final double[] qarr = new double[v.size()];
+            final double[] varr = new double[v.size()];
+            for (int i = 0; i < v.size(); ++i) {
+                varr[i] = v.get(i);
+                qarr[i] = Math.pow(v.get(i), alpha) * p.get(i);
+            }
+            final NaturalCubicInterpolation spline =
+                    new NaturalCubicInterpolation(new Array(varr), new Array(qarr));
+            spline.update();
+            spline.enableExtrapolation();
+            final double alphaFinal = alpha;
+            final Ops.DoubleOp qFct = new Ops.DoubleOp() {
+                @Override
+                public double op(final double vv) {
+                    return spline.op(vv, true) * Math.pow(vv, -alphaFinal);
+                }
+            };
+
+            final GaussLobattoIntegral integ = new GaussLobattoIntegral(1000000, 1e-6);
+            final double calculated = integ.op(qFct, v.first(), v.last());
+
+            final double tol = 0.005;
+            if (Math.abs(calculated - expected) > tol) {
+                fail("failed to reproduce stationary probability function for sigma=" + sigma
+                        + "\n    calculated: " + calculated
+                        + "\n    expected:   " + expected
+                        + "\n    tolerance:  " + tol);
+            }
+        }
+    }
 
     @Ignore(REASON_FP)
     @Test
