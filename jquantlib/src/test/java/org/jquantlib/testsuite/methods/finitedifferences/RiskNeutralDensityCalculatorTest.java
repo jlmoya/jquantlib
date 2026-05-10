@@ -465,7 +465,22 @@ public class RiskNeutralDensityCalculatorTest {
         }
     }
 
-    @Ignore(REASON_MISSING)
+    /**
+     * Phase 5h.5-RND-c port of C++ {@code testBlackScholesWithSkew}
+     * (lines 557-707). Verifies that BSM, Heston, GBSM, and LocalVol
+     * RND calculators agree on cdf/pdf/invcdf when the BSM is sourced
+     * from a Heston-derived implied vol surface.
+     *
+     * <p>Status: ignored. The test requires {@code HestonBlackVolSurface}
+     * (constructs the skew from a Heston model) and
+     * {@code NoExceptLocalVolSurface} (handles negative variance from
+     * Dupire inversion gracefully) — neither is yet ported in JQuantLib.
+     * Deferred to Phase 5h.5-RND-d alongside the
+     * testLocalVolatilityRND Dumas/FdBSVanilla block.
+     */
+    @Ignore("Phase 5h.5-RND-c: requires HestonBlackVolSurface + NoExceptLocalVolSurface "
+            + "ports (neither exists in JQuantLib yet). Production-code work, deferred "
+            + "to dedicated commit (Phase 5h.5-RND-d).")
     @Test
     public void testBlackScholesWithSkew() { fail("not implemented"); }
 
