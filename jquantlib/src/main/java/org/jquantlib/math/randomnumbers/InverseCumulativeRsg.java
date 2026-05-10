@@ -55,21 +55,30 @@ import org.jquantlib.methods.montecarlo.Sample;
 
 //TODO: why USG and not RSG? What's the difference between URSG and RSG??
 public class InverseCumulativeRsg<USG extends UniformRandomSequenceGenerator, IC extends InverseCumulative>
-            implements UniformRandomSequenceGenerator {
+            implements UniformRandomSequenceGenerator, RandomSequenceGeneratorIntf {
 
     private final /*@NonNegative*/ int  dimension;
     private final USG                   ursg;
-    
+
     private Sample<double[]>            sequence;
     private IC                          ic;
     private double                      weight;
+    /**
+     * Backing array for {@link #sequence}, kept across calls so that
+     * {@link #lastSequence()} returns the array that
+     * {@link #nextSequence()} actually populated. Without this, the
+     * antithetic-variate path of any MC engine driven by this RSG would
+     * read the zero-initialised constructor sample every time.
+     */
+    private final double[]              storage;
     
 
     public InverseCumulativeRsg(final USG ursg) {
         this.ursg = ursg;
         this.dimension = this.ursg.dimension();
         this.weight = 1.0;
-        this.sequence = new Sample<double[]>(new double[this.dimension], this.weight);
+        this.storage = new double[this.dimension];
+        this.sequence = new Sample<double[]>(this.storage, this.weight);
         this.ic = null;
     }
 
@@ -99,16 +108,18 @@ public class InverseCumulativeRsg<USG extends UniformRandomSequenceGenerator, IC
      */
     @Override
     public Sample<double[]> nextSequence() /* @ReadOnly */ {
-        Sample<double[]> sample = this.ursg.nextSequence();
-        double[] v = sample.value();
+        final Sample<double[]> sample = this.ursg.nextSequence();
+        final double[] v = sample.value();
         this.weight = sample.weight();
-        
-        double[] d = new double[this.dimension];
-        for (int i = 0; i < this.dimension; i++) {
-            d[i] = this.ic.op(v[i]);
-        }
 
-        return new Sample<double[]>(d, weight);
+        // Write into the persistent storage so lastSequence() returns
+        // the same data on the next call (mirrors the C++ template
+        // contract used by PathGenerator's antithetic branch).
+        for (int i = 0; i < this.dimension; i++) {
+            this.storage[i] = this.ic.op(v[i]);
+        }
+        this.sequence = new Sample<double[]>(this.storage, this.weight);
+        return this.sequence;
     }
 
     @Override

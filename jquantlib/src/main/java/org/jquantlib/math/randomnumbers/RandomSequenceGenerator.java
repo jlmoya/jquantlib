@@ -53,7 +53,8 @@ import org.jquantlib.methods.montecarlo.Sample;
  * @author Richard Gomes
  */
 // FIXME: code review :: possibly rename this class ???
-public class RandomSequenceGenerator<RNG extends RandomNumberGenerator> implements UniformRandomSequenceGenerator {
+public class RandomSequenceGenerator<RNG extends RandomNumberGenerator>
+        implements UniformRandomSequenceGenerator, RandomSequenceGeneratorIntf {
 
     //
     // private fields
