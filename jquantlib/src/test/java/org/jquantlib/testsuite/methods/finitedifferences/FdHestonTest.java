@@ -803,10 +803,118 @@ public class FdHestonTest {
         // MoL boundary-timing is investigated.
     }
 
-    @Ignore("Phase 5j.5 — requires FdHestonVanillaEngine + spurious-oscillation regression baseline")
+    /**
+     * {@code testSpuriousOscillations} — verifies which ADI schemes produce
+     * spurious oscillations on a low-vol Heston PDE for an ATM European
+     * call. Mirrors C++ test-suite/fdheston.cpp lines 870-944. Currently
+     * @Ignore'd on the Java port — see Javadoc note below.
+     * <p>
+     * Expected oscillation behaviour by scheme (from C++ source):
+     * <ul>
+     *   <li>oscillates: Craig-Sneyd, Hundsdorfer, Mod. Hundsdorfer, Douglas, Crank-Nicolson</li>
+     *   <li>smooth:      Implicit Euler, TR-BDF2</li>
+     * </ul>
+     * Detection: max gamma-difference in [99..101] step-0.1 above 0.01 ⇒ oscillating.
+     * <p>
+     * <strong>Phase 4n.5c — body kept but @Ignore'd:</strong>
+     * the Java {@link FdmHestonSolver#gammaAt(double, double)} uses a 1% spot
+     * finite-difference (eps = s*0.01 = 1.0 at s=100) instead of the C++
+     * analytic monotonic-cubic spline derivative; this washes out the
+     * fine-scale gamma oscillations the test is designed to detect. Java
+     * Hundsdorfer reports max gamma-diff ~3.7e-3 vs the 1e-2 threshold,
+     * so it would (incorrectly) pass as smooth on Hundsdorfer. To
+     * un-ignore this test, {@link FdmHestonSolver} must grow an analytic
+     * spline-derivative path matching C++'s {@code Fdm2DimSolver::gammaAt}
+     * (Phase 5j.5b carry, see {@code Fdm2DimSolver.thetaAt} which already
+     * has the analytic-spline pattern).
+     */
+    @Ignore("Phase 5j.5b — FdmHestonSolver.gammaAt uses 1% FD bump, washes out oscillations C++ analytic-derivative detects")
     @Test
     public void testSpuriousOscillations() {
-        fail("not implemented");
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(7, Month.June, 2018);
+        new Settings().setEvaluationDate(today);
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(100.0));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.1)),
+                        dc, Compounding.Continuous, Frequency.Annual));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(today, new Handle<Quote>(new SimpleQuote(0.0)),
+                        dc, Compounding.Continuous, Frequency.Annual));
+
+        final double v0    = 0.005;
+        final double kappa = 1.0;
+        final double theta = 0.005;
+        final double sigma = 0.4;
+        final double rho   = -0.75;
+
+        final Date maturity = today.add(new org.jquantlib.time.Period(
+                1, org.jquantlib.time.TimeUnit.Years));
+
+        final HestonProcess process = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+
+        final FdHestonVanillaEngine hestonEngine = new FdHestonVanillaEngine(
+                model, process, 6, 200, 13, 0, FdmSchemeDesc.TrBDF2());
+
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, spot.currentLink().value()),
+                new EuropeanExercise(maturity));
+
+        // Java-port setup: trigger setupArguments by computing NPV once
+        // (Instrument.performCalculations() calls setupArguments).
+        // After this, hestonEngine.getArguments() is populated and
+        // getSolverDesc() can build a valid FdmSolverDesc.
+        option.setPricingEngine(hestonEngine);
+        option.NPV();
+
+        final FdmSolverDesc solverDesc = hestonEngine.getSolverDesc();
+
+        // (FdmSchemeDesc, name, expectedSpurious)
+        final Object[][] descs = {
+                {FdmSchemeDesc.CraigSneyd(),          "Craig-Sneyd",       Boolean.TRUE},
+                {FdmSchemeDesc.Hundsdorfer(),         "Hundsdorfer",       Boolean.TRUE},
+                {FdmSchemeDesc.ModifiedHundsdorfer(), "Mod. Hundsdorfer",  Boolean.TRUE},
+                {FdmSchemeDesc.Douglas(),             "Douglas",           Boolean.TRUE},
+                {FdmSchemeDesc.CrankNicolson(),       "Crank-Nicolson",    Boolean.TRUE},
+                {FdmSchemeDesc.ImplicitEuler(),       "Implicit",          Boolean.FALSE},
+                {FdmSchemeDesc.TrBDF2(),              "TR-BDF2",           Boolean.FALSE}
+        };
+
+        for (final Object[] row : descs) {
+            final FdmSchemeDesc desc = (FdmSchemeDesc) row[0];
+            final String name        = (String) row[1];
+            final boolean spurious   = (Boolean) row[2];
+
+            final FdmHestonSolver solver = new FdmHestonSolver(
+                    process, solverDesc, desc);
+
+            final java.util.List<Double> gammas = new java.util.ArrayList<Double>();
+            for (double x = 99.0; x < 101.001; x += 0.1) {
+                gammas.add(solver.gammaAt(x, v0));
+            }
+
+            double maximum = -Double.MAX_VALUE;
+            for (int i = 1; i < gammas.size(); ++i) {
+                final double diff = Math.abs(gammas.get(i) - gammas.get(i - 1));
+                if (diff > maximum) {
+                    maximum = diff;
+                }
+            }
+
+            final double tol = 0.01;
+            final boolean hasSpuriousOscillations = maximum > tol;
+
+            if (hasSpuriousOscillations != spurious) {
+                fail("unable to reproduce spurious oscillation behaviour"
+                        + "\n   scheme name          : " + name
+                        + "\n   oscillations observed: " + hasSpuriousOscillations
+                        + "\n   oscillations expected: " + spurious
+                        + "\n   maximum gamma diff   : " + maximum);
+            }
+        }
     }
 
     /**
