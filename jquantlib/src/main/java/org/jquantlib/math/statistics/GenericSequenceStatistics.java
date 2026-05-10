@@ -158,84 +158,84 @@ public class GenericSequenceStatistics {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].mean();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array variance() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].variance();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array standardDeviation() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].standardDeviation();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array downsideVariance() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].downsideVariance();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array downsideDeviation() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].downsideDeviation();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array semiVariance() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].semiVariance();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array semiDeviation() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].semiDeviation();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array errorEstimate() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].errorEstimate();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array skewness() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].skewness();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array kurtosis() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].kurtosis();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array min() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].min();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array max() /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++) {
 			results[i] = stats[i].max();
 		}
-		return new Array(results);
+		return new Array(results.clone());
 	}
 	
 	//-- single argument list
@@ -243,79 +243,79 @@ public class GenericSequenceStatistics {
 	public Array gaussianPercentile(/*@Real*/ final double y) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].gaussianPercentile(y);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array gaussianPotentialUpside(/*@Real*/ final double percentile) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].gaussianPotentialUpside(percentile);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array gaussianValueAtRisk(/*@Real*/ final double percentile) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].gaussianValueAtRisk(percentile);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array gaussianExpectedShortfall(/*@Real*/ final double percentile) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].gaussianExpectedShortfall(percentile);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array gaussianShortfall(/*@Real*/ final double target) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].gaussianShortfall(target);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array gaussianAverageShortfall(/*@Real*/ final double target) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].gaussianAverageShortfall(target);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array percentile(/*@Real*/ final double y) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].percentile(y);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array potentialUpside(/*@Real*/ final double percentile) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].potentialUpside(percentile);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array valueAtRisk(/*@Real*/ final double percentile) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].valueAtRisk(percentile);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array expectedShortfall(/*@Real*/ final double percentile) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].expectedShortfall(percentile);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array regret(/*@Real*/ final double target) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].regret(target);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array shortfall(/*@Real*/ final double target) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].shortfall(target);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 
 	public Array averageShortfall(/*@Real*/ final double target) /*@ReadOnly*/ {
 		for (/*@Size*/ int i=0; i<dimension_; i++)
 			results[i] = stats[i].averageShortfall(target);
-		return new Array(results);
+		return new Array(results.clone());
 	}
 	
 

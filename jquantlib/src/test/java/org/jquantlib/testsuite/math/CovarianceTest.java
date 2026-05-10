@@ -113,11 +113,6 @@ public class CovarianceTest {
         }
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib SequenceStatistics has a divergence "
-            + "between standardDeviation()^2 and covariance() diagonal entries (e.g. for the "
-            + "test data column 0: stdDev^2=16, cov[0][0]=2.5). Likely an unbiased vs biased "
-            + "estimator mismatch in GenericSequenceStatistics. Fix the underlying statistics, "
-            + "then enable this case.")
     @Test
     public void testCovariance() {
         QL.info("Testing covariance and correlation calculations...");
