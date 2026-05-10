@@ -79,16 +79,18 @@ public class RandomDefaultLM<P extends CopulaPolicy> {
     private final DefaultLatentModel<P> model_;
     private final FactorSampler<P> sampler_;
     private final List<Double> recoveries_;
-    private final int nSims_;
+    /** Number of Monte-Carlo paths; visible for subclasses (e.g. RandomLossLM). */
+    protected final int nSims_;
     private final double accuracy_;
 
-    private Basket basket_;
+    /** Active basket; visible for subclasses to bind via {@link #setBasket}. */
+    protected Basket basket_;
 
     /** Per-name horizon default-probability cache (set in {@link #initDates}). */
     private double[] horizonDefaultPs_;
 
     /** Per-simulation buffer of default events; populated by {@link #performSimulations}. */
-    private final List<List<DefaultSimEvent>> simsBuffer_ = new ArrayList<>();
+    protected final List<List<DefaultSimEvent>> simsBuffer_ = new ArrayList<>();
 
     /**
      * @param model       underlying default latent model (provides copula,
