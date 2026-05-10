@@ -129,7 +129,8 @@ public class UnitedStates extends Calendar {
         SETTLEMENT,     // generic settlement calendar
         NYSE,           // New York stock exchange calendar
         GOVERNMENTBOND, // government-bond calendar
-        NERC            // off-peak days for NERC
+        NERC,           // off-peak days for NERC
+        FederalReserve  // Federal Reserve Bankwire System (Phase 5g.5d)
     }
 
 
@@ -154,6 +155,9 @@ public class UnitedStates extends Calendar {
             break;
         case NERC:
             impl = new NercImpl();
+            break;
+        case FederalReserve:
+            impl = new FederalReserveImpl();
             break;
         default:
             throw new LibraryException(UNKNOWN_MARKET);
@@ -379,4 +383,125 @@ public class UnitedStates extends Calendar {
             return true;
         }
      }
+
+    /**
+     * Federal Reserve Bankwire System holidays.
+     *
+     * <p>Mirrors C++ v1.42.1 ql/time/calendars/unitedstates.cpp
+     * {@code UnitedStates::FederalReserveImpl::isBusinessDay}.
+     * Holiday set per <https://www.frbservices.org/about/holiday-schedules>:
+     * <ul>
+     *   <li>Saturdays</li>
+     *   <li>Sundays</li>
+     *   <li>New Year's Day, January 1st (moved to Monday if Sunday)</li>
+     *   <li>Martin Luther King's birthday, third Monday in January (since 1983)</li>
+     *   <li>Washington's birthday (third Monday in February since 1971; Feb 22nd otherwise)</li>
+     *   <li>Memorial Day (last Monday in May since 1971; May 30th otherwise)</li>
+     *   <li>Juneteenth (Monday if Sunday) — observed since 2022, no Saturday->Friday move</li>
+     *   <li>Independence Day, July 4th (moved to Monday if Sunday only — no Saturday->Friday)</li>
+     *   <li>Labor Day, first Monday in September</li>
+     *   <li>Columbus Day, second Monday in October (since 1971)</li>
+     *   <li>Veterans' Day (Monday if Sunday only — no Saturday->Friday)</li>
+     *   <li>Thanksgiving, fourth Thursday in November</li>
+     *   <li>Christmas, December 25th (moved to Monday if Sunday only)</li>
+     * </ul>
+     *
+     * <p>Phase 5g.5d.
+     */
+    private final class FederalReserveImpl extends WesternImpl {
+
+        @Override
+        public String name() { return "Federal Reserve Bankwire System"; }
+
+        @Override
+        public boolean isBusinessDay(final Date date) {
+            final Weekday w = date.weekday();
+            final int d = date.dayOfMonth();
+            final Month m = date.month();
+            final int y = date.year();
+            if (isWeekend(w)
+                // New Year's Day (possibly moved to Monday if on Sunday)
+                || ((d == 1 || (d == 2 && w == Weekday.Monday)) && m == Month.January)
+                // Martin Luther King's birthday (third Monday in January, since 1983)
+                || ((d >= 15 && d <= 21) && w == Weekday.Monday && m == Month.January
+                    && y >= 1983)
+                // Washington's birthday (third Monday in February since 1971; Feb 22 adjusted otherwise)
+                || isWashingtonBirthday(d, m, y, w)
+                // Memorial Day (last Monday in May since 1971; May 30 adjusted otherwise)
+                || isMemorialDay(d, m, y, w)
+                // Juneteenth (Monday if Sunday) — moveToFriday=false for Federal Reserve
+                || isJuneteenth(d, m, y, w, false)
+                // Independence Day (Monday if Sunday) — no Saturday->Friday move
+                || ((d == 4 || (d == 5 && w == Weekday.Monday)) && m == Month.July)
+                // Labor Day (first Monday in September)
+                || (d <= 7 && w == Weekday.Monday && m == Month.September)
+                // Columbus Day (second Monday in October, since 1971)
+                || ((d >= 8 && d <= 14) && w == Weekday.Monday && m == Month.October
+                    && y >= 1971)
+                // Veterans' Day (Monday if Sunday) — no Saturday->Friday move
+                || isVeteransDayNoSaturday(d, m, y, w)
+                // Thanksgiving Day (fourth Thursday in November)
+                || ((d >= 22 && d <= 28) && w == Weekday.Thursday && m == Month.November)
+                // Christmas (Monday if Sunday) — no Saturday->Friday move
+                || ((d == 25 || (d == 26 && w == Weekday.Monday)) && m == Month.December))
+                return false;
+            return true;
+        }
+    }
+
+    //
+    // private helpers — shared rules used by the FederalReserve calendar.
+    //
+    // Mirrors the anonymous-namespace helpers in C++ v1.42.1
+    // ql/time/calendars/unitedstates.cpp.
+    //
+
+    private static boolean isWashingtonBirthday(
+            final int d, final Month m, final int y, final Weekday w) {
+        if (y >= 1971) {
+            // third Monday in February
+            return (d >= 15 && d <= 21) && w == Weekday.Monday && m == Month.February;
+        } else {
+            // February 22nd, possibly adjusted
+            return (d == 22 || (d == 23 && w == Weekday.Monday)
+                    || (d == 21 && w == Weekday.Friday)) && m == Month.February;
+        }
+    }
+
+    private static boolean isMemorialDay(
+            final int d, final Month m, final int y, final Weekday w) {
+        if (y >= 1971) {
+            // last Monday in May
+            return d >= 25 && w == Weekday.Monday && m == Month.May;
+        } else {
+            // May 30th, possibly adjusted
+            return (d == 30 || (d == 31 && w == Weekday.Monday)
+                    || (d == 29 && w == Weekday.Friday)) && m == Month.May;
+        }
+    }
+
+    private static boolean isVeteransDayNoSaturday(
+            final int d, final Month m, final int y, final Weekday w) {
+        if (y <= 1970 || y >= 1978) {
+            // November 11th, adjusted, but no Saturday->Friday
+            return (d == 11 || (d == 12 && w == Weekday.Monday)) && m == Month.November;
+        } else {
+            // fourth Monday in October (1971-1977)
+            return (d >= 22 && d <= 28) && w == Weekday.Monday && m == Month.October;
+        }
+    }
+
+    /**
+     * Juneteenth, declared 2021 and observed by exchanges from 2022 onward.
+     *
+     * @param moveToFriday when true (default), Saturday->Friday rollback is honored
+     *                     (matches C++ default param). Federal Reserve passes false.
+     */
+    private static boolean isJuneteenth(
+            final int d, final Month m, final int y, final Weekday w,
+            final boolean moveToFriday) {
+        return (d == 19 || (d == 20 && w == Weekday.Monday)
+                || ((d == 18 && w == Weekday.Friday) && moveToFriday))
+                && m == Month.June && y >= 2022;
+    }
 }
