@@ -833,19 +833,14 @@ public class FdHestonTest {
      * </ul>
      * Detection: max gamma-difference in [99..101] step-0.1 above 0.01 ⇒ oscillating.
      * <p>
-     * <strong>Phase 4n.5c — body kept but @Ignore'd:</strong>
-     * the Java {@link FdmHestonSolver#gammaAt(double, double)} uses a 1% spot
-     * finite-difference (eps = s*0.01 = 1.0 at s=100) instead of the C++
-     * analytic monotonic-cubic spline derivative; this washes out the
-     * fine-scale gamma oscillations the test is designed to detect. Java
-     * Hundsdorfer reports max gamma-diff ~3.7e-3 vs the 1e-2 threshold,
-     * so it would (incorrectly) pass as smooth on Hundsdorfer. To
-     * un-ignore this test, {@link FdmHestonSolver} must grow an analytic
-     * spline-derivative path matching C++'s {@code Fdm2DimSolver::gammaAt}
-     * (Phase 5j.5b carry, see {@code Fdm2DimSolver.thetaAt} which already
-     * has the analytic-spline pattern).
+     * <strong>Phase 4n.5d — un-ignored:</strong>
+     * {@link FdmHestonSolver#gammaAt(double, double)} now uses the analytic
+     * monotonic-cubic spline second derivative via
+     * {@link org.jquantlib.methods.finitedifferences.solvers.Fdm2DimSolver#derivativeXX}
+     * — the C++ formula
+     * {@code (derivativeXX(log s, v) - derivativeX(log s, v))/s²} —
+     * mirroring {@code FdmHestonSolver::gammaAt} verbatim.
      */
-    @Ignore("Phase 5j.5b — FdmHestonSolver.gammaAt uses 1% FD bump, washes out oscillations C++ analytic-derivative detects")
     @Test
     public void testSpuriousOscillations() {
         final DayCounter dc = new Actual365Fixed();

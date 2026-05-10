@@ -20,6 +20,9 @@
 package org.jquantlib.methods.finitedifferences.solvers;
 
 import org.jquantlib.math.interpolations.BicubicSplineInterpolation;
+import org.jquantlib.math.interpolations.CubicInterpolation;
+import org.jquantlib.math.interpolations.CubicInterpolation.BoundaryCondition;
+import org.jquantlib.math.interpolations.CubicInterpolation.DerivativeApprox;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
@@ -38,18 +41,16 @@ import org.jquantlib.util.LazyObject;
  * {@code ql/methods/finitedifferences/solvers/fdm2dimsolver.{hpp,cpp}}.
  *
  * <p>The Java port uses {@link BicubicSplineInterpolation} as the direct
- * equivalent of C++ {@code BicubicSpline}. Note that
- * {@code BicubicSplineInterpolation} only exposes value queries — first
- * and second partial derivatives via the underlying {@code op(x, y)} would
- * require an interpolation-engine extension. The C++ side exposes
- * {@code derivativeX/Y/XX/YY/XY}; those are accessible to engines that
- * actually use them. None of the Phase 2h WI-2 / WI-3 engines
- * ({@code FdHullWhiteSwaptionEngine}, {@code FdG2SwaptionEngine}) read
- * those derivatives — they only call {@link #interpolateAt}, so the port
- * leaves the derivative accessors out for now and surfaces them as a
- * follow-up if a future engine needs them.
+ * equivalent of C++ {@code BicubicSpline}. {@code BicubicSplineInterpolation}
+ * only exposes the {@code op(x,y)} value query directly; the analytic
+ * partial derivatives are reconstructed here (Phase 4n.5d) by mirroring
+ * C++ {@code BicubicSplineImpl::derivativeX/secondDerivativeX} — build a
+ * 1D x-section by sampling the bicubic-spline value at every x-grid point
+ * for the fixed query y, then take the derivative/second-derivative of a
+ * fresh {@link CubicInterpolation} along x. {@code derivativeY/YY/XY} are
+ * not yet wired (no caller needs them); add them analogously when needed.
  *
- * @author Phase 2h WI-1 port
+ * @author Phase 2h WI-1 port; Phase 4n.5d analytic gamma/delta
  */
 public class Fdm2DimSolver extends LazyObject {
 
@@ -173,5 +174,56 @@ public class Fdm2DimSolver extends LazyObject {
                 new BicubicSplineInterpolation(x, y, thetaValues);
         return (thetaInterp.op(xq, yq) - interpolation.op(xq, yq))
                / thetaCondition.getTime();
+    }
+
+    /**
+     * Analytic first partial derivative of the bicubic spline along x at
+     * {@code (xq, yq)}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code BicubicSplineImpl::derivativeX}
+     * (lines 81–93 of {@code bicubicsplineinterpolation.hpp}): build a
+     * 1D x-section by evaluating the bicubic spline at every x-grid node
+     * for the fixed query y, then return the first derivative of a fresh
+     * cubic spline through that section evaluated at xq.
+     */
+    public double derivativeX(final double xq, final double yq) {
+        calculate();
+        final CubicInterpolation section = xSectionAt(yq);
+        return section.derivative(xq);
+    }
+
+    /**
+     * Analytic second partial derivative of the bicubic spline along x at
+     * {@code (xq, yq)}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code BicubicSplineImpl::secondDerivativeX}
+     * (lines 95–108 of {@code bicubicsplineinterpolation.hpp}): same
+     * x-section construction as {@link #derivativeX}, returning the
+     * second derivative of the section spline at xq.
+     */
+    public double derivativeXX(final double xq, final double yq) {
+        calculate();
+        final CubicInterpolation section = xSectionAt(yq);
+        return section.secondDerivative(xq);
+    }
+
+    /**
+     * Build a 1D cubic spline along x by evaluating the 2D bicubic-spline
+     * value at every x-grid point with y fixed at {@code yq}. Mirrors the
+     * C++ section vector inside {@code derivativeX}/{@code secondDerivativeX}
+     * — boundary conditions and spline configuration are kept identical
+     * (Spline + SecondDerivative=0 on both ends).
+     */
+    private CubicInterpolation xSectionAt(final double yq) {
+        final int nx = x.size();
+        final double[] section = new double[nx];
+        for (int i = 0; i < nx; ++i) {
+            section[i] = interpolation.op(x.get(i), yq);
+        }
+        return new CubicInterpolation(
+                x, new Array(section),
+                DerivativeApprox.Spline, false,
+                BoundaryCondition.SecondDerivative, 0.0,
+                BoundaryCondition.SecondDerivative, 0.0);
     }
 }

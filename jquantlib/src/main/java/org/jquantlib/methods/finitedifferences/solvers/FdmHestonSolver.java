@@ -38,16 +38,15 @@ import org.jquantlib.util.LazyObject;
  * solution is in log-spot space; {@link #valueAt(double, double)} converts
  * from {@code (S, v)} to {@code (log S, v)}.
  * <p>
- * <strong>Greeks via finite differencing:</strong> the Java
- * {@link Fdm2DimSolver} exposes only the bicubic-spline value query (no
- * analytic {@code derivativeX/Y/XX/XY} accessors), so {@link #deltaAt},
- * {@link #gammaAt} use central differences in log-spot, and
- * {@link #thetaAt} similarly bumps in time. C++'s analytic-derivative path
- * matches to the spline-derivative tolerance (which is the ultimate driver
- * here anyway). When {@link Fdm2DimSolver} grows analytic accessors, this
- * file should switch to the C++ formulas.
+ * <strong>Greeks (Phase 4n.5d):</strong> {@link #deltaAt} and
+ * {@link #gammaAt} use the analytic monotonic-cubic spline derivatives
+ * exposed by {@link Fdm2DimSolver#derivativeX}/{@link Fdm2DimSolver#derivativeXX}
+ * — matching C++ {@code FdmHestonSolver::deltaAt}/{@code gammaAt}
+ * verbatim (the spline is in log-spot space, hence the {@code 1/s} and
+ * {@code (d2 - d1)/(s*s)} chain-rule terms). {@link #thetaAt} delegates
+ * to {@link Fdm2DimSolver#thetaAt}.
  *
- * @author Phase 4n.5 port
+ * @author Phase 4n.5 port; Phase 4n.5d analytic gamma/delta wiring
  */
 public class FdmHestonSolver extends LazyObject {
 
@@ -88,22 +87,30 @@ public class FdmHestonSolver extends LazyObject {
     }
 
     /**
-     * Finite-difference delta at {@code (s, v)} via a fixed 1% bump in
-     * spot. Mirrors C++ {@code derivativeX(log s, v) / s} to the
-     * spline-derivative tolerance.
+     * Analytic delta at {@code (s, v)}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code FdmHestonSolver::deltaAt}:
+     * {@code derivativeX(log s, v) / s} where the spline is in log-spot
+     * space. The {@code 1/s} factor is the chain-rule jacobian
+     * {@code dlog(s)/ds = 1/s}.
      */
     public double deltaAt(final double s, final double v) {
         calculate();
-        final double eps = s * 0.01;
-        return (valueAt(s + eps, v) - valueAt(s - eps, v)) / (2.0 * eps);
+        return solver.derivativeX(JQuantMath.log(s), v) / s;
     }
 
-    /** Finite-difference gamma at {@code (s, v)} via a fixed 1% bump in spot. */
+    /**
+     * Analytic gamma at {@code (s, v)}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code FdmHestonSolver::gammaAt}:
+     * {@code (derivativeXX(x, v) - derivativeX(x, v)) / (s * s)} with
+     * {@code x = log s}. The chain rule for d²/ds² of f(log s) yields
+     * {@code (f''(log s) - f'(log s)) / s²}.
+     */
     public double gammaAt(final double s, final double v) {
         calculate();
-        final double eps = s * 0.01;
-        return (valueAt(s + eps, v) - 2.0 * valueAt(s, v) + valueAt(s - eps, v))
-               / (eps * eps);
+        final double x = JQuantMath.log(s);
+        return (solver.derivativeXX(x, v) - solver.derivativeX(x, v)) / (s * s);
     }
 
     /**
