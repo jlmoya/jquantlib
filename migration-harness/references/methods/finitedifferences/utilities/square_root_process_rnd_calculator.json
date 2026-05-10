@@ -1,0 +1,263 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "cdf": 0.030564420607472536,
+        "invcdf": 0.005000000000000001,
+        "pdf": 10.261958282053413
+      },
+      "inputs": {
+        "t": 0.5,
+        "v": 0.005
+      },
+      "name": "v005_t05"
+    },
+    {
+      "expected": {
+        "cdf": 0.26332729056249277,
+        "invcdf": 0.02,
+        "pdf": 17.784650666507357
+      },
+      "inputs": {
+        "t": 0.5,
+        "v": 0.02
+      },
+      "name": "v020_t05"
+    },
+    {
+      "expected": {
+        "cdf": 0.5876136802166003,
+        "invcdf": 0.04,
+        "pdf": 13.591790654627776
+      },
+      "inputs": {
+        "t": 0.5,
+        "v": 0.04
+      },
+      "name": "v040_t05"
+    },
+    {
+      "expected": {
+        "cdf": 0.9094061131000879,
+        "invcdf": 0.08,
+        "pdf": 3.777549175230526
+      },
+      "inputs": {
+        "t": 0.5,
+        "v": 0.08
+      },
+      "name": "v080_t05"
+    },
+    {
+      "expected": {
+        "cdf": 0.035821373932199356,
+        "invcdf": 0.005,
+        "pdf": 11.76148062306268
+      },
+      "inputs": {
+        "t": 1.0,
+        "v": 0.005
+      },
+      "name": "v005_t10"
+    },
+    {
+      "expected": {
+        "cdf": 0.28353870146143645,
+        "invcdf": 0.02,
+        "pdf": 17.968118119805208
+      },
+      "inputs": {
+        "t": 1.0,
+        "v": 0.02
+      },
+      "name": "v020_t10"
+    },
+    {
+      "expected": {
+        "cdf": 0.5979681752712115,
+        "invcdf": 0.04,
+        "pdf": 12.784569371814635
+      },
+      "inputs": {
+        "t": 1.0,
+        "v": 0.04
+      },
+      "name": "v040_t10"
+    },
+    {
+      "expected": {
+        "cdf": 0.9009372554614093,
+        "invcdf": 0.08,
+        "pdf": 3.7014303999405733
+      },
+      "inputs": {
+        "t": 1.0,
+        "v": 0.08
+      },
+      "name": "v080_t10"
+    },
+    {
+      "expected": {
+        "cdf": 0.03641592869510739,
+        "invcdf": 0.005,
+        "pdf": 11.934267123956731
+      },
+      "inputs": {
+        "t": 5.0,
+        "v": 0.005
+      },
+      "name": "v005_t50"
+    },
+    {
+      "expected": {
+        "cdf": 0.28605746749639727,
+        "invcdf": 0.019999999999999997,
+        "pdf": 18.010882062619917
+      },
+      "inputs": {
+        "t": 5.0,
+        "v": 0.02
+      },
+      "name": "v020_t50"
+    },
+    {
+      "expected": {
+        "cdf": 0.5996477990699312,
+        "invcdf": 0.040000000000000036,
+        "pdf": 12.69491754541093
+      },
+      "inputs": {
+        "t": 5.0,
+        "v": 0.04
+      },
+      "name": "v040_t50"
+    },
+    {
+      "expected": {
+        "cdf": 0.9000036215796173,
+        "invcdf": 0.08,
+        "pdf": 3.6786227014983215
+      },
+      "inputs": {
+        "t": 5.0,
+        "v": 0.08
+      },
+      "name": "v080_t50"
+    },
+    {
+      "expected": {
+        "cdf": 0.10881512061532829,
+        "invcdf": 0.01,
+        "pdf": 16.384014030772875
+      },
+      "inputs": {
+        "stationary": true,
+        "v": 0.01
+      },
+      "name": "stationary_v010"
+    },
+    {
+      "expected": {
+        "cdf": 0.28605746774884483,
+        "invcdf": 0.01999999999999999,
+        "pdf": 18.01088206789954
+      },
+      "inputs": {
+        "stationary": true,
+        "v": 0.02
+      },
+      "name": "stationary_v020"
+    },
+    {
+      "expected": {
+        "cdf": 0.5996477992583279,
+        "invcdf": 0.039999999999999966,
+        "pdf": 12.694917537037213
+      },
+      "inputs": {
+        "stationary": true,
+        "v": 0.04
+      },
+      "name": "stationary_v040"
+    },
+    {
+      "expected": {
+        "cdf": 0.90000362149469,
+        "invcdf": 0.08,
+        "pdf": 3.6786226985329455
+      },
+      "inputs": {
+        "stationary": true,
+        "v": 0.08
+      },
+      "name": "stationary_v080"
+    },
+    {
+      "expected": {
+        "cdf": 0.9955150047837565,
+        "invcdf": 0.16000000000000011,
+        "pdf": 0.18016130934758623
+      },
+      "inputs": {
+        "stationary": true,
+        "v": 0.16
+      },
+      "name": "stationary_v160"
+    },
+    {
+      "expected": {
+        "invcdf": 0.0060774752862998395
+      },
+      "inputs": {
+        "q": 0.05,
+        "stationary_invcdf": true
+      },
+      "name": "stationary_invcdf_q05"
+    },
+    {
+      "expected": {
+        "invcdf": 0.018006375583719945
+      },
+      "inputs": {
+        "q": 0.25,
+        "stationary_invcdf": true
+      },
+      "name": "stationary_invcdf_q25"
+    },
+    {
+      "expected": {
+        "invcdf": 0.03280107538106466
+      },
+      "inputs": {
+        "q": 0.5,
+        "stationary_invcdf": true
+      },
+      "name": "stationary_invcdf_q50"
+    },
+    {
+      "expected": {
+        "invcdf": 0.054261045283711555
+      },
+      "inputs": {
+        "q": 0.75,
+        "stationary_invcdf": true
+      },
+      "name": "stationary_invcdf_q75"
+    },
+    {
+      "expected": {
+        "invcdf": 0.09852494258676862
+      },
+      "inputs": {
+        "q": 0.95,
+        "stationary_invcdf": true
+      },
+      "name": "stationary_invcdf_q95"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-09T23:50:30Z",
+  "generated_by": "square_root_process_rnd_calculator_probe",
+  "test_group": "methods/finitedifferences/utilities/square_root_process_rnd_calculator"
+}

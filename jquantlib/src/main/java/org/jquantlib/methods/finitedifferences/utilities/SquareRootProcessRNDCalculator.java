@@ -1,0 +1,167 @@
+/*
+ Copyright (C) 2015 Johannes Göttker-Schnetmann
+ Copyright (C) 2015 Klaus Spanderen
+ Copyright (C) 2026 JQuantLib migration contributors.
+
+ This file is part of JQuantLib, a free-software/open-source library
+ for financial quantitative analysts and developers - http://jquantlib.org/
+
+ JQuantLib is free software: you can redistribute it and/or modify it
+ under the terms of the JQuantLib license.  You should have received a
+ copy of the license along with this program; if not, please email
+ <jquant-devel@lists.sourceforge.net>. The license is also available online at
+ <http://www.jquantlib.org/index.php/LICENSE.TXT>.
+
+ This program is distributed in the hope that it will be useful, but WITHOUT
+ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ FOR A PARTICULAR PURPOSE.  See the license for more details.
+
+ JQuantLib is based on QuantLib. http://quantlib.org/
+ When applicable, the original copyright notice follows this notice.
+ */
+
+package org.jquantlib.methods.finitedifferences.utilities;
+
+import org.jquantlib.QL;
+import org.jquantlib.math.Ops;
+import org.jquantlib.math.distributions.GammaDistribution;
+import org.jquantlib.math.distributions.GammaFunction;
+import org.jquantlib.math.distributions.InverseNonCentralCumulativeChiSquaredDistribution;
+import org.jquantlib.math.distributions.NonCentralCumulativeChiSquaredDistribution;
+import org.jquantlib.math.solvers1D.Brent;
+
+/**
+ * Risk-neutral density calculator for the (CIR-style) square-root process
+ * <pre>  dV_t = kappa*(theta - V_t)*dt + sigma*sqrt(V_t)*dW_t  </pre>.
+ *
+ * <p>Java port of QuantLib v1.42.1
+ * {@code ql/methods/finitedifferences/utilities/squarerootprocessrndcalculator.{hpp,cpp}}.
+ *
+ * <p>Conditional CDF / inverse CDF are non-central chi-squared (delegated to
+ * {@link NonCentralCumulativeChiSquaredDistribution} /
+ * {@link InverseNonCentralCumulativeChiSquaredDistribution}). The conditional
+ * PDF uses a CDF central-difference because JQuantLib has neither the
+ * non-central chi-squared PDF nor the modified Bessel functions required by
+ * its closed form (Phase 2/3 carry-forward).
+ *
+ * <p>Stationary density is gamma distributed (delegated to {@link GammaDistribution}
+ * for the CDF; PDF closed-form via {@link GammaFunction#logValue}; inverse CDF
+ * uses Brent root-finding because no native inverse-incomplete-gamma helper
+ * exists in JQuantLib yet).
+ *
+ * @author Phase 5h.5-RND port
+ */
+public class SquareRootProcessRNDCalculator extends RiskNeutralDensityCalculator {
+
+    private final double v0_;
+    private final double kappa_;
+    private final double theta_;
+    private final double d_;   // 4*kappa/sigma^2
+    private final double df_;  // d * theta  (degrees of freedom for stationary chi-square)
+
+    public SquareRootProcessRNDCalculator(final double v0,
+                                          final double kappa,
+                                          final double theta,
+                                          final double sigma) {
+        QL.require(sigma > 0.0, "sigma must be positive");
+        QL.require(kappa > 0.0, "kappa must be positive");
+        this.v0_    = v0;
+        this.kappa_ = kappa;
+        this.theta_ = theta;
+        this.d_     = 4.0 * kappa / (sigma * sigma);
+        this.df_    = d_ * theta;
+    }
+
+    @Override
+    public double pdf(final double v, final double t) {
+        // C++: boost::math::pdf(non_central_chi_squared(df, ncp), v*k) * k
+        //      → uses closed-form via modified Bessel functions.
+        // JQuantLib has no native non-central chi-squared pdf and the modified
+        // Bessel functions are stubs (Phase 2/3 carry-forward). Use a central
+        // finite-difference of the CDF as a practical approximation. Tolerance
+        // is documented as LOOSE (1e-4 abs/rel). Mirrors GBSMRNDCalculator's
+        // approach in JQuantLib.
+        final double dv = Math.max(1e-7, 1e-4 * v);
+        return (cdf(v + dv, t) - cdf(v - dv, t)) / (2.0 * dv);
+    }
+
+    @Override
+    public double cdf(final double v, final double t) {
+        final double e   = Math.exp(-kappa_ * t);
+        final double k   = d_ / (1.0 - e);
+        final double ncp = k * v0_ * e;
+
+        return new NonCentralCumulativeChiSquaredDistribution(df_, ncp).op(v * k);
+    }
+
+    @Override
+    public double invcdf(final double q, final double t) {
+        final double e   = Math.exp(-kappa_ * t);
+        final double k   = d_ / (1.0 - e);
+        final double ncp = k * v0_ * e;
+
+        // Tolerance + max-iter mirror C++ defaults used by GBSMRNDCalculator.
+        return new InverseNonCentralCumulativeChiSquaredDistribution(df_, ncp, 100, 1e-8)
+                .op(q) / k;
+    }
+
+    /**
+     * Stationary PDF (gamma density with shape alpha = df/2, rate beta = alpha/theta).
+     * Mirrors C++ {@code stationary_pdf}.
+     */
+    public double stationary_pdf(final double v) {
+        final double alpha = 0.5 * df_;
+        final double beta  = alpha / theta_;
+        return Math.pow(beta, alpha) * Math.pow(v, alpha - 1.0)
+                * Math.exp(-beta * v - new GammaFunction().logValue(alpha));
+    }
+
+    /** Stationary CDF (regularized lower incomplete gamma {@code P(alpha, beta*v)}). */
+    public double stationary_cdf(final double v) {
+        final double alpha = 0.5 * df_;
+        final double beta  = alpha / theta_;
+        // GammaDistribution(a).op(x) computes P(a, x) = regularized lower incomplete gamma.
+        return new GammaDistribution(alpha).op(beta * v);
+    }
+
+    /**
+     * Stationary inverse CDF (Brent root-finding on stationary_cdf).
+     *
+     * <p>C++ uses {@code boost::math::gamma_p_inv}; JQuantLib has no native
+     * inverse-incomplete-gamma helper, so we fall back to a Brent root finder
+     * with explicit bracket expansion (theta is the gamma mean; CDF is
+     * monotonically increasing on (0, +inf)).
+     */
+    public double stationary_invcdf(final double q) {
+        QL.require(q > 0.0 && q < 1.0, "q must be in (0, 1)");
+        final double alpha = 0.5 * df_;
+        final double beta  = alpha / theta_;
+        final GammaDistribution gd = new GammaDistribution(alpha);
+
+        final Ops.DoubleOp f = new Ops.DoubleOp() {
+            @Override
+            public double op(final double v) {
+                return gd.op(beta * v) - q;
+            }
+        };
+
+        // Bracket [lower, upper] with f(lower) < 0 < f(upper), starting from
+        // the gamma mean (theta) and expanding away from it multiplicatively.
+        // Always perform at least one expansion in each direction so the
+        // bracket has nonzero width even when q ≈ CDF(theta).
+        double lower = 0.5 * theta_;
+        double upper = 2.0 * theta_;
+        for (int i = 0; i < 60 && f.op(lower) > 0.0; ++i) {
+            lower *= 0.5;
+        }
+        for (int i = 0; i < 60 && f.op(upper) < 0.0; ++i) {
+            upper *= 2.0;
+        }
+        QL.require(f.op(lower) <= 0.0 && f.op(upper) >= 0.0,
+                "stationary_invcdf: failed to bracket root for q=" + q);
+
+        final Brent solver = new Brent();
+        solver.setMaxEvaluations(200);
+        return solver.solve(f, 1e-10, 0.5 * (lower + upper), lower, upper);
+    }
+}
