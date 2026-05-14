@@ -239,8 +239,183 @@ public class OvernightIndexedCouponTest {
     @Ignore(REASON_TELESCOPIC) @Test public void testTelescopicFormulaWhenLookbackWithObservationShiftAndNoIndexFixingDelay() { fail("not implemented"); }
     @Ignore(REASON_TELESCOPIC) @Test public void testErrorWhenTelescopicValueDatesEnforcedWithLookback() { fail("not implemented"); }
     @Ignore(REASON_LOOKBACK) @Test public void testErrorWhenLookbackOrLockoutAppliedForSimpleAveraging() { fail("not implemented"); }
-    @Ignore(REASON_BLACK) @Test public void testBlackOvernightIndexedCouponPricerCapletFloorlet() { fail("not implemented"); }
-    @Ignore(REASON_BLACK) @Test public void testBlackAverageONIndexedCouponPricerCapletFloorlet() { fail("not implemented"); }
+    @Test
+    public void testBlackOvernightIndexedCouponPricerCapletFloorlet() {
+        QL.info("Testing Black compounding overnight-indexed coupon pricer...");
+
+        // Mirror C++ BlackONPricerVars constructor (overnightindexedcoupon.cpp:146-158):
+        // by default vol is linked to 10% flat optionlet vol.
+        final BlackONPricerVars vars = new BlackONPricerVars();
+        vars.vol.linkTo(new ConstantOptionletVolatility(
+                vars.today, new Target(), BusinessDayConvention.Following, 0.10, vars.dc));
+
+        final Date start = new Date(1, Month.July, 2035);
+        final Date end = new Date(1, Month.October, 2035);
+
+        // ----- Vanilla -----
+        // C++: vanillaCoupon = makeBaseCoupon(start, end);
+        //      expectedRate = vanillaCoupon->rate();
+        //      pricer = make_shared<BlackCompoundingOvernightIndexedCouponPricer>(vars.vol);
+        //      vanillaCoupon->setPricer(pricer);  // swap pricer
+        //      rate = vanillaCoupon->rate();      // Black-pricer swapletRate
+        //      CHECK("Base Rate", rate, expectedRate, 1e-8);
+        OvernightIndexedCoupon vanillaCoupon = vars.makeBaseCoupon(
+                start, end, RateAveraging.Type.Compound);
+        final double baseExpectedRate = vanillaCoupon.rate();
+
+        final BlackOvernightIndexedCouponPricer pricer =
+                new BlackOvernightIndexedCouponPricer(vars.vol);
+        vanillaCoupon.setPricer(pricer);
+
+        double rate = vanillaCoupon.rate();
+        if (Math.abs(rate - baseExpectedRate) > 1e-8) {
+            fail("Base Rate: expected=" + baseExpectedRate
+                    + " calculated=" + rate
+                    + " diff=" + Math.abs(rate - baseExpectedRate));
+        }
+
+        // ----- Caplet (cap = 0.045, no floor) -----
+        // C++ expected (overnightindexedcoupon.cpp:791): 0.036604717
+        final double cap = 0.045;
+        CappedFlooredOvernightIndexedCoupon cappedCoupon =
+                vars.makeCoupon(start, end, cap, Constants.NULL_REAL,
+                        RateAveraging.Type.Compound);
+        cappedCoupon.setPricer(pricer);
+
+        rate = cappedCoupon.rate();
+        double expectedRate = 0.036604717;
+        if (rate > cap + 1e-8) {
+            fail("Capped Rate: rate=" + rate + " > cap=" + cap);
+        }
+        if (Math.abs(rate - expectedRate) > 1e-8) {
+            fail("Capped Rate: expected=" + expectedRate
+                    + " calculated=" + rate
+                    + " diff=" + Math.abs(rate - expectedRate));
+        }
+
+        // ----- Floorlet (no cap, floor = 0.035) -----
+        // C++ expected (overnightindexedcoupon.cpp:802): 0.042502070
+        final double floor = 0.035;
+        CappedFlooredOvernightIndexedCoupon flooredCoupon =
+                vars.makeCoupon(start, end, Constants.NULL_REAL, floor,
+                        RateAveraging.Type.Compound);
+        flooredCoupon.setPricer(pricer);
+
+        rate = flooredCoupon.rate();
+        expectedRate = 0.042502070;
+        if (rate < floor - 1e-8) {
+            fail("Floored Rate: rate=" + rate + " < floor=" + floor);
+        }
+        if (Math.abs(rate - expectedRate) > 1e-8) {
+            fail("Floored Rate: expected=" + expectedRate
+                    + " calculated=" + rate
+                    + " diff=" + Math.abs(rate - expectedRate));
+        }
+
+        // ----- Capped + Floored -----
+        // C++ expected (overnightindexedcoupon.cpp:811): 0.039340869
+        CappedFlooredOvernightIndexedCoupon cappedFlooredCoupon =
+                vars.makeCoupon(start, end, cap, floor,
+                        RateAveraging.Type.Compound);
+        cappedFlooredCoupon.setPricer(pricer);
+
+        rate = cappedFlooredCoupon.rate();
+        expectedRate = 0.039340869;
+        if (rate > cap + 1e-8 || rate < floor - 1e-8) {
+            fail("Capped+Floored Rate: rate=" + rate
+                    + " out of [floor=" + floor + ", cap=" + cap + "]");
+        }
+        if (Math.abs(rate - expectedRate) > 1e-8) {
+            fail("Capped and Floored Rate: expected=" + expectedRate
+                    + " calculated=" + rate
+                    + " diff=" + Math.abs(rate - expectedRate));
+        }
+    }
+
+    @Test
+    public void testBlackAverageONIndexedCouponPricerCapletFloorlet() {
+        QL.info("Testing Black averaging overnight-indexed coupon pricer...");
+
+        final BlackONPricerVars vars = new BlackONPricerVars();
+        vars.vol.linkTo(new ConstantOptionletVolatility(
+                vars.today, new Target(), BusinessDayConvention.Following, 0.10, vars.dc));
+
+        final Date start = new Date(1, Month.July, 2035);
+        final Date end = new Date(1, Month.October, 2035);
+
+        // ----- Vanilla (Simple averaging) -----
+        OvernightIndexedCoupon vanillaCoupon = vars.makeBaseCoupon(
+                start, end, RateAveraging.Type.Simple);
+        final double baseExpectedRate = vanillaCoupon.rate();
+
+        final BlackAveragingOvernightIndexedCouponPricer pricer =
+                new BlackAveragingOvernightIndexedCouponPricer(vars.vol);
+        vanillaCoupon.setPricer(pricer);
+
+        double rate = vanillaCoupon.rate();
+        if (Math.abs(rate - baseExpectedRate) > 1e-8) {
+            fail("Base Rate: expected=" + baseExpectedRate
+                    + " calculated=" + rate
+                    + " diff=" + Math.abs(rate - baseExpectedRate));
+        }
+
+        // ----- Caplet (cap = 0.045, no floor) -----
+        // C++ expected (overnightindexedcoupon.cpp:839): 0.036488300
+        final double cap = 0.045;
+        CappedFlooredOvernightIndexedCoupon cappedCoupon =
+                vars.makeCoupon(start, end, cap, Constants.NULL_REAL,
+                        RateAveraging.Type.Simple);
+        cappedCoupon.setPricer(pricer);
+
+        rate = cappedCoupon.rate();
+        double expectedRate = 0.036488300;
+        if (rate > cap + 1e-8) {
+            fail("Capped Rate: rate=" + rate + " > cap=" + cap);
+        }
+        if (Math.abs(rate - expectedRate) > 1e-8) {
+            fail("Capped Rate: expected=" + expectedRate
+                    + " calculated=" + rate
+                    + " diff=" + Math.abs(rate - expectedRate));
+        }
+
+        // ----- Floorlet (no cap, floor = 0.035) -----
+        // C++ expected (overnightindexedcoupon.cpp:849): 0.042362746
+        final double floor = 0.035;
+        CappedFlooredOvernightIndexedCoupon flooredCoupon =
+                vars.makeCoupon(start, end, Constants.NULL_REAL, floor,
+                        RateAveraging.Type.Simple);
+        flooredCoupon.setPricer(pricer);
+
+        rate = flooredCoupon.rate();
+        expectedRate = 0.042362746;
+        if (rate < floor - 1e-8) {
+            fail("Floored Rate: rate=" + rate + " < floor=" + floor);
+        }
+        if (Math.abs(rate - expectedRate) > 1e-8) {
+            fail("Floored Rate: expected=" + expectedRate
+                    + " calculated=" + rate
+                    + " diff=" + Math.abs(rate - expectedRate));
+        }
+
+        // ----- Capped + Floored -----
+        // C++ expected (overnightindexedcoupon.cpp:858): 0.039281553
+        CappedFlooredOvernightIndexedCoupon cappedFlooredCoupon =
+                vars.makeCoupon(start, end, cap, floor,
+                        RateAveraging.Type.Simple);
+        cappedFlooredCoupon.setPricer(pricer);
+
+        rate = cappedFlooredCoupon.rate();
+        expectedRate = 0.039281553;
+        if (rate > cap + 1e-8 || rate < floor - 1e-8) {
+            fail("Capped+Floored Rate: rate=" + rate
+                    + " out of [floor=" + floor + ", cap=" + cap + "]");
+        }
+        if (Math.abs(rate - expectedRate) > 1e-8) {
+            fail("Capped and Floored Rate: expected=" + expectedRate
+                    + " calculated=" + rate
+                    + " diff=" + Math.abs(rate - expectedRate));
+        }
+    }
 
     @Test
     public void testBlackONPricerConsistencyWithNoVol() {
