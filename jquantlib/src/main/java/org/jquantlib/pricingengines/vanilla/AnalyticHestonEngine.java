@@ -129,10 +129,10 @@ public class AnalyticHestonEngine
      *
      * @param model           calibrated Heston model (provides v0/kappa/theta/sigma/rho)
      * @param process         the Heston process (provides s0/discount/div/time)
-     * @param integrationOrder Gauss-Laguerre quadrature order; must equal
-     *                        {@link GaussLaguerreIntegration#SUPPORTED_ORDER}
-     *                        in the current Java port (only n=128 quadrature
-     *                        table is embedded — see GaussLaguerreIntegration).
+     * @param integrationOrder Gauss-Laguerre quadrature order, 1..192 (Phase
+     *                        5h.5-Integration: GaussLaguerreIntegration now
+     *                        supports arbitrary orders via Golub-Welsch). The
+     *                        C++ default is 144.
      */
     public AnalyticHestonEngine(final HestonModel model,
                                 final HestonProcess process,
@@ -142,11 +142,6 @@ public class AnalyticHestonEngine
               new OneAssetOption.ResultsImpl());
         this.process_     = process;
         this.cpxLog_      = ComplexLogFormula.Gatheral;
-        // Note: the C++ default is order 144. The Java GaussLaguerreIntegration
-        // currently only supports the embedded n=128 table (see its Javadoc /
-        // Phase 2f WI-3 C.2 design note). The downstream cross-validation in
-        // this minimal port runs at n=128, which is more than adequate for
-        // Gatheral integration (typical convergence at n>=64).
         this.integration_ = new GaussLaguerreIntegration(integrationOrder);
         this.evaluations_ = 0;
     }
