@@ -3,7 +3,7 @@
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
 [![Tag](https://img.shields.io/badge/tag-jquantlib--phase5e5b--CFC--d--final-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-2961%2F0%2F0%2F571-success)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-2961%2F0%2F0%2F569-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
