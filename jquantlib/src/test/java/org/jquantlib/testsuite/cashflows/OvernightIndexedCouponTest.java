@@ -8,19 +8,26 @@ package org.jquantlib.testsuite.cashflows;
 
 import static org.junit.Assert.fail;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.ArithmeticAveragedOvernightIndexedCouponPricer;
 import org.jquantlib.cashflow.BlackAveragingOvernightIndexedCouponPricer;
 import org.jquantlib.cashflow.BlackOvernightIndexedCouponPricer;
 import org.jquantlib.cashflow.CappedFlooredOvernightIndexedCoupon;
+import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.CompoundingOvernightIndexedCouponPricer;
+import org.jquantlib.cashflow.Leg;
 import org.jquantlib.cashflow.OvernightIndexedCoupon;
+import org.jquantlib.cashflow.OvernightLeg;
 import org.jquantlib.cashflow.RateAveraging;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.indexes.ibor.Sofr;
+import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.RelinkableHandle;
@@ -30,8 +37,14 @@ import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilitySt
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.MakeSchedule;
 import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
+import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -174,6 +187,169 @@ public class OvernightIndexedCouponTest {
                                                        final RateAveraging.Type avgMethod) {
             return new CappedFlooredOvernightIndexedCoupon(
                     makeBaseCoupon(start, end, avgMethod), cap, floor);
+        }
+    }
+
+    /**
+     * Mirror of C++ {@code CommonVarsONLeg} (overnightindexedcoupon.cpp:184-319):
+     * 1-year quarterly schedule on the SOFR (US-government) calendar, eval date
+     * 1-Jun-2025, with 43 past SOFR fixings spanning 2025-06-02..2025-08-01.
+     * The fixture is used by the OvernightLeg structural tests.
+     */
+    private static final class CommonVarsONLeg {
+        final Date today;
+        final double notional = 1_000_000.0;
+        final OvernightIndex sofr;
+        final RelinkableHandle<YieldTermStructure> forecastCurve =
+                new RelinkableHandle<YieldTermStructure>();
+        final Schedule legSchedule;
+        final DayCounter dc = new Actual360();
+        final RelinkableHandle<OptionletVolatilityStructure> rateVolTS =
+                new RelinkableHandle<OptionletVolatilityStructure>();
+
+        CommonVarsONLeg(final Date evaluationDate) {
+            this.today = evaluationDate;
+            new Settings().setEvaluationDate(today);
+
+            this.sofr = new Sofr(forecastCurve);
+
+            // Quarterly schedule, US-Government-Bond calendar, ModFollowing,
+            // Forward generation. Mirrors C++ legSchedule construction at
+            // overnightindexedcoupon.cpp:256-260.
+            this.legSchedule = new MakeSchedule(
+                    new Date(1, Month.July, 2025),
+                    new Date(1, Month.July, 2026),
+                    new Period(3, TimeUnit.Months),
+                    new UnitedStates(UnitedStates.Market.GOVERNMENTBOND),
+                    BusinessDayConvention.ModifiedFollowing)
+                .withTerminationDateConvention(BusinessDayConvention.ModifiedFollowing)
+                .forwards()
+                .schedule();
+
+            // 43-row past SOFR fixings (2025-06-02..2025-08-01).
+            final Date[] pastDates = new Date[]{
+                    new Date( 2, Month.June, 2025), new Date( 3, Month.June, 2025),
+                    new Date( 4, Month.June, 2025), new Date( 5, Month.June, 2025),
+                    new Date( 6, Month.June, 2025), new Date( 9, Month.June, 2025),
+                    new Date(10, Month.June, 2025), new Date(11, Month.June, 2025),
+                    new Date(12, Month.June, 2025), new Date(13, Month.June, 2025),
+                    new Date(16, Month.June, 2025), new Date(17, Month.June, 2025),
+                    new Date(18, Month.June, 2025), new Date(20, Month.June, 2025),
+                    new Date(23, Month.June, 2025), new Date(24, Month.June, 2025),
+                    new Date(25, Month.June, 2025), new Date(26, Month.June, 2025),
+                    new Date(27, Month.June, 2025), new Date(30, Month.June, 2025),
+                    new Date( 1, Month.July, 2025), new Date( 2, Month.July, 2025),
+                    new Date( 3, Month.July, 2025), new Date( 7, Month.July, 2025),
+                    new Date( 8, Month.July, 2025), new Date( 9, Month.July, 2025),
+                    new Date(10, Month.July, 2025), new Date(11, Month.July, 2025),
+                    new Date(14, Month.July, 2025), new Date(15, Month.July, 2025),
+                    new Date(16, Month.July, 2025), new Date(17, Month.July, 2025),
+                    new Date(18, Month.July, 2025), new Date(21, Month.July, 2025),
+                    new Date(22, Month.July, 2025), new Date(23, Month.July, 2025),
+                    new Date(24, Month.July, 2025), new Date(25, Month.July, 2025),
+                    new Date(28, Month.July, 2025), new Date(29, Month.July, 2025),
+                    new Date(30, Month.July, 2025), new Date(31, Month.July, 2025),
+                    new Date( 1, Month.August, 2025)
+            };
+            final double[] pastRates = new double[]{
+                    0.0435, 0.0432, 0.0428, 0.0429, 0.0429, 0.0429, 0.0428, 0.0428,
+                    0.0428, 0.0428, 0.0432, 0.0431, 0.0428, 0.0429, 0.0429, 0.0430,
+                    0.0436, 0.0440, 0.0439, 0.0445, 0.0444, 0.0440, 0.0435, 0.0433,
+                    0.0434, 0.0432, 0.0431, 0.0431, 0.0433, 0.0437, 0.0434, 0.0434,
+                    0.0430, 0.0428, 0.0428, 0.0428, 0.0430, 0.0436, 0.0436, 0.0436,
+                    0.0432, 0.0439, 0.0434
+            };
+            for (int i = 0; i < pastDates.length; ++i) {
+                sofr.addFixing(pastDates[i], pastRates[i]);
+            }
+        }
+
+        CommonVarsONLeg() {
+            this(new Date(1, Month.June, 2025));
+        }
+
+        /**
+         * Mirror of C++ CommonVarsONLeg::makeLeg (overnightindexedcoupon.cpp:198-245).
+         * Convenience overload with all defaults.
+         */
+        Leg makeLeg() {
+            return makeLeg(Constants.NULL_NATURAL, 0, false, false,
+                    RateAveraging.Type.Compound, null, null, null, null);
+        }
+
+        Leg makeLeg(final int fixingDays) {
+            return makeLeg(fixingDays, 0, false, false,
+                    RateAveraging.Type.Compound, null, null, null, null);
+        }
+
+        Leg makeLeg(final int fixingDays, final int lockoutDays) {
+            return makeLeg(fixingDays, lockoutDays, false, false,
+                    RateAveraging.Type.Compound, null, null, null, null);
+        }
+
+        Leg makeLeg(final int fixingDays, final int lockoutDays,
+                    final boolean applyObservationShift) {
+            return makeLeg(fixingDays, lockoutDays, applyObservationShift, false,
+                    RateAveraging.Type.Compound, null, null, null, null);
+        }
+
+        Leg makeLeg(final int fixingDays, final int lockoutDays,
+                    final boolean applyObservationShift,
+                    final boolean telescopicValueDates,
+                    final RateAveraging.Type averaging) {
+            return makeLeg(fixingDays, lockoutDays, applyObservationShift,
+                    telescopicValueDates, averaging, null, null, null, null);
+        }
+
+        Leg makeLeg(final int fixingDays, final int lockoutDays,
+                    final boolean applyObservationShift,
+                    final boolean telescopicValueDates,
+                    final RateAveraging.Type averaging,
+                    final List<Double> gearings,
+                    final List<Double> spreads,
+                    final List<Double> caps,
+                    final List<Double> floors) {
+            final OvernightLeg leg = new OvernightLeg(legSchedule, sofr)
+                    .withNotionals(notional)
+                    .withPaymentDayCounter(dc)
+                    .withAveragingMethod(averaging)
+                    .withLockoutDays(lockoutDays)
+                    .withObservationShift(applyObservationShift)
+                    .withTelescopicValueDates(telescopicValueDates);
+
+            if (fixingDays != Constants.NULL_NATURAL) {
+                leg.withLookbackDays(fixingDays);
+            }
+            if (gearings != null && !gearings.isEmpty()) {
+                leg.withGearings(gearings);
+            }
+            if (spreads != null && !spreads.isEmpty()) {
+                leg.withSpreads(spreads);
+            }
+            if (caps != null && !caps.isEmpty()) {
+                leg.withCaps(caps);
+            }
+            if (floors != null && !floors.isEmpty()) {
+                leg.withFloors(floors);
+            }
+
+            // If caps/floors present, attach Black pricer matching C++ behavior
+            // (overnightindexedcoupon.cpp:236-242).
+            if ((caps != null && !caps.isEmpty())
+                    || (floors != null && !floors.isEmpty())) {
+                rateVolTS.linkTo(new ConstantOptionletVolatility(
+                        today, new Target(),
+                        BusinessDayConvention.Following, 0.05, dc));
+                if (averaging == RateAveraging.Type.Compound) {
+                    leg.withCouponPricer(
+                            new BlackOvernightIndexedCouponPricer(rateVolTS));
+                } else {
+                    leg.withCouponPricer(
+                            new BlackAveragingOvernightIndexedCouponPricer(rateVolTS));
+                }
+            }
+
+            return leg.leg();
         }
     }
 
@@ -499,14 +675,129 @@ public class OvernightIndexedCouponTest {
                     + " diff=" + Math.abs(blackRate - vanillaRate2));
         }
     }
-    @Ignore(REASON_LEG) @Test public void testOvernightLegBasicFunctionality() { fail("not implemented"); }
-    @Ignore(REASON_LEG) @Test public void testOvernightLegWithLookback() { fail("not implemented"); }
-    @Ignore(REASON_LEG) @Test public void testOvernightLegWithLockout() { fail("not implemented"); }
-    @Ignore(REASON_LEG) @Test public void testOvernightLegWithObservationShift() { fail("not implemented"); }
-    @Ignore(REASON_LEG) @Test public void testOvernightLegWithGearingsAndSpreads() { fail("not implemented"); }
-    @Ignore(REASON_LEG) @Test public void testOvernightLegNPV() { fail("not implemented"); }
-    @Ignore(REASON_LEG) @Test public void testOvernightLegWithCapsAndFloors() { fail("not implemented"); }
-    @Ignore(REASON_LEG) @Test public void testOvernightLegSimpleAveraging() { fail("not implemented"); }
-    @Ignore(REASON_LEG) @Test public void testOvernightLegErrorConditions() { fail("not implemented"); }
+    @Test
+    public void testOvernightLegBasicFunctionality() {
+        QL.info("Testing basic functionality of overnight leg...");
+        final CommonVarsONLeg vars = new CommonVarsONLeg();
+        vars.forecastCurve.linkTo(Utilities.flatRate(vars.today, 0.0010, vars.dc));
+
+        final Leg leg = vars.makeLeg();
+        // Quarterly leg over 1 year = 4 coupons.
+        if (leg.size() != 4) {
+            fail("Expected 4 coupons, got " + leg.size());
+        }
+        for (final CashFlow cf : leg) {
+            if (!(cf instanceof OvernightIndexedCoupon)) {
+                fail("Coupon is not an OvernightIndexedCoupon: " + cf);
+            }
+            final OvernightIndexedCoupon ois = (OvernightIndexedCoupon) cf;
+            if (ois.nominal() != vars.notional) {
+                fail("nominal=" + ois.nominal() + " expected " + vars.notional);
+            }
+            if (ois.averagingMethod() != RateAveraging.Type.Compound) {
+                fail("averagingMethod=" + ois.averagingMethod() + " expected Compound");
+            }
+            if (ois.lockoutDays() != 0) {
+                fail("lockoutDays=" + ois.lockoutDays() + " expected 0");
+            }
+            if (ois.applyObservationShift()) {
+                fail("applyObservationShift=true, expected false");
+            }
+        }
+    }
+
+    @Ignore(REASON_LOOKBACK) @Test public void testOvernightLegWithLookback() { fail("not implemented"); }
+    @Ignore(REASON_LOOKBACK) @Test public void testOvernightLegWithLockout() { fail("not implemented"); }
+    @Ignore(REASON_LOOKBACK) @Test public void testOvernightLegWithObservationShift() { fail("not implemented"); }
+
+    @Test
+    public void testOvernightLegWithGearingsAndSpreads() {
+        QL.info("Testing overnight leg construction with gearings and spreads...");
+        final CommonVarsONLeg vars = new CommonVarsONLeg();
+        // Use flat curve for fixture simplicity (test only checks per-coupon
+        // gearing + spread attributes; curve precision not asserted).
+        vars.forecastCurve.linkTo(Utilities.flatRate(vars.today, 0.04, vars.dc));
+
+        final List<Double> gearings = Arrays.asList(1.0, 1.25, 2.0, 0.5);
+        final List<Double> spreads = Arrays.asList(0.0001, 0.0001, 0.0002, 0.0002);
+
+        final Leg leg = vars.makeLeg(Constants.NULL_NATURAL, 0, false, false,
+                RateAveraging.Type.Compound, gearings, spreads, null, null);
+
+        if (leg.size() != 4) {
+            fail("Expected 4 coupons, got " + leg.size());
+        }
+        for (int i = 0; i < leg.size(); ++i) {
+            if (!(leg.get(i) instanceof OvernightIndexedCoupon)) {
+                fail("leg[" + i + "] is not an OvernightIndexedCoupon");
+            }
+            final OvernightIndexedCoupon ois = (OvernightIndexedCoupon) leg.get(i);
+            if (Math.abs(ois.gearing() - gearings.get(i)) > 1e-12) {
+                fail("leg[" + i + "].gearing=" + ois.gearing()
+                        + " expected " + gearings.get(i));
+            }
+            if (Math.abs(ois.spread() - spreads.get(i)) > 1e-12) {
+                fail("leg[" + i + "].spread=" + ois.spread()
+                        + " expected " + spreads.get(i));
+            }
+        }
+    }
+
+    @Ignore("Phase 5e.5b-CFC-d follow-up: needs leg-NPV probe (lockout=3, telescopic=true). Body-fill ready, expected value pending probe cross-validation.")
+    @Test public void testOvernightLegNPV() { fail("not implemented"); }
+
+    @Ignore("Phase 5e.5b-CFC-d follow-up: needs capped/floored leg-NPV probe (lockout=0, vol=0.05). Body-fill ready, expected value pending probe cross-validation.")
+    @Test public void testOvernightLegWithCapsAndFloors() { fail("not implemented"); }
+
+    @Test
+    public void testOvernightLegSimpleAveraging() {
+        QL.info("Testing overnight leg construction with simple averaging...");
+        final CommonVarsONLeg vars = new CommonVarsONLeg();
+        vars.forecastCurve.linkTo(Utilities.flatRate(vars.today, 0.0010, vars.dc));
+
+        final Leg leg = vars.makeLeg(Constants.NULL_NATURAL, 0, false, false,
+                RateAveraging.Type.Simple);
+
+        for (final CashFlow cf : leg) {
+            if (!(cf instanceof OvernightIndexedCoupon)) {
+                fail("Coupon is not an OvernightIndexedCoupon: " + cf);
+            }
+            final OvernightIndexedCoupon ois = (OvernightIndexedCoupon) cf;
+            if (ois.averagingMethod() != RateAveraging.Type.Simple) {
+                fail("averagingMethod=" + ois.averagingMethod() + " expected Simple");
+            }
+        }
+    }
+
+    @Test
+    public void testOvernightLegErrorConditions() {
+        QL.info("Testing error conditions for overnight leg...");
+        final CommonVarsONLeg vars = new CommonVarsONLeg();
+        vars.forecastCurve.linkTo(Utilities.flatRate(vars.today, 0.0010, vars.dc));
+
+        // Lookback days + simple averaging must throw.
+        try {
+            vars.makeLeg(5, 0, false, false, RateAveraging.Type.Simple);
+            fail("Expected LibraryException for lookback+Simple but got none");
+        } catch (final LibraryException expected) {
+            // OK
+        }
+
+        // Lockout days + simple averaging must throw.
+        try {
+            vars.makeLeg(Constants.NULL_NATURAL, 3, false, false, RateAveraging.Type.Simple);
+            fail("Expected LibraryException for lockout+Simple but got none");
+        } catch (final LibraryException expected) {
+            // OK
+        }
+
+        // Observation shift + simple averaging must throw.
+        try {
+            vars.makeLeg(Constants.NULL_NATURAL, 0, true, false, RateAveraging.Type.Simple);
+            fail("Expected LibraryException for observationShift+Simple but got none");
+        } catch (final LibraryException expected) {
+            // OK
+        }
+    }
     @Ignore(REASON_PAYMENT) @Test public void testOvernightIndexedCouponPaymentBeforeAccrualEnd() { fail("not implemented"); }
 }
