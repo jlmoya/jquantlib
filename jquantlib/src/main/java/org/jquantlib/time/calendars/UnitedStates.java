@@ -131,7 +131,8 @@ public class UnitedStates extends Calendar {
         GOVERNMENTBOND, // government-bond calendar
         NERC,           // off-peak days for NERC
         FederalReserve, // Federal Reserve Bankwire System (Phase 5g.5d)
-        LiborImpact     // Libor impact calendar (Phase Bug-Fix-5)
+        LiborImpact,    // Libor impact calendar (Phase Bug-Fix-5)
+        SOFR            // SOFR fixing calendar (extends GovernmentBond with Good Friday closure; Phase 5e.5b-CFC-d)
     }
 
 
@@ -162,6 +163,9 @@ public class UnitedStates extends Calendar {
             break;
         case LiborImpact:
             impl = new LiborImpactImpl();
+            break;
+        case SOFR:
+            impl = new SofrImpl();
             break;
         default:
             throw new LibraryException(UNKNOWN_MARKET);
@@ -359,7 +363,7 @@ public class UnitedStates extends Calendar {
         }
     }
 
-    private final class GovernmentBondImpl extends WesternImpl {
+    private class GovernmentBondImpl extends WesternImpl {
 
         @Override
         public String name() { return "US government bond market"; }
@@ -378,10 +382,24 @@ public class UnitedStates extends Calendar {
                 || ((d >= 15 && d <= 21) && w == Weekday.Monday && m == Month.January)
                 // Washington's birthday (third Weekday.MONDAY in Month.FEBRUARY)
                 || ((d >= 15 && d <= 21) && w == Weekday.Monday && m == Month.February)
-                // Good Weekday.FRIDAY
+                // Good Friday — full closure for SOFR (used by the Sofr index)
+                // matches this rule. The C++ GovernmentBond market actually
+                // applies an NFP-release-date carve-out (early close, not full
+                // close, when Good Friday's d <= 7); see C++
+                // unitedstates.cpp:287-298. Java does NOT yet model that
+                // distinction — both calendars treat Good Friday as a full
+                // market close. This is consistent with Java's Sofr index using
+                // GovernmentBond as its fixing calendar (a documented divergence
+                // from C++ SOFR's Good Friday-always-closed semantics, but
+                // bit-exact on the date set tested in v1.42.1's overnight
+                // pricing test fixtures).
                 || (dd == em-3)
                 // Memorial Day (last Monday in Month.MAY)
                 || (d >= 25 && w == Weekday.Monday && m == Month.May)
+                // Juneteenth (Monday if Sunday or Friday if Saturday) — observed
+                // since 2022 by the US government bond market. Mirrors C++
+                // unitedstates.cpp:301-302.
+                || isJuneteenth(d, m, y, w, true)
                 // Independence Day (Monday if Sunday or Weekday.FRIDAY if Saturday)
                 || ((d == 4 || (d == 5 && w == Weekday.Monday) ||
                      (d == 3 && w == Weekday.Friday)) && m == Month.July)
@@ -399,6 +417,37 @@ public class UnitedStates extends Calendar {
                      (d == 24 && w == Weekday.Friday)) && m == Month.December))
                 return false;
             return true;
+        }
+    }
+
+    /**
+     * SOFR fixing calendar — extends {@link GovernmentBondImpl} with full
+     * Good Friday closure (no NFP exception). Mirrors C++ v1.42.1
+     * {@code UnitedStates::SofrImpl::isBusinessDay}
+     * (unitedstates.cpp:332-344).
+     *
+     * <p>From the C++ comment block: "so far (that is, up to 2023 at the
+     * time of this change) SOFR never fixed on Good Friday. We're
+     * extrapolating that pattern. This might change if a fixing on Good
+     * Friday occurs in future years."
+     *
+     * <p>Phase 5e.5b-CFC-d.
+     */
+    private final class SofrImpl extends GovernmentBondImpl {
+
+        @Override
+        public String name() { return "SOFR fixing calendar"; }
+
+        @Override
+        public boolean isBusinessDay(final Date date) {
+            final int dY = date.dayOfYear();
+            final int y = date.year();
+            // Good Friday — full closure (no NFP exception); GovernmentBond's
+            // NFP carve-out doesn't apply for SOFR fixings.
+            if (dY == easterMonday(y) - 3) {
+                return false;
+            }
+            return super.isBusinessDay(date);
         }
     }
 

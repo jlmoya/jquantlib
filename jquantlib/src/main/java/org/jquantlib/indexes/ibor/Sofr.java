@@ -38,9 +38,12 @@ import org.jquantlib.time.calendars.UnitedStates;
  * <p>
  * <b>Divergence note:</b> C++ v1.42.1 uses
  * {@code UnitedStates(UnitedStates::SOFR)}; this Java port uses
- * {@code Market.GOVERNMENTBOND} as the Java {@code UnitedStates} calendar
- * does not yet expose a SOFR-specific market enum value (the SOFR calendar
- * extends GovernmentBond in C++).
+ * {@code Market.GOVERNMENTBOND}. The SOFR market enum + {@code SofrImpl}
+ * are also available in Java (Phase 5e.5b-CFC-d) but kept off the Sofr
+ * index for now: GovernmentBond's Good Friday rule (full closure) matches
+ * SOFR's behavior on the date set tested in v1.42.1's overnight pricing
+ * test fixtures, and switching to SOFR exposes the missing NFP-carve-out
+ * difference in GovernmentBond which would itself need closing first.
  *
  * @category indexes
  *
