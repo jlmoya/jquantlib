@@ -157,10 +157,17 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <!-- Phase 5e.5b-CFC-d-8: Bump JVM heap to 2g to eliminate
+                     intermittent NoClassDefFoundError flakiness from Surefire's
+                     forked JVM running out of metaspace/heap when loading the
+                     full ~575-class test suite (FDShoutEngine, AssetSwap,
+                     StulzEngine, etc. all error randomly under default 256m;
+                     all pass cleanly in isolation). -->
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin}</version>
                 <configuration>
                     <argLine>
+                        -Xmx2g
                         --illegal-access=permit
                     </argLine>
                 </configuration>
