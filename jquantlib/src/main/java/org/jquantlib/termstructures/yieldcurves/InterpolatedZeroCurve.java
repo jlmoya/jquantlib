@@ -314,7 +314,23 @@ public class InterpolatedZeroCurve<I extends Interpolator> extends ZeroYieldStru
 
 	@Override
 	protected double zeroYieldImpl(final double t) {
-		return interpolation.op(t, true);
+		// Mirror C++ InterpolatedZeroCurve<T>::zeroYieldImpl (v1.42.1
+		// ql/termstructures/yield/zerocurve.hpp:159-169): inside the
+		// curve's last pillar use the interpolator directly; PAST the
+		// last pillar use FLAT-FORWARD extrapolation. Cubic-extrapolating
+		// the zero-rate polynomial past the last pillar produces an
+		// uncontrolled tail (Phase 5e.5b-CFC-d-4): the extrapolated zero
+		// is dominated by the curvature of the last segment, which can
+		// be far from the locally-instantaneous forward, and discount
+		// factors drift from the C++ reference at the level of 1e-7+.
+		final double tMax = times[times.length - 1];
+		if (t <= tMax) {
+			return interpolation.op(t, true);
+		}
+		// flat fwd extrapolation
+		final double zMax = data[data.length - 1];
+		final double instFwdMax = zMax + tMax * interpolation.derivative(tMax, true);
+		return (zMax * tMax + instFwdMax * (t - tMax)) / t;
 	}
-	
+
 }

@@ -777,15 +777,69 @@ public class OvernightIndexedCouponTest {
     @Ignore("Phase 5e.5b-CFC-d follow-up: needs leg-NPV probe (lockout=3, telescopic=true). Body-fill ready, expected value pending probe cross-validation.")
     @Test public void testOvernightLegNPV() { fail("not implemented"); }
 
-    @Ignore("Phase 5e.5b-CFC-d follow-up: testOvernightLegWithCapsAndFloors body-fill ready "
-          + "+ probe ground-truth confirmed (overnight_leg_caps_floors.json); calendar fixings "
-          + "now match C++ exactly (62 fixings in coupon[3] after Juneteenth fix to "
-          + "GovernmentBondImpl). Residual ~2.7e-7 drift in coupon[3] vanilla rate (Java "
-          + "0.027594750 vs C++ 0.027595019) localized but not pinpointed: same fixing dates, "
-          + "same Cubic-curve config, same accrualPeriod — drift is in the daily-compound "
-          + "forward-rate computation (likely sub-period dt or curve discount precision around "
-          + "the Juneteenth gap). NPV diff 0.067 on 34648.")
-    @Test public void testOvernightLegWithCapsAndFloors() { fail("not implemented"); }
+    /**
+     * Mirror of C++ {@code testOvernightLegWithCapsAndFloors}
+     * (overnightindexedcoupon.cpp:1038-1071). Verifies leg size, per-coupon
+     * cap/floor attribution + isCapped/isFloored flags, and total NPV against
+     * the C++-pinned reference 34648.328606210489 to 1e-8.
+     *
+     * <p>Cross-validated by
+     * {@code migration-harness/references/cashflows/overnight_leg_caps_floors.json}
+     * (probe: {@code overnight_leg_caps_floors_probe}).
+     *
+     * <p>Phase 5e.5b-CFC-d-4 unblocked this test by porting C++ flat-forward
+     * extrapolation in {@link InterpolatedZeroCurve#zeroYieldImpl(double)}
+     * (was cubic-extrapolating past last pillar — drifts coupon[3]'s
+     * disc(2026-07-01) by 6.5e-8 → vanilla-rate by 2.7e-7 → NPV by 0.067).
+     */
+    @Test
+    public void testOvernightLegWithCapsAndFloors() {
+        QL.info("Testing overnight leg with caps and floors...");
+        final CommonVarsONLeg vars = new CommonVarsONLeg();
+        vars.setupForecastCurve();
+        final Handle<YieldTermStructure> discountCurve =
+                new Handle<YieldTermStructure>(Utilities.flatRate(vars.today, 0.0015, vars.dc));
+
+        final List<Double> caps = Arrays.asList(0.0435, 0.0435, 0.04, 0.04);
+        final List<Double> floors = Arrays.asList(0.025, 0.025, 0.025, 0.025);
+
+        final Leg leg = vars.makeLeg(Constants.NULL_NATURAL, 0, false, false,
+                RateAveraging.Type.Compound, null, null, caps, floors);
+
+        if (leg.size() != 4) {
+            fail("Expected 4 coupons, got " + leg.size());
+        }
+
+        final double expectedNpv = 34648.328606210489;
+        double npv = 0.0;
+        for (int i = 0; i < leg.size(); ++i) {
+            final CashFlow cf = leg.get(i);
+            if (!(cf instanceof CappedFlooredOvernightIndexedCoupon)) {
+                fail("leg[" + i + "] is not a CappedFlooredOvernightIndexedCoupon: " + cf);
+            }
+            final CappedFlooredOvernightIndexedCoupon cfc =
+                    (CappedFlooredOvernightIndexedCoupon) cf;
+            if (Math.abs(cfc.cap() - caps.get(i)) > 1e-12) {
+                fail("leg[" + i + "].cap=" + cfc.cap() + " expected " + caps.get(i));
+            }
+            if (Math.abs(cfc.floor() - floors.get(i)) > 1e-12) {
+                fail("leg[" + i + "].floor=" + cfc.floor() + " expected " + floors.get(i));
+            }
+            if (!cfc.isCapped()) {
+                fail("leg[" + i + "].isCapped=false, expected true");
+            }
+            if (!cfc.isFloored()) {
+                fail("leg[" + i + "].isFloored=false, expected true");
+            }
+            npv += cfc.amount() * discountCurve.currentLink().discount(cfc.date());
+        }
+
+        if (Math.abs(npv - expectedNpv) > 1e-8) {
+            fail("Capped-Floored OvernightLeg NPV: java=" + npv
+                    + " expected=" + expectedNpv
+                    + " diff=" + Math.abs(npv - expectedNpv));
+        }
+    }
 
     @Test
     public void testOvernightLegSimpleAveraging() {
