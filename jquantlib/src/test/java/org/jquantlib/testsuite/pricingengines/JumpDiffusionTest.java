@@ -6,9 +6,6 @@
  */
 package org.jquantlib.testsuite.pricingengines;
 
-import static org.junit.Assert.fail;
-
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -28,26 +25,35 @@ import org.junit.Test;
  * </ul>
  *
  * <p>Both tests are <strong>already covered</strong> by the existing Java
- * class {@code org.jquantlib.testsuite.pricingengines
- * .JumpDiffusionEngineTest}, which contains both {@code testMerton76}
- * (full Haug table) and {@code testGreeks} (parametric grid).
- *
- * <p>This class exists for 1:1 inventory mapping with the C++ test-suite
- * file list (Phase 5 META section 6 coverage report).
+ * class {@link JumpDiffusionEngineTest}, which contains both
+ * {@code testMerton76} (full Haug table) and {@code testGreeks} (parametric
+ * grid). To keep the 1:1 inventory mapping with the C++ test-suite file
+ * list (Phase 5 META section 6 coverage report) while still surfacing the
+ * coverage in JUnit reports, both methods here delegate to the canonical
+ * implementation in {@link JumpDiffusionEngineTest}.
  *
  * <p>Source: {@code test-suite/jumpdiffusion.cpp} v1.42.1 @ {@code 099987f0ca}.
  *
- * @see org.jquantlib.testsuite.pricingengines.JumpDiffusionEngineTest
+ * @see JumpDiffusionEngineTest
  */
 public class JumpDiffusionTest {
 
-    @Ignore("Phase 5h — already covered by JumpDiffusionEngineTest#testMerton76. "
-            + "Placeholder for 1:1 inventory mapping.")
     @Test
-    public void testMerton76() { fail("not implemented; see JumpDiffusionEngineTest"); }
+    public void testMerton76() {
+        // Phase 5e.5b-CFC-d-9 body-fill — delegate to the canonical
+        // implementation in JumpDiffusionEngineTest. The C++ test
+        // {@code jumpdiffusion.cpp::testMerton76} is reproduced verbatim
+        // (Haug 108-row table) in JumpDiffusionEngineTest#testMerton76.
+        new JumpDiffusionEngineTest().testMerton76();
+    }
 
-    @Ignore("Phase 5h — already covered by JumpDiffusionEngineTest#testGreeks. "
-            + "Placeholder for 1:1 inventory mapping.")
     @Test
-    public void testGreeks() { fail("not implemented; see JumpDiffusionEngineTest"); }
+    public void testGreeks() {
+        // Phase 5e.5b-CFC-d-9 body-fill — delegate to the canonical
+        // implementation in JumpDiffusionEngineTest. The C++ test
+        // {@code jumpdiffusion.cpp::testGreeks} (parametric grid +
+        // numerical-derivative perturbations) is reproduced in
+        // JumpDiffusionEngineTest#testGreeks.
+        new JumpDiffusionEngineTest().testGreeks();
+    }
 }
