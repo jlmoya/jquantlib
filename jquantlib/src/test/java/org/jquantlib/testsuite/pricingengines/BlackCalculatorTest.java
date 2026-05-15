@@ -33,7 +33,6 @@ import org.jquantlib.QL;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.pricingengines.BlackCalculator;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -41,15 +40,13 @@ import org.junit.Test;
  *
  * <p>The C++ file has six test cases covering basic values, Greeks,
  * put-call parity, edge cases, numerical-derivative consistency, and
- * zero-volatility Greek behavior. The Java {@link BlackCalculator}
- * supports basic value, deltaForward, gamma, theta, vega, rho,
- * elasticity (and forward), itmCashProbability, itmAssetProbability,
- * strikeSensitivity, dividendRho — most of which can be tested.
+ * zero-volatility Greek behavior. All six are body-filled here against
+ * the same C++ reference values.
  *
- * <p><b>Phase 5g.5 deferral:</b> Java {@link BlackCalculator} is missing
- * {@code strikeGamma}, {@code vanna}, and {@code volga}. The full
- * Greek-reference test deferred to Phase 5g.5; the basic-value /
- * put-call parity / edge-case tests are ported faithfully here.
+ * <p>Phase 5e.5b-CFC-d-19 (this commit): {@link BlackCalculator} now has
+ * the missing {@code strikeGamma}, {@code vanna}, {@code volga} accessors
+ * and finite-Greek behaviour at zero volatility, so the Greeks-Full and
+ * ZeroVolatilityGreeks tests are unblocked.
  */
 public class BlackCalculatorTest {
 
@@ -176,63 +173,9 @@ public class BlackCalculatorTest {
     }
 
     /**
-     * Partial port of {@code testBlackCalculatorGreeks} (lines 108-217).
-     * The Java {@link BlackCalculator} is missing {@code strikeGamma},
-     * {@code vanna}, and {@code volga}. The remaining Greeks are tested
-     * against the same C++ reference values.
-     */
-    @Test
-    public void testBlackCalculatorGreeksPartial() {
-        QL.info("Testing BlackCalculator Greeks (partial — strikeGamma/vanna/volga "
-                + "deferred)...");
-
-        final double forward = 100.0;
-        final double strike = 105.0;
-        final double stdDev = 0.20;
-        final double discount = 0.95;
-        final double spot = 98.0;
-        final double maturity = 1.0;
-        final double tolerance = 1e-6;
-
-        // C++ reference values from blackcalculator.cpp lines 118-133.
-        final double refDelta = 0.42921547913932068;
-        final double refDeltaFwd = 0.42063116955653351;
-        final double refGamma = 0.019527733248736884;
-        final double refGammaFwd = 0.018754435012086908;
-        final double refTheta = -4.31290436588883;
-        final double refVega = 37.508870024173795;
-        final double refRho = 36.452803157675653;
-        final double refElasticity = 7.4974624362037323;
-        final double refElasticityFwd = 7.4974624362037199;
-        final double refItmCashProb = 0.36544163566592136;
-        final double refItmAssetProb = 0.44276965216477238;
-        final double refDividendRho = -42.063116955653371;
-        final double refStrikeSensitivity = -0.34716955388262527;
-
-        final BlackCalculator calc = new BlackCalculator(
-                new PlainVanillaPayoff(Option.Type.Call, strike), forward, stdDev, discount);
-
-        assertEquals("call deltaForward",       refDeltaFwd,         calc.deltaForward(),         tolerance);
-        assertEquals("call delta",              refDelta,            calc.delta(spot),            tolerance);
-        assertEquals("call gammaForward",       refGammaFwd,         calc.gammaForward(),         tolerance);
-        assertEquals("call gamma",              refGamma,            calc.gamma(spot),            tolerance);
-        assertEquals("call theta",              refTheta,            calc.theta(spot, maturity),  tolerance);
-        assertEquals("call vega",               refVega,             calc.vega(maturity),         tolerance);
-        assertEquals("call rho",                refRho,              calc.rho(maturity),          tolerance);
-        assertEquals("call elasticityForward",  refElasticityFwd,    calc.elasticityForward(),    tolerance);
-        assertEquals("call elasticity",         refElasticity,       calc.elasticity(spot),       tolerance);
-        assertEquals("call itmCashProb",        refItmCashProb,      calc.itmCashProbability(),   tolerance);
-        assertEquals("call itmAssetProb",       refItmAssetProb,     calc.itmAssetProbability(),  tolerance);
-        assertEquals("call dividendRho",        refDividendRho,      calc.dividendRho(maturity),  tolerance);
-        assertEquals("call strikeSensitivity",  refStrikeSensitivity, calc.strikeSensitivity(),   tolerance);
-    }
-
-    /**
-     * Faithful port of the finite-difference part of
-     * {@code testBlackCalculatorNumericalDerivatives} (lines 292-356) —
-     * verifies analytical delta and gamma against finite-difference
-     * approximations. Vanna/volga FD checks deferred (Java BlackCalculator
-     * has no vanna/volga).
+     * Faithful port of {@code testBlackCalculatorNumericalDerivatives}
+     * (lines 292-356) — verifies analytical delta, gamma, vanna and volga
+     * against finite-difference approximations.
      */
     @Test
     public void testBlackCalculatorNumericalDerivatives() {
@@ -242,6 +185,7 @@ public class BlackCalculatorTest {
         final double strike = 100.0;
         final double stdDev = 0.20;
         final double discount = 0.95;
+        final double maturity = 1.0;
         final double bump = 1.0e-4;
         final double tolerance = 1.0e-3;
 
@@ -265,6 +209,25 @@ public class BlackCalculatorTest {
                 (calcUp.deltaForward() - calcDown.deltaForward()) / (2.0 * bump);
         assertEquals("FD gamma vs gammaForward",
                 analyticalGamma, numericalGamma, tolerance);
+
+        // FD vanna check (C++ blackcalculator.cpp:332-343): dVega/dForward.
+        // Note: C++ test calls calc.vanna(forward, maturity), i.e. spot==forward.
+        final double analyticalVanna = calc.vanna(forward, maturity);
+        final double numericalVanna =
+                (calcUp.vega(maturity) - calcDown.vega(maturity)) / (2.0 * bump);
+        assertEquals("FD vanna vs vanna(forward,maturity)",
+                analyticalVanna, numericalVanna, tolerance);
+
+        // FD volga check (C++ blackcalculator.cpp:345-355): dVega/dVol.
+        final BlackCalculator calcVolUp = new BlackCalculator(
+                new PlainVanillaPayoff(Option.Type.Call, strike), forward, stdDev + bump, discount);
+        final BlackCalculator calcVolDown = new BlackCalculator(
+                new PlainVanillaPayoff(Option.Type.Call, strike), forward, stdDev - bump, discount);
+        final double analyticalVolga = calc.volga(maturity);
+        final double numericalVolga =
+                (calcVolUp.vega(maturity) - calcVolDown.vega(maturity)) / (2.0 * bump);
+        assertEquals("FD volga vs volga(maturity)",
+                analyticalVolga, numericalVolga, tolerance);
     }
 
     /**
@@ -272,19 +235,11 @@ public class BlackCalculatorTest {
      * (lines 358-481). Verifies finite-Greeks behavior at stdDev=0 across
      * ITM/ATM/OTM scenarios.
      *
-     * <p><b>Phase 5g.5 deferral:</b> the Java {@link BlackCalculator}
-     * computes non-finite Greeks (NaN) for stdDev=0; the C++ class has
-     * dedicated zero-vol code paths via {@code CumulativeNormalDistribution}
-     * indicator handling. Java alignment with v1.42.1 zero-vol semantics
-     * deferred to Phase 5g.5; the test body is preserved for future
-     * activation.
+     * <p>Un-ignored 2026-05-15 (Phase 5e.5b-CFC-d-19) once the Java
+     * {@link BlackCalculator} was ported to the v1.42.1 zero-vol code
+     * paths.
      */
     @Test
-    @Ignore("Phase 5g.5 — Java BlackCalculator returns NaN for zero-vol "
-            + "Greeks; C++ v1.42.1 returns finite values via the "
-            + "CumulativeNormalDistribution indicator path. Align Java zero-vol "
-            + "semantics with v1.42.1 then re-enable. C++ blackcalculator.cpp "
-            + "testBlackCalculatorZeroVolatilityGreeks.")
     public void testBlackCalculatorZeroVolatilityGreeks() {
         QL.info("Testing BlackCalculator Greeks with zero volatility...");
 
@@ -337,9 +292,19 @@ public class BlackCalculatorTest {
             assertTrue(descr + ": vega should be zero",
                     Math.abs(vega) <= tolerance);
 
-            // Strike sensitivities finite.
+            // Strike sensitivities finite (C++ lines 440-446).
             assertTrue(descr + ": strikeSensitivity should be finite",
                     Double.isFinite(calc.strikeSensitivity()));
+            assertTrue(descr + ": strikeGamma should be finite",
+                    Double.isFinite(calc.strikeGamma()));
+
+            // Vanna and volga should be zero (C++ lines 448-460).
+            final double vanna = calc.vanna(spot, maturity);
+            final double volga = calc.volga(maturity);
+            assertTrue(descr + ": vanna should be zero",
+                    Math.abs(vanna) <= tolerance);
+            assertTrue(descr + ": volga should be zero",
+                    Math.abs(volga) <= tolerance);
 
             // ITM call delta ≈ 1.
             if (type == Option.Type.Call && strike < forward * 0.95) {
@@ -365,9 +330,63 @@ public class BlackCalculatorTest {
                 Math.abs(calc.deltaForward() - discount * 0.5) <= 0.1);
     }
 
+    /**
+     * Faithful port of the full {@code testBlackCalculatorGreeks} (C++
+     * v1.42.1 lines 108-217). Covers every Greek including the newly
+     * ported {@code strikeGamma}, {@code vanna}, {@code volga}.
+     *
+     * <p>Un-ignored 2026-05-15 (Phase 5e.5b-CFC-d-19) once the missing
+     * accessors were ported.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java BlackCalculator missing strikeGamma/vanna/volga "
-            + "Greek accessors. Full reference test deferred. "
-            + "C++ blackcalculator.cpp testBlackCalculatorGreeks (full).")
-    public void testBlackCalculatorGreeksFull() { }
+    public void testBlackCalculatorGreeksFull() {
+        QL.info("Testing BlackCalculator Greeks (full)...");
+
+        final double forward = 100.0;
+        final double strike = 105.0;
+        final double stdDev = 0.20;
+        final double discount = 0.95;
+        final double spot = 98.0;
+        final double maturity = 1.0;
+        final double tolerance = 1e-6;
+
+        // C++ reference values from blackcalculator.cpp lines 118-133.
+        final double refDelta = 0.42921547913932068;
+        final double refDeltaFwd = 0.42063116955653351;
+        final double refGamma = 0.019527733248736884;
+        final double refGammaFwd = 0.018754435012086908;
+        final double refTheta = -4.31290436588883;
+        final double refVega = 37.508870024173795;
+        final double refRho = 36.452803157675653;
+        final double refElasticity = 7.4974624362037323;
+        final double refElasticityFwd = 7.4974624362037199;
+        final double refItmCashProb = 0.36544163566592136;
+        final double refItmAssetProb = 0.44276965216477238;
+        final double refDividendRho = -42.063116955653371;
+        final double refStrikeSensitivity = -0.34716955388262527;
+        final double refStrikeGamma = 0.017010825407788574;
+        final double refVanna = 0.65822482825836837;
+        final double refVolga = 9.2856964243177753;
+
+        final BlackCalculator calc = new BlackCalculator(
+                new PlainVanillaPayoff(Option.Type.Call, strike), forward, stdDev, discount);
+
+        assertEquals("call deltaForward",       refDeltaFwd,         calc.deltaForward(),         tolerance);
+        assertEquals("call delta",              refDelta,            calc.delta(spot),            tolerance);
+        assertEquals("call gammaForward",       refGammaFwd,         calc.gammaForward(),         tolerance);
+        assertEquals("call gamma",              refGamma,            calc.gamma(spot),            tolerance);
+        assertEquals("call theta",              refTheta,            calc.theta(spot, maturity),  tolerance);
+        assertEquals("call vega",               refVega,             calc.vega(maturity),         tolerance);
+        assertEquals("call rho",                refRho,              calc.rho(maturity),          tolerance);
+        assertEquals("call elasticityForward",  refElasticityFwd,    calc.elasticityForward(),    tolerance);
+        assertEquals("call elasticity",         refElasticity,       calc.elasticity(spot),       tolerance);
+        assertEquals("call itmCashProb",        refItmCashProb,      calc.itmCashProbability(),   tolerance);
+        assertEquals("call itmAssetProb",       refItmAssetProb,     calc.itmAssetProbability(),  tolerance);
+        assertEquals("call dividendRho",        refDividendRho,      calc.dividendRho(maturity),  tolerance);
+        assertEquals("call strikeSensitivity",  refStrikeSensitivity, calc.strikeSensitivity(),   tolerance);
+        assertEquals("call strikeGamma",        refStrikeGamma,      calc.strikeGamma(),          tolerance);
+        // C++ uses spot=spot for vanna; matches blackcalculator.cpp:151.
+        assertEquals("call vanna",              refVanna,            calc.vanna(spot, maturity),  tolerance);
+        assertEquals("call volga",              refVolga,            calc.volga(maturity),        tolerance);
+    }
 }
