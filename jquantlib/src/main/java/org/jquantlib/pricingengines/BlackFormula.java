@@ -53,6 +53,7 @@ import org.jquantlib.lang.annotation.Real;
 import org.jquantlib.lang.annotation.StdDev;
 import org.jquantlib.math.Closeness;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.distributions.NormalDistribution;
 import org.jquantlib.math.distributions.Derivative;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.solvers1D.NewtonSafe;
@@ -1172,6 +1173,233 @@ public class BlackFormula {
             return signedForward_ * N_.derivative(signedD1);
         }
 
+    }
+
+    //
+    // Phase 5e.5b-CFC-d-3 ports of v1.42.1 BlackFormula extensions
+    //
+
+    /**
+     * Second derivative w.r.t. standard deviation of {@code blackFormula}.
+     * Mirrors C++ {@code blackFormulaStdDevSecondDerivative}
+     * (blackformula.cpp:671-693).
+     */
+    public static double blackFormulaStdDevSecondDerivative(
+            final double strike, final double forward, final double stdDev,
+            final double discount, final double displacement) {
+        QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(forward > 0.0, "forward must be positive");
+        QL.require(stdDev >= 0.0, "stdDev must be non-negative");
+        QL.require(discount > 0.0, "discount must be positive");
+        QL.require(displacement >= 0.0, "displacement must be non-negative");
+
+        final double f = forward + displacement;
+        final double k = strike + displacement;
+        if (stdDev == 0.0 || k == 0.0) {
+            return 0.0;
+        }
+        final double d1 = Math.log(f / k) / stdDev + 0.5 * stdDev;
+        final double d1p = -Math.log(f / k) / (stdDev * stdDev) + 0.5;
+        return discount * f * new NormalDistribution().derivative(d1) * d1p;
+    }
+
+    /**
+     * Black/Bachelier-style derivative of price w.r.t. forward.
+     * Mirrors C++ {@code blackFormulaForwardDerivative}
+     * (blackformula.cpp:109-136).
+     */
+    public static double blackFormulaForwardDerivative(
+            final Option.Type optionType, final double strikeIn, final double forwardIn,
+            final double stdDev, final double discount, final double displacement) {
+        QL.require(strikeIn + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(forwardIn > 0.0, "forward must be positive");
+        QL.require(stdDev >= 0.0, "stdDev must be non-negative");
+        QL.require(discount > 0.0, "discount must be positive");
+        QL.require(displacement >= 0.0, "displacement must be non-negative");
+
+        final int sign = (optionType == Option.Type.Call) ? 1 : -1;
+        if (stdDev == 0.0) {
+            // sign * max(sign(F - K) * sign, 0) * discount
+            final double diff = (forwardIn - strikeIn) * sign;
+            final double s = (diff > 0.0) ? 1.0 : (diff < 0.0 ? -1.0 : 0.0);
+            return sign * Math.max(s, 0.0) * discount;
+        }
+        final double f = forwardIn + displacement;
+        final double k = strikeIn + displacement;
+        if (k == 0.0) {
+            return (optionType == Option.Type.Call) ? discount : 0.0;
+        }
+        final double d1 = Math.log(f / k) / stdDev + 0.5 * stdDev;
+        final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
+        return sign * phi.op(sign * d1) * discount;
+    }
+
+    /** PlainVanillaPayoff overload of {@link #blackFormulaForwardDerivative}. */
+    public static double blackFormulaForwardDerivative(
+            final PlainVanillaPayoff payoff, final double forward,
+            final double stdDev, final double discount, final double displacement) {
+        return blackFormulaForwardDerivative(
+                payoff.optionType(), payoff.strike(), forward,
+                stdDev, discount, displacement);
+    }
+
+    /**
+     * Bachelier-style derivative of price w.r.t. forward.
+     * Mirrors C++ {@code bachelierBlackFormulaForwardDerivative}
+     * (blackformula.cpp:738-751).
+     */
+    public static double bachelierBlackFormulaForwardDerivative(
+            final Option.Type optionType, final double strike, final double forward,
+            final double stdDev, final double discount) {
+        QL.require(stdDev >= 0.0, "stdDev must be non-negative");
+        QL.require(discount > 0.0, "discount must be positive");
+        final int sign = (optionType == Option.Type.Call) ? 1 : -1;
+        if (stdDev == 0.0) {
+            final double diff = (forward - strike) * sign;
+            final double s = (diff > 0.0) ? 1.0 : (diff < 0.0 ? -1.0 : 0.0);
+            return sign * Math.max(s, 0.0) * discount;
+        }
+        final double d = (forward - strike) * sign;
+        final double h = d / stdDev;
+        final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
+        return sign * phi.op(h) * discount;
+    }
+
+    /** PlainVanillaPayoff overload of {@link #bachelierBlackFormulaForwardDerivative}. */
+    public static double bachelierBlackFormulaForwardDerivative(
+            final PlainVanillaPayoff payoff, final double forward,
+            final double stdDev, final double discount) {
+        return bachelierBlackFormulaForwardDerivative(
+                payoff.optionType(), payoff.strike(), forward, stdDev, discount);
+    }
+
+    /**
+     * Implied stdev approximation by Radoicic-Stefanica (RS) closed-form
+     * inversion. Mirrors C++ {@code blackFormulaImpliedStdDevApproximationRS}
+     * (blackformula.cpp:269-318).
+     */
+    public static double blackFormulaImpliedStdDevApproximationRS(
+            final Option.Type type, final double kIn, final double fIn,
+            final double marketValue, final double df, final double displacement) {
+        QL.require(kIn + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(fIn > 0.0, "forward must be positive");
+        QL.require(displacement >= 0.0, "displacement must be non-negative");
+        QL.require(marketValue >= 0.0, "marketValue must be non-negative");
+        QL.require(df > 0.0, "discount must be positive");
+
+        final double F = fIn + displacement;
+        final double K = kIn + displacement;
+        final double ey = F / K;
+        final double ey2 = ey * ey;
+        final double y = Math.log(ey);
+        final double alpha = marketValue / (K * df);
+        final double R = 2.0 * alpha + ((type == Option.Type.Call) ? -ey + 1.0 : ey - 1.0);
+        final double R2 = R * R;
+
+        final double TWO_OVER_PI = 2.0 / Math.PI;
+        final double a = Math.exp((1.0 - TWO_OVER_PI) * y);
+        final double aDiff = a - 1.0 / a;
+        final double A = aDiff * aDiff;
+        final double b = Math.exp(TWO_OVER_PI * y);
+        final double yPlus1 = ey + 1.0;
+        final double yMinus1 = ey - 1.0;
+        final double B = 4.0 * (b + 1.0 / b)
+                - 2.0 * K / F * (a + 1.0 / a) * (ey2 + 1.0 - R2);
+        final double C = (R2 - yMinus1 * yMinus1) * (yPlus1 * yPlus1 - R2) / ey2;
+
+        final double beta = 2.0 * C / (B + Math.sqrt(B * B + 4.0 * A * C));
+        final double gamma = -Math.PI / 2.0 * Math.log(beta);
+
+        if (y >= 0.0) {
+            final double M0 = K * df * (
+                    (type == Option.Type.Call)
+                            ? ey * af(Math.sqrt(2.0 * y)) - 0.5
+                            : 0.5 - ey * af(-Math.sqrt(2.0 * y)));
+            return (marketValue <= M0)
+                    ? Math.sqrt(gamma + y) - Math.sqrt(gamma - y)
+                    : Math.sqrt(gamma + y) + Math.sqrt(gamma - y);
+        } else {
+            final double M0 = K * df * (
+                    (type == Option.Type.Call)
+                            ? 0.5 * ey - af(-Math.sqrt(-2.0 * y))
+                            : af(Math.sqrt(-2.0 * y)) - 0.5 * ey);
+            return (marketValue <= M0)
+                    ? Math.sqrt(gamma - y) - Math.sqrt(gamma + y)
+                    : Math.sqrt(gamma + y) + Math.sqrt(gamma - y);
+        }
+    }
+
+    /** PlainVanillaPayoff overload of {@link #blackFormulaImpliedStdDevApproximationRS}. */
+    public static double blackFormulaImpliedStdDevApproximationRS(
+            final PlainVanillaPayoff payoff, final double F,
+            final double marketValue, final double df, final double displacement) {
+        return blackFormulaImpliedStdDevApproximationRS(
+                payoff.optionType(), payoff.strike(), F, marketValue, df, displacement);
+    }
+
+    /** Internal helper Af(x) used by {@link #blackFormulaImpliedStdDevApproximationRS}. */
+    private static double af(final double x) {
+        final double sign = (x > 0.0) ? 1.0 : (x < 0.0 ? -1.0 : 0.0);
+        return 0.5 * (1.0 + sign * Math.sqrt(1.0 - Math.exp(-2.0 / Math.PI * x * x)));
+    }
+
+    /**
+     * Implied stdev approximation by Chambers — second-order Taylor expansion
+     * around the at-the-money implied vol via the Brenner-Subrahmanyam guess.
+     * Mirrors C++ {@code blackFormulaImpliedStdDevChambers}
+     * (blackformula.cpp:199-248).
+     */
+    public static double blackFormulaImpliedStdDevChambers(
+            final Option.Type optionType, final double strikeIn, final double forwardIn,
+            final double blackPriceIn, final double blackAtmPriceIn,
+            final double discount, final double displacement) {
+        QL.require(strikeIn + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(forwardIn > 0.0, "forward must be positive");
+        QL.require(displacement >= 0.0, "displacement must be non-negative");
+        QL.require(blackPriceIn >= 0.0, "blackPrice must be non-negative");
+        QL.require(blackAtmPriceIn >= 0.0, "blackAtmPrice must be non-negative");
+        QL.require(discount > 0.0, "discount must be positive");
+
+        final double forward = forwardIn + displacement;
+        final double strike = strikeIn + displacement;
+        final double blackPrice = blackPriceIn / discount;
+        final double blackAtmPrice = blackAtmPriceIn / discount;
+
+        // Brenner-Subrahmanyam initial guess
+        final double s0 = Math.sqrt(2.0 * Math.PI) * blackAtmPrice / forward;
+        final double priceAtmVol =
+                blackFormula(optionType, strike, forward, s0, 1.0, 0.0);
+        final double dc = blackPrice - priceAtmVol;
+
+        final double stdDev;
+        if (Closeness.isClose(dc, 0.0)) {
+            stdDev = s0;
+        } else {
+            final double d1 =
+                    blackFormulaStdDevDerivative(strike, forward, s0, 1.0, 0.0);
+            final double d2 =
+                    blackFormulaStdDevSecondDerivative(strike, forward, s0, 1.0, 0.0);
+            double ds = 0.0;
+            final double tmp = d1 * d1 + 2.0 * d2 * dc;
+            if (Math.abs(d2) > 1e-10 && tmp >= 0.0) {
+                ds = (-d1 + Math.sqrt(tmp)) / d2;
+            } else if (Math.abs(d1) > 1e-10) {
+                ds = dc / d1;
+            }
+            stdDev = s0 + ds;
+        }
+        QL.ensure(stdDev >= 0.0, "stdDev must be non-negative");
+        return stdDev;
+    }
+
+    /** PlainVanillaPayoff overload of {@link #blackFormulaImpliedStdDevChambers}. */
+    public static double blackFormulaImpliedStdDevChambers(
+            final PlainVanillaPayoff payoff, final double forward,
+            final double blackPrice, final double blackAtmPrice,
+            final double discount, final double displacement) {
+        return blackFormulaImpliedStdDevChambers(
+                payoff.optionType(), payoff.strike(), forward, blackPrice,
+                blackAtmPrice, discount, displacement);
     }
 
 }
