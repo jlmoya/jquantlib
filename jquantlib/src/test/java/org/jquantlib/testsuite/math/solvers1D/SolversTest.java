@@ -28,15 +28,16 @@ import org.jquantlib.QL;
 import org.jquantlib.math.AbstractSolver1D;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.Derivative;
+import org.jquantlib.math.distributions.SecondDerivative;
 import org.jquantlib.math.solvers1D.Bisection;
 import org.jquantlib.math.solvers1D.Brent;
 import org.jquantlib.math.solvers1D.FalsePosition;
 import org.jquantlib.math.solvers1D.FiniteDifferenceNewtonSafe;
+import org.jquantlib.math.solvers1D.Halley;
 import org.jquantlib.math.solvers1D.Newton;
 import org.jquantlib.math.solvers1D.NewtonSafe;
 import org.jquantlib.math.solvers1D.Ridder;
 import org.jquantlib.math.solvers1D.Secant;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -61,21 +62,27 @@ public class SolversTest {
     }
 
     // F1(x) = x*x - 1, root at x=1, increasing through root
-    private static final Derivative F1 = new Derivative() {
-        @Override public double op(final double x)         { return x * x - 1.0; }
-        @Override public double derivative(final double x) { return 2.0 * x;     }
+    private static final SecondDerivative F1 = new SecondDerivative() {
+        @Override public double op(final double x)               { return x * x - 1.0; }
+        @Override public double derivative(final double x)       { return 2.0 * x;     }
+        @Override public double secondDerivative(final double x) { return 2.0;         }
     };
 
     // F2(x) = 1 - x*x, root at x=1, decreasing through root
-    private static final Derivative F2 = new Derivative() {
-        @Override public double op(final double x)         { return 1.0 - x * x; }
-        @Override public double derivative(final double x) { return -2.0 * x;    }
+    private static final SecondDerivative F2 = new SecondDerivative() {
+        @Override public double op(final double x)               { return 1.0 - x * x; }
+        @Override public double derivative(final double x)       { return -2.0 * x;    }
+        @Override public double secondDerivative(final double x) { return -2.0;        }
     };
 
     // F3(x) = atan(x-1), root at x=1, monotone increasing
-    private static final Derivative F3 = new Derivative() {
-        @Override public double op(final double x)         { return Math.atan(x - 1.0); }
-        @Override public double derivative(final double x) { return 1.0 / (1.0 + (x - 1.0) * (x - 1.0)); }
+    private static final SecondDerivative F3 = new SecondDerivative() {
+        @Override public double op(final double x)               { return Math.atan(x - 1.0); }
+        @Override public double derivative(final double x)       { return 1.0 / (1.0 + (x - 1.0) * (x - 1.0)); }
+        @Override public double secondDerivative(final double x) {
+            final double u = x - 1.0;
+            return -2.0 * u / ((1.0 + u * u) * (1.0 + u * u));
+        }
     };
 
     private static final double[] ACCURACIES = {1.0e-4, 1.0e-6, 1.0e-8};
@@ -186,9 +193,9 @@ public class SolversTest {
         testSolver(new Secant(), "Secant", F1, F2, F3);
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no Halley solver "
-            + "(C++ ql/math/solvers1d/halley.hpp). Add the class then port the test.")
     @Test
     public void testHalley() {
+        QL.info("Testing Halley solver...");
+        testSolver(new Halley(), "Halley", F1, F2, F3);
     }
 }
