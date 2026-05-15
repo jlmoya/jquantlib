@@ -42,7 +42,6 @@ import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.testsuite.util.ReferenceReader;
 import org.jquantlib.testsuite.util.ReferenceReader.Case;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -231,13 +230,7 @@ public class BlackFormulaTest {
 
     /**
      * Mirror of C++ {@code testChambersImpliedVol} (blackformula.cpp:71-118).
-     * @Ignore'd: Java port of blackFormulaImpliedStdDevChambers landed but
-     * `forward > 0.0` parameter check is too strict — should match C++'s
-     * `forward + displacement > 0.0` semantic. Phase 5e.5b-CFC-d-3 follow-up.
      */
-    @Ignore("Phase 5e.5b-CFC-d-3 follow-up: Chambers port landed, but parameter "
-          + "check forward>0.0 is too strict (C++ uses forward+displacement>0.0). "
-          + "Test loops through forward=-0.001 cases that need the displacement-aware check.")
     @Test
     public void testChambersImpliedVol() {
         QL.info("Testing Chambers-Nawalkha implied vol approximation...");
@@ -292,15 +285,7 @@ public class BlackFormulaTest {
 
     /**
      * Mirror of C++ {@code testRadoicicStefanicaImpliedVol} (blackformula.cpp:120-165).
-     * @Ignore'd: Java port of blackFormulaImpliedStdDevApproximationRS landed
-     * but produces stdDev that diverges substantially from input (>0.02 abs)
-     * for ITM cases (e.g. F=100 K=110 vol=0.3 returns ~0.0152 stdDev vs
-     * expected ~0.391). Phase 5e.5b-CFC-d-3 follow-up — port logic needs
-     * line-by-line audit against C++ for the y<0 branch.
      */
-    @Ignore("Phase 5e.5b-CFC-d-3 follow-up: RS port landed, but produces wrong "
-          + "stdDev for ITM cases. Needs line-by-line audit of the y<0 branch "
-          + "of blackformula.cpp:308-317.")
     @Test
     public void testRadoicicStefanicaImpliedVol() {
         QL.info("Testing Radoicic-Stefanica implied vol approximation...");
@@ -319,8 +304,13 @@ public class BlackFormulaTest {
         for (final double strike : strikes) {
             for (final Option.Type type : types) {
                 final PlainVanillaPayoff payoff = new PlainVanillaPayoff(type, strike);
+                // Note: Java's BlackFormula.blackFormula(payoff, ...) overload signature
+                // is (payoff, strike, forward, stddev, discount, displacement) — diverges
+                // from C++ (payoff, forward, stddev, discount, displacement) by adding a
+                // redundant strike argument. Using the type-based overload here to mirror
+                // the C++ test semantics directly.
                 final double marketValue =
-                        BlackFormula.blackFormula(payoff, forward, stdDev, df);
+                        BlackFormula.blackFormula(type, strike, forward, stdDev, df, 0.0);
                 final double estVol =
                         BlackFormula.blackFormulaImpliedStdDevApproximationRS(
                                 payoff, forward, marketValue, df, 0.0)
@@ -338,10 +328,7 @@ public class BlackFormulaTest {
 
     /**
      * Mirror of C++ {@code testRadoicicStefanicaLowerBound} (blackformula.cpp:167-194).
-     * @Ignore'd: depends on the same RS port that's currently broken (see
-     * testRadoicicStefanicaImpliedVol).
      */
-    @Ignore("Phase 5e.5b-CFC-d-3 follow-up: depends on RS port — see testRadoicicStefanicaImpliedVol.")
     @Test
     public void testRadoicicStefanicaLowerBound() {
         QL.info("Testing Radoicic-Stefanica lower bound...");

@@ -115,17 +115,19 @@ public class BlackFormula {
             @Real final double displacement) {
 
         // strike may be negative when displacement > 0; the shifted strike must be non-negative.
-        // Mirrors C++ QuantLib v1.42.1 blackFormula which checks after shifting.
+        // Forward may be negative when displacement > |forward|; the shifted forward must be positive.
+        // Mirrors C++ QuantLib v1.42.1 blackFormula::checkParameters which checks after shifting.
+        QL.require(displacement >= 0.0 , "displacement must be non-negative"); // TODO: message
         QL.require(strike + displacement >= 0.0, "strike+displacement must be non-negative"); // TODO: message
-        QL.require(forward > 0.0       , "forward must be positive"); // TODO: message
+        QL.require(forward + displacement > 0.0, "forward+displacement must be positive"); // TODO: message
         QL.require(stddev >= 0.0       , "stddev must be non-negative"); // TODO: message
         QL.require(discount > 0.0      , "discount must be positive"); // TODO: message
-        QL.require(displacement >= 0.0 , "displacement must be non-negative"); // TODO: message
 
-        forward = forward + displacement;
-        strike = strike + displacement;
+        // Note: zero-stdDev intrinsic uses unshifted (forward - strike) per C++ blackFormula:75
         if (stddev == 0.0)
             return Math.max((forward - strike) * optionType.toInteger(), (0.0d)) * discount;
+        forward = forward + displacement;
+        strike = strike + displacement;
 
         if (strike == 0.0) // strike=0 iff displacement=0
             return (optionType == Option.Type.Call ? forward * discount : 0.0);
@@ -1281,9 +1283,9 @@ public class BlackFormula {
     public static double blackFormulaImpliedStdDevApproximationRS(
             final Option.Type type, final double kIn, final double fIn,
             final double marketValue, final double df, final double displacement) {
-        QL.require(kIn + displacement >= 0.0, "strike+displacement must be non-negative");
-        QL.require(fIn > 0.0, "forward must be positive");
         QL.require(displacement >= 0.0, "displacement must be non-negative");
+        QL.require(kIn + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(fIn + displacement > 0.0, "forward+displacement must be positive");
         QL.require(marketValue >= 0.0, "marketValue must be non-negative");
         QL.require(df > 0.0, "discount must be positive");
 
@@ -1353,9 +1355,9 @@ public class BlackFormula {
             final Option.Type optionType, final double strikeIn, final double forwardIn,
             final double blackPriceIn, final double blackAtmPriceIn,
             final double discount, final double displacement) {
-        QL.require(strikeIn + displacement >= 0.0, "strike+displacement must be non-negative");
-        QL.require(forwardIn > 0.0, "forward must be positive");
         QL.require(displacement >= 0.0, "displacement must be non-negative");
+        QL.require(strikeIn + displacement >= 0.0, "strike+displacement must be non-negative");
+        QL.require(forwardIn + displacement > 0.0, "forward+displacement must be positive");
         QL.require(blackPriceIn >= 0.0, "blackPrice must be non-negative");
         QL.require(blackAtmPriceIn >= 0.0, "blackAtmPrice must be non-negative");
         QL.require(discount > 0.0, "discount must be positive");
