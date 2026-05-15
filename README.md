@@ -2,8 +2,8 @@
 
 > A 100%-Java port of [QuantLib](https://www.quantlib.org/) — the de-facto open-source library for quantitative finance — being systematically rebuilt from C++ v1.42.1 with bit-exact precision guarantees.
 
-[![Tag](https://img.shields.io/badge/tag-jquantlib--phase3h--complete-blue)](#migration-status)
-[![Tests](https://img.shields.io/badge/tests-1087%2F0%2F0%2F38-success)](#migration-status)
+[![Tag](https://img.shields.io/badge/tag-jquantlib--phase5e5b--CFC--c--checkpoint-blue)](#migration-status)
+[![Tests](https://img.shields.io/badge/tests-2959%2F0%2F0%2F598-success)](#migration-status)
 [![Scanner](https://img.shields.io/badge/scanner_WIP-0-success)](#migration-status)
 [![C%2B%2B%20pin](https://img.shields.io/badge/C%2B%2B%20pin-v1.42.1-informational)](#ground-truth)
 [![License](https://img.shields.io/badge/license-BSD-green)](#license)
@@ -66,9 +66,11 @@ This is not a maintenance branch. It is a **systematic, full-fidelity port** wit
 | 3e | `jquantlib-phase3e-complete` | DONE_WITH_CONCERNS — 4 pre-existing PiecewiseYieldCurve bugs fixed + 3 Markit test bodies fully ported (461 LOC). Tests stay @Ignore'd pending Phase 3f. | 1024/0/0/41 | 2026-05-09 |
 | 3f | `jquantlib-phase3f-complete` | Array(double[]) copy-vs-reference fix (Path A, 73 LOC). testIsdaEngine bootstrap drift improved 100× (~1% → 1.4e-4). | 1024/0/0/41 | 2026-05-09 |
 | 3g | `jquantlib-phase3g-complete` | Discount.maxValueAfter ungated negative-rates fix (key finding: bug was Discount traits, NOT IsdaCdsEngine). 2 EUR Markit tests un-ignored + passing. | 1062/0/0/38 | 2026-05-09 |
-| **3h** | **`jquantlib-phase3h-complete`** | **First marketmodels (LMM) slice — Track A (Utilities + EvolutionDescription + CurveState + 3 curvestates + 4 drift calculators) + Track B (3 correlations + MTBrownianGenerator + AccountingEngine + MarketModelDiscounter + MultiProduct + Evolver align). MersenneTwisterUniformRng latent unsigned-long bug fixed. New packages: `org.jquantlib.model.marketmodels.*`. ~3,600 LOC C++ ported. 7 commits across 2 parallel worktrees.** | **1087/0/0/38** | **2026-05-09** |
+| 3h | `jquantlib-phase3h-complete` | First marketmodels (LMM) slice — Track A (Utilities + EvolutionDescription + CurveState + 3 curvestates + 4 drift calculators) + Track B (3 correlations + MTBrownianGenerator + AccountingEngine + MarketModelDiscounter + MultiProduct + Evolver align). MersenneTwisterUniformRng latent unsigned-long bug fixed. New packages: `org.jquantlib.model.marketmodels.*`. ~3,600 LOC C++ ported. 7 commits across 2 parallel worktrees. | 1087/0/0/38 | 2026-05-09 |
+| 3i–5e.5b | `jquantlib-phase5e5b-CFC-c-checkpoint` | **Rolled-up retro** for the 545-commit gap — see [`docs/migration/phase3i-through-5e5b-rolledup-completion.md`](docs/migration/phase3i-through-5e5b-rolledup-completion.md). Covers Phase 3i+ marketmodels evolvers/products/callability, Phase 4a-4o.5 `ql/experimental/` ports (~63K LOC C++), Phase 5a-5e.5b `test-suite/` ports (~79K LOC C++ scope). Per-sub-phase completion docs slipped Phase 3i+; resumes from 5e.5b-CFC-c onward. | 2959/0/0/598 | 2026-05-14 |
+| **5e.5b-CFC-c** | **`jquantlib-phase5e5b-CFC-c-checkpoint`** | **`align(time.Schedule)` post-BDC dedup fix in Backward/Forward loops (mirrors C++ `schedule.cpp:229-233 / :326-330`). Root-caused via probe-instrumentation diff after BlackON cap/floor body-fills surfaced 6.7e-7 drift. 20-LOC fix unblocked 2 tests; no regression across 2957 other tests. New BlackON diagnostic probe added (`migration-harness/cpp/probes/cashflows/black_overnight_indexed_coupon_pricer_probe.cpp`).** | **2959/0/0/598** | **2026-05-14** |
 
-**Current tip on `main`:** post-Phase 3h. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
+**Current tip on `main`:** post-Phase 5e.5b-CFC-c. **Scanner WIP-stub count:** `0`. **Operating mode:** autonomous (controller decides phase scope/sequencing per 2026-05-02 directive).
 
 > Each phase has a binding **design** doc, an executable **plan** doc, a **progress** log, and a **completion** doc — all under [`docs/migration/`](docs/migration/).
 
