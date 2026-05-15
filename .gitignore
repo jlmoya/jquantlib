@@ -32,3 +32,4 @@ migration-harness/cpp/build-*/
 # Python bytecode (scanner and other tooling)
 **/__pycache__/
 *.pyc
+.metadata
