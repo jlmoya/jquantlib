@@ -200,6 +200,10 @@ public class UnitedStates extends Calendar {
                 || ((d >= 15 && d <= 21) && w == Weekday.Monday && m == Month.February)
                 // Memorial Day (last Monday in May)
                 || (d >= 25 && w == Weekday.Monday && m == Month.May)
+                // Juneteenth (Monday if Sunday or Friday if Saturday) — observed
+                // since 2022 by federal holiday and US settlement market. Mirrors
+                // C++ unitedstates.cpp:151-152.
+                || isJuneteenth(d, m, y, w, true)
                 // Independence Day (Monday if Sunday or Friday if Saturday)
                 || ((d == 4 || (d == 5 && w == Weekday.Monday) ||
                      (d == 3 && w == Weekday.Friday)) && m == Month.July)
@@ -309,6 +313,9 @@ public class UnitedStates extends Calendar {
                 || (dd == em-3)
                 // Memorial Day (last Weekday.MONDAY in Month.MAY)
                 || (d >= 25 && w == Weekday.Monday && m == Month.May)
+                // Juneteenth (Monday if Sunday or Friday if Saturday) — observed
+                // since 2022 by NYSE. Mirrors C++ unitedstates.cpp:199-200.
+                || isJuneteenth(d, m, y, w, true)
                 // Independence Day (Weekday.MONDAY if Sunday or Weekday.FRIDAY if Saturday)
                 || ((d == 4 || (d == 5 && w == Weekday.Monday) ||
                      (d == 3 && w == Weekday.Friday)) && m == Month.July)

@@ -181,6 +181,44 @@ int main() {
         Rate vanillaRate = cf->underlying()->rate();
         const std::vector<Date>& fxd = cf->underlying()->fixingDates();
 
+        // Per-sub-period dump for telescopic-formula cross-validation:
+        // for each i in [0, n_), record fixingDate, valueDate[i], valueDate[i+1],
+        // dt[i], and forecastCurve.discount(valueDate[i]).
+        // Recompute the running compoundFactor by hand using the telescopic
+        // identity (prod(1 + f_i * dt_i) = D(valueStart) / D(valueEnd) since
+        // today < first fixing date for every coupon in this fixture).
+        const auto& vd  = cf->underlying()->valueDates();
+        const auto& itd = cf->underlying()->interestDates();
+        const std::vector<Time>& dt = cf->underlying()->dt();
+        json subPeriods = json::array();
+        Real runningCF = 1.0;
+        for (Size k = 0; k < fxd.size(); ++k) {
+            Real disc = forecastCurve->discount(vd[k]);
+            Real discNext = forecastCurve->discount(vd[k + 1]);
+            // f_i = (D(v_i) / D(v_{i+1}) - 1) / dt[i]   (telescopic per-period
+            // forward, modulo dc/year-fraction subtleties below)
+            Real periodForward = (disc / discNext - 1.0) / dt[k];
+            runningCF *= (disc / discNext);
+            subPeriods.push_back(json{
+                {"k",                  static_cast<int>(k)},
+                {"fixingDate",         dateToJson(fxd[k])},
+                {"valueDate",          dateToJson(vd[k])},
+                {"valueDateNext",      dateToJson(vd[k + 1])},
+                {"interestDate",       dateToJson(itd[k])},
+                {"interestDateNext",   dateToJson(itd[k + 1])},
+                {"dt",                 dt[k]},
+                {"discountValueDate",  disc},
+                {"discountValueDateNext", discNext},
+                {"periodForwardRate",  periodForward},
+                {"runningCompoundFactor", runningCF}
+            });
+        }
+        // Whole-coupon discount-ratio check:
+        Real discStart = forecastCurve->discount(vd.front());
+        Real discEnd   = forecastCurve->discount(vd.back());
+        Real telescopicCF = discStart / discEnd;
+        Real telescopicVanillaRate = (telescopicCF - 1.0) / cf->accrualPeriod();
+
         perCoupon.push_back(json{
             {"index",       static_cast<int>(i)},
             {"paymentDate", dateToJson(cf->date())},
@@ -196,7 +234,16 @@ int main() {
             {"accrualPeriod", cf->accrualPeriod()},
             {"fixingDates_size", static_cast<int>(fxd.size())},
             {"fixingDates_first", dateToJson(fxd.front())},
-            {"fixingDates_last",  dateToJson(fxd.back())}
+            {"fixingDates_last",  dateToJson(fxd.back())},
+            // Sub-period dump (Phase 5e.5b-CFC-d enrichment)
+            {"valueDate_first",  dateToJson(vd.front())},
+            {"valueDate_last",   dateToJson(vd.back())},
+            {"discount_valueDate_first", discStart},
+            {"discount_valueDate_last",  discEnd},
+            {"telescopicCompoundFactor", telescopicCF},
+            {"telescopicVanillaRate",    telescopicVanillaRate},
+            {"vanillaRate_minus_telescopic", vanillaRate - telescopicVanillaRate},
+            {"subPeriods",       subPeriods}
         });
     }
 
