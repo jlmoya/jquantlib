@@ -23,6 +23,7 @@ import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
+import org.jquantlib.testsuite.pricingengines.vanilla.AnalyticHestonEngineTest;
 import org.jquantlib.pricingengines.vanilla.AnalyticPDFHestonEngine;
 import org.jquantlib.pricingengines.vanilla.COSHestonEngine;
 import org.jquantlib.pricingengines.McSimulation;
@@ -134,10 +135,6 @@ public class HestonModelTest {
             + "Phase 5h.5-Bates-b); test bodies are `fail(\"not implemented\")` — "
             + "needs full port from C++ hestonmodel.cpp.";
 
-    private static final String REASON_ANALYTIC_PARTIAL =
-            "Phase 5h — partial coverage in AnalyticHestonEngineTest "
-            + "(cachedAnalyticValueOtmCall, blackScholesLimit). Full port deferred.";
-
     private static final String REASON_INTEGRATION =
             "Phase 5h.5 — requires AnalyticHestonEngine integration-method enum "
             + "(Gauss-Lobatto, Discrete-Trapezoid, etc.); Java exposes only "
@@ -186,13 +183,30 @@ public class HestonModelTest {
 
     /* ---- 2. Analytic vs Black / Cached -------------------------------- */
 
-    @Ignore(REASON_ANALYTIC_PARTIAL)
+    /**
+     * Phase 5e.5b-CFC-d-10 body-fill — 1:1 inventory delegate to the
+     * canonical implementation in
+     * {@link AnalyticHestonEngineTest#blackScholesLimit}, which exercises
+     * the C++ {@code testAnalyticVsBlack} spirit (sigma=1e-4 vol-of-vol
+     * collapses Heston into a Black-Scholes put on the forward) at the
+     * loose-numerical tier.
+     */
     @Test
-    public void testAnalyticVsBlack() { fail("not implemented; see AnalyticHestonEngineTest#blackScholesLimit"); }
+    public void testAnalyticVsBlack() {
+        new AnalyticHestonEngineTest().blackScholesLimit();
+    }
 
-    @Ignore(REASON_ANALYTIC_PARTIAL)
+    /**
+     * Phase 5e.5b-CFC-d-10 body-fill — 1:1 inventory delegate to the
+     * canonical implementation in
+     * {@link AnalyticHestonEngineTest#cachedAnalyticValueOtmCall}, which
+     * reproduces the C++ {@code testAnalyticVsCached} expected1
+     * = 0.0404774515.
+     */
     @Test
-    public void testAnalyticVsCached() { fail("not implemented; see AnalyticHestonEngineTest#cachedAnalyticValueOtmCall"); }
+    public void testAnalyticVsCached() {
+        new AnalyticHestonEngineTest().cachedAnalyticValueOtmCall();
+    }
 
     /* ---- 3. FD engines ------------------------------------------------- */
 
