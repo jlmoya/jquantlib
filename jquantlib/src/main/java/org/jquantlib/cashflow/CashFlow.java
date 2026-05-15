@@ -22,6 +22,8 @@
 
 package org.jquantlib.cashflow;
 
+import org.jquantlib.Settings;
+import org.jquantlib.time.Date;
 import org.jquantlib.util.PolymorphicVisitable;
 import org.jquantlib.util.PolymorphicVisitor;
 import org.jquantlib.util.Visitor;
@@ -41,6 +43,64 @@ public abstract class CashFlow extends Event implements Comparable<CashFlow> {
 	 * @return amount of the cash flow. The amount is not discounted, i.e., it is the actual amount paid at the cash flow date.
 	 */
 	public abstract double amount();
+
+    //
+    // overrides Event::hasOccurred to honor C++ semantics
+    //
+
+    /**
+     * Mirrors C++ {@code CashFlow::hasOccurred(refDate, includeRefDate)}
+     * (cashflow.cpp v1.42.1 lines 27-49). Adds the
+     * {@link Settings#includeTodaysCashFlows()} override to the base
+     * {@link Event#hasOccurred(Date, Boolean)} behavior.
+     *
+     * <p>Boolean parameter mirrors C++ {@code ext::optional<bool>}:
+     * {@code null} means "use {@link Settings#includeReferenceDateEvents()}".
+     *
+     * <p>If {@code refDate} equals the current evaluation date (or is
+     * null/default), the {@code includeTodaysCashFlows} setting (when
+     * non-null) overrides the {@code includeRefDate} parameter.
+     */
+    @Override
+    public boolean hasOccurred(final Date refDate, Boolean includeRefDate) /* @ReadOnly */ {
+        // Easy and quick handling of most cases (cashflow.cpp:30-37):
+        // when refDate is set and unambiguously before/after the cash-flow
+        // date, return without touching settings.
+        if (refDate != null && !refDate.isNull()) {
+            final Date cf = date();
+            if (refDate.lt(cf)) {
+                return false;
+            }
+            if (cf.lt(refDate)) {
+                return true;
+            }
+        }
+
+        // refDate equals (or is null/default-construed as) the evaluation
+        // date — apply the includeTodaysCashFlows override (cashflow.cpp:39-47).
+        final Settings settings = new Settings();
+        if (refDate == null
+                || refDate.isNull()
+                || refDate.equals(settings.evaluationDate())) {
+            final Boolean includeToday = settings.includeTodaysCashFlows();
+            if (includeToday != null) {
+                includeRefDate = includeToday;
+            }
+        }
+        return super.hasOccurred(refDate, includeRefDate);
+    }
+
+    /** Overload — delegates to the {@link Boolean}-typed C++-aligned form. */
+    @Override
+    public boolean hasOccurred(final Date refDate) /* @ReadOnly */ {
+        return hasOccurred(refDate, (Boolean) null);
+    }
+
+    /** Overload — delegates to the {@link Boolean}-typed C++-aligned form. */
+    @Override
+    public boolean hasOccurred(final Date refDate, final boolean includeRefDate) /* @ReadOnly */ {
+        return hasOccurred(refDate, Boolean.valueOf(includeRefDate));
+    }
 
 
     //

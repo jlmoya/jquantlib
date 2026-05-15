@@ -106,6 +106,31 @@ public abstract class Event implements Observable, PolymorphicVisitable {
         }
     }
 
+    /**
+     * C++-aligned overload mirroring
+     * {@code Event::hasOccurred(refDate, ext::optional<bool> includeRefDate)}
+     * (event.cpp v1.42.1 lines 28-39). Java's nullable {@link Boolean}
+     * corresponds to {@code ext::optional<bool>}: when {@code null}, the
+     * {@link Settings#includeReferenceDateEvents()} flag is consulted; when
+     * non-null, the parameter wins.
+     *
+     * <p>If {@code refDate} is {@code null} or the null-date sentinel, the
+     * current evaluation date is used (matching C++
+     * {@code d != Date() ? d : Settings::instance().evaluationDate()}).
+     */
+    public boolean hasOccurred(final Date refDate, final Boolean includeRefDate) /* @ReadOnly */ {
+        final Settings settings = new Settings();
+        final Date d = (refDate == null || refDate.isNull()) ? settings.evaluationDate() : refDate;
+        final boolean includeRefDateEvent = includeRefDate != null
+                ? includeRefDate.booleanValue()
+                : settings.includeReferenceDateEvents();
+        if (includeRefDateEvent) {
+            return date().compareTo(d) < 0;
+        } else {
+            return date().compareTo(d) <= 0;
+        }
+    }
+
 
     //
     // implements Observable

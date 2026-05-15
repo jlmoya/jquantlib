@@ -65,6 +65,25 @@ public class Settings {
      */
     private static final String ENFORCES_TODAYS_HISTORIC_FIXINGS = "ENFORCES_TODAYS_HISTORIC_FIXINGS";
 
+    /**
+     * Mirrors C++ {@code Settings::includeReferenceDateEvents()}
+     * (settings.hpp v1.42.1 lines 95-96, 113). When {@code true}, an
+     * {@link org.jquantlib.cashflow.Event} occurring on the reference
+     * date is treated as <em>not yet</em> happened (i.e., still
+     * pending). Default is {@code false}, matching C++.
+     */
+    private static final String INCLUDE_REFERENCE_DATE_EVENTS = "INCLUDE_REFERENCE_DATE_EVENTS";
+
+    /**
+     * Mirrors C++ {@code Settings::includeTodaysCashFlows()}
+     * (settings.hpp v1.42.1 lines 105-106, 114). Java's nullable
+     * {@link Boolean} corresponds to C++ {@code ext::optional<bool>}:
+     * {@code null} means unset (no override), {@code true}/{@code false}
+     * apply the override at the evaluation date. Default is {@code null}
+     * (unset), matching C++ default-constructed {@code optional}.
+     */
+    private static final String INCLUDE_TODAYS_CASHFLOWS = "INCLUDE_TODAYS_CASHFLOWS";
+
 
     /**
      * The relative error of the approximation has absolute value less than 1.15e-9.
@@ -136,6 +155,51 @@ public class Settings {
         attrs.get().put(REFINE_TO_FULL_MACHINE_PRECISION_USING_HALLEYS_METHOD, refineToFullMachinePrecisionUsingHalleysMethod);
     }
 
+    /**
+     * Mirrors C++ {@code Settings::includeReferenceDateEvents() const}
+     * (settings.hpp v1.42.1 line 96).
+     *
+     * @return whether events occurring on the reference date should
+     *         be considered as not-yet-happened. Default is {@code false}.
+     */
+    public boolean includeReferenceDateEvents() {
+        final Object v = attrs.get().get(INCLUDE_REFERENCE_DATE_EVENTS);
+        return v == null ? false : (Boolean) v;
+    }
+
+    /**
+     * Mirrors C++ {@code Settings::includeReferenceDateEvents()} (mutable
+     * reference, settings.hpp v1.42.1 line 95). Java exposes this as a
+     * fluent setter returning {@code this} for chaining.
+     */
+    public Settings setIncludeReferenceDateEvents(final boolean v) {
+        attrs.get().put(INCLUDE_REFERENCE_DATE_EVENTS, v);
+        return this;
+    }
+
+    /**
+     * Mirrors C++ {@code Settings::includeTodaysCashFlows() const}
+     * (settings.hpp v1.42.1 line 106). Returns {@code null} when unset
+     * (Java's nullable {@link Boolean} = C++ {@code ext::optional<bool>}).
+     */
+    public Boolean includeTodaysCashFlows() {
+        return (Boolean) attrs.get().get(INCLUDE_TODAYS_CASHFLOWS);
+    }
+
+    /**
+     * Mirrors C++ {@code Settings::includeTodaysCashFlows()} (mutable
+     * reference, settings.hpp v1.42.1 line 105). Pass {@code null} to
+     * unset (equivalent to assigning {@code ext::nullopt} in C++).
+     */
+    public Settings setIncludeTodaysCashFlows(final Boolean v) {
+        if (v == null) {
+            attrs.get().remove(INCLUDE_TODAYS_CASHFLOWS);
+        } else {
+            attrs.get().put(INCLUDE_TODAYS_CASHFLOWS, v);
+        }
+        return this;
+    }
+
 
 
     /**
@@ -190,6 +254,12 @@ public class Settings {
             map.put(USE_INDEXED_COUPON, false);
             map.put(REFINE_TO_FULL_MACHINE_PRECISION_USING_HALLEYS_METHOD, false);
             map.put(EVALUATION_DATE, new DateProxy());
+            // C++-aligned defaults (settings.hpp v1.42.1 lines 113-114):
+            //   includeReferenceDateEvents_ = false
+            //   includeTodaysCashFlows_ = ext::optional<bool>{} (unset)
+            map.put(INCLUDE_REFERENCE_DATE_EVENTS, false);
+            // Note: INCLUDE_TODAYS_CASHFLOWS is intentionally NOT pre-set —
+            // missing key represents the C++ "ext::nullopt" (unset) default.
             return map;
         }
     }
