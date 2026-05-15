@@ -206,10 +206,34 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
     /**
      * Reinitialize the generator as if just built with the given long seed.
      * <p>
-     * The state of the generator is exactly the same as a new generator built with the same seed.
+     * The state of the generator is exactly the same as a new generator built
+     * with the same seed via the {@code (int)} constructor — i.e. the long is
+     * narrowed to its low 32 bits and dispatched to the
+     * {@code init_genrand}-style {@link #setSeed(int)} path. This matches the
+     * C++ v1.42.1 reference, where
+     * {@code MersenneTwisterUniformRng(unsigned long seed)} runs
+     * {@code seedInitialization(seed)}, which assigns
+     * {@code mt[0] = s & 0xffffffffUL} and continues with the standard
+     * {@code init_genrand} recurrence.
      * </p>
      *
-     * @param seed the initial seed (64 bits integer)
+     * <p>
+     * <b>Bug history (Phase 5e.5b-CFC-d-23, fix commit follows
+     * {@code ea0b8ab7}):</b> the previous implementation forwarded to
+     * {@link #setSeed(int[])} with two int halves of the long. That dispatched
+     * to the MT {@code init_by_array} path, producing a completely different
+     * initial state versus C++. Concrete divergence:
+     * {@code seed = 86421UL} yielded a first {@code uint32} of
+     * {@code 919700544} on Java vs {@code 710307208} on C++. Every Java MC
+     * engine that took a {@code long seed} (via
+     * {@link RandomSequenceGenerator#RandomSequenceGenerator(Class, int, long)}
+     * reflective construction) was affected. C++ source location:
+     * {@code ql/math/randomnumbers/mt19937uniformrng.cpp}, function
+     * {@code MersenneTwisterUniformRng::seedInitialization}.
+     * </p>
+     *
+     * @param seed the initial seed (low 32 bits used, matching C++
+     *             {@code unsigned long} semantics)
      */
     public void setSeed(final long seed) {
         if (mt == null) {
@@ -218,7 +242,10 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
             // constructors after array allocation
             return;
         }
-        setSeed(new int[] { (int) (seed >>> 32), (int) (seed & 0xffffffffl) });
+        // C++ v1.42.1: mt[0] = s & 0xffffffffUL; init_genrand path.
+        // Narrow to the low 32 bits and dispatch to the int overload, which
+        // implements the same Knuth-multiplier recurrence as C++.
+        setSeed((int) (seed & 0xffffffffL));
     }
 
     /**
