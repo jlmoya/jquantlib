@@ -33,7 +33,6 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.calendars.NullCalendar;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -43,18 +42,15 @@ import org.junit.Test;
  * <p>Exercises the Margrabe two-asset exchange option (option to exchange
  * one risky asset for another), in both European and American flavours.
  *
- * <p><strong>Body-fills (Phase Body-Fill-5):</strong>
+ * <p><strong>Body-fills (Phase Body-Fill-5 + Phase 5e.5b-CFC-d-18):</strong>
  * <ul>
  *   <li>{@link #testEuroExchangeTwoAssets()} — 21 reference cases from C++
  *       (article p.52 + Excel quantity tests), tolerance 1e-3.
  *   <li>{@link #testAmericanExchangeTwoAssets()} — 4 reference cases from
  *       Bjerksund-Stensland 1993 worked example, tolerance 1.0e-2.
- * </ul>
- *
- * <p><strong>Carry-forward to Phase 5i.5</strong>:
- * <ul>
- *   <li>{@code testGreeks} — bulky perturbation matrix for two-asset Greeks
- *       (delta1, delta2, gamma1, gamma2, theta, rho). Tractable but ~250 LOC.
+ *   <li>{@link #testGreeks()} — finite-difference cross-check of delta1,
+ *       delta2, gamma1, gamma2, theta, rho on the analytic European
+ *       Margrabe engine, tolerance 1.0e-5.
  * </ul>
  *
  * <p>Source: {@code test-suite/margrabeoption.cpp} v1.42.1 @ {@code 099987f0ca}.
@@ -64,11 +60,6 @@ public class MargrabeOptionTest {
     public MargrabeOptionTest() {
         QL.info("::::: " + getClass().getSimpleName() + " :::::");
     }
-
-    private static final String REASON_GREEKS =
-            "Phase 5i.5: MargrabeOption ported; numerical-derivative Greeks harness for "
-          + "two-asset payoffs needs body fill from C++ margrabeoption.cpp::testGreeks "
-          + "(bulky perturbation matrix ~250 LOC; deferred).";
 
     /** C++ helper {@code timeToDays(Time t, Integer daysPerYear=360)}. */
     private static int timeToDays(final double t) {
@@ -362,7 +353,194 @@ public class MargrabeOptionTest {
         assertTrue("testAmericanExchangeTwoAssets passed " + values.length + " cases", true);
     }
 
-    @Ignore(REASON_GREEKS)
+    /**
+     * Port of C++ {@code margrabeoption.cpp::testGreeks} (lines 288-446
+     * in v1.42.1). For each (residualTime, qRates, rRates) combination
+     * the analytic European Margrabe Greek (delta1, delta2, gamma1, gamma2,
+     * theta, rho) returned by {@link AnalyticEuropeanMargrabeEngine} is
+     * compared to a numerical finite-difference approximation. Tolerance
+     * 1e-5 (relative-or-absolute, falling back to absolute when the
+     * reference is zero — see {@link #relativeError(double, double, double)}).
+     */
     @Test
-    public void testGreeks() { fail("not implemented"); }
+    public void testGreeks() {
+        QL.info("Testing analytic European exchange option greeks...");
+
+        final java.util.Map<String, Double> tolerance = new java.util.HashMap<String, Double>();
+        tolerance.put("delta1", 1.0e-5);
+        tolerance.put("delta2", 1.0e-5);
+        tolerance.put("gamma1", 1.0e-5);
+        tolerance.put("gamma2", 1.0e-5);
+        tolerance.put("theta",  1.0e-5);
+        tolerance.put("rho",    1.0e-5);
+
+        final double[] underlyings1  = { 22.0 };
+        final double[] underlyings2  = { 20.0 };
+        final double[] qRates1       = { 0.06, 0.16, 0.04 };
+        final double[] qRates2       = { 0.04, 0.14, 0.02 };
+        final double[] rRates        = { 0.1, 0.2, 0.08 };
+        final double[] residualTimes = { 0.1, 0.5 };
+        final double[] vols1         = { 0.20 };
+        final double[] vols2         = { 0.15, 0.20, 0.25 };
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Date(15, Month.January, 2026);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot1 = new SimpleQuote(0.0);
+        final SimpleQuote spot2 = new SimpleQuote(0.0);
+        final SimpleQuote qRate1 = new SimpleQuote(0.0);
+        final SimpleQuote qRate2 = new SimpleQuote(0.0);
+        final SimpleQuote rRate  = new SimpleQuote(0.0);
+        final SimpleQuote vol1   = new SimpleQuote(0.0);
+        final SimpleQuote vol2   = new SimpleQuote(0.0);
+
+        final Handle<? extends Quote> spot1H = new Handle<SimpleQuote>(spot1);
+        final Handle<? extends Quote> spot2H = new Handle<SimpleQuote>(spot2);
+        final Calendar cal = new NullCalendar();
+        // Settlement-days (=0) variant so the term structures follow the
+        // evaluation date — required for the theta finite-difference probe
+        // (perturbing today via Settings).
+        final Handle<YieldTermStructure> qTS1 = new Handle<YieldTermStructure>(
+                new FlatForward(0, cal, new Handle<Quote>(qRate1), dc));
+        final Handle<YieldTermStructure> qTS2 = new Handle<YieldTermStructure>(
+                new FlatForward(0, cal, new Handle<Quote>(qRate2), dc));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(0, cal, new Handle<Quote>(rRate), dc));
+        final Handle<BlackVolTermStructure> volTS1 = new Handle<BlackVolTermStructure>(
+                new BlackConstantVol(0, cal, new Handle<Quote>(vol1), dc));
+        final Handle<BlackVolTermStructure> volTS2 = new Handle<BlackVolTermStructure>(
+                new BlackConstantVol(0, cal, new Handle<Quote>(vol2), dc));
+
+        final GeneralizedBlackScholesProcess proc1 = new GeneralizedBlackScholesProcess(
+                spot1H, qTS1, rTS, volTS1);
+        final GeneralizedBlackScholesProcess proc2 = new GeneralizedBlackScholesProcess(
+                spot2H, qTS2, rTS, volTS2);
+
+        for (final double residualTime : residualTimes) {
+            final Date exDate = today.add(timeToDays(residualTime));
+            final Exercise exercise = new EuropeanExercise(exDate);
+
+            // C++ iterates correlation = -0.5 in the j-loop and pre-builds
+            // a 2x2 matrix; the engine itself only consumes the scalar rho.
+            final double correlation = -0.5;
+
+            final AnalyticEuropeanMargrabeEngine engine =
+                    new AnalyticEuropeanMargrabeEngine(proc1, proc2, correlation);
+            final MargrabeOption option = new MargrabeOption(1, 1, exercise);
+            option.setPricingEngine(engine);
+
+            for (int l = 0; l < underlyings1.length; l++) {
+                for (int m = 0; m < qRates1.length; m++) {
+                    for (final double n : rRates) {
+                        for (int p = 0; p < vols1.length; p++) {
+                            final double u1 = underlyings1[l];
+                            final double u2 = underlyings2[l];
+                            final double q1 = qRates1[m];
+                            final double q2 = qRates2[m];
+                            final double r  = n;
+                            final double v1 = vols1[p];
+                            final double v2 = vols2[p];
+
+                            spot1.setValue(u1);
+                            spot2.setValue(u2);
+                            qRate1.setValue(q1);
+                            qRate2.setValue(q2);
+                            rRate.setValue(r);
+                            vol1.setValue(v1);
+                            vol2.setValue(v2);
+
+                            final double value = option.NPV();
+
+                            final java.util.Map<String, Double> calculated = new java.util.HashMap<String, Double>();
+                            calculated.put("delta1", option.delta1());
+                            calculated.put("delta2", option.delta2());
+                            calculated.put("gamma1", option.gamma1());
+                            calculated.put("gamma2", option.gamma2());
+                            calculated.put("theta",  option.theta());
+                            calculated.put("rho",    option.rho());
+
+                            if (value > spot1.value() * 1.0e-5) {
+                                final java.util.Map<String, Double> expected = new java.util.HashMap<String, Double>();
+
+                                // perturb spot1 and get delta1 / gamma1
+                                double u = u1;
+                                final double du = u * 1.0e-4;
+                                spot1.setValue(u + du);
+                                double valueP = option.NPV();
+                                double deltaP = option.delta1();
+                                spot1.setValue(u - du);
+                                double valueM = option.NPV();
+                                double deltaM = option.delta1();
+                                spot1.setValue(u);
+                                expected.put("delta1", (valueP - valueM) / (2.0 * du));
+                                expected.put("gamma1", (deltaP - deltaM) / (2.0 * du));
+
+                                // perturb spot2 and get delta2 / gamma2
+                                u = u2;
+                                spot2.setValue(u + du);
+                                valueP = option.NPV();
+                                deltaP = option.delta2();
+                                spot2.setValue(u - du);
+                                valueM = option.NPV();
+                                deltaM = option.delta2();
+                                spot2.setValue(u);
+                                expected.put("delta2", (valueP - valueM) / (2.0 * du));
+                                expected.put("gamma2", (deltaP - deltaM) / (2.0 * du));
+
+                                // perturb risk-free rate and get rho
+                                final double dr = r * 1.0e-4;
+                                rRate.setValue(r + dr);
+                                valueP = option.NPV();
+                                rRate.setValue(r - dr);
+                                valueM = option.NPV();
+                                rRate.setValue(r);
+                                expected.put("rho", (valueP - valueM) / (2.0 * dr));
+
+                                // perturb evaluation date and get theta
+                                final double dT =
+                                        dc.yearFraction(today.sub(1), today.add(1));
+                                new Settings().setEvaluationDate(today.sub(1));
+                                valueM = option.NPV();
+                                new Settings().setEvaluationDate(today.add(1));
+                                valueP = option.NPV();
+                                new Settings().setEvaluationDate(today);
+                                expected.put("theta", (valueP - valueM) / dT);
+
+                                for (final String greek : calculated.keySet()) {
+                                    final double expct = expected.get(greek);
+                                    final double calcl = calculated.get(greek);
+                                    final double tol   = tolerance.get(greek);
+                                    final double error = relativeError(expct, calcl, u1);
+                                    if (error > tol) {
+                                        fail("Margrabe Greek " + greek
+                                                + ": expected=" + expct
+                                                + " calculated=" + calcl
+                                                + " error=" + error + " tolerance=" + tol
+                                                + "\n    s1=" + u1 + " s2=" + u2
+                                                + " q1=" + q1 + " q2=" + q2 + " r=" + r
+                                                + " v1=" + v1 + " v2=" + v2 + " rho=" + correlation
+                                                + " t=" + residualTime);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        assertTrue("testGreeks completed", true);
+    }
+
+    /**
+     * C++ helper {@code relativeError(Real x1, Real x2, Real reference)} from
+     * {@code test-suite/utilities.cpp} — falls back to absolute error when
+     * the reference is zero.
+     */
+    private static double relativeError(final double x1, final double x2, final double reference) {
+        if (reference != 0.0) {
+            return Math.abs(x1 - x2) / reference;
+        }
+        return Math.abs(x1 - x2);
+    }
 }
