@@ -31,7 +31,6 @@ import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.SouthAfrica;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -42,11 +41,9 @@ import org.junit.Test;
  *
  * Phase 5c — calendar/time/indexes test ports.
  *
- * Phase 5c.5 deferral: cases for HalfMonthModifiedFollowing and Nearest are
- * declared in C++ v1.42.1's BusinessDayConvention enum but are absent in the
- * Java enum (org.jquantlib.time.BusinessDayConvention). Adding the enum values
- * requires non-trivial production-code changes to Calendar.adjust dispatch
- * and is deferred to Phase 5c.5.
+ * Phase 5e.5b-CFC-d-14: HalfMonthModifiedFollowing and Nearest enum values
+ * (and the corresponding {@link Calendar#adjust(Date, BusinessDayConvention)}
+ * dispatch) ported from C++ v1.42.1; both tests un-ignored.
  *
  * @author Jose Moya
  */
@@ -205,22 +202,73 @@ public class BusinessDayConventionsTest {
     }
 
     /**
-     * HalfMonthModifiedFollowing convention is in v1.42.1 but missing from the
-     * Java BusinessDayConvention enum. Deferred to Phase 5c.5.
+     * HalfMonthModifiedFollowing convention. Mirrors C++ v1.42.1
+     * test-suite/businessdayconventions.cpp lines 91-97.
      */
-    @Ignore("Phase 5c.5: HalfMonthModifiedFollowing enum value missing from Java BusinessDayConvention; needs Calendar.adjust dispatch update")
     @Test
     public void testHalfMonthModifiedFollowing() {
-        // Cases: 7 entries in C++ test-suite/businessdayconventions.cpp lines 91-97
+        QL.info("Testing HalfMonthModifiedFollowing business day convention...");
+
+        final Calendar sa = new SouthAfrica();
+
+        final SingleCase[] cases = new SingleCase[] {
+                sc(sa, BusinessDayConvention.HalfMonthModifiedFollowing,
+                        new Date(3, Month.February, 2015), new Period(1, TimeUnit.Months), false,
+                        new Date(3, Month.March, 2015)),
+                sc(sa, BusinessDayConvention.HalfMonthModifiedFollowing,
+                        new Date(3, Month.February, 2015), new Period(4, TimeUnit.Days), false,
+                        new Date(9, Month.February, 2015)),
+                sc(sa, BusinessDayConvention.HalfMonthModifiedFollowing,
+                        new Date(31, Month.January, 2015), new Period(1, TimeUnit.Months), true,
+                        new Date(27, Month.February, 2015)),
+                sc(sa, BusinessDayConvention.HalfMonthModifiedFollowing,
+                        new Date(31, Month.January, 2015), new Period(1, TimeUnit.Months), false,
+                        new Date(27, Month.February, 2015)),
+                sc(sa, BusinessDayConvention.HalfMonthModifiedFollowing,
+                        new Date(3, Month.January, 2015), new Period(1, TimeUnit.Weeks), false,
+                        new Date(12, Month.January, 2015)),
+                sc(sa, BusinessDayConvention.HalfMonthModifiedFollowing,
+                        new Date(21, Month.March, 2015), new Period(1, TimeUnit.Weeks), false,
+                        new Date(30, Month.March, 2015)),
+                sc(sa, BusinessDayConvention.HalfMonthModifiedFollowing,
+                        new Date(7, Month.February, 2015), new Period(1, TimeUnit.Months), false,
+                        new Date(9, Month.March, 2015)),
+        };
+
+        runCases(cases);
     }
 
     /**
-     * Nearest convention is in v1.42.1 but missing from the Java
-     * BusinessDayConvention enum. Deferred to Phase 5c.5.
+     * Nearest convention. Mirrors C++ v1.42.1
+     * test-suite/businessdayconventions.cpp lines 100-105.
      */
-    @Ignore("Phase 5c.5: Nearest enum value missing from Java BusinessDayConvention; needs Calendar.adjust dispatch update")
     @Test
     public void testNearest() {
-        // Cases: 6 entries in C++ test-suite/businessdayconventions.cpp lines 100-105
+        QL.info("Testing Nearest business day convention...");
+
+        final Calendar sa = new SouthAfrica();
+
+        final SingleCase[] cases = new SingleCase[] {
+                sc(sa, BusinessDayConvention.Nearest,
+                        new Date(3, Month.February, 2015), new Period(1, TimeUnit.Months), false,
+                        new Date(3, Month.March, 2015)),
+                sc(sa, BusinessDayConvention.Nearest,
+                        new Date(3, Month.February, 2015), new Period(4, TimeUnit.Days), false,
+                        new Date(9, Month.February, 2015)),
+                sc(sa, BusinessDayConvention.Nearest,
+                        new Date(16, Month.April, 2015), new Period(1, TimeUnit.Months), false,
+                        new Date(15, Month.May, 2015)),
+                sc(sa, BusinessDayConvention.Nearest,
+                        new Date(17, Month.April, 2015), new Period(1, TimeUnit.Months), false,
+                        new Date(18, Month.May, 2015)),
+                sc(sa, BusinessDayConvention.Nearest,
+                        new Date(4, Month.March, 2015), new Period(1, TimeUnit.Months), false,
+                        new Date(2, Month.April, 2015)),
+                sc(sa, BusinessDayConvention.Nearest,
+                        new Date(2, Month.April, 2015), new Period(1, TimeUnit.Months), false,
+                        new Date(4, Month.May, 2015)),
+        };
+
+        runCases(cases);
     }
 }

@@ -29,6 +29,7 @@ import org.jquantlib.QL;
 import org.jquantlib.currencies.Currency;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.indexes.BMAIndex;
+import org.jquantlib.indexes.Euribor3M;
 import org.jquantlib.indexes.Euribor6M;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.Index;
@@ -48,14 +49,14 @@ import org.junit.Test;
  *
  * Phase 5c — calendar/time/indexes test ports.
  *
- * Phase 5c.5 deferrals: tests that exercise classes not yet ported:
+ * Phase 5e.5b-CFC-d-14: {@code Index.hasHistoricalFixing}, {@code BespokeCalendar},
+ * and {@code CustomIborIndex} ported from C++ v1.42.1 — un-ignores
+ * {@code testFixingHasHistoricalFixing} and {@code testCustomIborIndex}.
+ *
+ * <p>Remaining deferral:
  * <ul>
- *   <li>{@code testFixingHasHistoricalFixing} — needs {@code Index.hasHistoricalFixing}
- *       (a v1.42.1 addition); not present in Java {@link Index}.</li>
- *   <li>{@code testCustomIborIndex} — needs {@code BespokeCalendar} and
- *       {@code CustomIborIndex} (both unported).</li>
- *   <li>{@code testCdiIndex} — needs {@code Cdi} index, {@code Brazil} business-252
- *       calendar with settlement variant, and {@code Business252} day counter.</li>
+ *   <li>{@code testCdiIndex} — needs {@code Cdi} index, {@code Brazil}
+ *       business-252 calendar variant, and {@code Business252} day counter.</li>
  * </ul>
  *
  * Reference: test-suite/indexes.cpp.
@@ -182,20 +183,146 @@ public class IndexesTest {
                 maturity6d.lt(maturity7d));
     }
 
-    @Ignore("Phase 5c.5: Index.hasHistoricalFixing (v1.42.1 addition) not yet ported to Java Index")
+    /**
+     * Verifies {@code Index.hasHistoricalFixing(Date)} across freshly
+     * constructed and reused index instances, with addFixing /
+     * clearHistories cycles.
+     *
+     * Reference: test-suite/indexes.cpp:79-118.
+     */
     @Test
     public void testFixingHasHistoricalFixing() {
-        // Tests Index.hasHistoricalFixing across Euribor3M / Euribor6M after
-        // addFixing/clearHistories cycles.
-        // Reference: test-suite/indexes.cpp:79-118.
+        QL.info("Testing if index has historical fixings...");
+
+        final Euribor3M euribor3M = new Euribor3M();
+        final Euribor6M euribor6M = new Euribor6M();
+        final Euribor6M euribor6MAlt = new Euribor6M();
+
+        Date today = new org.jquantlib.Settings().evaluationDate().clone();
+        while (!euribor6M.isValidFixingDate(today)) {
+            today.dec();
+        }
+
+        euribor6M.addFixing(today, 0.01);
+
+        // Euribor3M never had a fixing — must report false.
+        assertEquals("historical fixing erroneously found for " + euribor3M.name(),
+                false, euribor3M.hasHistoricalFixing(today));
+
+        // Euribor6M had a fixing — must report true (whether queried via the
+        // instance that added it or a different instance with the same name,
+        // since IndexManager keys on name()).
+        assertEquals("historical fixing not found for " + euribor6M.name(),
+                true, euribor6M.hasHistoricalFixing(today));
+        assertEquals("historical fixing not found for " + euribor6MAlt.name(),
+                true, euribor6MAlt.hasHistoricalFixing(today));
+
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistories();
+
+        assertEquals("historical fixing erroneously found for " + euribor3M.name(),
+                false, euribor3M.hasHistoricalFixing(today));
+        assertEquals("historical fixing erroneously found for " + euribor6M.name(),
+                false, euribor6M.hasHistoricalFixing(today));
+        assertEquals("historical fixing erroneously found for " + euribor6MAlt.name(),
+                false, euribor6MAlt.hasHistoricalFixing(today));
     }
 
-    @Ignore("Phase 5c.5: BespokeCalendar and CustomIborIndex not yet ported from v1.42.1")
+    /**
+     * Verifies {@code CustomIborIndex} with separate fixing / value /
+     * maturity calendars; clone behavior; fixingDate / valueDate /
+     * maturityDate semantics.
+     *
+     * Reference: test-suite/indexes.cpp:148-200.
+     */
     @Test
     public void testCustomIborIndex() {
-        // Verifies CustomIborIndex with separate fixing / value / maturity
-        // calendars; clone behavior; fixingDate / valueDate / maturityDate.
-        // Reference: test-suite/indexes.cpp:148-200.
+        QL.info("Testing CustomIborIndex...");
+
+        final org.jquantlib.time.calendars.BespokeCalendar fixCal =
+                new org.jquantlib.time.calendars.BespokeCalendar("Fixings");
+        fixCal.addHoliday(new Date(8, Month.January, 2025));
+
+        final org.jquantlib.time.calendars.BespokeCalendar valCal =
+                new org.jquantlib.time.calendars.BespokeCalendar("Value");
+        valCal.addHoliday(new Date(21, Month.January, 2025));
+
+        final org.jquantlib.time.calendars.BespokeCalendar matCal =
+                new org.jquantlib.time.calendars.BespokeCalendar("Maturity");
+        matCal.addHoliday(new Date(7, Month.January, 2025));
+        matCal.addHoliday(new Date(15, Month.January, 2025));
+        matCal.addHoliday(new Date(23, Month.April, 2025));
+        matCal.addHoliday(new Date(30, Month.April, 2025));
+
+        final org.jquantlib.indexes.ibor.CustomIborIndex ibor =
+                new org.jquantlib.indexes.ibor.CustomIborIndex(
+                        "Custom Ibor",
+                        new Period(3, TimeUnit.Months),
+                        2,
+                        new Currency(),
+                        fixCal,
+                        valCal,
+                        matCal,
+                        BusinessDayConvention.ModifiedFollowing,
+                        true,
+                        new Actual360());
+
+        final org.jquantlib.quotes.Handle<IborIndex> iborCloneHandle =
+                ibor.clone(new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>());
+        final IborIndex iborClone = iborCloneHandle.currentLink();
+
+        // Exercise both the original and the cloned index — both should give
+        // identical answers since clone preserves all calendars / convention.
+        for (final IborIndex index : new IborIndex[] { ibor, iborClone }) {
+            final org.jquantlib.indexes.ibor.CustomIborIndex asCustom =
+                    (org.jquantlib.indexes.ibor.CustomIborIndex) index;
+
+            assertEquals("fixingCalendar mismatch",
+                    fixCal.name(), index.fixingCalendar().name());
+            assertEquals("valueCalendar mismatch",
+                    valCal.name(), asCustom.valueCalendar().name());
+            assertEquals("maturityCalendar mismatch",
+                    matCal.name(), asCustom.maturityCalendar().name());
+
+            // valueDate(8-Jan-2025): 8-Jan is a fixing-calendar holiday →
+            // isValidFixingDate fails. The C++ test asserts this throws.
+            try {
+                index.valueDate(new Date(8, Month.January, 2025));
+                fail("expected exception when valueDate called with invalid fixing date 8-Jan-2025");
+            } catch (final Exception expected) {
+                // Phase 5e.5b-CFC-d-14: matches C++ ExpectedErrorMessage
+                // "Fixing date January 8th, 2025 is not valid".
+            }
+
+            assertEquals("valueDate(7-Jan-2025) mismatch",
+                    new Date(9, Month.January, 2025),
+                    index.valueDate(new Date(7, Month.January, 2025)));
+            assertEquals("valueDate(13-Jan-2025) mismatch",
+                    new Date(16, Month.January, 2025),
+                    index.valueDate(new Date(13, Month.January, 2025)));
+            assertEquals("valueDate(20-Jan-2025) mismatch",
+                    new Date(23, Month.January, 2025),
+                    index.valueDate(new Date(20, Month.January, 2025)));
+
+            assertEquals("fixingDate(23-Jan-2025) mismatch",
+                    new Date(20, Month.January, 2025),
+                    index.fixingDate(new Date(23, Month.January, 2025)));
+            assertEquals("fixingDate(16-Jan-2025) mismatch",
+                    new Date(14, Month.January, 2025),
+                    index.fixingDate(new Date(16, Month.January, 2025)));
+            assertEquals("fixingDate(10-Jan-2025) mismatch",
+                    new Date(7, Month.January, 2025),
+                    index.fixingDate(new Date(10, Month.January, 2025)));
+
+            assertEquals("maturityDate(23-Jan-2025) mismatch",
+                    new Date(24, Month.April, 2025),
+                    index.maturityDate(new Date(23, Month.January, 2025)));
+            assertEquals("maturityDate(30-Jan-2025) mismatch",
+                    new Date(29, Month.April, 2025),
+                    index.maturityDate(new Date(30, Month.January, 2025)));
+            assertEquals("maturityDate(28-Feb-2025) mismatch",
+                    new Date(31, Month.May, 2025),
+                    index.maturityDate(new Date(28, Month.February, 2025)));
+        }
     }
 
     @Ignore("Phase 5c.5: Brazil CDI index, Business252 day counter, and Brazil(Settlement) calendar variant not yet ported from v1.42.1")
