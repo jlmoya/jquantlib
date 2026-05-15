@@ -1,0 +1,98 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "coupons": [
+          {
+            "amount": 10409.843858742539,
+            "cap": 0.0435,
+            "contribution": 10404.553532852762,
+            "discount": 0.999491795846166,
+            "floor": 0.025,
+            "index": 0,
+            "isCapped": true,
+            "isFloored": true,
+            "paymentDate": {
+              "date": "2025-10-01",
+              "serial": 45931
+            }
+          },
+          {
+            "amount": 9308.205652916287,
+            "cap": 0.0435,
+            "contribution": 9299.87078590214,
+            "discount": 0.9991045678055537,
+            "floor": 0.025,
+            "index": 1,
+            "isCapped": true,
+            "isFloored": true,
+            "paymentDate": {
+              "date": "2026-01-02",
+              "serial": 46024
+            }
+          },
+          {
+            "amount": 7987.7152880544445,
+            "cap": 0.04,
+            "contribution": 7977.603920574241,
+            "discount": 0.9987341352169468,
+            "floor": 0.025,
+            "index": 2,
+            "isCapped": true,
+            "isFloored": true,
+            "paymentDate": {
+              "date": "2026-04-01",
+              "serial": 46113
+            }
+          },
+          {
+            "amount": 6977.775176457003,
+            "cap": 0.04,
+            "contribution": 6966.300366881346,
+            "discount": 0.9983555203076229,
+            "floor": 0.025,
+            "index": 3,
+            "isCapped": true,
+            "isFloored": true,
+            "paymentDate": {
+              "date": "2026-07-01",
+              "serial": 46204
+            }
+          }
+        ],
+        "diff_vs_test": 0.0,
+        "legSize": 4,
+        "npv": 34648.32860621049,
+        "npv_test_hardcoded": 34648.32860621049
+      },
+      "inputs": {
+        "averaging": "Compound",
+        "caps": [
+          0.0435,
+          0.0435,
+          0.04,
+          0.04
+        ],
+        "discountFlat": 0.0015,
+        "floors": [
+          0.025,
+          0.025,
+          0.025,
+          0.025
+        ],
+        "notional": 1000000.0,
+        "today": {
+          "date": "2025-06-01",
+          "serial": 45809
+        },
+        "vol": 0.05
+      },
+      "name": "compound_caps_and_floors"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-15T02:24:12Z",
+  "generated_by": "overnight_leg_caps_floors_probe",
+  "test_group": "cashflows/overnight_leg_caps_floors"
+}
