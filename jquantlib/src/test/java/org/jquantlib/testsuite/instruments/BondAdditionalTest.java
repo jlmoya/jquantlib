@@ -13,22 +13,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.CashFlows;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.instruments.bonds.FixedRateBond;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.bond.BondFunctions;
 import org.jquantlib.pricingengines.bond.DiscountingBondEngine;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.InterestRate;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.calendars.NullCalendar;
+import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -100,10 +108,6 @@ public class BondAdditionalTest {
             "Phase 5d.5 — requires FixedRateBond date-vector constructor "
           + "branch + reference-value cross-validation";
 
-    private static final String REASON_THIRTY_360 =
-            "Phase 5d.5 — requires Thirty360 day-count regression coverage "
-          + "for settlement on the 31st (audit + probe values needed)";
-
     private static final String REASON_FIXING =
             "Phase 5d.5 — requires audit of FloatingRateBond fixing-day "
           + "convention path + reference values";
@@ -171,7 +175,68 @@ public class BondAdditionalTest {
             fail("cleanPrice() threw: " + e.getMessage());
         }
     }
-    @Ignore(REASON_THIRTY_360) @Test public void testThirty360BondWithSettlementOn31st() { fail("not implemented"); }
+    /**
+     * Faithful Java port of {@code testThirty360BondWithSettlementOn31st}
+     * from {@code test-suite/bonds.cpp:1715-1757} (v1.42.1). Verifies the
+     * Bloomberg-cusip-3130A0X70 USD government bond reconciles yield,
+     * Macaulay duration, convexity and accrued amount under a
+     * {@link Thirty360}{@code (USA)} day count when settled on the 31st of
+     * the month (a Thirty/360 edge case where the day argument collapses
+     * to 30). Exercises {@link BondFunctions#yield},
+     * {@link BondFunctions#duration}, {@link BondFunctions#convexity} and
+     * {@link BondFunctions#accruedAmount}. Phase 5e.5b-CFC-d-12.
+     */
+    @Test
+    public void testThirty360BondWithSettlementOn31st() {
+        // cusip 3130A0X70, data is from Bloomberg (mirrors C++ comment).
+        new Settings().setEvaluationDate(new Date(28, Month.July, 2017));
+
+        final Date datedDate = new Date(13, Month.February, 2014);
+        final Date settlement = new Date(31, Month.July, 2017);
+        final Date maturity = new Date(13, Month.August, 2018);
+
+        final DayCounter dayCounter = new Thirty360(Thirty360.Convention.USA);
+        final Compounding compounding = Compounding.Compounded;
+
+        final Schedule fixedBondSchedule = new Schedule(datedDate,
+                maturity,
+                new Period(Frequency.Semiannual),
+                new UnitedStates(UnitedStates.Market.GOVERNMENTBOND),
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Forward,
+                false);
+
+        final FixedRateBond fixedRateBond = new FixedRateBond(
+                1,
+                100.0,
+                fixedBondSchedule,
+                new double[] {0.015},
+                dayCounter,
+                BusinessDayConvention.Unadjusted,
+                100.0);
+
+        final BondFunctions.Price cleanPrice =
+                new BondFunctions.Price(100.0, BondFunctions.Price.Type.Clean);
+
+        final double yield = BondFunctions.yield(fixedRateBond, cleanPrice,
+                dayCounter, compounding, Frequency.Semiannual, settlement);
+        assertEquals("yield", 0.015, yield, 1e-4);
+
+        final InterestRate ir = new InterestRate(yield, dayCounter, compounding,
+                Frequency.Semiannual);
+
+        final double duration = BondFunctions.duration(fixedRateBond, ir,
+                CashFlows.Duration.Macaulay, settlement);
+        assertEquals("duration", 1.022, duration, 1e-3);
+
+        final double convexity = BondFunctions.convexity(fixedRateBond, ir, settlement)
+                / 100.0;
+        assertEquals("convexity", 0.015, convexity, 1e-3);
+
+        final double accrued = BondFunctions.accruedAmount(fixedRateBond, settlement);
+        assertEquals("accrued", 0.7, accrued, 1e-6);
+    }
     @Ignore(REASON_NUMERIC) @Test public void testBasisPointValue() { fail("not implemented"); }
     @Ignore(REASON_FIXING) @Test public void testFixingConvention() { fail("not implemented"); }
 }
