@@ -199,6 +199,34 @@ public abstract class Index implements Observable {
     }
 
     /**
+     * Returns whether a historical fixing was stored for the given date.
+     * <p>
+     * Mirrors C++ QuantLib v1.42.1 inline {@code Index::hasHistoricalFixing(Date)}
+     * (ql/index.hpp:125-129) which delegates to
+     * {@code IndexManager::instance().hasHistoricalFixing(name(), fixingDate)}.
+     * <p>
+     * Phase 5e.5b-CFC-d-14: returns {@code true} iff the per-name history
+     * stored by {@link IndexManager} contains a non-null fixing for
+     * {@code fixingDate}. Cross-checks both {@code containsKey} and the value
+     * itself to guard against stored {@code NULL_REAL} sentinels (treated as
+     * "missing" — mirrors {@link #addFixing} semantics).
+     *
+     * @param fixingDate calendar date of the fixing (no settlement days)
+     * @return {@code true} iff a real fixing is stored for {@code fixingDate}
+     */
+    public boolean hasHistoricalFixing(final Date fixingDate) {
+        final TimeSeries<Double> h = IndexManager.getInstance().getHistory(name());
+        if (h == null) {
+            return false;
+        }
+        final Double v = h.get(fixingDate);
+        if (v == null) {
+            return false;
+        }
+        return !Closeness.isClose(v, Constants.NULL_REAL);
+    }
+
+    /**
      * Returns the historical fixing at the given date, or
      * {@link Constants#NULL_REAL} if the fixing is not stored.
      * <p>

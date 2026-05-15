@@ -231,16 +231,29 @@ public class Calendar {
      * @note The input date is not modified
      */
     public Date adjust(final Date d, final BusinessDayConvention c) /* @ReadOnly */ {
+        QL.require(d != null && !d.isNull(), "null date");
+
         if (c == BusinessDayConvention.Unadjusted)
             return d.clone();
         final Date d1 = d.clone();
-        if (c == BusinessDayConvention.Following || c == BusinessDayConvention.ModifiedFollowing) {
+        if (c == BusinessDayConvention.Following
+                || c == BusinessDayConvention.ModifiedFollowing
+                || c == BusinessDayConvention.HalfMonthModifiedFollowing) {
             while (isHoliday(d1)) {
                 d1.inc();
             }
-            if (c == BusinessDayConvention.ModifiedFollowing) {
-                if (d1.month() != d.month())
+            if (c == BusinessDayConvention.ModifiedFollowing
+                    || c == BusinessDayConvention.HalfMonthModifiedFollowing) {
+                if (d1.month() != d.month()) {
                     return adjust(d, BusinessDayConvention.Preceding);
+                }
+                if (c == BusinessDayConvention.HalfMonthModifiedFollowing) {
+                    // Phase 5e.5b-CFC-d-14: mirrors C++ v1.42.1
+                    // ql/time/calendar.cpp:101-105.
+                    if (d.dayOfMonth() <= 15 && d1.dayOfMonth() > 15) {
+                        return adjust(d, BusinessDayConvention.Preceding);
+                    }
+                }
             }
         } else if (c == BusinessDayConvention.Preceding || c == BusinessDayConvention.ModifiedPreceding) {
             while (isHoliday(d1)) {
@@ -248,8 +261,23 @@ public class Calendar {
             }
             if (c == BusinessDayConvention.ModifiedPreceding && d1.month() != d.month())
                 return adjust(d, BusinessDayConvention.Following);
-        } else
+        } else if (c == BusinessDayConvention.Nearest) {
+            // Phase 5e.5b-CFC-d-14: mirrors C++ v1.42.1
+            // ql/time/calendar.cpp:113-123. Walks +1/-1 in lockstep until one
+            // side lands on a business day; if both are still holidays the
+            // Following branch wins by tie-break.
+            final Date d2 = d.clone();
+            while (isHoliday(d1) && isHoliday(d2)) {
+                d1.inc();
+                d2.dec();
+            }
+            if (isHoliday(d1)) {
+                return d2;
+            }
+            return d1;
+        } else {
             throw new LibraryException(UKNOWN_BUSINESS_DAY_CONVENTION);
+        }
         return d1;
     }
 

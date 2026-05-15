@@ -84,5 +84,28 @@ public enum BusinessDayConvention {
 	/**
 	 * Do not adjust.
 	 */
-	Unadjusted;
+	Unadjusted,
+
+	/**
+	 * Choose the first business day after
+	 * the given holiday unless that day
+	 * crosses the mid-month (15th) or the
+	 * end of month, in which case choose
+	 * the first business day before the
+	 * holiday.
+	 *
+	 * <p>Phase 5e.5b-CFC-d-14: ported from C++ v1.42.1
+	 * ql/time/businessdayconvention.hpp:59-64.
+	 */
+	HalfMonthModifiedFollowing,
+
+	/**
+	 * Choose the nearest business day to the given holiday.
+	 * If both the preceding and following business days are
+	 * equally far away, default to following business day.
+	 *
+	 * <p>Phase 5e.5b-CFC-d-14: ported from C++ v1.42.1
+	 * ql/time/businessdayconvention.hpp:65-69.
+	 */
+	Nearest;
 }
