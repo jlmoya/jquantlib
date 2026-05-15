@@ -29,11 +29,13 @@ import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.indexes.ibor.Sofr;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.interpolations.factories.Cubic;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
@@ -266,6 +268,35 @@ public class OvernightIndexedCouponTest {
 
         CommonVarsONLeg() {
             this(new Date(1, Month.June, 2025));
+        }
+
+        /**
+         * Mirror of C++ {@code CommonVarsONLeg::setupForecastCurve}
+         * (overnightindexedcoupon.cpp:287-316). Builds a 7-knot cubic
+         * zero-rate curve and links it as the forecast curve, with
+         * extrapolation enabled.
+         */
+        void setupForecastCurve() {
+            final Date[] curveDates = new Date[]{
+                    today,
+                    new Date(30, Month.July, 2025),
+                    new Date(29, Month.August, 2025),
+                    new Date(30, Month.September, 2025),
+                    new Date(30, Month.December, 2025),
+                    new Date(30, Month.March, 2026),
+                    new Date(30, Month.June, 2026)
+            };
+            final double[] zeroRates = new double[]{
+                    0.0434, 0.0436, 0.0431, 0.0413, 0.0390, 0.0370, 0.0348
+            };
+            final InterpolatedZeroCurve<Cubic> zeroCurve =
+                    new InterpolatedZeroCurve<Cubic>(
+                            Cubic.class,
+                            curveDates, zeroRates, dc,
+                            new UnitedStates(UnitedStates.Market.SOFR),
+                            new Cubic());
+            zeroCurve.enableExtrapolation();
+            forecastCurve.linkTo(zeroCurve);
         }
 
         /**
@@ -746,7 +777,14 @@ public class OvernightIndexedCouponTest {
     @Ignore("Phase 5e.5b-CFC-d follow-up: needs leg-NPV probe (lockout=3, telescopic=true). Body-fill ready, expected value pending probe cross-validation.")
     @Test public void testOvernightLegNPV() { fail("not implemented"); }
 
-    @Ignore("Phase 5e.5b-CFC-d follow-up: needs capped/floored leg-NPV probe (lockout=0, vol=0.05). Body-fill ready, expected value pending probe cross-validation.")
+    @Ignore("Phase 5e.5b-CFC-d follow-up: testOvernightLegWithCapsAndFloors body-fill ready "
+          + "+ probe ground-truth confirmed (overnight_leg_caps_floors.json); calendar fixings "
+          + "now match C++ exactly (62 fixings in coupon[3] after Juneteenth fix to "
+          + "GovernmentBondImpl). Residual ~2.7e-7 drift in coupon[3] vanilla rate (Java "
+          + "0.027594750 vs C++ 0.027595019) localized but not pinpointed: same fixing dates, "
+          + "same Cubic-curve config, same accrualPeriod — drift is in the daily-compound "
+          + "forward-rate computation (likely sub-period dt or curve discount precision around "
+          + "the Juneteenth gap). NPV diff 0.067 on 34648.")
     @Test public void testOvernightLegWithCapsAndFloors() { fail("not implemented"); }
 
     @Test
