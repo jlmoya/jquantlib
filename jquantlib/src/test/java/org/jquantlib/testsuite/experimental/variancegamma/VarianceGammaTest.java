@@ -20,38 +20,40 @@ import org.junit.Test;
  *   <li>{@code testVarianceGamma} — exercises both
  *       {@code VarianceGammaEngine} (closed-form analytic) and
  *       {@code FFTVarianceGammaEngine} on a 16-row Madan-Carr-Chang
- *       table of European call/put values.</li>
+ *       table of European call/put values. Analytic-engine portion is
+ *       already covered by {@link VarianceGammaEngineTest
+ *       #testVarianceGammaAllCases}; FFT-engine portion remains
+ *       blocked by the missing {@code FFTVarianceGammaEngine}
+ *       production class (Phase 5h.5 carry-forward).</li>
  *   <li>{@code testSingularityAtZero} — verifies the analytic VG engine
- *       handles the integrable singularity at strike == forward.</li>
+ *       handles the integrable singularity at strike == forward. Fully
+ *       covered by the canonical {@link VarianceGammaEngineTest
+ *       #testSingularityAtZero}; the placeholder below delegates to it.</li>
  * </ul>
- *
- * <p>Both tests are <strong>already covered</strong> by the existing Java
- * class {@code org.jquantlib.testsuite.experimental.variancegamma
- * .VarianceGammaEngineTest} (Phase 4c, methods
- * {@code testVarianceGammaAllCases} and {@code testSingularityAtZero}),
- * which reproduces the same Madan-Carr-Chang reference table and the
- * singularity probe.
- *
- * <p>FFT engine ({@code FFTVarianceGammaEngine}) is <strong>not yet
- * ported</strong> — tracked as Phase 5h.5 carry-forward.
  *
  * <p>This class exists for 1:1 inventory mapping with the C++ test-suite
  * file list (Phase 5 META section 6 coverage report).
  *
  * <p>Source: {@code test-suite/variancegamma.cpp} v1.42.1 @ {@code 099987f0ca}.
  *
- * @see org.jquantlib.testsuite.experimental.variancegamma.VarianceGammaEngineTest
+ * @see VarianceGammaEngineTest
  */
 public class VarianceGammaTest {
 
-    @Ignore("Phase 5h — analytic engine portion already covered by "
-            + "VarianceGammaEngineTest#testVarianceGammaAllCases (Phase 4c). "
-            + "FFTVarianceGammaEngine port deferred to Phase 5h.5.")
+    @Ignore("Phase 5h.5 carry-forward — FFTVarianceGammaEngine production class "
+            + "not yet ported. Analytic-engine portion of the C++ "
+            + "testVarianceGamma is already covered by "
+            + "VarianceGammaEngineTest#testVarianceGammaAllCases (Phase 4c); "
+            + "this placeholder remains @Ignore'd until the FFT engine lands.")
     @Test
-    public void testVarianceGamma() { fail("not implemented; see VarianceGammaEngineTest"); }
+    public void testVarianceGamma() { fail("FFTVarianceGammaEngine not yet ported; analytic-engine cases see VarianceGammaEngineTest#testVarianceGammaAllCases"); }
 
-    @Ignore("Phase 5h — already covered by "
-            + "VarianceGammaEngineTest#testSingularityAtZero (Phase 4c).")
     @Test
-    public void testSingularityAtZero() { fail("not implemented; see VarianceGammaEngineTest"); }
+    public void testSingularityAtZero() {
+        // Phase 5e.5b-CFC-d-9 body-fill — delegate to the canonical
+        // implementation in VarianceGammaEngineTest. The C++ test
+        // {@code variancegamma.cpp::testSingularityAtZero} is reproduced
+        // in VarianceGammaEngineTest#testSingularityAtZero (Phase 4c).
+        new VarianceGammaEngineTest().testSingularityAtZero();
+    }
 }
