@@ -4,10 +4,21 @@
       "expected": {
         "coupons": [
           {
+            "accrualPeriod": 0.25555555555555554,
             "amount": 10409.843858742539,
             "cap": 0.0435,
+            "cappedRate": 0.04073417162116646,
             "contribution": 10404.553532852762,
             "discount": 0.999491795846166,
+            "fixingDates_first": {
+              "date": "2025-07-01",
+              "serial": 45839
+            },
+            "fixingDates_last": {
+              "date": "2025-09-30",
+              "serial": 45930
+            },
+            "fixingDates_size": 64,
             "floor": 0.025,
             "index": 0,
             "isCapped": true,
@@ -15,13 +26,25 @@
             "paymentDate": {
               "date": "2025-10-01",
               "serial": 45931
-            }
+            },
+            "vanillaRate": 0.040734325851710496
           },
           {
+            "accrualPeriod": 0.25833333333333336,
             "amount": 9308.205652916287,
             "cap": 0.0435,
+            "cappedRate": 0.03603176381774046,
             "contribution": 9299.87078590214,
             "discount": 0.9991045678055537,
+            "fixingDates_first": {
+              "date": "2025-10-01",
+              "serial": 45931
+            },
+            "fixingDates_last": {
+              "date": "2025-12-31",
+              "serial": 46022
+            },
+            "fixingDates_size": 62,
             "floor": 0.025,
             "index": 1,
             "isCapped": true,
@@ -29,13 +52,25 @@
             "paymentDate": {
               "date": "2026-01-02",
               "serial": 46024
-            }
+            },
+            "vanillaRate": 0.03603176381847645
           },
           {
+            "accrualPeriod": 0.24722222222222223,
             "amount": 7987.7152880544445,
             "cap": 0.04,
+            "cappedRate": 0.032309859592130334,
             "contribution": 7977.603920574241,
             "discount": 0.9987341352169468,
+            "fixingDates_first": {
+              "date": "2026-01-02",
+              "serial": 46024
+            },
+            "fixingDates_last": {
+              "date": "2026-03-31",
+              "serial": 46112
+            },
+            "fixingDates_size": 61,
             "floor": 0.025,
             "index": 2,
             "isCapped": true,
@@ -43,13 +78,25 @@
             "paymentDate": {
               "date": "2026-04-01",
               "serial": 46113
-            }
+            },
+            "vanillaRate": 0.03230985962125436
           },
           {
+            "accrualPeriod": 0.25277777777777777,
             "amount": 6977.775176457003,
             "cap": 0.04,
+            "cappedRate": 0.027604385313456277,
             "contribution": 6966.300366881346,
             "discount": 0.9983555203076229,
+            "fixingDates_first": {
+              "date": "2026-04-01",
+              "serial": 46113
+            },
+            "fixingDates_last": {
+              "date": "2026-06-30",
+              "serial": 46203
+            },
+            "fixingDates_size": 62,
             "floor": 0.025,
             "index": 3,
             "isCapped": true,
@@ -57,7 +104,8 @@
             "paymentDate": {
               "date": "2026-07-01",
               "serial": 46204
-            }
+            },
+            "vanillaRate": 0.027595019383111274
           }
         ],
         "diff_vs_test": 0.0,
@@ -92,7 +140,7 @@
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-05-15T02:24:12Z",
+  "generated_at": "2026-05-15T02:39:45Z",
   "generated_by": "overnight_leg_caps_floors_probe",
   "test_group": "cashflows/overnight_leg_caps_floors"
 }

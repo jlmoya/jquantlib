@@ -174,6 +174,13 @@ int main() {
         Real contrib = amt * df;
         npv += contrib;
 
+        // Per-coupon diagnostics so Java body-fill can cross-validate
+        // bit-exact attribute-by-attribute (and so future regression
+        // analysis has the rate breakdown without re-running the probe).
+        Rate cappedRate = cf->rate();
+        Rate vanillaRate = cf->underlying()->rate();
+        const std::vector<Date>& fxd = cf->underlying()->fixingDates();
+
         perCoupon.push_back(json{
             {"index",       static_cast<int>(i)},
             {"paymentDate", dateToJson(cf->date())},
@@ -183,7 +190,13 @@ int main() {
             {"isFloored",   cf->isFloored()},
             {"amount",      amt},
             {"discount",    df},
-            {"contribution", contrib}
+            {"contribution", contrib},
+            {"cappedRate",  cappedRate},
+            {"vanillaRate", vanillaRate},
+            {"accrualPeriod", cf->accrualPeriod()},
+            {"fixingDates_size", static_cast<int>(fxd.size())},
+            {"fixingDates_first", dateToJson(fxd.front())},
+            {"fixingDates_last",  dateToJson(fxd.back())}
         });
     }
 
