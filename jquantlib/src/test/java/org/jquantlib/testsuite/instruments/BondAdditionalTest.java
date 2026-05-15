@@ -6,8 +6,29 @@
  */
 package org.jquantlib.testsuite.instruments;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.instruments.bonds.FixedRateBond;
+import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.bond.DiscountingBondEngine;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.testsuite.util.Utilities;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.calendars.NullCalendar;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -40,7 +61,7 @@ import org.junit.Test;
  *   <li>{@code testFixingConvention} — fixing-day convention path.
  * </ul>
  *
- * <p><strong>All 11 cases deferred to Phase 5d.5</strong> — these tests
+ * <p><strong>10 cases still deferred to Phase 5d.5</strong> — they
  * exercise existing Java {@code FixedRateBond} / {@code FloatingRateBond}
  * machinery, but require:
  * <ul>
@@ -50,13 +71,16 @@ import org.junit.Test;
  *       {@code DiscountingBondEngine} ex-coupon date branch must be
  *       audited against C++ for the gilt / Australian conventions;
  *   <li>{@code testZspread} — needs the
- *       {@code BondFunctions::zSpread} static helper exposed in Java;
- *   <li>{@code testFixedRateBondWithArbitrarySchedule} — currently
- *       {@code FixedRateBond} requires a regular {@code Schedule}; the
- *       arbitrary-schedule constructor is not yet ported.
+ *       {@code BondFunctions::zSpread} static helper exposed in Java.
  * </ul>
  *
- * <p>Phase 5d.5 carry-forward: body these 11 cases against
+ * <p>{@code testFixedRateBondWithArbitrarySchedule} was bodied in
+ * Phase 5e.5b-CFC-d-5 alongside the
+ * {@code FixedRateBond}/{@code FixedRateLeg} arbitrary-schedule
+ * alignment and the new {@code Schedule.hasTenor()} /
+ * {@code hasIsRegular()} / {@code fullInterface()} accessors.
+ *
+ * <p>Phase 5d.5 carry-forward: body the remaining 10 cases against
  * {@code migration-harness/cpp/probes/instruments/bonds/} probes once
  * authored.
  *
@@ -71,10 +95,6 @@ public class BondAdditionalTest {
     private static final String REASON_EX_COUPON =
             "Phase 5d.5 — requires audit of ex-coupon date branch in "
           + "DiscountingBondEngine against gilt / Australian conventions";
-
-    private static final String REASON_ARBITRARY =
-            "Phase 5d.5 — requires FixedRateBond arbitrary-schedule "
-          + "constructor (not yet ported)";
 
     private static final String REASON_GIVEN_DATES =
             "Phase 5d.5 — requires FixedRateBond date-vector constructor "
@@ -95,7 +115,62 @@ public class BondAdditionalTest {
     @Ignore(REASON_GIVEN_DATES) @Test public void testBondFromScheduleWithDateVector() { fail("not implemented"); }
     @Ignore(REASON_GIVEN_DATES) @Test public void testFixedBondWithGivenDates() { fail("not implemented"); }
     @Ignore(REASON_GIVEN_DATES) @Test public void testRiskyBondWithGivenDates() { fail("not implemented"); }
-    @Ignore(REASON_ARBITRARY) @Test public void testFixedRateBondWithArbitrarySchedule() { fail("not implemented"); }
+    /**
+     * Faithful Java port of {@code testFixedRateBondWithArbitrarySchedule}
+     * from {@code test-suite/bonds.cpp:1677-1713} (v1.42.1). Verifies that
+     * {@link FixedRateBond} accepts a {@link Schedule} built from an
+     * arbitrary date vector (no tenor / EOM / regularity meta-info), reports
+     * {@link Frequency#NoFrequency}, and prices without throwing under a
+     * {@link DiscountingBondEngine}. Phase 5e.5b-CFC-d-5.
+     */
+    @Test
+    public void testFixedRateBondWithArbitrarySchedule() {
+        final Calendar calendar = new NullCalendar();
+
+        final int settlementDays = 3;
+
+        final Date today = new Date(1, Month.January, 2019);
+        new Settings().setEvaluationDate(today);
+
+        // Mirrors C++ bonds.cpp:1687-1691 — irregular date vector.
+        final List<Date> dates = new ArrayList<Date>(4);
+        dates.add(new Date(1, Month.February, 2019));
+        dates.add(new Date(7, Month.February, 2019));
+        dates.add(new Date(1, Month.April, 2019));
+        dates.add(new Date(27, Month.May, 2019));
+
+        final Schedule schedule = new Schedule(dates, calendar,
+                BusinessDayConvention.Unadjusted);
+
+        final double coupon = 0.01;
+        final DayCounter dc = new Actual365Fixed();
+
+        final FixedRateBond bond = new FixedRateBond(
+                settlementDays,
+                100.0,
+                schedule,
+                new double[] {coupon},
+                dc,
+                BusinessDayConvention.Following,
+                100.0);
+
+        // C++: BOOST_ERROR if bond.frequency() != NoFrequency.
+        assertEquals("unexpected frequency",
+                Frequency.NoFrequency, bond.frequency());
+
+        final Handle<YieldTermStructure> discountCurve =
+                new Handle<YieldTermStructure>(
+                        Utilities.flatRate(today, 0.03, new Actual360()));
+        final PricingEngine engine = new DiscountingBondEngine(discountCurve);
+        bond.setPricingEngine(engine);
+
+        // C++: BOOST_CHECK_NO_THROW(bond.cleanPrice());
+        try {
+            bond.cleanPrice();
+        } catch (final RuntimeException e) {
+            fail("cleanPrice() threw: " + e.getMessage());
+        }
+    }
     @Ignore(REASON_THIRTY_360) @Test public void testThirty360BondWithSettlementOn31st() { fail("not implemented"); }
     @Ignore(REASON_NUMERIC) @Test public void testBasisPointValue() { fail("not implemented"); }
     @Ignore(REASON_FIXING) @Test public void testFixingConvention() { fail("not implemented"); }

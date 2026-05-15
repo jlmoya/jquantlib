@@ -89,8 +89,12 @@ public class FixedRateBond extends Bond {
             final Date  issueDate){
     	
         super(settlementDays, schedule.calendar(), issueDate);
-        
-        frequency_ = schedule.tenor().frequency();
+
+        // Mirrors C++ ql/instruments/bonds/fixedratebond.cpp:48 —
+        // schedule.hasTenor() ? schedule.tenor().frequency() : NoFrequency.
+        // Date-vector ("arbitrary") schedules have no tenor; reporting
+        // NoFrequency lets the bond constructor proceed.
+        frequency_ = schedule.hasTenor() ? schedule.tenor().frequency() : Frequency.NoFrequency;
         dayCounter_ = accrualDayCounter;
         maturityDate_ = schedule.endDate().clone();
         

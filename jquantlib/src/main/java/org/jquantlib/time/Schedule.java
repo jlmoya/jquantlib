@@ -446,11 +446,48 @@ public class Schedule {
     }
 
     public boolean isRegular(final int i) /* @ReadOnly */ {
-       QL.require(fullInterface_, "full interface not available"); // TODO: message
+       QL.require(hasIsRegular(), "full interface (isRegular) not available"); // mirrors C++ schedule.cpp
        QL.require(i<=isRegular_.size() && i>0,
                        "index (" + i + ") must be in [1, " +
                        isRegular_.size() +"]"); // TODO: message
        return isRegular_.get(i-1);
+    }
+
+    /**
+     * Whether this schedule was constructed with a tenor / rule / EOM
+     * meta-information block. Mirrors C++ {@code Schedule::hasTenor()}
+     * (ql/time/schedule.hpp:88, schedule.hpp:206-208). The C++ accessor
+     * tests {@code static_cast<bool>(tenor_)}; the Java port's
+     * {@code fullInterface_} flag is set true iff the rule-based
+     * constructor was used (i.e. tenor was supplied), so the two are
+     * equivalent for our purposes.
+     */
+    public boolean hasTenor() /* @ReadOnly */ {
+        return fullInterface_;
+    }
+
+    /**
+     * Whether per-period regularity flags are available. Mirrors C++
+     * {@code Schedule::hasIsRegular()} (ql/time/schedule.hpp:82). Returns
+     * true iff the {@link #isRegular(int)} accessor can be invoked
+     * without throwing.
+     */
+    public boolean hasIsRegular() /* @ReadOnly */ {
+        return fullInterface_ && !isRegular_.isEmpty();
+    }
+
+    /**
+     * Whether the schedule was built with the full meta-information
+     * interface (rule-based constructor) versus the date-vector
+     * constructor. Exposes the existing {@code fullInterface_} field so
+     * callers (e.g. {@link org.jquantlib.cashflow.FixedRateLeg},
+     * {@link org.jquantlib.instruments.bonds.FixedRateBond}) can branch
+     * on the C++ {@code hasTenor()} / {@code hasIsRegular()} fall-back
+     * logic without catching {@link
+     * org.jquantlib.lang.exceptions.LibraryException}.
+     */
+    public boolean fullInterface() /* @ReadOnly */ {
+        return fullInterface_;
     }
 
     // Other inspectors
@@ -472,7 +509,7 @@ public class Schedule {
     }
 
     public final Period  tenor() /* @ReadOnly */ {
-        QL.require(fullInterface_, "full interface not available"); // TODO: message
+        QL.require(hasTenor(), "full interface (tenor) not available"); // mirrors C++ schedule.hpp:211-212
         return tenor_;
     }
     public BusinessDayConvention businessDayConvention() /* @ReadOnly */ {

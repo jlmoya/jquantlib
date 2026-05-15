@@ -174,7 +174,15 @@ public class FixedRateLeg extends Leg {
         Date exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
         InterestRate rate = couponRates_[0];
         /*@Real*/ double nominal = notionals_[0];
-        if (schedule_.isRegular(1)) {
+        // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:198-204 —
+        // when the schedule lacks tenor/isRegular meta-info (date-vector
+        // ctor, hasTenor()=false), or the first stub is regular, we use
+        // start as the reference date; otherwise we back-walk from end
+        // by one tenor.
+        final boolean firstStubIsShortOrLong =
+                schedule_.hasTenor() && schedule_.hasIsRegular()
+                && !schedule_.isRegular(1);
+        if (!firstStubIsShortOrLong) {
             QL.require(firstPeriodDayCounter_==null || !firstPeriodDayCounter_.equals(paymentDayCounter_) , "regular first coupon does not allow a first-period day count"); // TODO: message
             leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end));
         } else {
@@ -228,7 +236,15 @@ public class FixedRateLeg extends Leg {
             final InterestRate lastRate = (lastPeriodDayCounter_ == null)
                     ? rate
                     : new InterestRate(rate.rate(), lastDc, rate.compounding());
-            if (schedule_.isRegular(N - 1)) {
+            // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:258-272 —
+            // when the schedule lacks tenor (date-vector ctor) or the
+            // last stub is regular, use the regular branch (refStart=start,
+            // refEnd=end); otherwise compute a forward reference from
+            // start by one tenor.
+            final boolean lastIsRegularOrNoTenor =
+                    !schedule_.hasTenor()
+                    || (schedule_.hasIsRegular() && schedule_.isRegular(N - 1));
+            if (lastIsRegularOrNoTenor) {
                 leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, end));
             } else {
                 Date ref = start.add(schedule_.tenor());
