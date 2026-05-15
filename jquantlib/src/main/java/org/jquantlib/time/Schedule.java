@@ -247,8 +247,18 @@ public class Schedule {
                 if (temp .lt(exitDate)) {
                     break;
                 } else {
-                    dates_.add(0, temp);
-                    isRegular_.add(0, new Boolean(true));
+                    // Skip dates that would result in duplicates after BDC
+                    // adjustment (mirrors C++ schedule.cpp:229-233 dedup
+                    // check inside the backward loop). Without this, a
+                    // 1-day tenor on a business calendar generates one entry
+                    // per calendar day; consecutive non-business days then
+                    // collapse onto the same adjusted date during post-loop
+                    // BDC application, leaving silent duplicates.
+                    if (calendar.adjust(dates_.get(0), convention).ne(
+                            calendar.adjust(temp, convention))) {
+                        dates_.add(0, temp);
+                        isRegular_.add(0, new Boolean(true));
+                    }
                     ++periods;
                 }
             }
@@ -333,8 +343,14 @@ public class Schedule {
                 if ( temp.gt(exitDate) ) {
                     break;
                 } else {
-                    dates_.add(temp);
-                    isRegular_.add(new Boolean(true));
+                    // Skip dates that would result in duplicates after BDC
+                    // adjustment (mirrors C++ schedule.cpp:326-330 dedup
+                    // check inside the forward loop).
+                    if (calendar.adjust(dates_.get(dates_.size() - 1), convention).ne(
+                            calendar.adjust(temp, convention))) {
+                        dates_.add(temp);
+                        isRegular_.add(new Boolean(true));
+                    }
                     ++periods;
                 }
             }
