@@ -63,8 +63,11 @@ import org.jquantlib.math.matrixutilities.SVD;
  *
  * @author JQuantLib
  */
-public final class GeneralLinearLeastSquares {
+public class GeneralLinearLeastSquares {
 
+    // Non-private/non-final to allow LinearRegression and similar
+    // subclasses (mirrors C++ ql/math/linearleastsquaresregression.hpp's
+    // inheritance from GeneralLinearLeastSquares).
     private final Array a_;
     private final Array err_;
     private final Array residuals_;
