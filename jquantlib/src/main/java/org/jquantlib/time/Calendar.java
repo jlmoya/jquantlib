@@ -162,6 +162,28 @@ public class Calendar {
     }
 
     /**
+     * Returns <tt>true</tt> iff in the given market, the date is on or before
+     * the first business day for that month.
+     * <p>
+     * Mirrors C++ v1.42.1 ql/time/calendar.hpp:249-251.
+     */
+    public boolean isStartOfMonth(final Date d) /* @ReadOnly */{
+        return d.le(startOfMonth(d));
+    }
+
+    /**
+     * Returns first business day of the month to which the given date belongs.
+     * <p>
+     * Mirrors C++ v1.42.1 ql/time/calendar.hpp:253-255.
+     *
+     * @param d
+     * @return first business Date based on passed date
+     */
+    public Date startOfMonth(final Date d) /* @ReadOnly */{
+        return adjust(Date.startOfMonth(d), BusinessDayConvention.Following);
+    }
+
+    /**
      * Adds a date to the set of holidays for the given calendar.
      * <p>
      * <b>NOTE</b>: This method does not affect <i>pre-defined</i> calendars, returning

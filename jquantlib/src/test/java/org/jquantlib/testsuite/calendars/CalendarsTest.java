@@ -322,11 +322,42 @@ public class CalendarsTest {
         }
     }
 
-    @Ignore("Phase 5c.5: Calendar.startOfMonth / Calendar.isStartOfMonth not yet ported (v1.42.1 additions)")
+    /**
+     * Tests Calendar.startOfMonth / Calendar.isStartOfMonth invariants over a
+     * 5-year window starting today, mirroring v1.42.1
+     * test-suite/calendars.cpp:3526-3550.
+     *
+     * Note: the C++ test iterates from Date::minDate() + 2 months to maxDate();
+     * here we use a 5-year window starting today (matching the strategy used
+     * by {@link #testEndOfMonth()}) to keep the test cheap while exercising
+     * business-day and weekend boundaries across many months.
+     */
     @Test
     public void testStartOfMonth() {
-        // Mirrors test-suite/calendars.cpp:3526-3550.
-        // Requires Calendar.startOfMonth(Date) / Calendar.isStartOfMonth(Date).
+        QL.info("Testing start-of-month calculation...");
+
+        final Calendar c = new Target();
+        final Date startDate = Date.todaysDate();
+        final Date endDate = startDate.add(new Period(5, TimeUnit.Years));
+
+        for (Date counter = startDate.clone(); counter.le(endDate); counter.inc()) {
+            final Date som = c.startOfMonth(counter);
+
+            // check that som is actually a start-of-month
+            if (!c.isStartOfMonth(som)) {
+                fail(som.weekday() + " " + som + " is not the first business day in "
+                        + som.month() + " " + som.year() + " according to " + c.name());
+            }
+
+            // check that som is in the same month as counter
+            assertEquals(som + " is not in the same month as " + counter,
+                    counter.month(), som.month());
+
+            // previous business day should be in a different month
+            final Date prev = c.advance(som, -1, TimeUnit.Days, BusinessDayConvention.Unadjusted, false);
+            assertFalse(prev + " is in the same month as " + som,
+                    prev.month() == som.month());
+        }
     }
 
     @Ignore("Phase 5c.5: BespokeCalendar (with addWeekend) not yet ported")
@@ -336,10 +367,16 @@ public class CalendarsTest {
         // Requires BespokeCalendar with addWeekend(Weekday).
     }
 
-    @Ignore("Phase 5c.5: Java Date does not support QL_HIGH_RESOLUTION_DATE intraday timestamps")
+    @Ignore("Java Date is whole-day-resolution only; C++ QL_HIGH_RESOLUTION_DATE intraday timestamps unsupported")
     @Test
     public void testIntradayAddHolidays() {
-        // Mirrors test-suite/calendars.cpp:3766-3855 (#ifdef QL_HIGH_RESOLUTION_DATE).
+        // Mirrors test-suite/calendars.cpp:3766-3855, guarded by
+        // #ifdef QL_HIGH_RESOLUTION_DATE in C++. The Java {@link Date} class
+        // stores a single serial number (days since reference epoch) with no
+        // sub-day precision; intraday-resolution addHoliday/removeHoliday
+        // semantics cannot be expressed without a parallel intraday Date
+        // representation. Deferred indefinitely — this is a design-level
+        // divergence, not a missing port.
     }
 
     @Ignore("Phase 5c.5: Calendar.addedHolidays() / removedHolidays() accessors not yet ported")

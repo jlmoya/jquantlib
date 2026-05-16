@@ -846,6 +846,26 @@ public class Date implements Observable, Comparable<Date>, Serializable, Cloneab
     }
 
     /**
+     * First day of the month to which the given date belongs.
+     * <p>
+     * Mirrors C++ v1.42.1 ql/time/date.hpp:380-384.
+     *
+     * @return a new instance
+     */
+    public static final Date startOfMonth(final Date d) {
+        return new Date(1, d.month().value(), d.year());
+    }
+
+    /**
+     * Whether a date is the first day of its month.
+     * <p>
+     * Mirrors C++ v1.42.1 ql/time/date.hpp:386-388.
+     */
+    public static final boolean isStartOfMonth(final Date d) {
+        return d.dayOfMonth() == 1;
+    }
+
+    /**
      * Next given weekday following or equal to the given date
      * <p>
      * E.g., the Friday following Tuesday, JANUARY 15th, 2002 was JANUARY 18th, 2002.
