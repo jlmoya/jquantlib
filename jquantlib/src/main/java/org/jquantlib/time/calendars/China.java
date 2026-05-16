@@ -130,8 +130,6 @@ public class China extends Calendar {
                     || ((d == 2 || d == 3) && m == January && y == 2006)
                     || (d <= 3 && m == January && y == 2007)
                     || (d == 31 && m == December && y == 2007)
-                    || (d == 1 && m == January && y == 2008)
-                    || (d == 1 && m == January && y == 200)
                     || (d == 2 && m == January && y == 2009)
                     // Chinese New Year
                     || (d >= 19 && d <= 28 && m == January && y == 2004) || (d >= 7 && d <= 15 && m == February && y == 2005)
