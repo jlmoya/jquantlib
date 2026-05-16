@@ -24,6 +24,7 @@
 package org.jquantlib.time.calendars;
 
 import static org.jquantlib.time.Month.April;
+import static org.jquantlib.time.Month.August;
 import static org.jquantlib.time.Month.December;
 import static org.jquantlib.time.Month.February;
 import static org.jquantlib.time.Month.January;
@@ -38,6 +39,7 @@ import static org.jquantlib.time.Weekday.Monday;
 import static org.jquantlib.time.Weekday.Saturday;
 import static org.jquantlib.time.Weekday.Sunday;
 import static org.jquantlib.time.Weekday.Tuesday;
+import static org.jquantlib.time.Weekday.Wednesday;
 
 import org.jquantlib.lang.annotation.QualityAssurance;
 import org.jquantlib.lang.annotation.QualityAssurance.Quality;
@@ -58,18 +60,20 @@ import org.jquantlib.time.Weekday;
  *   <li>Bank Holiday, JANUARY 3rd</li>
  *   <li>Coming of Age Day, 2nd Monday in JANUARY</li>
  *   <li>National Foundation Day, February 11th</li>
+ *   <li>Emperor's Birthday (Naruhito), February 23rd (from 2020)</li>
  *   <li>Vernal Equinox</li>
  *   <li>Greenery Day, April 29th</li>
  *   <li>Constitution Memorial Day, May 3rd</li>
  *   <li>Holiday for a Nation, May 4th</li>
  *   <li>Children's Day, May 5th</li>
  *   <li>Marine Day, 3rd Monday in July</li>
+ *   <li>Mountain Day, August 11th (from 2016)</li>
  *   <li>Respect for the Aged Day, 3rd Monday in September</li>
  *   <li>Autumnal Equinox</li>
  *   <li>Health and Sports Day, 2nd Monday in October</li>
  *   <li>National Culture Day, November 3rd</li>
  *   <li>Labor Thanksgiving Day, November 23rd</li>
- *   <li>Emperor's Birthday, DECEMBER 23rd</li>
+ *   <li>Emperor's Birthday (Akihito), DECEMBER 23rd (1989-2018)</li>
  *   <li>Bank Holiday, DECEMBER 31st</li>
  *   <li>a few one-shot holidays</li>
  *   </ul>
@@ -136,7 +140,7 @@ public class Japan extends Calendar {
 	            || (d == 2  && m == January)
 	            // Bank Holiday
 	            || (d == 3  && m == January)
-	            // Coming of Age Day (2nd Monday in JANUARY),
+	            // Coming of Age Day (2nd MONDAY in JANUARY),
 	            // was JANUARY 15th until 2000
 	            || (w == Monday && (d >= 8 && d <= 14) && m == January
 	                && y >= 2000)
@@ -144,6 +148,12 @@ public class Japan extends Calendar {
 	                && y < 2000)
 	            // National Foundation Day
 	            || ((d == 11 || (d == 12 && w == Monday)) && m == February)
+	            // Emperor's Birthday (Emperor Naruhito)
+	            || ((d == 23 || (d == 24 && w == Monday)) && m == February
+	                && y >= 2020)
+	            // Emperor's Birthday (Emperor Akihito)
+	            || ((d == 23 || (d == 24 && w == Monday)) && m == December
+	                && (y >= 1989 && y < 2019))
 	            // Vernal Equinox
 	            || ((d == ve || (d == ve+1 && w == Monday)) && m == March)
 	            // Greenery Day
@@ -153,13 +163,27 @@ public class Japan extends Calendar {
 	            // Holiday for a Nation
 	            || (d == 4  && m == May)
 	            // Children's Day
-	            || ((d == 5  || (d == 6 && w == Monday)) && m == May)
+	            || (d == 5  && m == May)
+	            // any of the three above observed later if on Saturday or Sunday
+	            || (d == 6 && m == May
+	                && (w == Monday || w == Tuesday || w == Wednesday))
 	            // Marine Day (3rd MONDAY in July),
-	            // was July 20th until 2003, not a holiday before 1996
+	            // was July 20th until 2003, not a holiday before 1996,
+	            // July 23rd in 2020 due to Olympics games
+	            // July 22nd in 2021 due to Olympics games
 	            || (w == Monday && (d >= 15 && d <= 21) && m == July
-	                && y >= 2003)
+	                && ((y >= 2003 && y < 2020) || y >= 2022))
 	            || ((d == 20 || (d == 21 && w == Monday)) && m == July
 	                && y >= 1996 && y < 2003)
+	            || (d == 23 && m == July && y == 2020)
+	            || (d == 22 && m == July && y == 2021)
+	            // Mountain Day
+	            // (moved in 2020 due to Olympics games)
+	            // (moved in 2021 due to Olympics games)
+	            || ((d == 11 || (d == 12 && w == Monday)) && m == August
+	                && ((y >= 2016 && y < 2020) || y >= 2022))
+	            || (d == 10 && m == August && y == 2020)
+	            || (d == 9 && m == August && y == 2021)
 	            // Respect for the Aged Day (3rd MONDAY in September),
 	            // was September 15th until 2003
 	            || (w == Monday && (d >= 15 && d <= 21) && m == September
@@ -173,18 +197,19 @@ public class Japan extends Calendar {
 	            // Autumnal Equinox
 	            || ((d == ae || (d == ae+1 && w == Monday)) && m == September)
 	            // Health and Sports Day (2nd MONDAY in October),
-	            // was October 10th until 2000
+	            // was October 10th until 2000,
+	            // July 24th in 2020 due to Olympics games
+	            // July 23rd in 2021 due to Olympics games
 	            || (w == Monday && (d >= 8 && d <= 14) && m == October
-	                && y >= 2000)
+	                && ((y >= 2000 && y < 2020) || y >= 2022))
 	            || ((d == 10 || (d == 11 && w == Monday)) && m == October
 	                && y < 2000)
+	            || (d == 24 && m == July && y == 2020)
+	            || (d == 23 && m == July && y == 2021)
 	            // National Culture Day
 	            || ((d == 3  || (d == 4 && w == Monday)) && m == November)
 	            // Labor Thanksgiving Day
 	            || ((d == 23 || (d == 24 && w == Monday)) && m == November)
-	            // Emperor's Birthday
-	            || ((d == 23 || (d == 24 && w == Monday)) && m == December
-	                && y >= 1989)
 	            // Bank Holiday
 	            || (d == 31 && m == December)
 	            // one-shot holidays
@@ -192,10 +217,18 @@ public class Japan extends Calendar {
 	            || (d == 10 && m == April && y == 1959)
 	            // Rites of Imperial Funeral
 	            || (d == 24 && m == February && y == 1989)
-	            // Enthronement Ceremony
+	            // Enthronement Ceremony (Emperor Akihito)
 	            || (d == 12 && m == November && y == 1990)
 	            // Marriage of Prince Naruhito
-	            || (d == 9 && m == June && y == 1993)) {
+	            || (d == 9 && m == June && y == 1993)
+	            // Special holiday based on Japanese public holidays law
+	            || (d == 30 && m == April && y == 2019)
+	            // Enthronement Day (Emperor Naruhito)
+	            || (d == 1 && m == May && y == 2019)
+	            // Special holiday based on Japanese public holidays law
+	            || (d == 2 && m == May && y == 2019)
+	            // Enthronement Ceremony (Emperor Naruhito)
+	            || (d == 22 && m == October && y == 2019)) {
                 return false;
             }
 	        return true;
