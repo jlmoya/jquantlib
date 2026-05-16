@@ -33,6 +33,8 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.Weekday;
+import org.jquantlib.time.calendars.BespokeCalendar;
 import org.jquantlib.time.calendars.Brazil;
 import org.jquantlib.time.calendars.Germany;
 import org.jquantlib.time.calendars.JointCalendar;
@@ -360,11 +362,98 @@ public class CalendarsTest {
         }
     }
 
-    @Ignore("Phase 5c.5: BespokeCalendar (with addWeekend) not yet ported")
+    /**
+     * Tests {@link BespokeCalendar} basic operations — addWeekend and
+     * addHoliday — mirroring v1.42.1 test-suite/calendars.cpp:3653-3764.
+     * <p>
+     * The C++ test additionally exercises "linked instances" semantics
+     * ({@code BespokeCalendar a2 = a1;} where {@code a2} shares state with
+     * {@code a1} via {@code shared_ptr<Impl>}). Java has no copy constructor;
+     * each {@code new BespokeCalendar(...)} carries its own {@code Impl}. To
+     * mirror the shared-state assertions here we exercise weekend/holiday
+     * additions against the same instance reference (passing the same object
+     * around preserves identity, which is the realistic Java idiom — see
+     * {@link BespokeCalendar} javadoc).
+     */
     @Test
     public void testBespokeCalendars() {
-        // Mirrors test-suite/calendars.cpp:3653-3764.
-        // Requires BespokeCalendar with addWeekend(Weekday).
+        QL.info("Testing bespoke calendars...");
+
+        final BespokeCalendar a1 = new BespokeCalendar();
+        final BespokeCalendar b1 = new BespokeCalendar();
+
+        final Date testDate1 = new Date(4, Month.October, 2008); // Saturday
+        final Date testDate2 = new Date(5, Month.October, 2008); // Sunday
+        final Date testDate3 = new Date(6, Month.October, 2008); // Monday
+        final Date testDate4 = new Date(7, Month.October, 2008); // Tuesday
+
+        // initial state: no weekends, no holidays — all four dates are business days
+        assertTrue(testDate1 + " erroneously detected as holiday", a1.isBusinessDay(testDate1));
+        assertTrue(testDate2 + " erroneously detected as holiday", a1.isBusinessDay(testDate2));
+        assertTrue(testDate3 + " erroneously detected as holiday", a1.isBusinessDay(testDate3));
+        assertTrue(testDate4 + " erroneously detected as holiday", a1.isBusinessDay(testDate4));
+
+        assertTrue(testDate1 + " erroneously detected as holiday", b1.isBusinessDay(testDate1));
+        assertTrue(testDate2 + " erroneously detected as holiday", b1.isBusinessDay(testDate2));
+        assertTrue(testDate3 + " erroneously detected as holiday", b1.isBusinessDay(testDate3));
+        assertTrue(testDate4 + " erroneously detected as holiday", b1.isBusinessDay(testDate4));
+
+        // add Sunday as weekend on a1 only
+        a1.addWeekend(Weekday.Sunday);
+
+        assertTrue(testDate1 + " erroneously detected as holiday", a1.isBusinessDay(testDate1));
+        assertFalse(testDate2 + " (Sunday) not detected as weekend", a1.isBusinessDay(testDate2));
+        assertTrue(testDate3 + " erroneously detected as holiday", a1.isBusinessDay(testDate3));
+        assertTrue(testDate4 + " erroneously detected as holiday", a1.isBusinessDay(testDate4));
+
+        // b1 unaffected
+        assertTrue(testDate1 + " erroneously detected as holiday", b1.isBusinessDay(testDate1));
+        assertTrue(testDate2 + " erroneously detected as holiday", b1.isBusinessDay(testDate2));
+        assertTrue(testDate3 + " erroneously detected as holiday", b1.isBusinessDay(testDate3));
+        assertTrue(testDate4 + " erroneously detected as holiday", b1.isBusinessDay(testDate4));
+
+        // add Monday (testDate3) as a holiday on a1
+        a1.addHoliday(testDate3);
+
+        assertTrue(testDate1 + " erroneously detected as holiday", a1.isBusinessDay(testDate1));
+        assertFalse(testDate2 + " (Sunday) not detected as weekend", a1.isBusinessDay(testDate2));
+        assertFalse(testDate3 + " (marked as holiday) not detected", a1.isBusinessDay(testDate3));
+        assertTrue(testDate4 + " erroneously detected as holiday", a1.isBusinessDay(testDate4));
+
+        assertTrue(testDate1 + " erroneously detected as holiday", b1.isBusinessDay(testDate1));
+        assertTrue(testDate2 + " erroneously detected as holiday", b1.isBusinessDay(testDate2));
+        assertTrue(testDate3 + " erroneously detected as holiday", b1.isBusinessDay(testDate3));
+        assertTrue(testDate4 + " erroneously detected as holiday", b1.isBusinessDay(testDate4));
+
+        // The C++ "BespokeCalendar a2 = a1;" branch tests shared_ptr linkage.
+        // Java has no copy constructor — mirror the intent by aliasing the
+        // same reference (a2 == a1), so addWeekend/addHoliday on a2 are
+        // visible through a1 as well.
+        final BespokeCalendar a2 = a1;
+
+        a2.addWeekend(Weekday.Saturday);
+
+        assertFalse(testDate1 + " (Saturday) not detected as weekend", a1.isBusinessDay(testDate1));
+        assertFalse(testDate2 + " (Sunday) not detected as weekend", a1.isBusinessDay(testDate2));
+        assertFalse(testDate3 + " (marked as holiday) not detected", a1.isBusinessDay(testDate3));
+        assertTrue(testDate4 + " erroneously detected as holiday", a1.isBusinessDay(testDate4));
+
+        assertFalse(testDate1 + " (Saturday) not detected as weekend", a2.isBusinessDay(testDate1));
+        assertFalse(testDate2 + " (Sunday) not detected as weekend", a2.isBusinessDay(testDate2));
+        assertFalse(testDate3 + " (marked as holiday) not detected", a2.isBusinessDay(testDate3));
+        assertTrue(testDate4 + " erroneously detected as holiday", a2.isBusinessDay(testDate4));
+
+        a2.addHoliday(testDate4);
+
+        assertFalse(testDate1 + " (Saturday) not detected as weekend", a1.isBusinessDay(testDate1));
+        assertFalse(testDate2 + " (Sunday) not detected as weekend", a1.isBusinessDay(testDate2));
+        assertFalse(testDate3 + " (marked as holiday) not detected", a1.isBusinessDay(testDate3));
+        assertFalse(testDate4 + " (marked as holiday) not detected", a1.isBusinessDay(testDate4));
+
+        assertFalse(testDate1 + " (Saturday) not detected as weekend", a2.isBusinessDay(testDate1));
+        assertFalse(testDate2 + " (Sunday) not detected as weekend", a2.isBusinessDay(testDate2));
+        assertFalse(testDate3 + " (marked as holiday) not detected", a2.isBusinessDay(testDate3));
+        assertFalse(testDate4 + " (marked as holiday) not detected", a2.isBusinessDay(testDate4));
     }
 
     @Ignore("Java Date is whole-day-resolution only; C++ QL_HIGH_RESOLUTION_DATE intraday timestamps unsupported")
@@ -379,25 +468,91 @@ public class CalendarsTest {
         // divergence, not a missing port.
     }
 
-    @Ignore("Phase 5c.5: Calendar.addedHolidays() / removedHolidays() accessors not yet ported")
+    /**
+     * Covers the {@code addedHolidays()} / {@code removedHolidays()}
+     * std::set checks from test-suite/calendars.cpp:93-103 that were
+     * skipped in {@link #testModifiedCalendars()}.
+     */
     @Test
     public void testModifiedCalendarsAccessors() {
-        // Covers the addedHolidays() / removedHolidays() std::set checks
-        // from test-suite/calendars.cpp:93-103 that were skipped above.
+        QL.info("Testing calendar modification accessors...");
+
+        final Calendar c1 = new Target();
+        final Date d1 = new Date(1, Month.May, 2004);    // holiday for TARGET
+        final Date d2 = new Date(26, Month.April, 2004); // business day
+
+        assertTrue("wrong assumption — c1.isHoliday(d1)", c1.isHoliday(d1));
+        assertTrue("wrong assumption — c1.isBusinessDay(d2)", c1.isBusinessDay(d2));
+
+        c1.removeHoliday(d1);
+        c1.addHoliday(d2);
+
+        final java.util.Set<Date> added = c1.addedHolidays();
+        final java.util.Set<Date> removed = c1.removedHolidays();
+
+        assertFalse("did not expect to find " + d1 + " in addedHolidays", added.contains(d1));
+        assertTrue("expected to find " + d2 + " in addedHolidays", added.contains(d2));
+        assertTrue("expected to find " + d1 + " in removedHolidays", removed.contains(d1));
+        assertFalse("did not expect to find " + d2 + " in removedHolidays", removed.contains(d2));
     }
 
-    @Ignore("Phase 5c.5: Java JointCalendar lacks the vector<Calendar>-based 5-calendar constructor")
+    /**
+     * Tests {@link JointCalendar} consistency for the 5-calendar variant
+     * (TARGET, UK, NYSE, Japan, Germany) constructed from a {@link
+     * java.util.List List&lt;Calendar&gt;}, mirroring v1.42.1
+     * test-suite/calendars.cpp:140-205 (the {@code cvh} JoinHolidays branch).
+     */
     @Test
     public void testJointCalendars5() {
-        // Mirrors test-suite/calendars.cpp:140-205 with the 5-calendar
-        // (TARGET, UK, NYSE, Japan, Germany) JoinHolidays variant.
+        QL.info("Testing 5-calendar JointCalendar (list constructor)...");
+
+        final Calendar c1 = new Target();
+        final Calendar c2 = new UnitedKingdom();
+        final Calendar c3 = new UnitedStates(UnitedStates.Market.NYSE);
+        final Calendar c4 = new org.jquantlib.time.calendars.Japan();
+        final Calendar c5 = new Germany();
+
+        final java.util.List<Calendar> calendarList = new java.util.ArrayList<Calendar>(5);
+        calendarList.add(c1);
+        calendarList.add(c2);
+        calendarList.add(c3);
+        calendarList.add(c4);
+        calendarList.add(c5);
+
+        final Calendar cvh = new JointCalendar(calendarList, JointCalendarRule.JoinHolidays);
+
+        final Date firstDate = Date.todaysDate();
+        final Date endDate = firstDate.add(new Period(1, TimeUnit.Years));
+
+        for (Date d = firstDate.clone(); d.lt(endDate); d.inc()) {
+            final boolean b1 = c1.isBusinessDay(d);
+            final boolean b2 = c2.isBusinessDay(d);
+            final boolean b3 = c3.isBusinessDay(d);
+            final boolean b4 = c4.isBusinessDay(d);
+            final boolean b5 = c5.isBusinessDay(d);
+
+            assertEquals("JoinHolidays inconsistency at " + d,
+                    b1 && b2 && b3 && b4 && b5, cvh.isBusinessDay(d));
+        }
     }
 
-    @Ignore("Phase 5c.5: Java Calendar stores added/removed holidays per-instance; C++ shares them per-class via static map")
+    @Ignore("Design divergence — Java Calendar stores added/removed holidays per-instance; C++ shares via static shared_ptr<Impl>")
     @Test
     public void testModifiedCalendarsShared() {
         // Mirrors test-suite/calendars.cpp:111-115 — assertions that a fresh
         // TARGET instance reflects modifications made through another TARGET
-        // instance. Requires per-class static added/removed-holiday storage.
+        // instance.
+        //
+        // In C++ v1.42.1 the concrete calendar constructors (e.g.
+        // TARGET::TARGET) install a {@code static shared_ptr<Impl>} so every
+        // instance of the subclass shares one Impl (including its
+        // added/removed-holiday sets). The Java port creates a fresh
+        // {@code Impl} per {@code new Target()}, so per-instance addHoliday /
+        // removeHoliday calls do NOT propagate to sibling instances. Aligning
+        // would require rewriting every concrete calendar subclass in the
+        // {@code time.calendars} package to install a process-wide singleton
+        // Impl (with the attendant thread-safety story) — a Phase 2+
+        // structural change, not a stub fill. Callers that need shared state
+        // should keep and pass the same calendar instance around.
     }
 }

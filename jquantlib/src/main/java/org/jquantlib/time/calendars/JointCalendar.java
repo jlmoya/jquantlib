@@ -87,6 +87,24 @@ public class JointCalendar extends Calendar {
         this(JointCalendarRule.JoinHolidays, c1, c2, c3, c4);
     }
 
+    /**
+     * Constructs a JointCalendar from a list of underlying calendars.
+     * <p>
+     * Mirrors C++ v1.42.1 ql/time/calendars/jointcalendar.cpp
+     * {@code JointCalendar(const std::vector<Calendar>&, JointCalendarRule)}.
+     */
+    public JointCalendar(final List<Calendar> calendars, final JointCalendarRule rule) {
+        this(rule, calendars.toArray(new Calendar[0]));
+    }
+
+    /**
+     * Constructs a JointCalendar from a list of underlying calendars using the
+     * default {@link JointCalendarRule#JoinHolidays} rule.
+     */
+    public JointCalendar(final List<Calendar> calendars) {
+        this(JointCalendarRule.JoinHolidays, calendars.toArray(new Calendar[0]));
+    }
+
     //internal
     private JointCalendar(JointCalendarRule rule, final Calendar ...calendars) {
         this.impl = new Impl(rule, calendars);

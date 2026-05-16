@@ -42,9 +42,11 @@
 package org.jquantlib.time;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.jquantlib.QL;
 import org.jquantlib.lang.annotation.QualityAssurance;
@@ -213,6 +215,28 @@ public class Calendar {
         if (!impl.isBusinessDay(d)) {
             impl.removedHolidays.add(d);
         }
+    }
+
+    /**
+     * Returns the set of dates artificially added to the calendar as holidays
+     * via {@link #addHoliday(Date)}. The returned set is sorted (ascending) and
+     * unmodifiable.
+     * <p>
+     * Mirrors C++ v1.42.1 ql/time/calendar.hpp:94 / 217-221.
+     */
+    public Set<Date> addedHolidays() /* @ReadOnly */ {
+        return Collections.unmodifiableSet(new TreeSet<Date>(impl.addedHolidays));
+    }
+
+    /**
+     * Returns the set of dates artificially removed from the calendar's
+     * holiday set via {@link #removeHoliday(Date)}. The returned set is sorted
+     * (ascending) and unmodifiable.
+     * <p>
+     * Mirrors C++ v1.42.1 ql/time/calendar.hpp:97 / 223-227.
+     */
+    public Set<Date> removedHolidays() /* @ReadOnly */ {
+        return Collections.unmodifiableSet(new TreeSet<Date>(impl.removedHolidays));
     }
 
     /**
