@@ -57,11 +57,16 @@ public class ExchangeRate {
     * @param toCopy the ExchangeRate to be cloned.
     */
     public ExchangeRate(final ExchangeRate toCopy){
-        //shouldn't matter
         source_ = toCopy.source_;
         target_ = toCopy.target_;
         rate_ = toCopy.rate_;
         type_ = toCopy.type_;
+        // C++ default copy constructor copies all members including the
+        // shared_ptr rateChain_. Java must mirror this — recursive chain
+        // building (e.g. smartLookup -> chain(head, tail) where tail is
+        // itself Derived) requires the inner chain to survive the copy
+        // that ExchangeRate.chain() takes when wrapping its inputs.
+        rateChain_ = toCopy.rateChain_;
     }
 
     /**
@@ -114,9 +119,12 @@ public class ExchangeRate {
                 throw new LibraryException("exchange rate not applicable"); // TODO: message
             }
         case Derived:
-            if (amount.currency() == rateChain_.first().source() || amount.currency() == rateChain_.first().target()) {
+            // C++ uses operator== on Currency (name-based equality). Java
+            // must use .eq() — `==` is reference identity and the chain
+            // wraps copies (new ExchangeRate(r1)), so identity never holds.
+            if (amount.currency().eq(rateChain_.first().source()) || amount.currency().eq(rateChain_.first().target())) {
                 return rateChain_.second().exchange(rateChain_.first().exchange(amount));
-            } else if (amount.currency() == rateChain_.second().source() || amount.currency() == rateChain_.second().target()) {
+            } else if (amount.currency().eq(rateChain_.second().source()) || amount.currency().eq(rateChain_.second().target())) {
                 return rateChain_.first().exchange(rateChain_.second().exchange(amount));
             } else {
                 throw new LibraryException("exchange rate not applicable"); // TODO: message

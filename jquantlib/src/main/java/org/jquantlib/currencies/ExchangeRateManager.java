@@ -405,15 +405,21 @@ public class ExchangeRateManager {
             if (hashes((Integer) key, source) && !(data_.get(key).isEmpty())) {
                 // ...whose other currency is not forbidden...
                 final Entry e = data_.get(key).get(0);
+                // C++ uses operator== on Currency (name-based); Java
+                // must use .eq() — `==` is reference identity which
+                // never holds for currencies cloned through Money/ExchangeRate.
                 final Currency other =
                     // if
-                    (source == e.rate.source()) ?
+                    (source.eq(e.rate.source())) ?
                             // then
                             e.rate.target()
                             :
                                 // else
                                 e.rate.source();
-                            if (match(forbidden, other.numericCode()) == (forbidden.length - 1)) {
+                            // C++ checks `std::find(...) == forbidden.end()`
+                            // i.e. "not found". Java's match() returns -1 on
+                            // not-found, so the correct condition is == -1.
+                            if (match(forbidden, other.numericCode()) == -1) {
                                 // ...and which carries information for the requested date.
                                 final ExchangeRate head = fetch(source, other, date);
                                 try {
