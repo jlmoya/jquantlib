@@ -249,7 +249,7 @@ public class JapanCalendarTest {
 		// expectedHol.add(new Date( 3,MAY,year));       // Constitution Memorial Day
 		expectedHol.add(new Date( 4,May,year));       // Greenery Day
         expectedHol.add(new Date( 5,May,year));       // Children's Day
-//        expectedHol.add(new Date( 6,MAY,year));       // alternative Constitution Memorial Day
+        expectedHol.add(new Date( 6,May,year));       // Alternative Constitution Memorial Day (C++ v1.42.1 rule: May 6 if Mon/Tue/Wed)
 		expectedHol.add(new Date(20,July,year));      // Sea Day
         expectedHol.add(new Date(21,September,year)); // Respect for the Aged Day
         expectedHol.add(new Date(22,September,year)); // Bank Holiday
@@ -303,7 +303,7 @@ public class JapanCalendarTest {
 		// expectedHol.add(new Date( 3,MAY,year));       // Constitution Memorial Day
 		// expectedHol.add(new Date( 4,MAY,year));       // Between Day
         expectedHol.add(new Date( 5,May,year));       // Children's Day
-//        expectedHol.add(new Date( 6,MAY,year));       // alternative Greenery Day
+        expectedHol.add(new Date( 6,May,year));       // Alternative Greenery Day (C++ v1.42.1 rule: May 6 if Mon/Tue/Wed)
 		expectedHol.add(new Date(21,July,year));      // Sea Day
         expectedHol.add(new Date(15,September,year)); // Respect for the Aged Day
     	expectedHol.add(new Date(23,September,year)); // Autumn Equinox
