@@ -6,61 +6,306 @@
  */
 package org.jquantlib.testsuite.model.shortrate;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.Thirty360;
+import org.jquantlib.indexes.Euribor6M;
+import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.optimization.EndCriteria;
+import org.jquantlib.math.optimization.LevenbergMarquardt;
+import org.jquantlib.math.optimization.NoConstraint;
+import org.jquantlib.model.BlackCalibrationHelper;
+import org.jquantlib.model.CalibrationHelper;
+import org.jquantlib.model.shortrate.calibrationhelpers.SwaptionHelper;
+import org.jquantlib.model.shortrate.onefactormodels.ExtendedCoxIngersollRoss;
+import org.jquantlib.model.shortrate.onefactormodels.HullWhite;
+import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.swaption.JamshidianSwaptionEngine;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * Phase 5f skeleton port of {@code test-suite/shortratemodels.cpp} v1.42.1
+ * Phase 5f port of {@code test-suite/shortratemodels.cpp} v1.42.1
  * (445 LOC, 6 test cases).
  *
- * <p>Java already has per-model calibration tests
- * ({@code HullWhiteCalibrationTest}, {@code BlackKarasinskiCalibrationTest},
- * {@code CoxIngersollRossCalibrationTest}, {@code VasicekCalibrationTest},
- * {@code G2Test}); the C++ {@code shortratemodels.cpp} additionally
- * exercises cached pricing values, fixed-reversion calibration, swap
- * pricing through HW, futures convexity bias, and ECIR discount factors.
- *
- * <p><strong>All cases deferred to Phase 5f.5</strong>:
+ * <p>Cached HullWhite + ExtendedCoxIngersollRoss test cases body-filled in
+ * Phase 5e.5b-CFC-d-37. The two cases that depend on infrastructure not yet
+ * present in the Java port stay {@code @Ignore}d:
  * <ul>
- *   <li>{@code testCachedHullWhite} — cached HW pricing values</li>
- *   <li>{@code testCachedHullWhiteFixedReversion} — fixed-reversion HW</li>
- *   <li>{@code testCachedHullWhite2} — second cached HW reference set</li>
- *   <li>{@code testSwaps} — swap pricing through HW model</li>
- *   <li>{@code testFuturesConvexityBias} — futures-vs-FRA convexity</li>
- *   <li>{@code testExtendedCoxIngersollRossDiscountFactor} — ECIR DF</li>
+ *   <li>{@link #testCachedHullWhiteFixedReversion} — requires a
+ *       {@code HullWhite::FixedReversion} projection argument to
+ *       {@code CalibratedModel.calibrate}; Java's single calibrate overload
+ *       does not yet accept a {@code Projection}.</li>
+ *   <li>{@link #testSwaps} — requires {@code DiscountCurve} (interpolated
+ *       discount-factor yield curve) and {@code TreeVanillaSwapEngine}; both
+ *       are unported in Java.</li>
  * </ul>
- *
- * <p>Reference values must be regenerated via {@code migration-harness/}
- * probes against C++ v1.42.1 — Phase 5f.5 task.
  *
  * <p>Source: {@code test-suite/shortratemodels.cpp} v1.42.1 @
  * {@code 099987f0ca}.
  */
 public class ShortRateModelsTest {
 
-    @Ignore("Phase 5f.5 — needs cross-validated HW reference values")
-    @Test
-    public void testCachedHullWhite() { fail("not implemented"); }
+    /** Calibration helper data — five swaption vols across a 5x5 grid. */
+    private static final class CalibrationData {
+        final int start, length;
+        final double volatility;
 
-    @Ignore("Phase 5f.5 — fixed-reversion HW calibration plumbing")
+        CalibrationData(final int start, final int length, final double volatility) {
+            this.start = start;
+            this.length = length;
+            this.volatility = volatility;
+        }
+    }
+
+    private static final CalibrationData[] CAL_DATA = {
+            new CalibrationData(1, 5, 0.1148),
+            new CalibrationData(2, 4, 0.1108),
+            new CalibrationData(3, 3, 0.1070),
+            new CalibrationData(4, 2, 0.1021),
+            new CalibrationData(5, 1, 0.1000)
+    };
+
+    /**
+     * Hull-White calibration against cached values using swaptions with
+     * start delay. Java's {@code IborCoupon.Settings.usingAtParCoupons()}
+     * defaults to {@code true}, so we compare against the at-par-coupons
+     * branch of {@code testCachedHullWhite} (cachedA = 0.0464041,
+     * cachedSigma = 0.00579912). Tolerance per C++ source: 1.3e-5.
+     */
+    @Test
+    public void testCachedHullWhite() {
+        final Date today = new Date(15, Month.February, 2002);
+        final Date settlement = new Date(19, Month.February, 2002);
+        new Settings().setEvaluationDate(today);
+        final Handle<YieldTermStructure> termStructure = new Handle<YieldTermStructure>(
+                new FlatForward(settlement, 0.04875825, new Actual365Fixed()));
+
+        final HullWhite model = new HullWhite(termStructure);
+        final IborIndex index = new Euribor6M(termStructure);
+
+        final PricingEngine engine = new JamshidianSwaptionEngine(model, termStructure);
+
+        final List<CalibrationHelper> swaptions = new ArrayList<CalibrationHelper>();
+        for (final CalibrationData d : CAL_DATA) {
+            final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(d.volatility));
+            final BlackCalibrationHelper helper = new SwaptionHelper(
+                    new Period(d.start, TimeUnit.Years),
+                    new Period(d.length, TimeUnit.Years),
+                    vol, index,
+                    new Period(1, TimeUnit.Years),
+                    new Thirty360(Thirty360.Convention.BondBasis),
+                    new Actual360(),
+                    termStructure);
+            helper.setPricingEngine(engine);
+            swaptions.add(helper);
+        }
+
+        final LevenbergMarquardt optimizer = new LevenbergMarquardt(1.0e-8, 1.0e-8, 1.0e-8);
+        final EndCriteria endCriteria = new EndCriteria(10000, 100, 1e-6, 1e-8, 1e-8);
+
+        model.calibrate(swaptions, optimizer, endCriteria, new NoConstraint(), null);
+
+        // at-par-coupons branch (Java default)
+        final double cachedA = 0.0464041;
+        final double cachedSigma = 0.00579912;
+        final double tolerance = 1.3e-5;
+
+        final Array xMin = model.params();
+        if (Math.abs(xMin.get(0) - cachedA) > tolerance
+                || Math.abs(xMin.get(1) - cachedSigma) > tolerance) {
+            fail("Failed to reproduce cached calibration results:\n"
+                    + "calculated: a = " + xMin.get(0) + ", sigma = " + xMin.get(1) + "\n"
+                    + "expected:   a = " + cachedA + ", sigma = " + cachedSigma + "\n"
+                    + "diff a = " + (xMin.get(0) - cachedA)
+                    + ", diff sigma = " + (xMin.get(1) - cachedSigma)
+                    + ", end criteria = " + model.endCriteria());
+        }
+    }
+
+    /**
+     * <p><strong>Status: PARTIAL / IGNORED</strong> — requires
+     * {@code HullWhite::FixedReversion} {@code Projection} support in
+     * {@code CalibratedModel.calibrate}. The Java port has only one
+     * {@code calibrate(instruments, method, endCriteria,
+     * additionalConstraint, weights)} signature and does not yet accept a
+     * {@code Projection} (which is what {@code FixedReversion} provides in
+     * C++ to freeze the mean-reversion {@code a} parameter while optimizing
+     * only {@code sigma}). Cross-validated cached values from C++
+     * v1.42.1: at-par-coupons branch cachedA=0.05, cachedSigma=0.00585858;
+     * not-at-par cachedA=0.05, cachedSigma=0.00585835. Re-enable once a
+     * Projection-aware calibrate overload lands.
+     */
+    @Ignore("Phase 5e.5b-CFC-d-37 PARTIAL — needs Projection-aware "
+            + "CalibratedModel.calibrate overload (HullWhite.FixedReversion)")
     @Test
     public void testCachedHullWhiteFixedReversion() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — needs cross-validated HW reference values (set 2)")
+    /**
+     * Hull-White calibration against cached values using swaptions without
+     * start delay (custom {@link IborIndex} with zero fixing days). Compares
+     * against the at-par-coupons branch of {@code testCachedHullWhite2}:
+     * cachedA = 0.0482063, cachedSigma = 0.00582687. Tolerance per C++
+     * source: 1.0e-5.
+     */
     @Test
-    public void testCachedHullWhite2() { fail("not implemented"); }
+    public void testCachedHullWhite2() {
+        final Date today = new Date(15, Month.February, 2002);
+        final Date settlement = new Date(19, Month.February, 2002);
+        new Settings().setEvaluationDate(today);
+        final Handle<YieldTermStructure> termStructure = new Handle<YieldTermStructure>(
+                new FlatForward(settlement, 0.04875825, new Actual365Fixed()));
 
-    @Ignore("Phase 5f.5 — needs HW swap-pricing reference values")
+        final HullWhite model = new HullWhite(termStructure);
+        final IborIndex base = new Euribor6M(termStructure);
+        // Euribor 6m with zero fixing days — clone of base via the
+        // generic IborIndex ctor.
+        final IborIndex index0 = new IborIndex(
+                base.familyName(), base.tenor(), 0, base.currency(),
+                base.fixingCalendar(), base.businessDayConvention(),
+                base.endOfMonth(), base.dayCounter(), termStructure);
+
+        final PricingEngine engine = new JamshidianSwaptionEngine(model, termStructure);
+
+        final List<CalibrationHelper> swaptions = new ArrayList<CalibrationHelper>();
+        for (final CalibrationData d : CAL_DATA) {
+            final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(d.volatility));
+            final BlackCalibrationHelper helper = new SwaptionHelper(
+                    new Period(d.start, TimeUnit.Years),
+                    new Period(d.length, TimeUnit.Years),
+                    vol, index0,
+                    new Period(1, TimeUnit.Years),
+                    new Thirty360(Thirty360.Convention.BondBasis),
+                    new Actual360(),
+                    termStructure);
+            helper.setPricingEngine(engine);
+            swaptions.add(helper);
+        }
+
+        final LevenbergMarquardt optimizer = new LevenbergMarquardt(1.0e-8, 1.0e-8, 1.0e-8);
+        final EndCriteria endCriteria = new EndCriteria(10000, 100, 1e-6, 1e-8, 1e-8);
+
+        model.calibrate(swaptions, optimizer, endCriteria, new NoConstraint(), null);
+
+        final double cachedA = 0.0482063;
+        final double cachedSigma = 0.00582687;
+        final double tolerance = 1.0e-5;
+
+        final Array xMin = model.params();
+        if (Math.abs(xMin.get(0) - cachedA) > tolerance
+                || Math.abs(xMin.get(1) - cachedSigma) > tolerance) {
+            fail("Failed to reproduce cached calibration results:\n"
+                    + "calculated: a = " + xMin.get(0) + ", sigma = " + xMin.get(1) + "\n"
+                    + "expected:   a = " + cachedA + ", sigma = " + cachedSigma + "\n"
+                    + "diff a = " + (xMin.get(0) - cachedA)
+                    + ", diff sigma = " + (xMin.get(1) - cachedSigma)
+                    + ", end criteria = " + model.endCriteria());
+        }
+    }
+
+    /**
+     * <p><strong>Status: PARTIAL / IGNORED</strong> — requires
+     * {@code DiscountCurve} (an interpolated discount-factor yield curve)
+     * and {@code TreeVanillaSwapEngine}. Neither is ported in Java. The C++
+     * test prices three vanilla swaps under a HW tree (120 steps) on a
+     * 12-point discount curve and asserts the tree NPV matches the
+     * {@code DiscountingSwapEngine} NPV. Re-enable once both classes land.
+     */
+    @Ignore("Phase 5e.5b-CFC-d-37 PARTIAL — DiscountCurve + "
+            + "TreeVanillaSwapEngine unported in Java")
     @Test
     public void testSwaps() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — futures-convexity-bias adjustment harness")
+    /**
+     * Hull-White futures convexity bias. Cross-validates {@link
+     * HullWhite#convexityBias(double, double, double, double, double)}
+     * against five (T, a, expectedForward) tuples drawn verbatim from C++
+     * {@code test-suite/shortratemodels.cpp} v1.42.1 (Kirikos &amp; Novak,
+     * "Convexity Conundrums", Risk Magazine, March 1997). Per the C++
+     * source, futureQuote = 94.0, sigma = 0.015, t = 5.0, tolerance = 1e-7.
+     */
     @Test
-    public void testFuturesConvexityBias() { fail("not implemented"); }
+    public void testFuturesConvexityBias() {
+        final double futureQuote = 94.0;
+        final double sigma = 0.015;
+        final double t = 5.0;
+        final double tolerance = 0.0000001;
 
-    @Ignore("Phase 5f.5 — ECIR discount factor cross-validation")
+        final double[][] cases = {
+                // {T, a, expectedForward}
+                { 5.25, 0.03,  0.0573037 },
+                { 5.25, 1e-4,  0.0568627 },
+                { 5.25, 0.0,   0.0568611 },
+                { 5.001, 0.03, 0.0575736 },
+                { 5.0,   0.03, 0.0575747 }
+        };
+        for (final double[] c : cases) {
+            final double T = c[0];
+            final double a = c[1];
+            final double expectedForward = c[2];
+            final double futureImpliedRate = (100.0 - futureQuote) / 100.0;
+            final double calculatedForward = futureImpliedRate
+                    - HullWhite.convexityBias(futureQuote, t, T, sigma, a);
+            final double error = Math.abs(calculatedForward - expectedForward);
+            if (!(error < tolerance)) {
+                fail("Failed to reproduce convexity bias:\n"
+                        + "calculated: " + calculatedForward
+                        + "\n  expected: " + expectedForward
+                        + "\n     error: " + error
+                        + "\n tolerance: " + tolerance
+                        + "\n (T=" + T + ", a=" + a + ")");
+            }
+        }
+    }
+
+    /**
+     * Zero-bond pricing for the extended CIR model. Identity test: under a
+     * flat {@code r} curve and an ECIR model whose parameters are chosen so
+     * the fitting parameter {@code phi} is essentially zero, the model
+     * {@code discountBond(now, maturity, rate)} must equal the curve ratio
+     * {@code discount(maturity)/discount(now)}. Tolerance per C++ source:
+     * 1e-6.
+     */
     @Test
-    public void testExtendedCoxIngersollRossDiscountFactor() { fail("not implemented"); }
+    public void testExtendedCoxIngersollRossDiscountFactor() {
+        final Date today = new Settings().evaluationDate();
+        final double rate = 0.1;
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(today, rate, new Actual365Fixed()));
+
+        final double now = 1.5;
+        final double maturity = 2.5;
+
+        // Match C++: ExtendedCoxIngersollRoss(rTS, theta=rate, k=1.0,
+        // sigma=1e-4, x0=rate). With sigma -> 0 the model degenerates so
+        // the term-structure fit makes discountBond(now,maturity,rate)
+        // collapse to rTS->discount(maturity)/rTS->discount(now).
+        final ExtendedCoxIngersollRoss cirModel = new ExtendedCoxIngersollRoss(
+                rTS, rate, 1.0, 1e-4, rate);
+
+        final double expected = rTS.currentLink().discount(maturity)
+                / rTS.currentLink().discount(now);
+        final double calculated = cirModel.discountBond(now, maturity, rate);
+
+        final double tol = 1.0e-6;
+        assertEquals("ECIR discountBond must match curve ratio",
+                expected, calculated, tol);
+    }
 }
