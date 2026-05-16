@@ -1,0 +1,89 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "atm_fdm": 12.886404686899848,
+        "atm_rate": 0.05000000591024675,
+        "atm_tree": 12.906866329650406,
+        "atm_tree_shifted": 12.773595784016804,
+        "itm_fdm": 42.20912637464584,
+        "itm_tree": 42.245971500545885,
+        "itm_tree_shifted": 42.18486690031174,
+        "otm_fdm": 2.4437590288174396,
+        "otm_tree": 2.498579352565752,
+        "otm_tree_shifted": 2.4378789402029133
+      },
+      "inputs": {
+        "calendar": "TARGET",
+        "eval_date": "2002-02-15",
+        "fixed_day_counter": "30/360 BondBasis",
+        "fixed_freq": "Annual",
+        "flat_rate": 0.04875825,
+        "float_freq": "Semiannual",
+        "hw_a": 0.048696,
+        "hw_sigma": 0.0058904,
+        "index": "Euribor6M",
+        "length_years": 5,
+        "nominal": 1000.0,
+        "settlement": "2002-02-19",
+        "start_years": 1,
+        "time_steps": 50,
+        "yts_day_counter": "Actual/365 Fixed"
+      },
+      "name": "cached_hw"
+    },
+    {
+      "expected": {
+        "atm_rate": 0.049998409945617835,
+        "fdm": [
+          103.22719265435043,
+          54.65018839076246,
+          20.04691819275982,
+          5.269241867089192,
+          1.0709280672090955
+        ],
+        "tree": [
+          103.24839596175579,
+          54.66955313664992,
+          20.16851072021098,
+          5.441175290562375,
+          1.1273719782370346
+        ]
+      },
+      "inputs": {
+        "calendar": "TARGET",
+        "eval_date": "2016-09-15",
+        "fd_damping_steps": 0,
+        "fd_inv_eps": 0.001,
+        "fd_t_grid": 50,
+        "fd_x_grid": 75,
+        "fd_y_grid": 75,
+        "flat_rate": 0.04875825,
+        "g2_a": 0.1,
+        "g2_b": 0.2,
+        "g2_eta": 0.013,
+        "g2_rho": -0.5,
+        "g2_sigma": 0.01,
+        "index": "Euribor6M",
+        "length_years": 5,
+        "nominal": 1000.0,
+        "settlement": "2016-09-19",
+        "start_years": 1,
+        "strike_multipliers": [
+          0.5,
+          0.75,
+          1.0,
+          1.25,
+          1.5
+        ],
+        "tree_time_steps": 50
+      },
+      "name": "cached_g2"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-16T17:47:50Z",
+  "generated_by": "bermudanswaption_probe",
+  "test_group": "instruments/bermudan_swaption"
+}
