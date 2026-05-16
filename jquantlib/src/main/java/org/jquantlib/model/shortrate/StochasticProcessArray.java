@@ -86,11 +86,15 @@ public class StochasticProcessArray extends StochasticProcess {
 
     @Override
     public Matrix diffusion(final /*Time*/ double t, final Array x)  {
+        // Mirror C++ QuantLib: Matrix tmp = sqrtCorrelation_; scale rows of tmp; return tmp.
+        // sqrtCorrelation_ must NOT be mutated -- repeated calls otherwise compound the
+        // multiplication and corrupt the stored sqrt-correlation matrix.
+        final Matrix tmp = new Matrix(sqrtCorrelation_);
         for (int i=0; i<size(); i++) {
             final double sigma = processes_.get(i).diffusion(t, x.get(i));
-            sqrtCorrelation_.rangeRow(i).mulAssign(sigma);
+            tmp.rangeRow(i).mulAssign(sigma);
         }
-        return sqrtCorrelation_;
+        return tmp;
     }
 
     @Override
@@ -104,11 +108,15 @@ public class StochasticProcessArray extends StochasticProcess {
 
     @Override
     public Matrix stdDeviation(final /*@Time*/ double t0, final Array x0, final /*@Time*/ double dt)  {
+        // Mirror C++ QuantLib: Matrix tmp = sqrtCorrelation_; scale rows of tmp; return tmp.
+        // sqrtCorrelation_ must NOT be mutated -- repeated calls otherwise compound the
+        // multiplication and corrupt the stored sqrt-correlation matrix.
+        final Matrix tmp = new Matrix(sqrtCorrelation_);
         for (int i=0; i<size(); i++) {
             final double sigma = processes_.get(i).stdDeviation(t0, x0.get(i), dt);
-            sqrtCorrelation_.rangeRow(i).mulAssign(sigma);
+            tmp.rangeRow(i).mulAssign(sigma);
         }
-        return sqrtCorrelation_;
+        return tmp;
     }
 
     @Override
