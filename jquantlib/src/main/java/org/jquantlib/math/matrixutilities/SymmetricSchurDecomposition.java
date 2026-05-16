@@ -165,6 +165,19 @@ public class SymmetricSchurDecomposition {
         } while (++ite <= maxIterations && keeplooping);
 
         QL.ensure(ite <= maxIterations, "Too many iterations reached");
+
+        // Phase 5e.5b-CFC-d-27 align: C++ symmetricschurdecomposition.cpp:115-138
+        // performs an (eigenvalue, eigenvector) sort in descending eigenvalue order,
+        // then normalizes each eigenvector's sign so the first row entry is non-negative.
+        // Without this step, Java's PseudoSqrt(Spectral) returns columns in a different
+        // order/sign than C++ pseudoSqrt(corr, SalvagingAlgorithm::Spectral), which
+        // decorrelates the dz mapping in MultiPathGenerator and breaks the
+        // Himalaya/Everest/Pagoda cached MC tests (and any other test that compares
+        // against C++ reference values produced from PseudoSqrt(Spectral)).
+        //
+        // Reference: migration-harness/cpp/probes/math/matrixutilities/pseudosqrt_spectral_probe.cpp
+        // + migration-harness/references/math/matrixutilities/pseudosqrt_spectral.json
+        sortAndSignNormalize();
     }
 
     //
@@ -199,6 +212,63 @@ public class SymmetricSchurDecomposition {
         x2 = m.$[m.addr.op(j2, k2)];
         m.$[m.addr.op(j1, k1)] = x1 - dil * (x2 + x1 * rot);
         m.$[m.addr.op(j2, k2)] = x2 + dil * (x1 - x2 * rot);
+    }
+
+    /**
+     * Sort (eigenvalues, eigenvectors) so eigenvalues are in descending order,
+     * then sign-normalize each eigenvector so its first row entry is non-negative.
+     * Mirrors C++ {@code symmetricschurdecomposition.cpp:115-138}.
+     *
+     * <p>Also rounds any eigenvalue whose magnitude relative to the largest
+     * eigenvalue is below 1e-16 down to zero, matching the C++ round-off guard.
+     */
+    private void sortAndSignNormalize() {
+        // Offset-aware indexing: Array/Matrix coordinates are 1-based for fortran flags,
+        // 0-based otherwise. Use the same offset as the rest of this class.
+        final int aOffset = diag.begin();   // 0 or 1
+        final int mOffset = A.offset();     // 0 or 1
+
+        // Snapshot current (eigenvalue, eigenvector-column) pairs in plain 0-based arrays.
+        final double[] values = new double[size];
+        final double[][] vectors = new double[size][size]; // vectors[col][row]
+        for (int col = 0; col < size; ++col) {
+            values[col] = diag.get(col + aOffset);
+            for (int row = 0; row < size; ++row) {
+                vectors[col][row] = A.get(row + mOffset, col + mOffset);
+            }
+        }
+
+        // Index-based sort, descending by eigenvalue. std::sort with std::greater<>
+        // on std::pair compares the .first first; ties are broken by the vectors'
+        // lexicographic order — practically not observed for non-degenerate inputs.
+        final Integer[] idx = new Integer[size];
+        for (int i = 0; i < size; ++i) idx[i] = i;
+        java.util.Arrays.sort(idx, (a, b) -> {
+            final int c = Double.compare(values[b], values[a]); // descending
+            if (c != 0) return c;
+            // Lexicographic tie-break on the eigenvector entries, matching
+            // std::pair<Real, std::vector<Real>> with std::greater<>.
+            for (int r = 0; r < size; ++r) {
+                final int cc = Double.compare(vectors[b][r], vectors[a][r]);
+                if (cc != 0) return cc;
+            }
+            return 0;
+        });
+
+        final double maxEv = values[idx[0]];
+        for (int col = 0; col < size; ++col) {
+            final int src = idx[col];
+            // Round-off guard: zero out eigenvalues whose magnitude relative to
+            // the largest is below machine precision (matches C++ 1e-16 threshold).
+            final double ev = values[src];
+            final double newEv = (maxEv != 0.0 && Math.abs(ev / maxEv) < 1e-16) ? 0.0 : ev;
+            diag.set(col + aOffset, newEv);
+
+            final double sign = (vectors[src][0] < 0.0) ? -1.0 : 1.0;
+            for (int row = 0; row < size; ++row) {
+                A.set(row + mOffset, col + mOffset, sign * vectors[src][row]);
+            }
+        }
     }
 
 }
