@@ -71,6 +71,11 @@ public class OISRateHelper extends RelativeDateRateHelper {
 
     protected final int settlementDays_;
     protected final Period tenor_;
+    /**
+     * Clone of the user-supplied overnight index, re-linked to
+     * {@link #termStructureHandle_} so the bootstrap drives forecasting.
+     * Mirrors C++ {@code oisratehelper.cpp:112}.
+     */
     protected final OvernightIndex overnightIndex_;
     protected final Handle<YieldTermStructure> discountHandle_;
     protected final boolean telescopicValueDates_;
@@ -125,7 +130,15 @@ public class OISRateHelper extends RelativeDateRateHelper {
         super(fixedRate);
         this.settlementDays_ = settlementDays;
         this.tenor_ = tenor;
-        this.overnightIndex_ = overnightIndex;
+        // Clone the index so its forwarding curve is the bootstrap curve
+        // (termStructureHandle_), not whatever the caller supplied.
+        // Mirrors C++ oisratehelper.cpp:111-112 which does
+        //   overnightIndex_ = dynamic_pointer_cast<OvernightIndex>(
+        //                         overnightIndex->clone(termStructureHandle_))
+        // The Java OvernightIndex.clone returns Handle<IborIndex>; we
+        // unwrap to OvernightIndex.
+        this.overnightIndex_ =
+                (OvernightIndex) overnightIndex.clone(termStructureHandle_).currentLink();
         this.discountHandle_ = discountingCurve;
         this.telescopicValueDates_ = telescopicValueDates;
         this.paymentLag_ = paymentLag;
