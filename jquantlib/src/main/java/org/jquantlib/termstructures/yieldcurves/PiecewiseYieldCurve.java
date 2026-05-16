@@ -702,79 +702,102 @@ public class PiecewiseYieldCurve<
         return baseCurve.discount(t);
     }
 
+    // Phase 5e.5b-CFC-d-40: All forwardRate/zeroRate/parRate overrides must
+    // invoke calculate() before delegating to baseCurve. In C++ only
+    // discountImpl is overridden; forwardRate/zeroRate route through
+    // discount() -> discountImpl(), which triggers the bootstrap. Java
+    // overrides each method directly to delegate to baseCurve, so without
+    // explicit calculate() the lazy bootstrap never runs and baseCurve's
+    // dates array is still null on first read.
+
     @Override
     public InterestRate forwardRate(final Date d1, final Date d2, final DayCounter dayCounter, final Compounding comp, final Frequency freq, final boolean extrapolate) {
+        calculate();
         return baseCurve.forwardRate(d1, d2, dayCounter, comp, freq, extrapolate);
     }
 
     @Override
     public InterestRate forwardRate(final Date d1, final Date d2, final DayCounter resultDayCounter, final Compounding comp, final Frequency freq) {
+        calculate();
         return baseCurve.forwardRate(d1, d2, resultDayCounter, comp, freq);
     }
 
     @Override
     public InterestRate forwardRate(final Date d1, final Date d2, final DayCounter resultDayCounter, final Compounding comp) {
+        calculate();
         return baseCurve.forwardRate(d1, d2, resultDayCounter, comp);
     }
 
     @Override
     public InterestRate forwardRate(final Date d, final Period p, final DayCounter dayCounter, final Compounding comp, final Frequency freq, final boolean extrapolate) {
+        calculate();
         return baseCurve.forwardRate(d, p, dayCounter, comp, freq, extrapolate);
     }
 
     @Override
     public InterestRate forwardRate(final Date d, final Period p, final DayCounter resultDayCounter, final Compounding comp, final Frequency freq) {
+        calculate();
         return baseCurve.forwardRate(d, p, resultDayCounter, comp, freq);
     }
 
     @Override
     public InterestRate forwardRate(final double time1, final double time2, final Compounding comp, final Frequency freq, final boolean extrapolate) {
+        calculate();
         return baseCurve.forwardRate(time1, time2, comp, freq, extrapolate);
     }
 
     @Override
     public InterestRate forwardRate(final double t1, final double t2, final Compounding comp, final Frequency freq) {
+        calculate();
         return baseCurve.forwardRate(t1, t2, comp, freq);
     }
 
     @Override
     public InterestRate forwardRate(final double t1, final double t2, final Compounding comp) {
+        calculate();
         return baseCurve.forwardRate(t1, t2, comp);
     }
 
     @Override
     public double parRate(final Date[] dates, final Frequency freq, final boolean extrapolate) {
+        calculate();
         return baseCurve.parRate(dates, freq, extrapolate);
     }
 
 
     @Override
     public double parRate(final double[] times, final Frequency frequency, final boolean extrapolate) {
+        calculate();
         return baseCurve.parRate(times, frequency, extrapolate);
     }
 
     @Override
     public double parRate(final int tenor, final Date startDate, final Frequency freq, final boolean extrapolate) {
+        calculate();
         return baseCurve.parRate(tenor, startDate, freq, extrapolate);
     }
 
     @Override
     public InterestRate zeroRate(final Date d, final DayCounter dayCounter, final Compounding comp, final Frequency freq, final boolean extrapolate) {
+        calculate();
         return baseCurve.zeroRate(d, dayCounter, comp, freq, extrapolate);
     }
 
     @Override
     public InterestRate zeroRate(final Date d, final DayCounter resultDayCounter, final Compounding comp, final Frequency freq) {
+        calculate();
         return baseCurve.zeroRate(d, resultDayCounter, comp, freq);
     }
 
     @Override
     public InterestRate zeroRate(final Date d, final DayCounter resultDayCounter, final Compounding comp) {
+        calculate();
         return baseCurve.zeroRate(d, resultDayCounter, comp);
     }
 
     @Override
     public InterestRate zeroRate(final double time, final Compounding comp, final Frequency freq, final boolean extrapolate) {
+        calculate();
         return baseCurve.zeroRate(time, comp, freq, extrapolate);
     }
 

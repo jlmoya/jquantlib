@@ -43,24 +43,39 @@ import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
+import org.jquantlib.currencies.Currency;
 import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.daycounters.Thirty360;
+import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.math.Closeness;
+import org.jquantlib.math.interpolations.factories.LogLinear;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.AbstractYieldTermStructure;
+import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.IterativeBootstrap;
+import org.jquantlib.termstructures.RateHelper;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.DepositRateHelper;
+import org.jquantlib.termstructures.yieldcurves.Discount;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.termstructures.yieldcurves.ForwardSpreadedTermStructure;
 import org.jquantlib.termstructures.yieldcurves.ImpliedTermStructure;
+import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
+import org.jquantlib.termstructures.yieldcurves.SwapRateHelper;
+import org.jquantlib.termstructures.yieldcurves.ZeroSpreadedTermStructure;
 import org.jquantlib.testsuite.util.Flag;
+import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.time.calendars.Target;
-import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -77,73 +92,70 @@ public class TermStructuresTest {
 
         this.calendar = new Target();
         this.settlementDays = 2;
-        this.termStructure = null;
-        this.dummyTermStructure = null;
 
-        //FIXME: remove comments when PiecewiseYieldCurve becomes available
+        // Mirror C++ test-suite/termstructures.cpp CommonVars setup:
+        //   calendar = TARGET(); settlementDays = 2;
+        //   today = calendar.adjust(Date::todaysDate()); Settings::instance().evaluationDate() = today;
+        //   settlement = calendar.advance(today, settlementDays, Days);
+        //   Datum depositData[] = { 1m 4.581, 2m 4.573, 3m 4.557, 6m 4.496, 9m 4.490 }
+        //   Datum swapData[]    = { 1y 4.54, 5y 4.99, 10y 5.47, 20y 5.89, 30y 5.96 }
+        //   PiecewiseYieldCurve<Discount,LogLinear>(settlement, instruments, Actual360())
 
-        //		calendar = org.jquantlib.time.calendars.Target.getCalendar();
-        //        settlementDays = 2;
-        //        org.jquantlib.util.Date today = calendar.advance(org.jquantlib.util.DateFactory.getFactory().getTodaysDate());
-        //        org.jquantlib.Configuration.getSystemConfiguration(null).getGlobalSettings().setEvaluationDate(today);
-        //        org.jquantlib.util.Date settlement = calendar.advance(today,settlementDays,TimeUnit.DAYS);
-        //
-        //        Datum depositData[] = new Datum[] {
-        //        		new Datum( 1, TimeUnit.MONTHS, 4.581 ),
-        //        		new Datum( 2, TimeUnit.MONTHS, 4.573 ),
-        //        		new Datum( 3, TimeUnit.MONTHS, 4.557 ),
-        //        		new Datum( 6, TimeUnit.MONTHS, 4.496 ),
-        //        		new Datum( 9, TimeUnit.MONTHS, 4.490 )
-        //        };
-        //
-        //        Datum swapData[] =  new Datum[] {
-        //        		  new Datum(  1, TimeUnit.YEARS, 4.54 ),
-        //                new Datum(  5, TimeUnit.YEARS, 4.99 ),
-        //                new Datum( 10, TimeUnit.YEARS, 5.47 ),
-        //                new Datum( 20, TimeUnit.YEARS, 5.89 ),
-        //                new Datum( 30, TimeUnit.YEARS, 5.96 )
-        //        };
-        //
-        //        int deposits = depositData.length;
-        //        int swaps = swapData.length;
-        //
-        //        RateHelper<YieldTermStructure> instruments[] = new RateHelper[deposits+swaps];
-        //
-        //
-        //        for (int i=0; i<deposits; i++) {
-        //            instruments[i] = new DepositRateHelper<YieldTermStructure>(
-        //            						depositData[i].rate/100,
-        //            						new Period(depositData[i].n, depositData[i].units),
-        //                                    settlementDays, calendar,
-        //                                    BusinessDayConvention.MODIFIED_FOLLOWING, true,
-        //                                    Actual360.getDayCounter());
-        //        }
-        //
-        //
-        //       IborIndex index = new IborIndex(
-        //       							"dummy",
-        //       							new Period(6,TimeUnit.MONTHS),
-        //       							settlementDays,
-        //       							calendar,
-        //								null,
-        //								BusinessDayConvention.MODIFIED_FOLLOWING,
-        //								false,
-        //								Actual360.getDayCounter());
-        //
-        //        for (int i=0; i<swaps; ++i) {
-        //            instruments[i+deposits] = new SwapRateHelper(
-        //            						swapData[i].rate/100,
-        //            						new Period(swapData[i].n, swapData[i].units),
-        //                                    calendar, Frequency.ANNUAL,
-        //                                    BusinessDayConvention.UNADJUSTED, Thirty360.getDayCounter(),
-        //                                    index);
-        //        }
+        final Date today = this.calendar.adjust(Date.todaysDate());
+        new Settings().setEvaluationDate(today);
+        final Date settlement = this.calendar.advance(today, this.settlementDays, TimeUnit.Days);
 
+        final Datum depositData[] = new Datum[] {
+                new Datum(1, TimeUnit.Months, 4.581),
+                new Datum(2, TimeUnit.Months, 4.573),
+                new Datum(3, TimeUnit.Months, 4.557),
+                new Datum(6, TimeUnit.Months, 4.496),
+                new Datum(9, TimeUnit.Months, 4.490)
+        };
+        final Datum swapData[] = new Datum[] {
+                new Datum(1, TimeUnit.Years, 4.54),
+                new Datum(5, TimeUnit.Years, 4.99),
+                new Datum(10, TimeUnit.Years, 5.47),
+                new Datum(20, TimeUnit.Years, 5.89),
+                new Datum(30, TimeUnit.Years, 5.96)
+        };
+        final int deposits = depositData.length;
+        final int swaps = swapData.length;
 
-        //TODO: remove comments
-        //        termStructure = new PiecewiseYieldDiscountCurve<LogLinear>(settlement, instruments, Actual360.getDayCounter());
-        //
-        //        dummyTermStructure = new PiecewiseYieldDiscountCurve<LogLinear>(settlement, instruments, Actual360.getDayCounter());
+        final RateHelper[] instruments = new RateHelper[deposits + swaps];
+        for (int i = 0; i < deposits; i++) {
+            instruments[i] = new DepositRateHelper(
+                    depositData[i].rate / 100,
+                    new Period(depositData[i].n, depositData[i].units),
+                    this.settlementDays, this.calendar,
+                    BusinessDayConvention.ModifiedFollowing, true,
+                    new Actual360());
+        }
+        final IborIndex index = new IborIndex(
+                "dummy",
+                new Period(6, TimeUnit.Months),
+                this.settlementDays,
+                new Currency(),
+                this.calendar,
+                BusinessDayConvention.ModifiedFollowing,
+                false,
+                new Actual360());
+        for (int i = 0; i < swaps; i++) {
+            instruments[i + deposits] = new SwapRateHelper(
+                    swapData[i].rate / 100,
+                    new Period(swapData[i].n, swapData[i].units),
+                    this.calendar, Frequency.Annual,
+                    BusinessDayConvention.Unadjusted,
+                    new Thirty360(),
+                    index);
+        }
+
+        this.termStructure = new PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap>(
+                Discount.class, LogLinear.class, IterativeBootstrap.class,
+                settlement, instruments, new Actual360());
+        this.dummyTermStructure = new PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap>(
+                Discount.class, LogLinear.class, IterativeBootstrap.class,
+                settlement, instruments, new Actual360());
     }
 
 
@@ -182,51 +194,53 @@ public class TermStructuresTest {
     }
 
 
-    @Ignore
+    /**
+     * C++ ref: test-suite/termstructures.cpp BOOST_AUTO_TEST_CASE(testImplied).
+     * Tolerance 1.0e-10 per C++.
+     */
     @Test
     public void testImplied() {
         QL.info("Testing consistency of implied term structure...");
-        fail("***** TEST FAILED :: waiting for implementation of PiecewiseYieldTermStructure *****");
 
-        //	    final double tolerance = 1.0e-10;
-        //	    final Date today = settings.getEvaluationDate();
-        //	    final Date newToday = today.plus(Period.ONE_YEAR_FORWARD.times(3));
-        //	    final Date newSettlement = Target.getCalendar().advance(newToday, settlementDays, TimeUnit.DAYS);
-        //	    final Date testDate = newSettlement.plus(Period.ONE_YEAR_FORWARD.times(5));
-        //
-        //	    final YieldTermStructure implied = new ImpliedTermStructure<YieldTermStructure>(
-        //	    		new Handle<YieldTermStructure>(termStructure), newSettlement);
-        //
-        //	    final /*@DiscountFactor*/ double baseDiscount = termStructure.discount(newSettlement);
-        //	    final /*@DiscountFactor*/ double discount = termStructure.discount(testDate);
-        //	    final /*@DiscountFactor*/ double impliedDiscount = implied.discount(testDate);
-        //
-        //        if (Math.abs(discount - baseDiscount*impliedDiscount) > tolerance)
-        //        	fail("unable to reproduce discount from implied curve\n"
-        //	            + "    calculated: " + baseDiscount*impliedDiscount + "\n"
-        //	            + "    expected:   " + discount);
+        final double tolerance = 1.0e-10;
+        final Date today = new Settings().evaluationDate();
+        final Date newToday = today.add(new Period(3, TimeUnit.Years));
+        final Date newSettlement = calendar.advance(newToday, settlementDays, TimeUnit.Days);
+        final Date testDate = newSettlement.add(new Period(5, TimeUnit.Years));
+
+        final YieldTermStructure implied = new ImpliedTermStructure<YieldTermStructure>(
+                new Handle<YieldTermStructure>(termStructure), newSettlement);
+
+        final /*@DiscountFactor*/ double baseDiscount = termStructure.discount(newSettlement);
+        final /*@DiscountFactor*/ double discount = termStructure.discount(testDate);
+        final /*@DiscountFactor*/ double impliedDiscount = implied.discount(testDate);
+
+        if (Math.abs(discount - baseDiscount * impliedDiscount) > tolerance) {
+            fail("unable to reproduce discount from implied curve\n"
+                    + "    calculated: " + (baseDiscount * impliedDiscount) + "\n"
+                    + "    expected:   " + discount);
+        }
     }
 
 
     /**
-     * FIXME:
-     * This test should be using PiecewiseYieldCurve but was changed to use another TermStructure for the time being whilst
-     * PiecewiseYieldCurve is not available.
+     * C++ ref: test-suite/termstructures.cpp BOOST_AUTO_TEST_CASE(testImpliedObs).
+     * Body-filled to match C++: build a {@link RelinkableHandle}, attach observer,
+     * then {@link RelinkableHandle#linkTo(Object)} and assert the observer fired.
+     * <p>
+     * Historical note: the prior in-tree {@code testImpliedObs} used a
+     * {@code FlatForward} placeholder because {@link PiecewiseYieldCurve} was not
+     * yet wired in. With the curve now bootstrapped in the constructor we follow
+     * the C++ code verbatim.
      */
     @Test
     public void testImpliedObs() {
         QL.info("Testing observability of implied term structure...");
 
         final Date today = new Settings().evaluationDate();
-        final Date newToday = today.add(Period.ONE_YEAR_FORWARD.mul(3));
-        final Date newSettlement = new Target().advance(newToday, settlementDays, TimeUnit.Days);
+        final Date newToday = today.add(new Period(3, TimeUnit.Years));
+        final Date newSettlement = calendar.advance(newToday, settlementDays, TimeUnit.Days);
 
-        //FIXME:: Fix RelinkableHandle. The initialization of "h" should be:
-        //
-        //        final RelinkableHandle<YieldTermStructure> h = new RelinkableHandle<YieldTermStructure>(YieldTermStructure.class);
-        //
-        // see: http://bugs.jquantlib.org/view.php?id=465
-        //
         final RelinkableHandle<YieldTermStructure> h = new RelinkableHandle<YieldTermStructure>(
                 new AbstractYieldTermStructure() {
                     @Override
@@ -244,149 +258,195 @@ public class TermStructuresTest {
         final Flag flag = new Flag();
         implied.addObserver(flag);
 
-        // TODO: initialization needed (dependent of PiecewiseYieldCurve)
-        // h.setLink(termStructure);
-
-        // -------------------------------------------------------------------------------------------------------------
-        // FIXME: This code was added instead. Please remove when PiecewiseYieldCurve becomes ready
-        //
-        final Quote quote = new SimpleQuote(100.0);
-        final Flag anotherFlag = new Flag();
-        quote.addObserver(anotherFlag);
-        h.linkTo(new FlatForward(today, new Handle<Quote>(quote), new Actual360()));
-        if (!anotherFlag.isUp()) {
-            fail("Observer was not notified of term structure change");
-        }
-
+        h.linkTo(termStructure);
         if (!flag.isUp()) {
             fail("Observer was not notified of term structure change");
         }
     }
-//    Date today = Settings::instance().evaluationDate();
-//    Date newToday = today + 3*Years;
-//    Date newSettlement = vars.calendar.advance(newToday,
-//                                               vars.settlementDays,Days);
-//    RelinkableHandle<YieldTermStructure> h;
-//    boost::shared_ptr<YieldTermStructure> implied(
-//                                  new ImpliedTermStructure(h, newSettlement));
-//    Flag flag;
-//    flag.registerWith(implied);
-//    h.linkTo(vars.termStructure);
-//    if (!flag.isUp())
-//        BOOST_ERROR("Observer was not notified of term structure change");
 
 
-    @Ignore
+    /**
+     * C++ ref: test-suite/termstructures.cpp BOOST_AUTO_TEST_CASE(testFSpreaded).
+     * Tolerance 1.0e-10 per C++.
+     */
     @Test
     public void testFSpreaded() {
         QL.info("Testing consistency of forward-spreaded term structure...");
-        fail("***** TEST FAILED :: waiting for translation of ForwardSpreadedTermStructure *****");
 
-        //	    final double tolerance = 1.0e-10;
-        //	    final Quote me = new SimpleQuote(0.01);
-        //	    final Handle<Quote> mh = new Handle(me);
-        //
-        //	    YieldTermStructure spreaded = new ForwardSpreadedTermStructure( new Handle<YieldTermStructure>(termStructure), mh);
-        //	    Date testDate = termStructure.referenceDate().increment(5 * Period.ONE_YEAR_FORWARD.length());
-        //	    DayCounter tsdc  = termStructure.dayCounter();
-        //	    DayCounter sprdc = spreaded.dayCounter();
-        //
-        //	    // FIXME :: code review:: could be:: /*@Rate*/ double forward = ... ?????
-        //	    InterestRate forward = termStructure.forwardRate(testDate, testDate, tsdc, Compounding.CONTINUOUS, Frequency.NO_FREQUENCY);
-        //
-        //	    // FIXME :: code review:: could be:: /*@Rate*/ double spreadedForward = ... ?????
-        //	    InterestRate spreadedForward = spreaded.forwardRate(testDate, testDate, sprdc, Compounding.CONTINUOUS, Frequency.NO_FREQUENCY);
-        //
-        //        if (Math.abs(forward.rate() - (spreadedForward.rate() - me.evaluate())) > tolerance) {
-        //            fail("unable to reproduce forward from spreaded curve\n"
-        //                    + "    calculated: " + (spreadedForward.rate() - me.evaluate()) + "\n"
-        //                    + "    expected:   " + forward.rate()
-        //                );
-        //        }
+        final double tolerance = 1.0e-10;
+        final Quote me = new SimpleQuote(0.01);
+        final Handle<Quote> mh = new Handle<Quote>(me);
+
+        final YieldTermStructure spreaded = new ForwardSpreadedTermStructure(
+                new Handle<YieldTermStructure>(termStructure), mh);
+        final Date testDate = termStructure.referenceDate().add(new Period(5, TimeUnit.Years));
+        final DayCounter tsdc = termStructure.dayCounter();
+        final DayCounter sprdc = spreaded.dayCounter();
+
+        final /*@Rate*/ double forward = termStructure.forwardRate(
+                testDate, testDate, tsdc, Compounding.Continuous, Frequency.NoFrequency).rate();
+        final /*@Rate*/ double spreadedForward = spreaded.forwardRate(
+                testDate, testDate, sprdc, Compounding.Continuous, Frequency.NoFrequency).rate();
+
+        if (Math.abs(forward - (spreadedForward - me.value())) > tolerance) {
+            fail("unable to reproduce forward from spreaded curve\n"
+                    + "    calculated: " + (spreadedForward - me.value()) + "\n"
+                    + "    expected:   " + forward);
+        }
     }
 
 
-    @Ignore
+    /**
+     * C++ ref: test-suite/termstructures.cpp BOOST_AUTO_TEST_CASE(testFSpreadedObs).
+     * Asserts the observer fires on (a) underlying-curve relink and (b) spread change.
+     */
     @Test
     public void testFSpreadedObs() {
         QL.info("Testing observability of forward-spreaded term structure...");
-        fail("***** TEST FAILED :: waiting for translation of ForwardSpreadedTermStructure *****");
 
-        //	    SimpleQuote me = new SimpleQuote(0.01);
-        //	    Handle<Quote> mh = new Handle<Quote>(me);
-        //	    RelinkableHandle<YieldTermStructure> h = new RelinkableHandle<YieldTermStructure>(); //(dummyTermStructure_);
-        //	    YieldTermStructure spreaded = new ForwardSpreadedTermStructure(h, mh);
-        //
-        //	    Flag flag = new Flag();
-        //	    spreaded.addObserver(flag);
-        //	    h.setLink(termStructure);
-        //	    if (!flag.isUp()) {
-        //	        fail("Observer was not notified of term structure change");
-        //	    }
-        //
-        //	    flag.lower();
-        //	    me.setValue(0.005);
-        //	    if (!flag.isUp()) {
-        //	        fail("Observer was not notified of spread change");
-        //	    }
+        final SimpleQuote me = new SimpleQuote(0.01);
+        final Handle<Quote> mh = new Handle<Quote>(me);
+        final RelinkableHandle<YieldTermStructure> h = new RelinkableHandle<YieldTermStructure>();
+        final YieldTermStructure spreaded = new ForwardSpreadedTermStructure(h, mh);
+
+        final Flag flag = new Flag();
+        spreaded.addObserver(flag);
+        h.linkTo(termStructure);
+        if (!flag.isUp()) {
+            fail("Observer was not notified of term structure change");
+        }
+
+        flag.lower();
+        me.setValue(0.005);
+        if (!flag.isUp()) {
+            fail("Observer was not notified of spread change");
+        }
     }
 
 
-    @Ignore
+    /**
+     * C++ ref: test-suite/termstructures.cpp BOOST_AUTO_TEST_CASE(testZSpreaded).
+     * Tolerance 1.0e-10 per C++.
+     */
     @Test
     public void testZSpreaded() {
         QL.info("Testing consistency of zero-spreaded term structure...");
-        fail("***** TEST FAILED :: waiting for translation of ZeroSpreadedTermStructure *****");
 
-        //	    double tolerance = 1.0e-10;
-        //	    Quote me = new SimpleQuote(0.01);
-        //	    Handle<Quote> mh = new Handle(me);
-        //	    YieldTermStructure spreaded = new ZeroSpreadedTermStructure(new Handle<YieldTermStructure>(termStructure), mh);
-        //	    Date testDate = termStructure.referenceDate().increment(5 * Period.ONE_YEAR_FORWARD.length());
-        //	    DayCounter rfdc  = termStructure.dayCounter();
-        //
-        //	    // FIXME :: code review:: could be:: /*@Rate*/ double zero = ... ?????
-        //	    InterestRate zero = termStructure.zeroRate(testDate, rfdc, Compounding.CONTINUOUS, Frequency.NO_FREQUENCY);
-        //
-        //	    // FIXME :: code review:: could be:: /*@Rate*/ double spreadedZero = ... ?????
-        //	    InterestRate spreadedZero = spreaded.zeroRate(testDate, rfdc, Compounding.CONTINUOUS, Frequency.NO_FREQUENCY);
-        //
-        //	    if (Math.abs(zero.rate() - (spreadedZero.rate() - me.evaluate())) > tolerance) {
-        //	        fail(
-        //	                "unable to reproduce zero yield from spreaded curve\n"
-        //	                + "    calculated: " + (spreadedZero.rate() - me.evaluate()) + "\n"
-        //	                + "    expected:   " + zero.rate());
-        //	    }
+        final double tolerance = 1.0e-10;
+        final Quote me = new SimpleQuote(0.01);
+        final Handle<Quote> mh = new Handle<Quote>(me);
+
+        final YieldTermStructure spreaded = new ZeroSpreadedTermStructure(
+                new Handle<YieldTermStructure>(termStructure), mh);
+        final Date testDate = termStructure.referenceDate().add(new Period(5, TimeUnit.Years));
+        final DayCounter rfdc = termStructure.dayCounter();
+
+        final /*@Rate*/ double zero = termStructure.zeroRate(
+                testDate, rfdc, Compounding.Continuous, Frequency.NoFrequency).rate();
+        final /*@Rate*/ double spreadedZero = spreaded.zeroRate(
+                testDate, rfdc, Compounding.Continuous, Frequency.NoFrequency).rate();
+
+        if (Math.abs(zero - (spreadedZero - me.value())) > tolerance) {
+            fail("unable to reproduce zero yield from spreaded curve\n"
+                    + "    calculated: " + (spreadedZero - me.value()) + "\n"
+                    + "    expected:   " + zero);
+        }
     }
 
 
-    @Ignore
+    /**
+     * C++ ref: test-suite/termstructures.cpp BOOST_AUTO_TEST_CASE(testZSpreadedObs).
+     * Like {@link #testFSpreadedObs} but with the {@link ZeroSpreadedTermStructure}.
+     * C++ seeds the {@link RelinkableHandle} with {@code dummyTermStructure} so the
+     * spread-on-curve can be constructed before the live link arrives.
+     */
     @Test
     public void testZSpreadedObs() {
         QL.info("Testing observability of zero-spreaded term structure...");
-        fail("***** TEST FAILED :: waiting for translation of ZeroSpreadedTermStructure *****");
 
-        //	    SimpleQuote me = new SimpleQuote(0.01);
-        //	    Handle<Quote> mh = new Handle<Quote>(me);
-        //
-        //	    RelinkableHandle<YieldTermStructure> h = new RelinkableHandle<YieldTermStructure>(dummyTermStructure);
-        //	    YieldTermStructure spreaded = new ZeroSpreadedTermStructure(h, mh);
-        //
-        //	    Flag flag = new Flag();
-        //	    spreaded.addObserver(flag);
-        //	    h.setLink(termStructure);
-        //
-        //        if (!flag.isUp()) {
-        //            fail("Observer was not notified of term structure change");
-        //	    }
-        //
-        //	    flag.lower();
-        //	    me.setValue(0.005);
-        //        if (!flag.isUp()) {
-        //            fail("Observer was not notified of spread change");
-        //	    }
+        final SimpleQuote me = new SimpleQuote(0.01);
+        final Handle<Quote> mh = new Handle<Quote>(me);
+
+        final RelinkableHandle<YieldTermStructure> h = new RelinkableHandle<YieldTermStructure>(dummyTermStructure);
+        final YieldTermStructure spreaded = new ZeroSpreadedTermStructure(h, mh);
+
+        final Flag flag = new Flag();
+        spreaded.addObserver(flag);
+        h.linkTo(termStructure);
+        if (!flag.isUp()) {
+            fail("Observer was not notified of term structure change");
+        }
+
+        flag.lower();
+        me.setValue(0.005);
+        if (!flag.isUp()) {
+            fail("Observer was not notified of spread change");
+        }
     }
 
+
+
+    /**
+     * Phase 5e.5b-CFC-d-40 regression: PiecewiseYieldCurve.forwardRate /
+     * zeroRate / parRate overrides must invoke calculate() so the lazy
+     * bootstrap runs on the first read. Before the fix these delegated
+     * straight to the (unbootstrapped) baseCurve and NPE'd on a fresh
+     * curve. We build brand-new PiecewiseYieldCurves here and call
+     * forwardRate/zeroRate BEFORE any other trigger (no maxDate(), no
+     * discount()) - the calls must succeed and return finite values.
+     */
+    @Test
+    public void testLazyBootstrapTriggers() {
+        QL.info("Testing lazy-bootstrap triggers on PiecewiseYieldCurve.forwardRate/zeroRate...");
+
+        final Calendar cal = new Target();
+        final int settle = 2;
+        final Date today = cal.adjust(Date.todaysDate());
+        new Settings().setEvaluationDate(today);
+        final Date settlement = cal.advance(today, settle, TimeUnit.Days);
+
+        final Datum[] deposits = new Datum[] {
+                new Datum(1, TimeUnit.Months, 4.581),
+                new Datum(2, TimeUnit.Months, 4.573),
+                new Datum(3, TimeUnit.Months, 4.557),
+        };
+
+        final RateHelper[] helpers = new RateHelper[deposits.length];
+        for (int i = 0; i < deposits.length; ++i) {
+            helpers[i] = new DepositRateHelper(
+                    deposits[i].rate / 100.0,
+                    new Period(deposits[i].n, deposits[i].units),
+                    settle,
+                    cal,
+                    BusinessDayConvention.ModifiedFollowing,
+                    true,
+                    new Actual360());
+        }
+
+        // Curve A: forwardRate(Date,Date,...) is the very first call.
+        final YieldTermStructure freshA = new PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap>(
+                Discount.class, LogLinear.class, IterativeBootstrap.class,
+                settlement, helpers, new Actual360());
+
+        final Date d = settlement.add(new Period(1, TimeUnit.Months));
+        final DayCounter dc = new Actual360();
+        final double fwd = freshA.forwardRate(
+                d, d, dc, Compounding.Continuous, Frequency.NoFrequency).rate();
+        if (Double.isNaN(fwd) || Double.isInfinite(fwd)) {
+            fail("forwardRate on fresh PiecewiseYieldCurve returned non-finite: " + fwd);
+        }
+
+        // Curve B: zeroRate(Date,...) is the very first call.
+        final YieldTermStructure freshB = new PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap>(
+                Discount.class, LogLinear.class, IterativeBootstrap.class,
+                settlement, helpers, new Actual360());
+
+        final double z = freshB.zeroRate(
+                d, dc, Compounding.Continuous, Frequency.NoFrequency).rate();
+        if (Double.isNaN(z) || Double.isInfinite(z)) {
+            fail("zeroRate on fresh PiecewiseYieldCurve returned non-finite: " + z);
+        }
+    }
 
 
     //
