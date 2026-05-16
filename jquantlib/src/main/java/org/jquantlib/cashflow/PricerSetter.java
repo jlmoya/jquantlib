@@ -89,10 +89,17 @@ public class PricerSetter implements PolymorphicVisitor {
         if (klass == FixedRateCoupon.class) {
             return (Visitor<CashFlow>) new CashFlowVisitor();
         }
-        
-//        if (klass == CappedFlooredIborCoupon.class) {
-//            return (Visitor<CashFlow>) new CappedFlooredIborCouponVisitor();
-//        }
+        // Phase 5e.5b-CFC-d-31: mirror C++ v1.42.1
+        // PricerSetter::visit(CappedFlooredIborCoupon&) at
+        // ql/cashflows/couponpricer.cpp:332-338. Required by
+        // capflooredcoupon.cpp test helper setCouponPricer(iborLeg, pricer)
+        // where iborLeg has caps/floors and so contains
+        // CappedFlooredIborCoupon instances. CappedFlooredCoupon.setPricer
+        // already propagates the pricer to the underlying IborCoupon (see
+        // CappedFlooredCoupon.java:156-167) — same effect as C++.
+        if (klass == CappedFlooredIborCoupon.class) {
+            return (Visitor<CashFlow>) new CappedFlooredIborCouponVisitor();
+        }
 //        if (klass == CappedFlooredCmsCoupon.class) {
 //            return (Visitor<CashFlow>) new CappedFlooredCmsCouponVisitor();
 //        }
@@ -161,27 +168,31 @@ public class PricerSetter implements PolymorphicVisitor {
         }
     }
 
+    // Phase 5e.5b-CFC-d-31: mirror C++ PricerSetter::visit(CappedFlooredIborCoupon&)
+    // at ql/cashflows/couponpricer.cpp:332-338. C++ casts the
+    // FloatingRateCouponPricer to IborCouponPricer (not a separate
+    // CappedFlooredIborCouponPricer class) and then calls c.setPricer(...).
+    // Java mirrors this exactly: CappedFlooredCoupon.setPricer propagates
+    // the pricer to the underlying IborCoupon.
+    private class CappedFlooredIborCouponVisitor implements Visitor<CashFlow> {
+        @Override
+        public void visit(final CashFlow o) {
+            if (IborCouponPricer.class.isAssignableFrom(pricer.getClass())) {
+                final CappedFlooredIborCoupon c = (CappedFlooredIborCoupon) o;
+                c.setPricer(pricer);
+            } else {
+                throw new LibraryException(INCOMPATIBLE_PRICER); // QA:[RG]::verified
+            }
+        }
+    }
 
-    
+
     //
     // TODO: Uncomment the following code as soon the corresponding classes become translated
     //
-    
-    
-    
-//	private class CappedFlooredIborCouponVisitor implements Visitor<CashFlow> {
-//		@Override
-//		public void visit(final CashFlow o) {
-//			if (CappedFlooredIborCouponPricer.class.isAssignableFrom(pricer
-//					.getClass())) {
-//				final CappedFlooredIborCoupon c = (CappedFlooredIborCoupon) o;
-//				c.setPricer((CappedFlooredIborCouponPricer) pricer);
-//			} else {
-//				throw new LibraryException(INCOMPATIBLE_PRICER); // QA:[RG]::verified
-//			}
-//		}
-//	}
-//    
+
+
+
 //    private class CappedFlooredCmsCouponVisitor implements Visitor<Object> {
 //        @Override
 //        public void visit(final Object o) {
@@ -240,6 +251,6 @@ public class PricerSetter implements PolymorphicVisitor {
 //                throw new LibraryException(INCOMPATIBLE_PRICER); // QA:[RG]::verified
 //            }
 //        }
-//    }
+//	}
 
 }
