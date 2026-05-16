@@ -178,23 +178,23 @@ public class IndiaCalendarTest {
         final int year = 2009;
         QL.info("Testing " + India.Market.NSE + " holidays list for the year " + year + "...");
         final List<Date> expectedHol = new Vector<Date>();
-//        expectedHol.add(new Date(8, JANUARY, year));
-        expectedHol.add(new Date(26, January, year));
-//        expectedHol.add(new Date(23, FEBRUARY, year));
-//        expectedHol.add(new Date(10, MARCH, year));
-//        expectedHol.add(new Date(11, MARCH, year)); // Good Friday
-//        expectedHol.add(new Date(3, APRIL, year));
-//        expectedHol.add(new Date(7, APRIL, year));
-        expectedHol.add(new Date(10, April, year));
-        expectedHol.add(new Date(14, April, year));
-//        expectedHol.add(new Date(1, MAY, year));
-//        expectedHol.add(new Date(21, SEPTEMBER, year));
-//        expectedHol.add(new Date(28, SEPTEMBER, year));
-        expectedHol.add(new Date(2, October, year));
-//        expectedHol.add(new Date(19, OCTOBER, year));
-//        expectedHol.add(new Date(2, NOVEMBER, year));
-        expectedHol.add(new Date(25, December, year));
-//        expectedHol.add(new Date(28, DECEMBER, year));
+        expectedHol.add(new Date(8, January, year));   // Moharram
+        expectedHol.add(new Date(26, January, year));  // Republic Day
+        expectedHol.add(new Date(23, February, year)); // Mahashivratri
+        expectedHol.add(new Date(10, March, year));    // Id-E-Milad
+        expectedHol.add(new Date(11, March, year));    // Holi
+        expectedHol.add(new Date(3, April, year));     // Ram Navmi
+        expectedHol.add(new Date(7, April, year));     // Mahavir Jayanti
+        expectedHol.add(new Date(10, April, year));    // Good Friday
+        expectedHol.add(new Date(14, April, year));    // Ambedkar Jayanti
+        expectedHol.add(new Date(1, May, year));       // May Day / Maharashtra Day
+        expectedHol.add(new Date(21, September, year)); // Ramzan Id
+        expectedHol.add(new Date(28, September, year)); // Dasara
+        expectedHol.add(new Date(2, October, year));   // Gandhi Jayanti
+        expectedHol.add(new Date(19, October, year));  // Bhau Bhij
+        expectedHol.add(new Date(2, November, year));  // Gurunanak Jayanti
+        expectedHol.add(new Date(25, December, year)); // Christmas
+        expectedHol.add(new Date(28, December, year)); // Moharram (again)
 
         // Call the Holiday Check
         final CalendarUtil cbt = new CalendarUtil();
