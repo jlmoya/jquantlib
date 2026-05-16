@@ -116,7 +116,10 @@ public final class ModifiedBesselFunction {
             double bk = alpha;
             while (true) {
                 bk *= Y / (k * (k + nu));
-                if (Math.abs(bk) <= Math.abs(sum) * Constants.QL_EPSILON) {
+                // Use !(> ...) so NaN/Inf exits the loop (matches C++
+                // semantics of `while (std::abs(B_k) > sum*eps)` where
+                // NaN-vs-anything compares false → break).
+                if (!(Math.abs(bk) > Math.abs(sum) * Constants.QL_EPSILON)) {
                     break;
                 }
                 sum += bk;
@@ -158,7 +161,11 @@ public final class ModifiedBesselFunction {
             Complex bk = alpha;
             while (true) {
                 bk = bk.mul(Y).div(k * (k + nu));
-                if (bk.abs() <= sum.abs() * Constants.QL_EPSILON) {
+                // Use !(> ...) so NaN/Inf exits the loop (matches C++
+                // semantics of `while (std::abs(B_k) > sum*eps)` where
+                // NaN-vs-anything compares false → break). Critical for
+                // integer-nu inputs where k+nu hits 0 → bk = NaN.
+                if (!(bk.abs() > sum.abs() * Constants.QL_EPSILON)) {
                     break;
                 }
                 sum = sum.add(bk);
