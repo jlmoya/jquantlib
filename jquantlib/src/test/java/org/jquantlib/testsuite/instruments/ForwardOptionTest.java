@@ -21,11 +21,19 @@ import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.methods.lattices.CoxRossRubinstein;
+import org.jquantlib.experimental.forward.AnalyticHestonForwardEuropeanEngine;
+import org.jquantlib.model.equity.HestonModel;
+import org.jquantlib.pricingengines.McSimulation;
+import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.forward.ForwardPerformanceVanillaEngine;
 import org.jquantlib.pricingengines.forward.ForwardVanillaEngine;
+import org.jquantlib.pricingengines.forward.MCForwardEuropeanBSEngine;
+import org.jquantlib.pricingengines.forward.MCForwardEuropeanHestonEngine;
+import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
 import org.jquantlib.pricingengines.vanilla.BinomialVanillaEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -39,7 +47,6 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.calendars.NullCalendar;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -74,14 +81,16 @@ import org.junit.Test;
  *       {@link BinomialInnerForwardEngine} below).
  * </ul>
  *
- * <p><strong>Carry-forward to Phase 5i.5</strong>:
+ * <p><strong>Phase 5e.5b-CFC-d-119 addition:</strong>
  * <ul>
- *   <li>{@code testMCPrices} / {@code testHestonMCPrices} —
- *       {@code MCForwardEuropeanBSEngine} and {@code MCForwardEuropeanHestonEngine}
- *       not yet ported.
- *   <li>{@code testHestonAnalyticalVsMCPrices} — Heston engine sits under
- *       experimental.forward and has its own dedicated
- *       AnalyticHestonForwardEuropeanEngineTest.
+ *   <li>{@link #testMCPrices()} — MC BS forward engine vs analytic
+ *       forward BS, LOOSE 1e-2 MC tier.
+ *   <li>{@link #testHestonMCPrices()} — MC Heston forward engine vs
+ *       analytic forward BS (flat-Heston) and vs analytic vanilla
+ *       Heston (reset=today), LOOSE 1e-2 MC tier.
+ *   <li>{@link #testHestonAnalyticalVsMCPrices()} — MC Heston forward
+ *       engine (plain and CV) vs semi-analytic
+ *       {@code AnalyticHestonForwardEuropeanEngine}, LOOSE 1e-2 MC tier.
  * </ul>
  *
  * <p>Source: {@code test-suite/forwardoption.cpp} v1.42.1 @ {@code 099987f0ca}.
@@ -91,19 +100,6 @@ public class ForwardOptionTest {
     public ForwardOptionTest() {
         QL.info("::::: " + getClass().getSimpleName() + " :::::");
     }
-
-    private static final String REASON_MC_BS =
-            "Phase 5i.5 — requires MCForwardEuropeanBSEngine port "
-          + "(no Java equivalent yet)";
-
-    private static final String REASON_MC_HESTON =
-            "Phase 5i.5 — requires MCForwardEuropeanHestonEngine port "
-          + "(no Java equivalent yet)";
-
-    private static final String REASON_ANALYTIC_HESTON =
-            "Phase 5i.5 — AnalyticHestonForwardEuropeanEngine exists under "
-          + "experimental.forward and has dedicated coverage there; "
-          + "in-instruments-package wrapper test deferred";
 
     /**
      * Forward-option value test data — port of the {@code ForwardOptionData}
@@ -648,15 +644,361 @@ public class ForwardOptionTest {
         }
     }
 
-    @Ignore(REASON_MC_BS)
+    /**
+     * Port of C++ {@code forwardoption.cpp::testMCPrices} (v1.42.1
+     * lines 477-539).
+     *
+     * <p>Cross-checks {@link MCForwardEuropeanBSEngine} against the
+     * analytic {@link ForwardVanillaEngine} over a range of moneynesses
+     * under a flat Black-Scholes process.
+     *
+     * <p>C++ uses 100 timesteps, 5000 samples, seed 42, and per-moneyness
+     * tolerances {0.002, 0.001, 0.0006, 5e-4, 5e-4}. Java port uses the
+     * same fixture but relaxes to the project-wide LOOSE 1e-2 MC tier
+     * (see CLAUDE.md) — sufficient to detect engine regressions while
+     * being robust to {@code MersenneTwisterUniformRng} stream
+     * differences across builds.
+     */
     @Test
-    public void testMCPrices() { fail("not implemented"); }
+    public void testMCPrices() {
+        QL.info("Testing forward option MC prices...");
 
-    @Ignore(REASON_MC_HESTON + " — MC vs Heston-analytic cross-check")
-    @Test
-    public void testHestonMCPrices() { fail("not implemented"); }
+        final int timeSteps = 100;
+        final int numberOfSamples = 5000;
+        final long mcSeed = 42L;
 
-    @Ignore(REASON_ANALYTIC_HESTON + " + " + REASON_MC_HESTON)
+        final double q = 0.04;
+        final double r = 0.01;
+        final double sigma = 0.11;
+        final double s = 100.0;
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Date(15, Month.January, 2026);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot  = new SimpleQuote(s);
+        final SimpleQuote qRate = new SimpleQuote(q);
+        final SimpleQuote rRate = new SimpleQuote(r);
+        final SimpleQuote vol   = new SimpleQuote(sigma);
+
+        final Handle<? extends Quote> spotH = new Handle<SimpleQuote>(spot);
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(today, new Handle<Quote>(qRate), dc,
+                        Compounding.Continuous, Frequency.Annual));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(today, new Handle<Quote>(rRate), dc,
+                        Compounding.Continuous, Frequency.Annual));
+        final Calendar cal = new NullCalendar();
+        final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                new BlackConstantVol(today, cal, new Handle<Quote>(vol), dc));
+
+        final BlackScholesMertonProcess stochProcess =
+                new BlackScholesMertonProcess(spotH, qTS, rTS, volTS);
+
+        final PricingEngine analyticEngine = new ForwardVanillaEngine(stochProcess);
+        final PricingEngine mcEngine = new MCForwardEuropeanBSEngine(
+                stochProcess, timeSteps, McSimulation.NULL_SAMPLES,
+                /* brownianBridge */ false, /* antitheticVariate */ false,
+                numberOfSamples, McSimulation.NULL_TOLERANCE,
+                McSimulation.NULL_SAMPLES, mcSeed);
+
+        final Date exDate = today.add(new org.jquantlib.time.Period(1,
+                org.jquantlib.time.TimeUnit.Years));
+        final Exercise exercise = new EuropeanExercise(exDate);
+        final Date reset = today.add(new org.jquantlib.time.Period(6,
+                org.jquantlib.time.TimeUnit.Months));
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Call, 0.0);
+
+        final double[] moneynesses = { 0.8, 0.9, 1.0, 1.1, 1.2 };
+        final double tolerance = 1.0e-2;   // LOOSE MC tier (CLAUDE.md)
+
+        for (final double m : moneynesses) {
+            final ForwardVanillaOption option =
+                    new ForwardVanillaOption(m, reset, payoff, exercise);
+
+            option.setPricingEngine(analyticEngine);
+            final double analyticPrice = option.NPV();
+
+            option.setPricingEngine(mcEngine);
+            final double mcPrice = option.NPV();
+
+            final double error = Math.abs(analyticPrice - mcPrice) / s;
+            assertTrue("testMCPrices moneyness=" + m
+                    + " analytic=" + analyticPrice + " mc=" + mcPrice
+                    + " error=" + error + " tolerance=" + tolerance,
+                    error <= tolerance);
+        }
+    }
+
+    /**
+     * Port of C++ {@code forwardoption.cpp::testHestonMCPrices} (v1.42.1
+     * lines 541-700).
+     *
+     * <p>Two sub-cases:
+     * <ol>
+     *   <li><strong>Flat Heston vs analytic BS:</strong> set up a
+     *       Heston process that degenerates to Black-Scholes
+     *       ({@code kappa ≈ 0}, {@code sigma ≈ 0}, {@code v0 = theta =
+     *       sigma_bs^2}) and compare the MC forward price against the
+     *       analytic forward-start BS engine.
+     *   <li><strong>Smile Heston, reset=today, vs analytic vanilla
+     *       Heston:</strong> with {@code reset = today}, the forward-
+     *       start option degenerates to a vanilla, so the MC forward
+     *       price must match the semi-analytic Heston vanilla price.
+     * </ol>
+     *
+     * <p>C++ uses {@code LowDiscrepancy} RNG with 50 steps × 4095 samples.
+     * Java is specialised for {@code PseudoRandom} only, so this test
+     * uses {@code PseudoRandom} + the project-wide LOOSE 1e-2 MC tier
+     * (CLAUDE.md) — robust to MT stream differences.
+     */
     @Test
-    public void testHestonAnalyticalVsMCPrices() { fail("not implemented"); }
+    public void testHestonMCPrices() {
+        QL.info("Testing forward option Heston MC prices...");
+
+        final Option.Type[] optionTypes = { Option.Type.Call, Option.Type.Put };
+
+        for (final Option.Type optionType : optionTypes) {
+
+            final double analyticTolerance = 1.0e-2; // LOOSE MC tier
+            final double mcTolerance       = 1.0e-2;
+
+            final int timeSteps = 50;
+            final int numberOfSamples = 4095;
+            final long mcSeed = 42L;
+
+            final double q = 0.04;
+            final double r = 0.01;
+            final double sigma_bs = 0.245;
+            final double s = 100.0;
+
+            // Sub-case 1: Heston ≈ flat BS
+            double v0 = sigma_bs * sigma_bs;
+            double kappa = 1.0e-8;
+            double theta = sigma_bs * sigma_bs;
+            double sigmaHes = 1.0e-8;
+            double rho = -0.93;
+
+            final DayCounter dc = new Actual360();
+            final Date today = new Date(15, Month.January, 2026);
+            new Settings().setEvaluationDate(today);
+
+            final Date exDate = today.add(new org.jquantlib.time.Period(1,
+                    org.jquantlib.time.TimeUnit.Years));
+            final Exercise exercise = new EuropeanExercise(exDate);
+            Date reset = today.add(new org.jquantlib.time.Period(6,
+                    org.jquantlib.time.TimeUnit.Months));
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(optionType, 0.0);
+
+            final SimpleQuote spot  = new SimpleQuote(s);
+            final SimpleQuote qRate = new SimpleQuote(q);
+            final SimpleQuote rRate = new SimpleQuote(r);
+            final SimpleQuote vol   = new SimpleQuote(sigma_bs);
+
+            final Handle<? extends Quote> spotH = new Handle<SimpleQuote>(spot);
+            final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                    new FlatForward(today, new Handle<Quote>(qRate), dc,
+                            Compounding.Continuous, Frequency.Annual));
+            final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                    new FlatForward(today, new Handle<Quote>(rRate), dc,
+                            Compounding.Continuous, Frequency.Annual));
+            final Calendar cal = new NullCalendar();
+            final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                    new BlackConstantVol(today, cal, new Handle<Quote>(vol), dc));
+
+            final BlackScholesMertonProcess bsProcess =
+                    new BlackScholesMertonProcess(spotH, qTS, rTS, volTS);
+
+            final PricingEngine analyticEngine = new ForwardVanillaEngine(bsProcess);
+
+            final HestonProcess hestonProcess = new HestonProcess(
+                    rTS, qTS, new Handle<Quote>(spot),
+                    v0, kappa, theta, sigmaHes, rho);
+            hestonProcess.update();
+
+            final PricingEngine mcEngine = new MCForwardEuropeanHestonEngine(
+                    hestonProcess, timeSteps, McSimulation.NULL_SAMPLES,
+                    /* antithetic */ false,
+                    numberOfSamples, McSimulation.NULL_TOLERANCE,
+                    McSimulation.NULL_SAMPLES, mcSeed);
+
+            final double[] moneynesses = { 0.8, 0.9, 1.0, 1.1, 1.2 };
+
+            for (final double m : moneynesses) {
+                final ForwardVanillaOption option =
+                        new ForwardVanillaOption(m, reset, payoff, exercise);
+
+                option.setPricingEngine(analyticEngine);
+                final double analyticPrice = option.NPV();
+
+                option.setPricingEngine(mcEngine);
+                final double mcPrice = option.NPV();
+
+                final double mcError = Math.abs(analyticPrice - mcPrice) / s;
+                assertTrue("testHestonMCForwardStartPrices type=" + optionType
+                        + " moneyness=" + m
+                        + " analytic=" + analyticPrice + " mc=" + mcPrice
+                        + " error=" + mcError + " tolerance=" + mcTolerance,
+                        mcError <= mcTolerance);
+            }
+
+            // Sub-case 2: smile-Heston with reset=today vs analytic vanilla
+            v0 = sigma_bs * sigma_bs;
+            kappa = 1.0;
+            theta = 0.08;
+            sigmaHes = 0.39;
+            rho = -0.93;
+
+            reset = today;
+
+            final HestonProcess hestonProcessSmile = new HestonProcess(
+                    rTS, qTS, new Handle<Quote>(spot),
+                    v0, kappa, theta, sigmaHes, rho);
+            hestonProcessSmile.update();
+
+            final HestonModel hestonModel = new HestonModel(hestonProcessSmile);
+            final PricingEngine analyticHestonEngine =
+                    new AnalyticHestonEngine(hestonModel, hestonProcessSmile, 96);
+
+            final PricingEngine mcEngineSmile = new MCForwardEuropeanHestonEngine(
+                    hestonProcessSmile, timeSteps, McSimulation.NULL_SAMPLES,
+                    /* antithetic */ false,
+                    numberOfSamples, McSimulation.NULL_TOLERANCE,
+                    McSimulation.NULL_SAMPLES, mcSeed);
+
+            for (final double m : moneynesses) {
+                final double strike = s * m;
+                final StrikedTypePayoff vanillaPayoff =
+                        new PlainVanillaPayoff(optionType, strike);
+                final VanillaOption vanillaOption =
+                        new VanillaOption(vanillaPayoff, exercise);
+                final ForwardVanillaOption forwardOption =
+                        new ForwardVanillaOption(m, reset, payoff, exercise);
+
+                vanillaOption.setPricingEngine(analyticHestonEngine);
+                final double analyticPrice = vanillaOption.NPV();
+
+                forwardOption.setPricingEngine(mcEngineSmile);
+                final double mcPrice = forwardOption.NPV();
+
+                final double mcError = Math.abs(analyticPrice - mcPrice) / s;
+                assertTrue("testHestonMCPrices type=" + optionType
+                        + " moneyness=" + m
+                        + " analytic=" + analyticPrice + " mc=" + mcPrice
+                        + " error=" + mcError + " tolerance=" + analyticTolerance,
+                        mcError <= analyticTolerance);
+            }
+        }
+    }
+
+    /**
+     * Port of C++ {@code forwardoption.cpp::testHestonAnalyticalVsMCPrices}
+     * (v1.42.1 lines 702-801).
+     *
+     * <p>Cross-checks {@link MCForwardEuropeanHestonEngine} (with and
+     * without control variate) against
+     * {@link AnalyticHestonForwardEuropeanEngine} on a non-trivial
+     * Heston model under both Call and Put types.
+     *
+     * <p>C++ uses 50 timesteps, 5000 samples, seed 42, PseudoRandom RNG
+     * with per-moneyness tolerances {0.001 - 0.003}. Java relaxes to the
+     * project-wide LOOSE 1e-2 MC tier (CLAUDE.md).
+     */
+    @Test
+    public void testHestonAnalyticalVsMCPrices() {
+        QL.info("Testing Heston analytic vs MC prices...");
+
+        final Option.Type[] optionTypes = { Option.Type.Call, Option.Type.Put };
+
+        for (final Option.Type optionType : optionTypes) {
+
+            final int timeSteps = 50;
+            final int numberOfSamples = 5000;
+            final long mcSeed = 42L;
+
+            final double q = 0.03;
+            final double r = 0.005;
+            final double s = 100.0;
+
+            final double volBs = 0.3;
+            final double v0 = volBs * volBs;
+            final double kappa = 11.35;
+            final double theta = 0.022;
+            final double sigmaHes = 0.618;
+            final double rho = -0.5;
+
+            final DayCounter dc = new Actual360();
+            final Date today = new Date(15, Month.January, 2026);
+            new Settings().setEvaluationDate(today);
+
+            final Date exDate = today.add(new org.jquantlib.time.Period(1,
+                    org.jquantlib.time.TimeUnit.Years));
+            final Exercise exercise = new EuropeanExercise(exDate);
+            final Date reset = today.add(new org.jquantlib.time.Period(6,
+                    org.jquantlib.time.TimeUnit.Months));
+            final StrikedTypePayoff payoff =
+                    new PlainVanillaPayoff(optionType, 0.0);
+
+            final SimpleQuote spot  = new SimpleQuote(s);
+            final SimpleQuote qRate = new SimpleQuote(q);
+            final SimpleQuote rRate = new SimpleQuote(r);
+
+            final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                    new FlatForward(today, new Handle<Quote>(qRate), dc,
+                            Compounding.Continuous, Frequency.Annual));
+            final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                    new FlatForward(today, new Handle<Quote>(rRate), dc,
+                            Compounding.Continuous, Frequency.Annual));
+
+            final HestonProcess hestonProcess = new HestonProcess(
+                    rTS, qTS, new Handle<Quote>(spot),
+                    v0, kappa, theta, sigmaHes, rho);
+            hestonProcess.update();
+
+            final PricingEngine mcEngine = new MCForwardEuropeanHestonEngine(
+                    hestonProcess, timeSteps, McSimulation.NULL_SAMPLES,
+                    /* antithetic */ false,
+                    numberOfSamples, McSimulation.NULL_TOLERANCE,
+                    McSimulation.NULL_SAMPLES, mcSeed);
+
+            final PricingEngine mcEngineCv = new MCForwardEuropeanHestonEngine(
+                    hestonProcess, timeSteps, McSimulation.NULL_SAMPLES,
+                    /* antithetic */ false,
+                    numberOfSamples, McSimulation.NULL_TOLERANCE,
+                    McSimulation.NULL_SAMPLES, mcSeed,
+                    /* controlVariate */ true);
+
+            final PricingEngine analyticEngine =
+                    new AnalyticHestonForwardEuropeanEngine(hestonProcess);
+
+            final double[] moneynesses = { 0.8, 1.0, 1.2 };
+            final double tolerance = 1.0e-2;   // LOOSE MC tier
+
+            for (final double m : moneynesses) {
+                final ForwardVanillaOption option =
+                        new ForwardVanillaOption(m, reset, payoff, exercise);
+
+                option.setPricingEngine(analyticEngine);
+                final double analyticPrice = option.NPV();
+
+                option.setPricingEngine(mcEngine);
+                final double mcPrice = option.NPV();
+                final double error = Math.abs(analyticPrice - mcPrice) / s;
+                assertTrue("testHestonMCVsAnalyticPrices type=" + optionType
+                        + " moneyness=" + m
+                        + " analytic=" + analyticPrice + " mc=" + mcPrice
+                        + " error=" + error + " tolerance=" + tolerance,
+                        error <= tolerance);
+
+                option.setPricingEngine(mcEngineCv);
+                final double mcPriceCv = option.NPV();
+                final double errorCv = Math.abs(analyticPrice - mcPriceCv) / s;
+                assertTrue("testHestonMCControlVariateVsAnalyticPrices type=" + optionType
+                        + " moneyness=" + m
+                        + " analytic=" + analyticPrice + " mc(CV)=" + mcPriceCv
+                        + " error=" + errorCv + " tolerance=" + tolerance,
+                        errorCv <= tolerance);
+            }
+        }
+    }
 }
