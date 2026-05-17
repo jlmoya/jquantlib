@@ -33,7 +33,9 @@ import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.indexes.CPI;
 import org.jquantlib.indexes.YoYInflationIndex;
 import org.jquantlib.indexes.ZeroInflationIndex;
+import org.jquantlib.indexes.inflation.AUCPI;
 import org.jquantlib.indexes.inflation.EUHICP;
+import org.jquantlib.indexes.inflation.UKHICP;
 import org.jquantlib.indexes.inflation.UKRPI;
 import org.jquantlib.indexes.inflation.YYEUHICP;
 import org.jquantlib.indexes.inflation.YYUKRPI;
@@ -125,18 +127,113 @@ public class InflationTest {
     // testZeroIndex — inflation.cpp:215-318
     // ===================================================================
     @Test
-    @Ignore("Phase 2u/2v: needs UKHICP, AUCPI; Phase 2x: needs lastFixingDate(),"
-            + " UKRPI/EUHICP availabilityLag align (Java=2/3M, C++=1M)")
     public void testZeroIndex() {
-        // C++ exercises:
-        //   - EUHICP/UKRPI/UKHICP basic constants (name, frequency, revised, availabilityLag)
-        //     -> UKHICP not ported (Phase 2u/2v)
-        //     -> Java EUHICP availability is 3 months but C++ is 1 month (Phase 2x align needed)
-        //     -> Java UKRPI availability is 2 months but C++ is 1 month (Phase 2x align needed)
-        //   - UKRPI fixing add/lookup with monthly schedule
-        //     -> requires lastFixingDate() (Phase 2x align — small)
-        //   - AUCPI quarterly behavior
-        //     -> AUCPI not ported (Phase 2u/2v)
+        // Faithful port of C++ inflation.cpp:215-318. Phase 5e.5b-CFC-d-115:
+        // UKHICP / AUCPI / USCPI / EUHICPXT inflation indices now exist,
+        // lastFixingDate() is implemented on ZeroInflationIndex, and the
+        // EUHICP/UKRPI availability lag has long since been aligned to 1M.
+        //
+        // The Java InflationIndex constructor takes the legacy
+        // (frequency, revised, interpolated) tuple — the C++ class dropped
+        // `interpolated` in v1.38 but the Java base class still carries it.
+        // For these constant checks we use interpolated=false (the C++
+        // default) and frequency=Monthly / revised=false to match C++.
+        //
+        // Clear any stale fixings from prior tests (IndexManager is a JVM
+        // singleton; C++ re-creates fixtures per test but Java doesn't).
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("EU HICP");
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK HICP");
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("Australia CPI");
+
+        // --- EUHICP basic constants ---
+        final EUHICP euhicp = new EUHICP(Frequency.Monthly, false, false);
+        assertEquals("EU HICP name", "EU HICP", euhicp.name());
+        assertEquals("EU HICP frequency", Frequency.Monthly, euhicp.frequency());
+        assertTrue("EU HICP revised", !euhicp.revised());
+        assertEquals("EU HICP availability lag",
+                new Period(1, TimeUnit.Months), euhicp.availabilityLag());
+
+        // --- UKRPI basic constants ---
+        final UKRPI ukrpi = new UKRPI(Frequency.Monthly, false, false);
+        assertEquals("UK RPI name", "UK RPI", ukrpi.name());
+        assertEquals("UK RPI frequency", Frequency.Monthly, ukrpi.frequency());
+        assertTrue("UK RPI revised", !ukrpi.revised());
+        assertEquals("UK RPI availability lag",
+                new Period(1, TimeUnit.Months), ukrpi.availabilityLag());
+
+        // --- UKHICP basic constants ---
+        final UKHICP ukhicp = new UKHICP(false);
+        assertEquals("UK HICP name", "UK HICP", ukhicp.name());
+        assertEquals("UK HICP frequency", Frequency.Monthly, ukhicp.frequency());
+        assertTrue("UK HICP revised", !ukhicp.revised());
+        assertEquals("UK HICP availability lag",
+                new Period(1, TimeUnit.Months), ukhicp.availabilityLag());
+
+        // --- Retrieval test (UKRPI monthly schedule) ---
+        final Calendar calendar = new UnitedKingdom();
+        Date evaluationDate = new Date(13, Month.August, 2007);
+        evaluationDate = calendar.adjust(evaluationDate);
+        new Settings().setEvaluationDate(evaluationDate);
+
+        // Monthly schedule 1-Jan-2005 .. 1-Aug-2007 (32 dates).
+        final List<Date> rpiSchedule = InflationCommonVars.ukRpiFixDates();
+        final double[] fixData = InflationCommonVars.ukRpiFixData();
+
+        // Seed fixings.
+        final UKRPI iir = new UKRPI(Frequency.Monthly, false, false);
+        for (int i = 0; i < fixData.length; ++i) {
+            iir.addFixing(rpiSchedule.get(i), fixData[i], true);
+        }
+
+        // C++: BOOST_CHECK_EQUAL(iir->lastFixingDate(), to) where to=1-Aug-2007.
+        final Date to = new Date(1, Month.August, 2007);
+        assertEquals("UKRPI lastFixingDate", to, iir.lastFixingDate());
+
+        // C++: todayMinusLag = evaluationDate - availabilityLag, then take
+        // inflationPeriod(todayMinusLag).first.
+        Date todayMinusLag = evaluationDate.sub(iir.availabilityLag());
+        final Pair<Date, Date> lim0 =
+                InflationTermStructure.inflationPeriod(todayMinusLag, iir.frequency());
+        todayMinusLag = lim0.first();
+
+        final double eps = 1.0e-8;
+
+        // -1 because last value not yet available (no TS so can't forecast).
+        // Iterate every day in the inflation period of each fixing schedule
+        // entry and verify the fixing is flat within the period.
+        for (int i = 0; i < rpiSchedule.size() - 1; i++) {
+            final Pair<Date, Date> lim = InflationTermStructure.inflationPeriod(
+                    rpiSchedule.get(i), iir.frequency());
+            // Use serial-number loop to avoid Date.inc() aliasing.
+            final long firstSN = lim.first().serialNumber();
+            final long lastSN = lim.second().serialNumber();
+            for (long sn = firstSN; sn <= lastSN; sn++) {
+                final Date d = new Date(sn);
+                final Date periodFirst = InflationTermStructure.inflationPeriod(
+                        todayMinusLag, iir.frequency()).first();
+                if (d.lt(periodFirst)) {
+                    final double fix = iir.fixing(d);
+                    assertEquals("Fixings not constant within period (" + d + ")",
+                            fixData[i], fix, eps);
+                }
+            }
+        }
+
+        // --- AUCPI quarterly behavior ---
+        // C++: aucpi(Quarterly, false), addFixing(15-Dec-2007, 100.0);
+        // expected lastFixingDate = 1-Oct-2007 (start of Oct-Dec quarter).
+        final AUCPI aucpi = new AUCPI(Frequency.Quarterly, false, false);
+        aucpi.addFixing(new Date(15, Month.December, 2007), 100.0, true);
+        final Date expectedAuLastFixing = new Date(1, Month.October, 2007);
+        assertEquals("AUCPI quarterly lastFixingDate",
+                expectedAuLastFixing, aucpi.lastFixingDate());
+
+        // Clean up so subsequent tests start from a clean state.
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("EU HICP");
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK HICP");
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("Australia CPI");
     }
 
     // ===================================================================
