@@ -79,8 +79,6 @@ import org.junit.Test;
  *     above the pivot tables. Pending a Sobol-direction-integer
  *     align(...) commit; cannot be body-filled without loosening tolerance.</li>
  *   <li>{@code testSobolSkipping} — needs SobolRsg.skipTo (not yet exposed).</li>
- *   <li>{@code testSobolBurleySkipping},
- *     {@code testBurley2020SobolRsgOutputBounds} — need Burley2020SobolRsg.</li>
  *   <li>{@code testHighDimensionalIntegrals} — needs LDS integration harness.</li>
  * </ul>
  */
@@ -1087,10 +1085,65 @@ public class LowDiscrepancySequencesTest {
         }
     }
 
-    @Ignore("Phase 5b.5: SobolBurleyRsg production class not yet ported")
+    /**
+     * Java port of C++ {@code testSobolBurleySkipping}
+     * (test-suite/lowdiscrepancysequences.cpp:1071). For each combination
+     * of dimensionality, skip count, and direction-integers scheme, build
+     * two {@link org.jquantlib.math.randomnumbers.Burley2020SobolRsg}
+     * instances with identical seeds: advance one by calling
+     * {@code nextInt32Sequence()} {@code k} times, advance the other in
+     * one shot via {@code skipTo(k)}, then verify the next 100 integer
+     * vectors agree bit-for-bit.
+     */
     @Test
     public void testSobolBurleySkipping() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:1070
+        // C++ test-suite/lowdiscrepancysequences.cpp:1071
+        final long seed = 42L;
+        final long scramblingSeed = 43L;
+        final int[] dimensionality = { 1, 10, 100, 1000 };
+        final long[] skip = { 0L, 1L, 42L, 512L, 10000L };
+        final SobolRsg.DirectionIntegers[] integers = {
+                SobolRsg.DirectionIntegers.Jaeckel,
+                SobolRsg.DirectionIntegers.SobolLevitan,
+                SobolRsg.DirectionIntegers.SobolLevitanLemieux };
+
+        for (final SobolRsg.DirectionIntegers integer : integers) {
+            for (final int j : dimensionality) {
+                for (final long k : skip) {
+
+                    // extract k samples one by one
+                    final org.jquantlib.math.randomnumbers.Burley2020SobolRsg rsg1 =
+                            new org.jquantlib.math.randomnumbers.Burley2020SobolRsg(
+                                    j, seed, integer, scramblingSeed);
+                    for (long l = 0; l < k; l++) {
+                        rsg1.nextInt32Sequence();
+                    }
+
+                    // skip k samples at once
+                    final org.jquantlib.math.randomnumbers.Burley2020SobolRsg rsg2 =
+                            new org.jquantlib.math.randomnumbers.Burley2020SobolRsg(
+                                    j, seed, integer, scramblingSeed);
+                    rsg2.skipTo(k);
+
+                    // compare next 100 integer vectors
+                    for (int m = 0; m < 100; m++) {
+                        final long[] s1 = rsg1.nextInt32Sequence();
+                        final long[] s2 = rsg2.nextInt32Sequence();
+                        for (int n = 0; n < s1.length; n++) {
+                            if (s1[n] != s2[n]) {
+                                fail("Mismatch after skipping:"
+                                        + "\n  size:     " + j
+                                        + "\n  integers: " + integer
+                                        + "\n  skipped:  " + k
+                                        + "\n  at index: " + n
+                                        + "\n  expected: " + s1[n]
+                                        + "\n  found:    " + s2[n]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Ignore("Phase 5b.5: high-dimensional LDS integration harness not ported")
