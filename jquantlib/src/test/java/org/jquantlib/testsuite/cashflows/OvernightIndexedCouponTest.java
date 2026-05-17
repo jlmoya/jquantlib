@@ -890,7 +890,7 @@ public class OvernightIndexedCouponTest {
                 * 360.0 / 13.0;
 
         final double expectedAccruedAmount = coupon15July.nominal()
-                * coupon15July.accruedPeriod(new Date(14, Month.July, 2019))
+                * coupon15July.dayCounter().yearFraction(coupon15July.accrualStartDate(), new Date(14, Month.July, 2019))
                 * expectedRate15July;
 
         checkOis("accrued amount",
