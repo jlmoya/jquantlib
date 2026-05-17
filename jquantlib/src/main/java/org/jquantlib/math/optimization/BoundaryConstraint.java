@@ -44,7 +44,7 @@ import org.jquantlib.math.matrixutilities.Array;
 
 /**
  * Constraint imposing all arguments to be in [low,high]
- * 
+ *
  * @author Richard Gomes
  */
 @QualityAssurance(quality=Quality.Q3_DOCUMENTATION, version=Version.V097, reviewers="Richard Gomes")
@@ -100,6 +100,24 @@ public class BoundaryConstraint extends Constraint {
                 }
             }
             return true;
+        }
+
+        @Override
+        public Array upperBound(final Array params) /* @ReadOnly */ {
+            final double[] data = new double[params.size()];
+            for (int i = 0; i < data.length; ++i) {
+                data[i] = high;
+            }
+            return new Array(data);
+        }
+
+        @Override
+        public Array lowerBound(final Array params) /* @ReadOnly */ {
+            final double[] data = new double[params.size()];
+            for (int i = 0; i < data.length; ++i) {
+                data[i] = low;
+            }
+            return new Array(data);
         }
 
     }
