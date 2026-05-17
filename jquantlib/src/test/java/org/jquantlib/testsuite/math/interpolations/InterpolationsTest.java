@@ -40,6 +40,7 @@ import org.jquantlib.math.GaussianKernel;
 import org.jquantlib.math.KernelFunction;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.RichardsonExtrapolation;
+import org.jquantlib.math.interpolations.BicubicSplineInterpolation;
 import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.interpolations.FritschButlandCubic;
 import org.jquantlib.math.interpolations.KernelInterpolation;
@@ -509,15 +510,98 @@ public class InterpolationsTest {
         return 0.0;
     }
 
+    /**
+     * Faithful port of {@code testBicubicDerivatives} (C++
+     * interpolations.cpp lines 1724-1765). Builds a 100x100 bicubic spline
+     * of {@code f(x,y) = (y/10) sin(x) + cos(y)} on {@code [0, 4.95]^2} and
+     * checks that the partial derivatives reproduce the analytic
+     * derivatives within {@code tol = 0.005} at interior probe points.
+     *
+     * <p>Phase 5e.5b-CFC-d-95.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no Bicubic spline derivatives API. "
-            + "C++ interpolations.cpp testBicubicDerivatives.")
-    public void testBicubicDerivatives() { }
+    public void testBicubicDerivatives() {
+        QL.info("Testing bicubic spline derivatives...");
 
+        final double[] x = new double[100];
+        final double[] y = new double[100];
+        for (int i = 0; i < 100; ++i) {
+            x[i] = y[i] = i / 20.0;
+        }
+
+        final Matrix f = new Matrix(100, 100);
+        for (int i = 0; i < 100; ++i) {
+            for (int j = 0; j < 100; ++j) {
+                f.set(i, j, y[i] / 10.0 * Math.sin(x[j]) + Math.cos(y[i]));
+            }
+        }
+
+        final double tol = 0.005;
+        final BicubicSplineInterpolation spline =
+                new BicubicSplineInterpolation(new Array(x), new Array(y), f);
+
+        for (int i = 5; i < 95; i += 10) {
+            for (int j = 5; j < 95; j += 10) {
+                final double f_x = spline.derivativeX(x[j], y[i]);
+                final double f_xx = spline.secondDerivativeX(x[j], y[i]);
+                final double f_y = spline.derivativeY(x[j], y[i]);
+                final double f_yy = spline.secondDerivativeY(x[j], y[i]);
+                final double f_xy = spline.derivativeXY(x[j], y[i]);
+
+                assertEquals("Failed to reproduce f_x",
+                        y[i] / 10.0 * Math.cos(x[j]), f_x, tol);
+                assertEquals("Failed to reproduce f_xx",
+                        -y[i] / 10.0 * Math.sin(x[j]), f_xx, tol);
+                assertEquals("Failed to reproduce f_y",
+                        Math.sin(x[j]) / 10.0 - Math.sin(y[i]), f_y, tol);
+                assertEquals("Failed to reproduce f_yy",
+                        -Math.cos(y[i]), f_yy, tol);
+                assertEquals("Failed to reproduce f_xy",
+                        Math.cos(x[j]) / 10.0, f_xy, tol);
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code testBicubicUpdate} (C++ interpolations.cpp
+     * lines 1767-1793). Builds a 6x6 spline of {@code f(x,y) = x (x + y)},
+     * captures a value at {@code (x[2]+0.1, y[4])}, mutates
+     * {@code f[4][3] += 1.0}, calls {@code spline.update()} and asserts the
+     * recomputed value differs by at least {@code 0.5}.
+     *
+     * <p>Phase 5e.5b-CFC-d-95.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no Bicubic.update() API. "
-            + "C++ interpolations.cpp testBicubicUpdate.")
-    public void testBicubicUpdate() { }
+    public void testBicubicUpdate() {
+        QL.info("Testing that bicubic splines actually update...");
+
+        final int N = 6;
+        final double[] x = new double[N];
+        final double[] y = new double[N];
+        for (int i = 0; i < N; ++i) {
+            x[i] = y[i] = i * 0.2;
+        }
+
+        final Matrix f = new Matrix(N, N);
+        for (int i = 0; i < N; ++i) {
+            for (int j = 0; j < N; ++j) {
+                f.set(i, j, x[j] * (x[j] + y[i]));
+            }
+        }
+
+        final BicubicSplineInterpolation spline =
+                new BicubicSplineInterpolation(new Array(x), new Array(y), f);
+
+        final double oldResult = spline.op(x[2] + 0.1, y[4]);
+
+        // modify input matrix and update.
+        f.set(4, 3, f.get(4, 3) + 1.0);
+        spline.update();
+
+        final double newResult = spline.op(x[2] + 0.1, y[4]);
+        assertFalse("Failed to update bicubic spline",
+                Math.abs(oldResult - newResult) < 0.5);
+    }
 
     /**
      * Faithful port of {@code testRichardsonExtrapolation} (C++
@@ -639,15 +723,116 @@ public class InterpolationsTest {
             + "and testLeFlochKennedySabrExample.")
     public void testFlochKennedySabr() { }
 
+    /**
+     * Faithful port of {@code testLagrangeInterpolationDerivative}
+     * (C++ interpolations.cpp lines 2320-2348). Cross-checks the analytic
+     * derivative against a centred finite-difference of the value.
+     *
+     * <p>Phase 5e.5b-CFC-d-94.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no LagrangeInterpolation.derivative method. "
-            + "C++ interpolations.cpp testLagrangeInterpolationDerivative.")
-    public void testLagrangeInterpolationDerivative() { }
+    public void testLagrangeInterpolationDerivative() {
+        QL.info("Testing Lagrange interpolation derivatives...");
 
+        final double[] x = { -1.0, -0.3,  0.1,  0.3,  0.9 };
+        final double[] y = {  2.0,  3.0,  6.0,  3.0, -1.0 };
+
+        final LagrangeInterpolation interpl = new LagrangeInterpolation(x, y);
+
+        final double eps = Math.sqrt(Constants.QL_EPSILON);
+        // Mirror the C++ outer loop "for (Real x=-1.0; x <= 0.9; x+=0.01)".
+        // 1 + (0.9 - (-1.0))/0.01 == 191 iterations.
+        for (int k = 0; k < 191; ++k) {
+            final double xx = -1.0 + k * 0.01;
+            final double calculated = interpl.derivative(xx);
+            final double expected = (interpl.op(xx + eps) - interpl.op(xx - eps))
+                                  / (2.0 * eps);
+
+            assertFalse("Lagrange derivative returned NaN at x=" + xx,
+                    Double.isNaN(calculated));
+            if (Math.abs(expected - calculated) > 25.0 * eps) {
+                org.junit.Assert.fail(
+                        "failed to reproduce the Lagrange interpolation derivative"
+                        + "\n    x         : " + xx
+                        + "\n    calculated: " + calculated
+                        + "\n    expected  : " + expected
+                        + "\n    difference: " + Math.abs(expected - calculated)
+                        + "\n    tolerance : " + (25.0 * eps));
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code testLagrangeInterpolationOnChebyshevPoints}
+     * (C++ interpolations.cpp lines 2350-2400). Test example from
+     * Berrut &amp; Trefethen (2004) — interpolation of
+     * {@code exp(x)/cos(x)} on Chebyshev nodes.
+     *
+     * <p>Phase 5e.5b-CFC-d-94.
+     */
     @Test
-    @Ignore("Phase 5g.5 — see testLagrangeInterpolationDerivative. "
-            + "C++ interpolations.cpp testLagrangeInterpolationOnChebyshevPoints.")
-    public void testLagrangeInterpolationOnChebyshevPoints() { }
+    public void testLagrangeInterpolationOnChebyshevPoints() {
+        QL.info("Testing Lagrange interpolation on Chebyshev nodes...");
+
+        final int n = 50;
+        final double[] x = new double[n + 1];
+        final double[] y = new double[n + 1];
+        for (int i = 0; i <= n; ++i) {
+            // Chebyshev nodes on [-1, 1].
+            x[i] = Math.cos((2.0 * i + 1.0) * Math.PI / (2.0 * n + 2.0));
+            y[i] = Math.exp(x[i]) / Math.cos(x[i]);
+        }
+        // The Chebyshev nodes generated above are in decreasing order
+        // (cos is monotonically decreasing on [0, pi]); LagrangeInterpolation
+        // requires sorted (increasing) x-nodes — reverse before passing in.
+        for (int i = 0, j = n; i < j; ++i, --j) {
+            final double tx = x[i]; x[i] = x[j]; x[j] = tx;
+            final double ty = y[i]; y[i] = y[j]; y[j] = ty;
+        }
+
+        final LagrangeInterpolation interpl = new LagrangeInterpolation(x, y);
+
+        final double tol      = 1e-13;
+        final double tolDeriv = 1e-11;
+
+        // Mirror C++ "for (Real x=-1.0; x <= 1.0; x+=0.03)".
+        // 1 + 2.0/0.03 == 67 iterations (last point xx == 0.98).
+        for (int k = 0; k < 67; ++k) {
+            final double xx = -1.0 + k * 0.03;
+
+            final double calculated = interpl.op(xx);
+            final double expected   = Math.exp(xx) / Math.cos(xx);
+
+            assertFalse("Lagrange (Chebyshev) NaN at x=" + xx,
+                    Double.isNaN(calculated));
+            if (Math.abs(expected - calculated) > tol) {
+                org.junit.Assert.fail(
+                        "failed to reproduce the Lagrange interpolation on Chebyshev nodes"
+                        + "\n    x         : " + xx
+                        + "\n    calculated: " + calculated
+                        + "\n    expected  : " + expected
+                        + "\n    difference: " + Math.abs(expected - calculated)
+                        + "\n    tolerance : " + tol);
+            }
+
+            final double calculatedDeriv = interpl.derivative(xx);
+            final double expectedDeriv   = Math.exp(xx)
+                    * (Math.cos(xx) + Math.sin(xx))
+                    / (Math.cos(xx) * Math.cos(xx));
+
+            assertFalse("Lagrange (Chebyshev) derivative NaN at x=" + xx,
+                    Double.isNaN(calculatedDeriv));
+            if (Math.abs(expectedDeriv - calculatedDeriv) > tolDeriv) {
+                org.junit.Assert.fail(
+                        "failed to reproduce the Lagrange interpolation derivative on Chebyshev nodes"
+                        + "\n    x         : " + xx
+                        + "\n    calculated: " + calculatedDeriv
+                        + "\n    expected  : " + expectedDeriv
+                        + "\n    difference: " + Math.abs(expectedDeriv - calculatedDeriv)
+                        + "\n    tolerance : " + tolDeriv);
+            }
+        }
+    }
 
     /**
      * Faithful port of {@code testBSplines} (C++ interpolations.cpp lines
@@ -699,10 +884,54 @@ public class InterpolationsTest {
         }
     }
 
+    /**
+     * Faithful port of {@code testBackwardFlatOnSinglePoint}
+     * (C++ interpolations.cpp lines 2444-2475). Validates that backward-flat
+     * interpolation collapses to a constant function with a linear primitive
+     * when only a single (x, y) sample is supplied.
+     *
+     * <p>Phase 5e.5b-CFC-d-94.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java BackwardFlat needs single-point handling check. "
-            + "C++ interpolations.cpp testBackwardFlatOnSinglePoint.")
-    public void testBackwardFlatOnSinglePoint() { }
+    public void testBackwardFlatOnSinglePoint() {
+        QL.info("Testing piecewise constant interpolation on a single point...");
+
+        final Array knots  = new Array(new double[] { 1.0 });
+        final Array values = new Array(new double[] { 2.5 });
+
+        final org.jquantlib.math.interpolations.Interpolation impl =
+                new org.jquantlib.math.interpolations.factories.BackwardFlat()
+                        .interpolate(knots, values);
+        impl.update();
+        impl.enableExtrapolation();
+
+        final double[] xs = { -1.0, 1.0, 2.0, 3.0 };
+        for (final double xi : xs) {
+            final double calculated = impl.op(xi, true);
+            final double expected   = values.get(0);
+
+            if (!org.jquantlib.math.Closeness.isCloseEnough(calculated, expected)) {
+                org.junit.Assert.fail(
+                        "failed to reproduce a piecewise constant interpolation on a single point"
+                        + "\n   x         : " + xi
+                        + "\n   expected  : " + expected
+                        + "\n   calculated: " + calculated);
+            }
+
+            final double expectedPrimitive   = values.get(0) * (xi - knots.get(0));
+            final double calculatedPrimitive = impl.primitive(xi, true);
+
+            if (!org.jquantlib.math.Closeness.isCloseEnough(
+                    calculatedPrimitive, expectedPrimitive)) {
+                org.junit.Assert.fail(
+                        "failed to reproduce primitive on a piecewise constant "
+                        + "interpolation for a single point"
+                        + "\n   x         : " + xi
+                        + "\n   expected  : " + expectedPrimitive
+                        + "\n   calculated: " + calculatedPrimitive);
+            }
+        }
+    }
 
     @Test
     @Ignore("Phase 5g.5 — Java has no ChebyshevInterpolation. "
