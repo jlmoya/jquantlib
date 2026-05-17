@@ -226,4 +226,76 @@ public class Fdm2DimSolver extends LazyObject {
                 BoundaryCondition.SecondDerivative, 0.0,
                 BoundaryCondition.SecondDerivative, 0.0);
     }
+
+    /**
+     * Analytic first partial derivative of the bicubic spline along y at
+     * {@code (xq, yq)}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code BicubicSplineImpl::derivativeY}
+     * (lines 110–121 of {@code bicubicsplineinterpolation.hpp}). Same idea
+     * as {@link #derivativeX} but along the y-axis: build a 1D cubic spline
+     * by sampling the bicubic value at every y-grid node for the fixed
+     * query x, then return the first derivative of that section at yq.
+     */
+    public double derivativeY(final double xq, final double yq) {
+        calculate();
+        final CubicInterpolation section = ySectionAt(xq);
+        return section.derivative(yq);
+    }
+
+    /**
+     * Analytic second partial derivative of the bicubic spline along y at
+     * {@code (xq, yq)}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code BicubicSplineImpl::secondDerivativeY}
+     * (lines 123–135 of {@code bicubicsplineinterpolation.hpp}).
+     */
+    public double derivativeYY(final double xq, final double yq) {
+        calculate();
+        final CubicInterpolation section = ySectionAt(xq);
+        return section.secondDerivative(yq);
+    }
+
+    /**
+     * Mixed partial derivative {@code d^2/dxdy} of the bicubic spline at
+     * {@code (xq, yq)}.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code BicubicSplineImpl::derivativeXY}
+     * (lines 137–149 of {@code bicubicsplineinterpolation.hpp}): build a
+     * 1D section in x by evaluating the y-derivative at every x-grid node
+     * for the fixed query y, then return the x-derivative of a fresh cubic
+     * spline through that section.
+     */
+    public double derivativeXY(final double xq, final double yq) {
+        calculate();
+        final int nx = x.size();
+        final double[] section = new double[nx];
+        for (int i = 0; i < nx; ++i) {
+            section[i] = derivativeY(x.get(i), yq);
+        }
+        final CubicInterpolation sectionInterp = new CubicInterpolation(
+                x, new Array(section),
+                DerivativeApprox.Spline, false,
+                BoundaryCondition.SecondDerivative, 0.0,
+                BoundaryCondition.SecondDerivative, 0.0);
+        return sectionInterp.derivative(xq);
+    }
+
+    /**
+     * Build a 1D cubic spline along y by evaluating the 2D bicubic-spline
+     * value at every y-grid point with x fixed at {@code xq}. Symmetric
+     * counterpart to {@link #xSectionAt(double)}.
+     */
+    private CubicInterpolation ySectionAt(final double xq) {
+        final int ny = y.size();
+        final double[] section = new double[ny];
+        for (int i = 0; i < ny; ++i) {
+            section[i] = interpolation.op(xq, y.get(i));
+        }
+        return new CubicInterpolation(
+                y, new Array(section),
+                DerivativeApprox.Spline, false,
+                BoundaryCondition.SecondDerivative, 0.0,
+                BoundaryCondition.SecondDerivative, 0.0);
+    }
 }
