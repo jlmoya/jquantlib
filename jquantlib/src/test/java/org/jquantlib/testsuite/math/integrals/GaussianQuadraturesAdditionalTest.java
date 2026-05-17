@@ -24,17 +24,24 @@ package org.jquantlib.testsuite.math.integrals;
 
 import static org.junit.Assert.fail;
 
+import java.util.function.Function;
+
 import org.jquantlib.QL;
+import org.jquantlib.experimental.math.GaussNonCentralChiSquaredPolynomial;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.distributions.NonCentralChiSquaredDistribution;
 import org.jquantlib.math.distributions.NormalDistribution;
+import org.jquantlib.math.integrals.GaussHermiteIntegration;
 import org.jquantlib.math.integrals.GaussHyperbolicPolynomial;
 import org.jquantlib.math.integrals.GaussJacobiPolynomial;
+import org.jquantlib.math.integrals.GaussLaguerreCosinePolynomial;
 import org.jquantlib.math.integrals.GaussLaguerrePolynomial;
+import org.jquantlib.math.integrals.GaussLaguerreSinePolynomial;
 import org.jquantlib.math.integrals.GaussLegendreIntegration;
 import org.jquantlib.math.integrals.GaussianQuadrature;
 import org.jquantlib.math.integrals.MomentBasedGaussianPolynomial;
-import org.junit.Ignore;
+import org.jquantlib.math.integrals.MultiDimGaussianIntegration;
 import org.junit.Test;
 
 /**
@@ -55,16 +62,16 @@ import org.junit.Test;
  * {@code Gauss{Jacobi,Hyperbolic,Laguerre}Polynomial} and
  * {@code MomentBasedGaussianPolynomial}, no new production classes required.
  *
- * <p>Remaining cases still skipped pending production-class ports:
- * <ul>
- *   <li>{@code testGaussLaguerreCosinePolynomial}: needs
- *     {@code GaussLaguerreCosinePolynomial} / {@code GaussLaguerreSinePolynomial}.</li>
- *   <li>{@code testNonCentralChiSquared} / {@code testNonCentralChiSquaredSumOfNodes}:
- *     needs {@code GaussNonCentralChiSquaredPolynomial}
- *     (experimental/math/gaussiannoncentralchisquaredpolynomial.hpp).</li>
- *   <li>{@code testMultiDimensionalGaussIntegration}: needs
- *     {@code MultiDimGaussianIntegration} class wrapper.</li>
- * </ul>
+ * <p>Phase 5e.5b-CFC-d-168: un-ignored
+ * {@code testGaussLaguerreCosinePolynomial},
+ * {@code testNonCentralChiSquared},
+ * {@code testNonCentralChiSquaredSumOfNodes} and
+ * {@code testMultiDimensionalGaussIntegration} after porting
+ * {@link GaussLaguerreCosinePolynomial},
+ * {@link GaussLaguerreSinePolynomial} and
+ * {@link MultiDimGaussianIntegration}, and wiring the existing
+ * {@link GaussNonCentralChiSquaredPolynomial} into the Gaussian quadrature
+ * test harness.
  */
 public class GaussianQuadraturesAdditionalTest {
 
@@ -73,6 +80,10 @@ public class GaussianQuadraturesAdditionalTest {
     }
 
     private static final double TOL = 1.0e-4; // C++ test-suite default
+
+    // QL_EPSILON parity with C++ <ql/types.hpp>; used by the multi-dimensional
+    // quadrature test's 1e4*QL_EPSILON tolerance.
+    private static final double QL_EPSILON = 2.2204460492503131e-16;
 
     // ---- C++ test-helper analogues ------------------------------------------------
 
@@ -169,35 +180,136 @@ public class GaussianQuadraturesAdditionalTest {
         }
     }
 
-    // ---- still deferred (need production-class ports) -----------------------------
-
-    @Ignore("Phase 5b.5: needs GaussLaguerreCosinePolynomial / GaussLaguerreSinePolynomial port "
-            + "(ql/math/integrals/gausslaguerrecosinepolynomial.hpp).")
     @Test
     public void testGaussLaguerreCosinePolynomial() {
+        QL.info("Testing Gauss-Laguerre-Cosine quadrature...");
+
         // C++ test-suite/gaussianquadratures.cpp:251.
+        final GaussianQuadrature quadCosine = new GaussianQuadrature(
+                16, new GaussLaguerreCosinePolynomial(0.2));
+        testSingle(quadCosine, "f(x) = exp(-x)",   x -> Math.exp(-x),     1.0);
+        testSingle(quadCosine, "f(x) = x*exp(-x)", x -> x * Math.exp(-x), 1.0);
+
+        final GaussianQuadrature quadSine = new GaussianQuadrature(
+                16, new GaussLaguerreSinePolynomial(0.2));
+        testSingle(quadSine,   "f(x) = exp(-x)",   x -> Math.exp(-x),     1.0);
+        testSingle(quadSine,   "f(x) = x*exp(-x)", x -> x * Math.exp(-x), 1.0);
     }
 
-    @Ignore("Phase 5b.5: needs GaussNonCentralChiSquaredPolynomial port "
-            + "(ql/experimental/math/gaussiannoncentralchisquaredpolynomial.hpp).")
     @Test
     public void testNonCentralChiSquared() {
+        QL.info("Testing Gauss non-central chi-squared integration...");
+
         // C++ test-suite/gaussianquadratures.cpp:271.
+        // f(x) = x^2 * pdf(nonCentralChiSquared(4, 1))(x).
+        final NonCentralChiSquaredDistribution nccs41 =
+                new NonCentralChiSquaredDistribution(4.0, 1.0);
+        testSingle(
+                new GaussianQuadrature(2, new GaussNonCentralChiSquaredPolynomial(4.0, 1.0)),
+                "f(x) = x^2 * nonCentralChiSquared(4, 1)(x)",
+                x -> x * x * nccs41.pdf(x),
+                37.0);
+
+        // f(x) = x * sin(0.1*x) * exp(0.3*x) * pdf(nonCentralChiSquared(1, 1))(x).
+        final NonCentralChiSquaredDistribution nccs11 =
+                new NonCentralChiSquaredDistribution(1.0, 1.0);
+        testSingle(
+                new GaussianQuadrature(14, new GaussNonCentralChiSquaredPolynomial(1.0, 1.0)),
+                "f(x) = x * sin(0.1*x) * exp(0.3*x) * nonCentralChiSquared(1, 1)(x)",
+                x -> x * Math.sin(0.1 * x) * Math.exp(0.3 * x) * nccs11.pdf(x),
+                17.408092);
     }
 
-    @Ignore("Phase 5b.5: needs GaussNonCentralChiSquaredPolynomial port "
-            + "(ql/experimental/math/gaussiannoncentralchisquaredpolynomial.hpp).")
     @Test
     public void testNonCentralChiSquaredSumOfNodes() {
+        QL.info("Testing Gauss non-central chi-squared sum of nodes...");
+
         // C++ test-suite/gaussianquadratures.cpp:286.
+        //
+        // Walter Gautschi, "How and How not to check Gaussian Quadrature
+        // Formulae", https://www.cs.purdue.edu/homes/wxg/selected_works/section_08/084.pdf
+        //
+        // Expected results computed in multi precision following test #4 in
+        // the paper above. The JQuantLib port uses double precision
+        // throughout (see MomentBasedGaussianPolynomial); the C++ test note
+        // explicitly says "QuantLib's own determinant function will not work
+        // here as it supports only double precision" — yet the test still
+        // passes at 1e-5 tolerance because the abscissae sum is sufficiently
+        // well-conditioned. We keep the same tolerance here.
+        final double[] expected = {
+                47.53491786730293,
+                70.6103295419633383,
+                98.0593406849441607,
+                129.853401537905341,
+                165.96963582663912,
+                206.389183233992043
+        };
+
+        final double nu = 4.0;
+        final double lambda = 1.0;
+        final GaussNonCentralChiSquaredPolynomial orthPoly =
+                new GaussNonCentralChiSquaredPolynomial(nu, lambda);
+
+        final double tol = 1e-5;
+        for (int n = 4; n < 10; ++n) {
+            final GaussianQuadrature q = new GaussianQuadrature(n, orthPoly);
+            double calculated = 0.0;
+            for (int i = 0; i < q.order(); ++i) {
+                calculated += q.x(i);
+            }
+            if (Math.abs(calculated - expected[n - 4]) > tol) {
+                fail("failed to reproduce rule of sum"
+                        + "\n    calculated: " + calculated
+                        + "\n    expected:   " + expected[n - 4]
+                        + "\n    diff    :   " + (calculated - expected[n - 4]));
+            }
+        }
     }
 
-    @Ignore("Phase 5b.5: needs MultiDimGaussianIntegration class wrapper "
-            + "(ql/math/integrals/gaussianquadratures.hpp). "
-            + "Java has GaussianQuadMultidimIntegrator but with a different API surface.")
     @Test
     public void testMultiDimensionalGaussIntegration() {
-        // C++ test-suite/gaussianquadratures.cpp:328.
+        QL.info("Testing multi-dimensional Gaussian quadrature...");
+
+        // C++ test-suite/gaussianquadratures.cpp:328 (first sub-test only).
+        //
+        // The C++ test has three sub-tests; the latter two require
+        // multi-precision matrix inverse/determinant on randomly-generated
+        // SPD matrices using MersenneTwisterUniformRng-seeded entries. Those
+        // sub-tests are intrinsically tied to QuantLib's RNG sequence and
+        // mp_float matrix algebra; porting them faithfully would require
+        // additional infrastructure outside the scope of this WI. The first
+        // sub-test exercises the full MultiDimGaussianIntegration path
+        // end-to-end and is what fails first if the tensor-product assembly
+        // is wrong.
+        //
+        //   ∫_{R^n} exp(-<x, x>) dx = pi^{n/2}
+        final Function<double[], Double> normal = x -> {
+            double s = 0.0;
+            for (final double xi : x) {
+                s += xi * xi;
+            }
+            return Math.exp(-s);
+        };
+        for (int n = 1; n < 5; ++n) {
+            final int[] ns = new int[n];
+            for (int i = 0; i < n; ++i) {
+                ns[i] = i + 1;
+            }
+
+            final MultiDimGaussianIntegration quad =
+                    new MultiDimGaussianIntegration(ns, GaussHermiteIntegration::new);
+
+            final double tol = 1.0e4 * QL_EPSILON;
+            final double calculated = quad.op(normal);
+            final double expected = Math.sqrt(Math.pow(Math.PI, n));
+            final double diff = Math.abs(expected - calculated);
+            if (diff > tol) {
+                fail("failed to reproduce multi dimensional Gaussian quadrature"
+                        + "\n    calculated: " + calculated
+                        + "\n    expected:   " + expected
+                        + "\n    diff:       " + diff);
+            }
+        }
     }
 
     // ---- test-only helpers --------------------------------------------------------
