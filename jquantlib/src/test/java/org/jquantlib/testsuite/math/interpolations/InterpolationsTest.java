@@ -40,7 +40,9 @@ import org.jquantlib.math.GaussianKernel;
 import org.jquantlib.math.KernelFunction;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.RichardsonExtrapolation;
+import org.jquantlib.experimental.math.LaplaceInterpolation;
 import org.jquantlib.math.interpolations.BicubicSplineInterpolation;
+import org.jquantlib.math.interpolations.ChebyshevInterpolation;
 import org.jquantlib.math.interpolations.CubicInterpolation;
 import org.jquantlib.math.interpolations.FritschButlandCubic;
 import org.jquantlib.math.interpolations.KernelInterpolation;
@@ -933,25 +935,423 @@ public class InterpolationsTest {
         }
     }
 
+    /**
+     * Faithful port of {@code testChebyshevInterpolation}
+     * (C++ interpolations.cpp lines 2477-2515) — verifies that Chebyshev
+     * interpolation of {@code sin}, {@code cos}, and {@code exp(-x*x)}
+     * reproduces the underlying functions on {@code [-0.99, 1.0)} within
+     * spectral tolerances.
+     *
+     * <p>Phase 5e.5b-CFC-d-96.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no ChebyshevInterpolation. "
-            + "C++ interpolations.cpp testChebyshevInterpolation.")
-    public void testChebyshevInterpolation() { }
+    public void testChebyshevInterpolation() {
+        QL.info("Testing Chebyshev interpolation...");
 
-    @Test
-    @Ignore("Phase 5g.5 — see testChebyshevInterpolation. "
-            + "C++ interpolations.cpp testChebyshevInterpolationOnNodes.")
-    public void testChebyshevInterpolationOnNodes() { }
+        // C++ functions: sin, cos, exp(-x*x).
+        final Ops.DoubleOp[] fcts = new Ops.DoubleOp[] {
+            new Ops.DoubleOp() { @Override public double op(final double x) { return Math.sin(x); } },
+            new Ops.DoubleOp() { @Override public double op(final double x) { return Math.cos(x); } },
+            new Ops.DoubleOp() { @Override public double op(final double x) { return Math.exp(-x * x); } }
+        };
+        final String[] names = { "sin", "cos", "e^(-x*x)" };
 
-    @Test
-    @Ignore("Phase 5g.5 — see testChebyshevInterpolation. "
-            + "C++ interpolations.cpp testChebyshevInterpolationUpdateY.")
-    public void testChebyshevInterpolationUpdateY() { }
+        // C++ tests: {11, 1e-5}, {20, 1e-11}.
+        final int[]    ns   = { 11, 20 };
+        final double[] tols = { 1e-5, 1e-11 };
 
+        for (int t = 0; t < ns.length; ++t) {
+            for (int f = 0; f < fcts.length; ++f) {
+                final ChebyshevInterpolation interp =
+                        new ChebyshevInterpolation(ns[t], fcts[f]);
+
+                // Mirror C++ "for (Real x=-0.99; x < 1.0; x+=0.01)".
+                for (double x = -0.99; x < 1.0; x += 0.01) {
+                    final double expected   = fcts[f].op(x);
+                    final double calculated = interp.op(x);
+                    final double diff       = Math.abs(expected - calculated);
+                    final double tol        = tols[t];
+
+                    assertFalse("Chebyshev NaN at x=" + x + ", fct=" + names[f],
+                            Double.isNaN(calculated));
+                    if (diff > tol) {
+                        org.junit.Assert.fail(
+                                "failed to reproduce the Chebyshev interpolation values"
+                                + "\n    x         : " + x
+                                + "\n    fct       : " + names[f]
+                                + "\n    calculated: " + calculated
+                                + "\n    expected  : " + expected
+                                + "\n    difference: " + diff
+                                + "\n    tolerance : " + tol);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code testChebyshevInterpolationOnNodes}
+     * (C++ interpolations.cpp lines 2517-2570) — verifies bit-tight (10*eps)
+     * reproduction of {@code sin} at Chebyshev nodes and at perturbations
+     * of {@code +/- 50 * eps} around them, for both first and second kind
+     * nodes.
+     *
+     * <p>Phase 5e.5b-CFC-d-96.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no LaplaceInterpolation. "
-            + "C++ interpolations.cpp testLaplaceInterpolation.")
-    public void testLaplaceInterpolation() { }
+    public void testChebyshevInterpolationOnNodes() {
+        QL.info("Testing Chebyshev interpolation on and around nodes...");
+
+        final double tol = 10.0 * Constants.QL_EPSILON;
+        final int nrNodes = 7;
+
+        final ChebyshevInterpolation.PointsType[] pointTypes = {
+            ChebyshevInterpolation.PointsType.FirstKind,
+            ChebyshevInterpolation.PointsType.SecondKind
+        };
+
+        for (final ChebyshevInterpolation.PointsType pointType : pointTypes) {
+            final double[] nodes = ChebyshevInterpolation.nodes(nrNodes, pointType);
+            final double[] y = new double[nrNodes];
+            for (int i = 0; i < nrNodes; ++i) {
+                y[i] = Math.sin(nodes[i]);
+            }
+            final ChebyshevInterpolation interp =
+                    new ChebyshevInterpolation(y, pointType);
+
+            for (final double node : nodes) {
+                // Test on Chebyshev node.
+                final double expected   = Math.sin(node);
+                final double calculated = interp.op(node);
+                final double diff       = Math.abs(expected - calculated);
+                if (diff > tol) {
+                    org.junit.Assert.fail(
+                            "failed to reproduce the node values"
+                            + "\n    node      : " + node
+                            + "\n    calculated: " + calculated
+                            + "\n    expected  : " + expected
+                            + "\n    difference: " + diff
+                            + "\n    tolerance : " + tol);
+                }
+
+                // Check around Chebyshev node (perturbations of i * eps).
+                for (int i = -50; i < 50; ++i) {
+                    final double xx = node + i * Constants.QL_EPSILON;
+                    final double e2 = Math.sin(xx);
+                    final double c2 = interp.op(xx, true);
+                    final double d2 = Math.abs(e2 - c2);
+                    if (d2 > tol) {
+                        org.junit.Assert.fail(
+                                "failed to reproduce values around nodes"
+                                + "\n    node      : " + node
+                                + "\n    epsilon   : " + (xx - node)
+                                + "\n    calculated: " + c2
+                                + "\n    expected  : " + e2
+                                + "\n    difference: " + d2
+                                + "\n    tolerance : " + tol);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code testChebyshevInterpolationUpdateY}
+     * (C++ interpolations.cpp lines 2572-2598) — verifies that
+     * {@code updateY()} re-installs the new node values exactly.
+     *
+     * <p>Phase 5e.5b-CFC-d-96.
+     */
+    @Test
+    public void testChebyshevInterpolationUpdateY() {
+        QL.info("Testing Y update for Chebyshev interpolation...");
+
+        final double[] y  = { 1.0, 4.0, 7.0, 4.0 };
+        final ChebyshevInterpolation interp = new ChebyshevInterpolation(y);
+
+        final double[] yd = { 6.0, 4.0, 5.0, 6.0 };
+        interp.updateY(yd);
+
+        final double tol = 10.0 * Constants.QL_EPSILON;
+        final double[] nodes = interp.nodes();
+
+        for (int i = 0; i < y.length; ++i) {
+            final double expected   = yd[i];
+            final double calculated = interp.op(nodes[i], true);
+            final double diff       = Math.abs(calculated - expected);
+            if (diff > tol) {
+                org.junit.Assert.fail(
+                        "failed to reproduce updated node values"
+                        + "\n    node      : " + i
+                        + "\n    expected  : " + expected
+                        + "\n    calculated: " + calculated
+                        + "\n    difference: " + diff
+                        + "\n    tolerance : " + tol);
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code testLaplaceInterpolation}
+     * (C++ interpolations.cpp lines 2600-2884) — covers full matrices,
+     * inner-point reconstruction, boundary/corner cases, 1D col/row
+     * vectors, non-equidistant grids, single-point edge cases, and a
+     * real-world surface-completion case.
+     *
+     * <p>Phase 5e.5b-CFC-d-96.
+     */
+    @Test
+    public void testLaplaceInterpolation() {
+        QL.info("Testing Laplace interpolation...");
+
+        final double tol = 1e-12;
+        final double na  = Constants.NULL_REAL;
+
+        // Full matrix — nothing missing, identity.
+        Matrix m1 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m1);
+        assertEquals(1.0, m1.get(0, 0), tol);
+        assertEquals(4.0, m1.get(0, 2), tol);
+        assertEquals(5.0, m1.get(2, 0), tol);
+        assertEquals(3.0, m1.get(2, 1), tol);
+
+        // Inner point.
+        Matrix m2 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0,  na, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m2);
+        assertEquals(4.5, m2.get(1, 1), tol);
+        assertEquals(3.0, m2.get(2, 1), tol);
+
+        // Boundaries.
+        Matrix m3 = new Matrix(new double[][] {
+            { 1.0,  na, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m3);
+        assertEquals(2.5, m3.get(0, 1), tol);
+
+        Matrix m4 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            {  na, 6.5, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m4);
+        assertEquals(3.0, m4.get(1, 0), tol);
+
+        Matrix m5 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            { 5.0,  na, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m5);
+        assertEquals(3.5, m5.get(2, 1), tol);
+
+        Matrix m6 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0, 6.5,  na },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m6);
+        assertEquals(3.0, m6.get(1, 2), tol);
+
+        // Corners.
+        Matrix m7 = new Matrix(new double[][] {
+            {  na, 2.0, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m7);
+        assertEquals(4.0, m7.get(0, 0), tol);
+
+        Matrix m8 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            {  na, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m8);
+        assertEquals(4.5, m8.get(2, 0), tol);
+
+        Matrix m9 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            { 5.0, 3.0,  na },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m9);
+        assertEquals(5.0, m9.get(2, 2), tol);
+
+        Matrix m10 = new Matrix(new double[][] {
+            { 1.0, 2.0,  na },
+            { 6.0, 6.5, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(m10);
+        assertEquals(4.5, m10.get(0, 2), tol);
+
+        // 1D — col vector.
+        Matrix m20 = new Matrix(new double[][] {
+            {  na }, {  na }, { 3.0 }, { 5.0 }, { 7.0 }, {  na }
+        });
+        LaplaceInterpolation.laplaceInterpolation(m20);
+        assertEquals(3.0, m20.get(0, 0), tol);
+        assertEquals(3.0, m20.get(1, 0), tol);
+        assertEquals(7.0, m20.get(5, 0), tol);
+
+        // 1D — row vector.
+        Matrix m21 = new Matrix(new double[][] {
+            { na, na, 3.0, 5.0, 7.0, na }
+        });
+        LaplaceInterpolation.laplaceInterpolation(m21);
+        assertEquals(3.0, m21.get(0, 0), tol);
+        assertEquals(3.0, m21.get(0, 1), tol);
+        assertEquals(7.0, m21.get(0, 5), tol);
+
+        // Non-equidistant grid, inner point.
+        Matrix m30 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0,  na, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(
+                m30, new double[]{1.0, 2.0, 4.0}, new double[]{1.0, 2.0, 4.0});
+        assertEquals(26.0 / 6.0, m30.get(1, 1), tol);
+
+        // Non-equidistant grid, boundaries.
+        Matrix m31 = new Matrix(new double[][] {
+            { 1.0,  na, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(
+                m31, new double[]{1.0, 2.0, 4.0}, new double[]{1.0, 2.0, 4.0});
+        assertEquals(6.0 / 3.0, m31.get(0, 1), tol);
+
+        Matrix m32 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            {  na, 6.5, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(
+                m32, new double[]{1.0, 2.0, 4.0}, new double[]{1.0, 2.0, 4.0});
+        assertEquals(7.0 / 3.0, m32.get(1, 0), tol);
+
+        Matrix m33 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            { 5.0,  na, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(
+                m33, new double[]{1.0, 2.0, 4.0}, new double[]{1.0, 2.0, 4.0});
+        assertEquals(12.0 / 3.0, m33.get(2, 1), tol);
+
+        Matrix m34 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0, 6.5,  na },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(
+                m34, new double[]{1.0, 2.0, 4.0}, new double[]{1.0, 2.0, 4.0});
+        assertEquals(10.0 / 3.0, m34.get(1, 2), tol);
+
+        // Non-equidistant grid, corners.
+        Matrix m35 = new Matrix(new double[][] {
+            {  na, 2.0, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(
+                m35, new double[]{1.0, 2.0, 4.0}, new double[]{1.0, 3.0, 7.0});
+        assertEquals(10.0 / 3.0, m35.get(0, 0), tol);
+
+        Matrix m36 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            {  na, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(
+                m36, new double[]{1.0, 2.0, 4.0}, new double[]{1.0, 3.0, 7.0});
+        assertEquals(18.0 / 5.0, m36.get(2, 0), tol);
+
+        Matrix m37 = new Matrix(new double[][] {
+            { 1.0, 2.0, 4.0 },
+            { 6.0, 6.5, 7.0 },
+            { 5.0, 3.0,  na },
+        });
+        LaplaceInterpolation.laplaceInterpolation(
+                m37, new double[]{1.0, 2.0, 4.0}, new double[]{1.0, 3.0, 7.0});
+        assertEquals(13.0 / 3.0, m37.get(2, 2), tol);
+
+        Matrix m38 = new Matrix(new double[][] {
+            { 1.0, 2.0,  na },
+            { 6.0, 6.5, 7.0 },
+            { 5.0, 3.0, 2.0 },
+        });
+        LaplaceInterpolation.laplaceInterpolation(
+                m38, new double[]{1.0, 2.0, 4.0}, new double[]{1.0, 2.0, 3.0});
+        assertEquals(16.0 / 3.0, m38.get(0, 2), tol);
+
+        // Single point with given value.
+        Matrix m50 = new Matrix(new double[][] { { 1.0 } });
+        LaplaceInterpolation.laplaceInterpolation(m50);
+        assertEquals(1.0, m50.get(0, 0), tol);
+
+        // Single point with missing value — interpolation defaults to 0.
+        Matrix m51 = new Matrix(new double[][] { { Constants.NULL_REAL } });
+        LaplaceInterpolation.laplaceInterpolation(m51);
+        assertEquals(0.0, m51.get(0, 0), tol);
+
+        // No point.
+        final LaplaceInterpolation l0 = new LaplaceInterpolation(
+                coord -> Constants.NULL_REAL, new double[0][]);
+        assertEquals(0.0, l0.op(new int[0]), tol);
+
+        // Field-observed surface completion: large mostly-NA matrix, looser
+        // tolerance (matches C++ comment "we need more iterations").
+        final double[] tx = {0.0849315, 0.257534, 0.509589, 1.00548, 2.00274, 3.00274,
+                             4.00274, 5.00548, 7.00822, 10.0082, 15.011, 20.0137,
+                             30.0219, 70.0493};
+        final double[] ty = {0.25, 1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0, 100.0};
+        final double[][] m52data = new double[12][14];
+        for (int i = 0; i < 12; ++i) {
+            for (int j = 0; j < 14; ++j) {
+                m52data[i][j] = na;
+            }
+        }
+        // Fill in the known 1.0s — pattern from C++ source.
+        final int[][] knownCols = {
+            {2,3,4,5,6,7,8,9,10,11,12},          // row 0
+            {2,3,4,5,6,7,8,9,10,11,12},          // row 1
+            {4,5,6,7,8,9,10,11,12},              // row 2
+            {2,3,4,5,6,7,8,9,10,11,12},          // row 3
+            {2,3,4,5,6,7,8,9,10,11,12},          // row 4
+            {3,4,5,6,7,8,9,10,11,12},            // row 5
+            {3,4,5,6,7,8,9,10,11,12},            // row 6
+            {3,4,5,6,7,8,9,10,11,12},            // row 7
+            {3,4,5,6,7,8,9,10,11},               // row 8
+            {4,5,6,7,8,9,10,11},                 // row 9
+            {5,6,7,8,9,10,11},                   // row 10
+            {}                                    // row 11 — all NA
+        };
+        for (int i = 0; i < knownCols.length; ++i) {
+            for (final int c : knownCols[i]) {
+                m52data[i][c] = 1.0;
+            }
+        }
+        Matrix m52 = new Matrix(m52data);
+        LaplaceInterpolation.laplaceInterpolation(m52, tx, ty, 1e-6, 100);
+        for (int i = 0; i < m52.rows(); ++i) {
+            for (int j = 0; j < m52.columns(); ++j) {
+                assertEquals("m52[" + i + "," + j + "]", 1.0, m52.get(i, j), 0.1);
+            }
+        }
+    }
 
     @Test
     @Ignore("Phase 5g.5 — Java has no FlatExtrapolator2D class. "
