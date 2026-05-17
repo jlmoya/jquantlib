@@ -35,6 +35,7 @@ import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.methods.lattices.CoxRossRubinstein;
+import org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -125,6 +126,121 @@ public class DoubleBarrierOptionTest {
             new HaugDouble(DoubleBarrierType.KnockIn, 90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15, 3.1460, 1.0e-4),
     };
 
+    /**
+     * Full Haug value set used by C++ {@code testEuropeanHaugValues} — KnockOut
+     * calls/puts and KnockIn calls for the Ikeda/Kunitomo engine. Faithful to
+     * {@code test-suite/doublebarrieroption.cpp} (v1.42.1).
+     */
+    private static final HaugDouble[] IKEDA_VALUES = new HaugDouble[] {
+            // KnockOut Calls
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  4.3515, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  6.1644, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  7.0373, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  6.9853, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  7.9336, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35,  6.5088, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  4.3505, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  5.8500, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  5.7726, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  6.8082, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  6.3383, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35,  4.3841, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  4.3139, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  4.8293, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  3.7765, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  5.9697, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  4.0004, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35,  2.2563, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  3.7516, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  2.6387, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  1.4903, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  3.5805, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  1.5098, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35,  0.5635, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  1.2055, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  0.3098, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  0.0477, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  0.5537, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  0.0441, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35,  0.0011, 1.0e-4),
+
+            // KnockOut Puts
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.15,  1.8825, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.25,  3.7855, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.35,  5.7191, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.15,  2.1374, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.25,  4.7033, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 50.0, 150.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.35,  7.1683, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.15,  1.8825, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.25,  3.7845, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.35,  5.6060, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.15,  2.1374, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.25,  4.6236, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 60.0, 140.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.35,  6.1062, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.15,  1.8825, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.25,  3.7014, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.35,  4.6472, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.15,  2.1325, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.25,  3.8944, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 70.0, 130.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.35,  3.5868, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.15,  1.8600, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.25,  2.6866, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.35,  2.0719, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.15,  1.8883, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.25,  1.7851, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.35,  0.8244, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.15,  0.9473, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.25,  0.3449, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.25, 0.35,  0.0578, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.15,  0.4555, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.25,  0.0491, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockOut, 90.0, 110.0, Option.Type.Put,  100, 100.0, 0.0, 0.1, 0.50, 0.35,  0.0013, 1.0e-4),
+
+            // KnockIn Calls
+            new HaugDouble(DoubleBarrierType.KnockIn,  50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  0.0000, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  0.0900, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  1.1537, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  0.0292, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  1.6487, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  50.0, 150.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35,  5.7321, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockIn,  60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  0.0010, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  0.4045, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  2.4184, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  0.2062, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  3.2439, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  60.0, 140.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35,  7.8569, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockIn,  70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  0.0376, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  1.4252, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  4.4145, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  1.0447, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  5.5818, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  70.0, 130.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35,  9.9846, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockIn,  80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  0.5999, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  3.6158, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  6.7007, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  3.4340, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  8.0724, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35, 11.6774, 1.0e-4),
+
+            new HaugDouble(DoubleBarrierType.KnockIn,  90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15,  3.1460, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.25,  5.9447, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.35,  8.1432, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.15,  6.4608, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.25,  9.5382, 1.0e-4),
+            new HaugDouble(DoubleBarrierType.KnockIn,  90.0, 110.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.50, 0.35, 12.2398, 1.0e-4),
+    };
+
     /** Subset for binomial CRR — wider tolerance per C++ test suite (0.28 plain, 0.033 Derman). */
     private static final HaugDouble[] BINOMIAL_VALUES = new HaugDouble[] {
             new HaugDouble(DoubleBarrierType.KnockOut, 80.0, 120.0, Option.Type.Call, 100, 100.0, 0.0, 0.1, 0.25, 0.15, 3.7516, 0.28),
@@ -159,11 +275,9 @@ public class DoubleBarrierOptionTest {
     }
 
     @Test
-    @Ignore("Phase 4e.5: AnalyticDoubleBarrierEngine (Ikeda/Kunitomo) "
-            + "lives in ql/pricingengines/barrier/, out of experimental.barrieroption scope.")
     public void testIkedaKunitomoValues() {
-        // Carry-forward: port AnalyticDoubleBarrierEngine + AnalyticDoubleBarrierBinaryEngine
-        // into org.jquantlib.pricingengines.barrier (matching C++ structure).
+        QL.info("Testing AnalyticDoubleBarrierEngine (Ikeda/Kunitomo) against Haug's values...");
+        runEngineCheck("Ikeda/Kunitomo", IKEDA_VALUES, EngineKind.IKEDA);
     }
 
     @Test
@@ -194,7 +308,7 @@ public class DoubleBarrierOptionTest {
     //
 
     private enum EngineKind {
-        SUOWANG, BINOMIAL_PLAIN, BINOMIAL_DERMAN
+        SUOWANG, BINOMIAL_PLAIN, BINOMIAL_DERMAN, IKEDA
     }
 
     private void runEngineCheck(final String label, final HaugDouble[] values, final EngineKind kind) {
@@ -233,6 +347,9 @@ public class DoubleBarrierOptionTest {
                     payoff, exercise);
 
             switch (kind) {
+                case IKEDA:
+                    opt.setPricingEngine(new AnalyticDoubleBarrierEngine(stochProcess));
+                    break;
                 case SUOWANG:
                     opt.setPricingEngine(new SuoWangDoubleBarrierEngine(stochProcess));
                     break;
