@@ -165,7 +165,7 @@ public class Schedule {
 			final Date  terminationDate,
 			final Period  tenor,
 			final Calendar  calendar,
-			BusinessDayConvention convention,
+			final BusinessDayConvention convention,
 			final BusinessDayConvention terminationDateConvention,
 			final DateGeneration.Rule rule,
 			final boolean endOfMonth,
@@ -265,7 +265,8 @@ public class Schedule {
         // calendar needed for endOfMonth adjustment
         final Calendar nullCalendar = new NullCalendar();
         int periods = 1;
-        Date seed, exitDate;
+        Date seed = new Date();
+        Date exitDate;
         switch (rule_) {
 
           case Zero:
@@ -317,10 +318,15 @@ public class Schedule {
                 }
             }
 
-            if (endOfMonth && calendar.isEndOfMonth(seed)) {
-                convention = BusinessDayConvention.Preceding;
-            }
-
+            // Mirrors C++ ql/time/schedule.cpp:238-245 — use the ORIGINAL
+            // {@code convention} parameter here (do NOT mutate it to Preceding
+            // when {@code endOfMonth && calendar.isEndOfMonth(seed)}). The
+            // EOM end-of-month interior snapping is applied separately in the
+            // post-loop adjustment block (mirrors C++ schedule.cpp:381-388).
+            // Phase 5e.5b-CFC-d-137: removing the in-branch convention
+            // mutation that previously caused first-date Preceding-snaps on
+            // EOM-flagged backward schedules (e.g. 30-Sep-2017 -> 29-Sep-2017
+            // under USGovBond when the seed was 30-Sep-2022).
             if (calendar.adjust(dates_.get(0),convention).ne(
                 calendar.adjust(effectiveDate, convention))) {
                 dates_.add(0, effectiveDate);
@@ -410,10 +416,12 @@ public class Schedule {
                 }
             }
 
-            if (endOfMonth && calendar.isEndOfMonth(seed)) {
-                convention = BusinessDayConvention.Preceding;
-            }
-
+            // Mirrors C++ ql/time/schedule.cpp:335-348 — use the original
+            // {@code terminationDateConvention} for the termination-date
+            // comparison (do NOT mutate {@code convention} to Preceding when
+            // {@code endOfMonth && calendar.isEndOfMonth(seed)} as the prior
+            // Java impl did). Interior EOM snapping happens in the unified
+            // post-loop adjustment block. Phase 5e.5b-CFC-d-137.
             if (calendar.adjust(dates_.get(dates_.size()-1),terminationDateConvention).ne(
                 calendar.adjust(terminationDate, terminationDateConvention)))
                 if (rule_ == DateGeneration.Rule.Twentieth ||
@@ -458,19 +466,37 @@ public class Schedule {
             dates_.set(0, calendar.adjust(dates_.get(0), convention));
         }
 
-        for (int i=1; i<dates_.size()-1; ++i) {
-            dates_.set(i, calendar.adjust(dates_.get(i), convention));
-        }
-
         // termination date is NOT adjusted as per ISDA
         // specifications, unless otherwise specified in the
         // confirmation of the deal or unless we're creating a CDS
         // schedule
+        // (moved BEFORE the interior-date adjustment block to mirror the
+        //  ordering of C++ schedule.cpp:374-388, where the EOM interior
+        //  adjustment is the last per-date pass.)
         if (terminationDateConvention != BusinessDayConvention.Unadjusted
                 && rule_ != DateGeneration.Rule.CDS
                 && rule_ != DateGeneration.Rule.CDS2015) {
             dates_.set(dates_.size()-1, calendar.adjust(dates_.get(dates_.size()-1),
                                                     terminationDateConvention));
+        }
+
+        // Interior-date adjustment — mirrors C++ schedule.cpp:381-388.
+        // When {@code endOfMonth && calendar.isEndOfMonth(seed)} we snap
+        // each interior date to its calendar end-of-month BEFORE applying
+        // the BDC, so e.g. 30-Sep stays 30-Sep instead of being knocked
+        // back to a prior business day. Otherwise just apply the BDC.
+        // The previous Java impl unconditionally adjusted with the BDC
+        // (after mutating {@code convention=Preceding} when EOM held),
+        // which both mis-snapped the first/last dates and skipped the
+        // end-of-month rollover. Phase 5e.5b-CFC-d-137.
+        if (endOfMonth && seed != null && !seed.isNull() && calendar.isEndOfMonth(seed)) {
+            for (int i = 1; i < dates_.size() - 1; ++i) {
+                dates_.set(i, calendar.adjust(Date.endOfMonth(dates_.get(i)), convention));
+            }
+        } else {
+            for (int i = 1; i < dates_.size() - 1; ++i) {
+                dates_.set(i, calendar.adjust(dates_.get(i), convention));
+            }
         }
     }
 

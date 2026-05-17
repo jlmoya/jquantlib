@@ -53,25 +53,44 @@ public class LmFixedVolatilityModel extends LmVolatilityModel {
 
     @Override
     public Array volatility(final double t, final Array x) {
-        QL.require((t < startTimes_.first() || t > startTimes_.last()) , "invalid time given for volatility model"); // TODO: message
-        final int ti = (int) (startTimes_.upperBound(t) - startTimes_.first() - 1);
+        // Phase 5e.5b-CFC-d-138 align: C++ lmfixedvolmodel.cpp:41 has
+        // {@code QL_REQUIRE(t >= startTimes_.front() && t <= startTimes_.back(), ...)}.
+        // The previous Java port had the predicate inverted (it required t
+        // outside the range), which made every legitimate call throw.
+        QL.require(t >= startTimes_.first() && t <= startTimes_.last(),
+                "invalid time given for volatility model");
+        // C++ {@code upper_bound(begin, end-1, t) - begin - 1}. {@code Array.upperBound}
+        // returns the absolute index of the first element strictly greater than
+        // {@code t} (per the Array.upperBound contract); we then subtract 1
+        // and clamp at zero to mirror the C++ "exclude the last entry"
+        // {@code end-1} search.
+        int ti = startTimes_.upperBound(t) - 1;
+        if (ti < 0) {
+            ti = 0;
+        }
+        if (ti > size_ - 1) {
+            ti = size_ - 1;
+        }
 
         final Array tmp = new Array(size_);
-
-        for (int i = ti; i < size_; ++i)
+        for (int i = ti; i < size_; ++i) {
             tmp.set(i, volatilities_.get(i - ti));
-        final Array ret = new Array(tmp.size());//ZH: translation not as QL097
-        for (int i = 0; i < tmp.size(); i++)
-            ret.set(i, tmp.get(i));
-        return ret;
+        }
+        return tmp;
     }
 
     @Override
     public double /* @Volatility */volatility(final int i, /* @Time */final double t, final Array x) {
-        if (t < startTimes_.first() || t > startTimes_.last())
+        if (t < startTimes_.first() || t > startTimes_.last()) {
             throw new IllegalArgumentException("invalid time given for volatility model");
-        final int ti = (int) (startTimes_.upperBound(t) - startTimes_.first() - 1);
-
+        }
+        int ti = startTimes_.upperBound(t) - 1;
+        if (ti < 0) {
+            ti = 0;
+        }
+        if (ti > size_ - 1) {
+            ti = size_ - 1;
+        }
         return volatilities_.get(i - ti);
     }
 

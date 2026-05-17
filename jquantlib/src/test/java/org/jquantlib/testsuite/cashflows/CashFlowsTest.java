@@ -534,62 +534,133 @@ public class CashFlowsTest {
         }
     }
 
-    @Ignore("Phase 5d.5 — Schedule(...,endOfMonth=true) generator currently snaps "
-            + "irregular first-coupon reference start to schedule's first regular date "
-            + "rather than to the prior end-of-month per C++ Schedule::nextTwentieth/EOM "
-            + "logic. Reference value (31-Aug-2016 for the 17-Jan-2017 -> 28-Feb-2018 "
-            + "semi-annual schedule) must come from a probe against C++ v1.42.1 once "
-            + "the Schedule generator is aligned.")
-    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
-
-    @Ignore("Phase 5e.5b-CFC-d-97 — MakeSchedule fluent setters "
-            + "(.withCalendar / .withTenor / .from / .to / .withConvention / "
-            + ".withTerminationDateConvention / .withFirstDate / .withNextToLastDate) "
-            + "are now ported and the test compiles cleanly against the C++ "
-            + "fluent shape (see commented body below). Remaining blocker is "
-            + "the Java Schedule generator: for the 30-Sep-2017 → 30-Sep-2022 "
-            + "semi-annual schedule with endOfMonth=true + Unadjusted + "
-            + "firstDate=31-Mar-2018, the first regular reference start currently "
-            + "snaps to 29-Sep-2017 instead of 30-Sep-2017. Fix requires changes "
-            + "to time.Schedule (out of scope for this commit — Schedule is owned "
-            + "by a parallel-running agent).")
-    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() { fail("not implemented"); }
-    /*
-     * Ready-to-uncomment body once Schedule generator is aligned:
+    /**
+     * Mirror of C++ {@code CashFlowTests::testIrregularFirstCouponReferenceDatesAtEndOfMonth}
+     * (test-suite/cashflows.cpp v1.42.1 lines 356-376). Verifies that the
+     * irregular first coupon of a semi-annual EOM schedule (17-Jan-2017 ->
+     * 28-Feb-2018) carries a reference period start of 31-Aug-2016 — i.e.
+     * the prior end-of-month obtained by walking back one tenor from the
+     * first regular date (28-Feb-2017) using
+     * {@code Calendar.advance(end, -tenor, BDC, endOfMonth=true)}.
      *
-     *   final Schedule schedule = new MakeSchedule()
-     *           .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
-     *           .from(new Date(30, Month.September, 2017))
-     *           .to(new Date(30, Month.September, 2022))
-     *           .withTenor(new Period(6, TimeUnit.Months))
-     *           .withConvention(BusinessDayConvention.Unadjusted)
-     *           .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
-     *           .withFirstDate(new Date(31, Month.March, 2018))
-     *           .withNextToLastDate(new Date(31, Month.March, 2022))
-     *           .endOfMonth()
-     *           .backwards()
-     *           .schedule();
-     *   final Leg leg = new FixedRateLeg(schedule,
-     *           new ActualActual(ActualActual.Convention.ISMA))
-     *           .withNotionals(100.0)
-     *           .withCouponRates(0.01875)
-     *           .Leg();
-     *   final Coupon firstCoupon = (Coupon) leg.get(0);
-     *   final Date expectedRefStart = new Date(30, Month.September, 2017);
-     *   if (!firstCoupon.referencePeriodStart().equals(expectedRefStart)) {
-     *       fail("Expected reference start date at end of calendar day of "
-     *           + "the month, got " + firstCoupon.referencePeriodStart());
-     *   }
-     *   assertEquals("First coupon amount mismatch", 0.9375,
-     *           firstCoupon.amount(), 0.9375 * 1.0e-4);
+     * <p>Phase 5e.5b-CFC-d-137 — un-ignored after fixing the
+     * {@link FixedRateLeg} irregular-reference-period computation to
+     * honor {@code schedule.endOfMonth()} (mirrors C++
+     * {@code FixedRateLeg::operator Leg()} lines 198-204).
      */
+    @Test
+    public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() {
+        final Schedule schedule = new MakeSchedule()
+                .from(new Date(17, Month.January, 2017))
+                .to(new Date(28, Month.February, 2018))
+                .withFrequency(Frequency.Semiannual)
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .endOfMonth()
+                .backwards()
+                .schedule();
 
-    @Ignore("Phase 5d.5 — same Schedule(...,endOfMonth=true) generator divergence as "
-            + "testIrregularFirstCouponReferenceDatesAtEndOfMonth, but applied to the "
-            + "LAST coupon (referencePeriodEnd snapping to end-of-month). Expected "
-            + "value 31-Aug-2018 for the 17-Jan-2017 -> 15-Sep-2018 schedule with "
-            + "nextToLastDate=28-Feb-2018.")
-    @Test public void testIrregularLastCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
+        final Leg leg = new FixedRateLeg(schedule, new Actual360())
+                .withNotionals(100.0)
+                .withCouponRates(0.01)
+                .Leg();
+
+        final Coupon firstCoupon = (Coupon) leg.get(0);
+        final Date expected = new Date(31, Month.August, 2016);
+        if (!firstCoupon.referencePeriodStart().equals(expected)) {
+            fail("Expected reference start date at end of month, got "
+                    + firstCoupon.referencePeriodStart());
+        }
+    }
+
+    /**
+     * Mirror of C++ {@code CashFlowTests::testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth}
+     * (test-suite/cashflows.cpp v1.42.1 lines 378-403). Verifies that for a
+     * 30-Sep-2017 -> 30-Sep-2022 semi-annual EOM schedule with explicit
+     * firstDate=31-Mar-2018 and nextToLastDate=31-Mar-2022, the irregular
+     * first coupon's reference period start lands on the effective date
+     * (30-Sep-2017) and the first cashflow amount is 0.9375 (notional 100,
+     * coupon 1.875%, ActualActual ISMA).
+     *
+     * <p>Phase 5e.5b-CFC-d-137 — un-ignored after fixing both the Schedule
+     * generator (removing the in-branch {@code convention=Preceding}
+     * mutation that mis-snapped EOM-flagged schedule dates) and the
+     * {@link FixedRateLeg} irregular-reference-period computation (now
+     * honoring {@code schedule.endOfMonth()}).
+     */
+    @Test
+    public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() {
+        final Schedule schedule = new MakeSchedule()
+                .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+                .from(new Date(30, Month.September, 2017))
+                .to(new Date(30, Month.September, 2022))
+                .withTenor(new Period(6, TimeUnit.Months))
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+                .withFirstDate(new Date(31, Month.March, 2018))
+                .withNextToLastDate(new Date(31, Month.March, 2022))
+                .endOfMonth()
+                .backwards()
+                .schedule();
+
+        final Leg leg = new FixedRateLeg(schedule,
+                new ActualActual(ActualActual.Convention.ISMA))
+                .withNotionals(100.0)
+                .withCouponRates(0.01875)
+                .Leg();
+
+        final Coupon firstCoupon = (Coupon) leg.get(0);
+        final Date expectedRefStart = new Date(30, Month.September, 2017);
+        if (!firstCoupon.referencePeriodStart().equals(expectedRefStart)) {
+            fail("Expected reference start date at end of calendar day of "
+                    + "the month, got " + firstCoupon.referencePeriodStart());
+        }
+        // C++ tolerance is boost::test_tools::tolerance<Real>(0.0001) =
+        // 0.01% relative; first coupon amount is 0.9375.
+        assertEquals("First coupon amount mismatch", 0.9375,
+                firstCoupon.amount(), 0.9375 * 1.0e-4);
+    }
+
+    /**
+     * Mirror of C++ {@code CashFlowTests::testIrregularLastCouponReferenceDatesAtEndOfMonth}
+     * (test-suite/cashflows.cpp v1.42.1 lines 405-426). Verifies that the
+     * irregular last coupon of a semi-annual EOM schedule (17-Jan-2017 ->
+     * 15-Sep-2018 with nextToLastDate=28-Feb-2018) carries a reference
+     * period end of 31-Aug-2018 — i.e. the next end-of-month obtained by
+     * walking forward one tenor from the last regular date (28-Feb-2018)
+     * using {@code Calendar.advance(start, +tenor, BDC, endOfMonth=true)}.
+     *
+     * <p>Phase 5e.5b-CFC-d-137 — un-ignored after fixing the
+     * {@link FixedRateLeg} irregular-reference-period computation to
+     * honor {@code schedule.endOfMonth()} (mirrors C++
+     * {@code FixedRateLeg::operator Leg()} lines 264-268). The previous
+     * Java impl used {@code start.add(tenor) + calendar.adjust(...)}
+     * which ignored the EOM flag and snapped to 28-Aug-2018 instead of
+     * 31-Aug-2018.
+     */
+    @Test
+    public void testIrregularLastCouponReferenceDatesAtEndOfMonth() {
+        final Schedule schedule = new MakeSchedule()
+                .from(new Date(17, Month.January, 2017))
+                .to(new Date(15, Month.September, 2018))
+                .withNextToLastDate(new Date(28, Month.February, 2018))
+                .withFrequency(Frequency.Semiannual)
+                .withConvention(BusinessDayConvention.Unadjusted)
+                .endOfMonth()
+                .backwards()
+                .schedule();
+
+        final Leg leg = new FixedRateLeg(schedule, new Actual360())
+                .withNotionals(100.0)
+                .withCouponRates(0.01)
+                .Leg();
+
+        final Coupon lastCoupon = (Coupon) leg.get(leg.size() - 1);
+        final Date expected = new Date(31, Month.August, 2018);
+        if (!lastCoupon.referencePeriodEnd().equals(expected)) {
+            fail("Expected reference end date at end of month, got "
+                    + lastCoupon.referencePeriodEnd());
+        }
+    }
 
     @Ignore("Phase 5d.5 — requires Schedule(List<Date>, Calendar, BusinessDayConvention, "
             + "BusinessDayConvention, Period, DateGeneration.Rule, boolean endOfMonth, "

@@ -68,17 +68,28 @@ public abstract class LfmCovarianceParameterization {
         // because it is too slow and too inefficient.
         // This method is useful for testing and R&D.
         // Please overload the method within derived classes.
-        QL.require(!x.empty() , "can not handle given x here"); // TODO: message
+        // Phase 5e.5b-CFC-d-138 align: C++ lfmcovarparam.cpp:58 uses
+        // {@code QL_REQUIRE(x.empty(), ...)} — the previous Java port had the
+        // predicate inverted, which made the only test path
+        // (testLambdaBootstrapping) impossible to call.
+        QL.require(x.empty() , "can not handle given x here"); // TODO: message
 
         final Matrix tmp = new Matrix(size_, size_);
         for (int i = 0; i < size_; ++i) {
             for (int j = 0; j <= i; ++j) {
                 final Var_Helper helper = new Var_Helper(this, i, j);
-                final GaussKronrodAdaptive integrator = new GaussKronrodAdaptive(1e-10, 10000);
-                for(int k = 0; k<64; ++k) {
-                    tmp.set(i, j, tmp.get(i, j)+integrator.op(helper, k*t/64.0,(k+1)*t/64.0));
+                // Note: each per-cell {@code GaussKronrodAdaptive} instance is
+                // re-created inside the {@code k} sub-interval loop so that
+                // the per-integration evaluation budget is not exhausted by
+                // accumulated counters from previous sub-intervals. C++ does
+                // the same because the integrator object is constructed at
+                // top scope but {@code Integrator}'s evaluation count resets
+                // per {@code operator()} call.
+                for (int k = 0; k < 64; ++k) {
+                    final GaussKronrodAdaptive integrator = new GaussKronrodAdaptive(1e-10, 10000);
+                    tmp.set(i, j, tmp.get(i, j) + integrator.op(helper, k*t/64.0, (k+1)*t/64.0));
                 }
-                tmp.set(j,i, tmp.get(i, j));
+                tmp.set(j, i, tmp.get(i, j));
             }
         }
 

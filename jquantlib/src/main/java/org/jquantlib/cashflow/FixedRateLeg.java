@@ -183,8 +183,20 @@ public class FixedRateLeg extends Leg {
             QL.require(firstPeriodDayCounter_==null || !firstPeriodDayCounter_.equals(paymentDayCounter_) , "regular first coupon does not allow a first-period day count"); // TODO: message
             leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end, exCouponDate));
         } else {
-            Date ref = end.sub(schedule_.tenor());
-            ref = calendar.adjust(ref, schedule_.businessDayConvention());
+            // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:198-204 — the
+            // irregular first-coupon reference start is computed as
+            // schedule.calendar().advance(end, -schedule.tenor(),
+            //                             schedule.businessDayConvention(),
+            //                             schedule.endOfMonth()).
+            // The previous Java impl used end.sub(schedule_.tenor()) +
+            // calendar.adjust(...) which ignored the schedule's EOM flag
+            // and therefore mis-snapped reference starts when EOM=true
+            // (e.g. 28-Aug-2016 instead of 31-Aug-2016 for the 17-Jan-2017
+            // -> 28-Feb-2018 semi-annual EOM schedule). Phase 5e.5b-CFC-d-137.
+            final Date ref = calendar.advance(end,
+                    schedule_.tenor().negative(),
+                    schedule_.businessDayConvention(),
+                    schedule_.endOfMonth());
             // FIXME: empty() method on dayCounter missing --> substituted by == null (probably incorrect)
             final DayCounter dc = (firstPeriodDayCounter_ == null) ? paymentDayCounter_ : firstPeriodDayCounter_;
             leg.add(new FixedRateCoupon(nominal, paymentDate, rate, dc, start, end, ref, end, exCouponDate));
@@ -244,8 +256,18 @@ public class FixedRateLeg extends Leg {
             if (lastIsRegularOrNoTenor) {
                 leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, end, exCouponDate));
             } else {
-                Date ref = start.add(schedule_.tenor());
-                ref = calendar.adjust(ref, schedule_.businessDayConvention());
+                // Mirrors C++ ql/cashflows/fixedratecoupon.cpp:264-268 — the
+                // irregular last-coupon reference end is computed as
+                // schedule.calendar().advance(start, schedule.tenor(),
+                //                             schedule.businessDayConvention(),
+                //                             schedule.endOfMonth()).
+                // EOM honoring is required so that e.g. start=28-Feb-2018 +
+                // 6M with EOM=true rolls to 31-Aug-2018, not 28-Aug-2018.
+                // Phase 5e.5b-CFC-d-137.
+                final Date ref = calendar.advance(start,
+                        schedule_.tenor(),
+                        schedule_.businessDayConvention(),
+                        schedule_.endOfMonth());
                 leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, ref, exCouponDate));
             }
         }

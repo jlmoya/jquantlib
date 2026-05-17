@@ -67,6 +67,11 @@ public class CapletVarianceCurve extends OptionletVolatilityStructure {
             final DayCounter dayCounter) {
 		super(referenceDate, new Calendar(), BusinessDayConvention.Following);
 		blackCurve = new BlackVarianceCurve(referenceDate, dates, capletVolCurve, dayCounter, false);
+		// Mirror C++: CapletVarianceCurve is constructed ready-to-use. The
+		// underlying BlackVarianceCurve is a JQuantLib idiom that defers
+		// interpolation setup to a separate setInterpolation() call; here we
+		// trigger it immediately so callers get a fully-initialized curve.
+		blackCurve.setInterpolation();
 	}
 
 

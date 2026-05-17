@@ -85,8 +85,14 @@ public class LfmCovarianceProxy extends LfmCovarianceParameterization {
 
         double tmp = 0.0;
         final Var_Helper helper = new Var_Helper(this, i, j);
-        final GaussKronrodAdaptive integrator = new GaussKronrodAdaptive(1e-10, 10000);
+        // Phase 5e.5b-CFC-d-138 — instantiate the GaussKronrodAdaptive
+        // integrator INSIDE the sub-interval loop so its per-integration
+        // evaluation budget is not exhausted by cumulative counters across
+        // the 64 chunks. The previous single-instance reuse made the
+        // 10000-eval budget exhaust on the LFM cap-pricing path which
+        // requires up to 9 fixings × 64 sub-intervals × ~30 evals each.
         for (int k = 0; k < 64; ++k) {
+            final GaussKronrodAdaptive integrator = new GaussKronrodAdaptive(1e-10, 10000);
             tmp += integrator.op(helper, k * t / 64.0, (k + 1) * t / 64.0);
         }
         return tmp;

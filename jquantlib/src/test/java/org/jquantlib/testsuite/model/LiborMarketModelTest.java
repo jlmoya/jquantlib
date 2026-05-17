@@ -11,15 +11,59 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import org.jquantlib.Settings;
+import org.jquantlib.cashflow.IborCoupon;
+import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.exercise.EuropeanExercise;
+import org.jquantlib.indexes.Euribor6M;
+import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.instruments.CapFloor;
+import org.jquantlib.instruments.Swaption;
+import org.jquantlib.instruments.VanillaSwap;
 import org.jquantlib.legacy.libormarkets.LfmCovarianceProxy;
+import org.jquantlib.legacy.libormarkets.LfmHullWhiteParameterization;
+import org.jquantlib.legacy.libormarkets.LfmSwaptionEngine;
+import org.jquantlib.legacy.libormarkets.LiborForwardModel;
 import org.jquantlib.legacy.libormarkets.LmCorrelationModel;
 import org.jquantlib.legacy.libormarkets.LmExponentialCorrelationModel;
+import org.jquantlib.legacy.libormarkets.LmFixedVolatilityModel;
 import org.jquantlib.legacy.libormarkets.LmLinearExponentialVolatilityModel;
 import org.jquantlib.legacy.libormarkets.LmVolatilityModel;
+import org.jquantlib.math.distributions.InverseCumulativeNormal;
+import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
+import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
+import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
+import org.jquantlib.math.statistics.GeneralStatistics;
+import org.jquantlib.methods.montecarlo.MultiPath;
+import org.jquantlib.methods.montecarlo.MultiPathGenerator;
+import org.jquantlib.methods.montecarlo.Sample;
+import org.jquantlib.model.AffineModel;
+import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.capfloor.AnalyticCapFloorEngine;
+import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
+import org.jquantlib.processes.LiborForwardModelProcess;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.RelinkableHandle;
+import org.jquantlib.termstructures.CapletVarianceCurve;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeGrid;
+import org.jquantlib.time.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -27,35 +71,103 @@ import org.junit.Test;
  * Java port of {@code test-suite/libormarketmodel.cpp} v1.42.1 (465 LOC,
  * 4 test cases).
  *
- * <p>Status (Phase 5e.5b-CFC-d-132):
+ * <p>Status (Phase 5e.5b-CFC-d-138):
  * <ul>
- *   <li>{@code testSimpleCovarianceModels} — <strong>body-filled</strong>.
- *       The C++ test exercises (i) the exponential correlation model
- *       reconstructs from its pseudo-square-root, (ii) the
- *       linear-exponential volatility model returns the closed-form
- *       Brigo-Mercurio-Morini values, and (iii) the
- *       {@link LfmCovarianceProxy} composes covariance from diffusion
- *       consistently. None of those checks require a fully-functional
- *       {@code LiborForwardModelProcess}, so we omit the dead
- *       process/model construction the C++ test performed but never
- *       used (see C++ lines 144-148).</li>
- *   <li>{@code testCapletPricing} — deferred: needs
- *       {@code LfmHullWhiteParameterization} and an
- *       {@code AnalyticCapFloorEngine} wired to a calibrated
- *       {@code LiborForwardModel}.</li>
- *   <li>{@code testCalibration} — deferred: needs {@code CapHelper},
- *       {@code SwaptionHelper}, {@code LfmSwaptionEngine}, and a
- *       Levenberg-Marquardt calibration loop over
- *       {@code LiborForwardModel}.</li>
- *   <li>{@code testSwaptionPricing} — deferred: needs the
- *       {@code MultiPathGenerator} / {@code PseudoRandom} pipeline plus
- *       {@code LiborForwardModel::S_0} and an LFM swaption engine.</li>
+ *   <li>{@code testSimpleCovarianceModels} — <strong>body-filled</strong>
+ *       (Phase 5e.5b-CFC-d-132). Exercises the exponential correlation
+ *       reconstruction, the linear-exponential vol surface against its
+ *       closed-form, and the {@link LfmCovarianceProxy} diffusion ↔
+ *       covariance identity.</li>
+ *   <li>{@code testCapletPricing} — <strong>body-filled</strong>.
+ *       Builds a 10-period {@link LiborForwardModelProcess} on Euribor6M,
+ *       bootstraps lambdas via {@link LfmHullWhiteParameterization}, feeds
+ *       the resulting diagonal-vol model into {@link LiborForwardModel},
+ *       and prices a 4% cap through {@link AnalyticCapFloorEngine}.
+ *       Compares against the C++ reference NPV 0.015853935178.</li>
+ *   <li>{@code testSwaptionPricing} — <strong>body-filled</strong>.
+ *       Verifies (a) {@link LiborForwardModel#S_0} matches the fair-rate of
+ *       the par forward swap and (b) the {@link LfmSwaptionEngine} NPV is
+ *       within 2.35 × MC-standard-error of a 5000-trial Monte-Carlo path
+ *       reference over the {@link LiborForwardModelProcess} via
+ *       {@link MultiPathGenerator} + PseudoRandom (Mersenne Twister + inverse
+ *       cumulative normal) RSG.</li>
+ *   <li>{@code testCalibration} — still deferred. Needs CapHelper /
+ *       SwaptionHelper engine plumbing wired to {@link LiborForwardModel}
+ *       and a Levenberg-Marquardt loop with C++-parity result.</li>
  * </ul>
  *
  * <p>Source: {@code test-suite/libormarketmodel.cpp} v1.42.1 @
  * {@code 099987f0ca}.
  */
 public class LiborMarketModelTest {
+
+    /** Mirror of C++ free function {@code makeIndex(dates, rates)}
+     *  (test-suite/libormarketmodel.cpp:56-74). */
+    private static IborIndex makeIndex(final Date[] datesIn, final double[] rates) {
+        final DayCounter dayCounter = new Actual360();
+        final RelinkableHandle<YieldTermStructure> termStructure =
+                new RelinkableHandle<YieldTermStructure>();
+
+        final IborIndex index = new Euribor6M(termStructure);
+
+        final Date todaysDate = index.fixingCalendar().adjust(
+                new Date(4, Month.September, 2005));
+        new Settings().setEvaluationDate(todaysDate);
+
+        // Mutate dates[0] to settlement date — mirrors C++ in-place edit.
+        final Date[] dates = datesIn.clone();
+        dates[0] = index.fixingCalendar().advance(todaysDate,
+                index.fixingDays(), TimeUnit.Days);
+
+        termStructure.linkTo(new InterpolatedZeroCurve<Linear>(Linear.class,
+                dates, rates, dayCounter));
+        return index;
+    }
+
+    /** Convenience overload — single-curve default index (4-Sep-2005 to
+     *  4-Sep-2018, rates {0.039, 0.041}). */
+    private static IborIndex makeIndex() {
+        return makeIndex(new Date[] {
+                new Date(4, Month.September, 2005),
+                new Date(4, Month.September, 2018) },
+                new double[] { 0.039, 0.041 });
+    }
+
+    /** Mirror of C++ {@code makeCapVolCurve(todaysDate)}
+     *  (test-suite/libormarketmodel.cpp:85-103). The 9-element strip is the
+     *  Hull-White lambda-source for testCapletPricing. */
+    private static OptionletVolatilityStructure makeCapVolCurve(final Date todaysDate) {
+        final double[] vols = { 14.40, 17.15, 16.81, 16.64, 16.17,
+                                15.78, 15.40, 15.21, 14.86 };
+
+        final LiborForwardModelProcess process =
+                new LiborForwardModelProcess(10, makeIndex());
+
+        final Date[] dates = new Date[9];
+        final double[] capletVols = new double[9];
+        for (int i = 0; i < 9; ++i) {
+            capletVols[i] = vols[i] / 100.0;
+            dates[i] = process.fixingDates().get(i + 1);
+        }
+        return new CapletVarianceCurve(todaysDate, dates, capletVols, new Actual360());
+    }
+
+    /** Mirror of C++ {@code PseudoRandom::make_sequence_generator(dimension,
+     *  seed)} composing the canonical MT + InverseCumulativeNormal stack.
+     *  The Java {@code PseudoRandom.makeSequenceGenerator} factory is broken
+     *  (see {@link
+     *  org.jquantlib.testsuite.methods.montecarlo.PathGeneratorTest} for the
+     *  same workaround). */
+    private static InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
+                                        InverseCumulativeNormal>
+            makePseudoRandomRsg(final int dimension, final long seed) {
+        final MersenneTwisterUniformRng rng = new MersenneTwisterUniformRng(seed);
+        final RandomSequenceGenerator<MersenneTwisterUniformRng> rsg =
+                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
+                        MersenneTwisterUniformRng.class, dimension, rng);
+        return new InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
+                                        InverseCumulativeNormal>(rsg, new InverseCumulativeNormal());
+    }
 
     @Test
     public void testSimpleCovarianceModels() {
@@ -95,12 +207,7 @@ public class LiborMarketModelTest {
 
         final LfmCovarianceProxy covarProxy = new LfmCovarianceProxy(volaModel, corrModel);
 
-        // (note) the C++ test additionally instantiates a LiborForwardModelProcess
-        // and a LiborForwardModel here but never references them again; we omit
-        // those allocations until those classes are ported.
-
         for (double t = 0; t < 4.6; t += 0.31) {
-            // covariance(t) == diffusion(t) * diffusion(t)^T
             final Matrix diff = covarProxy.diffusion(t);
             final Matrix reconCov = covarProxy.covariance(t).sub(diff.mul(diff.transpose()));
 
@@ -116,8 +223,6 @@ public class LiborMarketModelTest {
                 }
             }
 
-            // Closed-form: sigma_k(t) = (a*(T_k - t) + d) * exp(-b*(T_k - t)) + c
-            //              whenever k > 2*t, else 0
             final Array volatility = volaModel.volatility(t);
             for (int k = 0; k < size; ++k) {
                 double expected = 0.0;
@@ -137,19 +242,238 @@ public class LiborMarketModelTest {
         assertTrue(true);
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-132+ — needs LfmHullWhiteParameterization, "
-            + "AnalyticCapFloorEngine wired to a calibrated LiborForwardModel, "
-            + "and a working LiborForwardModelProcess constructor")
     @Test
-    public void testCapletPricing() { fail("not implemented"); }
+    public void testCapletPricing() {
+        // Mirror of C++ BOOST_AUTO_TEST_CASE(testCapletPricing)
+        // (test-suite/libormarketmodel.cpp:180-226).
+        final boolean usingAtParCoupons = IborCoupon.Settings.getInstance().usingAtParCoupons();
+        final int size = 10;
+        final double tolerance = usingAtParCoupons ? 1e-12 : 1e-5;
 
-    @Ignore("Phase 5e.5b-CFC-d-132+ — needs CapHelper/SwaptionHelper, "
-            + "LfmSwaptionEngine, LiborForwardModel + LM calibration loop")
+        final IborIndex index = makeIndex();
+        final LiborForwardModelProcess process =
+                new LiborForwardModelProcess(size, index);
+
+        final OptionletVolatilityStructure capVolCurve =
+                makeCapVolCurve(new Settings().evaluationDate());
+
+        // Bootstrap Hull-White lambdas, then take sqrt(diag(covariance(0))).
+        // Mirror C++:
+        //   Array variances = LfmHullWhiteParameterization(process, capVolCurve)
+        //                       .covariance(0.0).diagonal();
+        final LfmHullWhiteParameterization hullWhite =
+                new LfmHullWhiteParameterization(process, capVolCurve, null, 1);
+        final Array variances = hullWhite.covariance(0.0).diagonal();
+        final Array sqrtVariances = variances.sqrt();
+
+        // Hand the lambdas to LmFixedVolatilityModel keyed on fixing-times.
+        final List<Double> fixings = process.fixingTimes();
+        final Array fixingTimesArr = new Array(fixings.size());
+        for (int i = 0; i < fixings.size(); ++i) {
+            fixingTimesArr.set(i, fixings.get(i));
+        }
+        final LmVolatilityModel volaModel = new LmFixedVolatilityModel(
+                sqrtVariances, fixingTimesArr);
+
+        final LmCorrelationModel corrModel =
+                new LmExponentialCorrelationModel(size, 0.3);
+
+        final AffineModel model = new LiborForwardModel(process, volaModel, corrModel);
+
+        final Handle<YieldTermStructure> termStructure = index.termStructure();
+
+        final PricingEngine engine = new AnalyticCapFloorEngine(model, termStructure);
+
+        // Build a Cap on process.cashFlows() with strikes all 0.04.
+        // C++ uses Cap(leg, strikes) — Java goes via the 5-arg CapFloor ctor.
+        final List<Double> strikes = new ArrayList<>(Collections.nCopies(size, Double.valueOf(0.04)));
+        final CapFloor cap1 = new CapFloor(CapFloor.Type.Cap, process.cashFlows(),
+                strikes, /* termStructure */ null, engine);
+
+        final double expected = 0.015853935178;
+        final double calculated = cap1.NPV();
+
+        if (Math.abs(expected - calculated) > tolerance) {
+            fail("Failed to reproduce npv"
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected
+                    + "\n    diff:       " + Math.abs(expected - calculated)
+                    + "\n    tolerance:  " + tolerance);
+        }
+    }
+
+    @Ignore("Phase 5f.6 — LFM calibration loop (LevenbergMarquardt over "
+            + "CapHelper + SwaptionHelper) requires deeper LFM-engine plumbing "
+            + "(out of scope for Phase 5e.5b-CFC-d-138)")
     @Test
     public void testCalibration() { fail("not implemented"); }
 
-    @Ignore("Phase 5e.5b-CFC-d-132+ — needs MultiPathGenerator/PseudoRandom + "
-            + "LiborForwardModel::S_0 + LfmSwaptionEngine")
     @Test
-    public void testSwaptionPricing() { fail("not implemented"); }
+    public void testSwaptionPricing() {
+        // Mirror of C++ BOOST_AUTO_TEST_CASE(testSwaptionPricing)
+        // (test-suite/libormarketmodel.cpp:330-461).
+        final boolean usingAtParCoupons = IborCoupon.Settings.getInstance().usingAtParCoupons();
+
+        final int size = 10;
+        final int steps = 8 * size;
+
+        // C++: tolerance = usingAtParCoupons ? 1e-12 : 1e-6 — used only for
+        // the deterministic S_0 vs swap-fair-rate comparison below. The MC
+        // path uses the per-statistic error-estimate × 2.35 bound.
+        final double s0Tolerance = usingAtParCoupons ? 1e-12 : 1e-6;
+
+        final Date[] dates = {
+                new Date(4, Month.September, 2005),
+                new Date(4, Month.September, 2011)
+        };
+        final double[] rates = { 0.04, 0.08 };
+
+        final IborIndex index = makeIndex(dates, rates);
+
+        final LiborForwardModelProcess process =
+                new LiborForwardModelProcess(size, index);
+
+        final LmCorrelationModel corrModel =
+                new LmExponentialCorrelationModel(size, 0.5);
+
+        final LmVolatilityModel volaModel =
+                new LmLinearExponentialVolatilityModel(process.fixingTimes(),
+                        0.291, 1.483, 0.116, 0.00001);
+
+        // set-up pricing-engine covariance proxy on the process
+        process.setCovarParam(new LfmCovarianceProxy(volaModel, corrModel));
+
+        // build the MC pipeline: PseudoRandom RSG -> MultiPathGenerator
+        final List<Double> tmp = process.fixingTimes();
+        final TimeGrid grid = new TimeGrid(tmp, steps);
+
+        final int[] location = new int[tmp.size()];
+        for (int i = 0; i < tmp.size(); ++i) {
+            final double target = tmp.get(i);
+            int found = -1;
+            for (int gi = 0; gi < grid.size(); ++gi) {
+                if (grid.get(gi) == target) {
+                    found = gi;
+                    break;
+                }
+            }
+            // Fall back to nearest if no exact match (defensive — C++ uses
+            // FP-equality, which works there because TimeGrid mandatoryPoints
+            // ctor preserves the input anchors verbatim).
+            if (found < 0) {
+                double bestDelta = Double.POSITIVE_INFINITY;
+                for (int gi = 0; gi < grid.size(); ++gi) {
+                    final double delta = Math.abs(grid.get(gi) - target);
+                    if (delta < bestDelta) {
+                        bestDelta = delta;
+                        found = gi;
+                    }
+                }
+            }
+            location[i] = found;
+        }
+
+        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
+                                   InverseCumulativeNormal> rsg =
+                makePseudoRandomRsg(process.factors() * (grid.size() - 1), 42L);
+
+        final int nrTrails = 5000;
+        final MultiPathGenerator<InverseCumulativeRsg<
+                RandomSequenceGenerator<MersenneTwisterUniformRng>, InverseCumulativeNormal>>
+                generator = new MultiPathGenerator<>(process, grid, rsg, false);
+
+        final LiborForwardModel liborModel =
+                new LiborForwardModel(process, volaModel, corrModel);
+
+        final Calendar calendar = index.fixingCalendar();
+        final DayCounter dayCounter = index.termStructure().currentLink().dayCounter();
+        final BusinessDayConvention convention = index.businessDayConvention();
+        final Date settlement = index.termStructure().currentLink().referenceDate();
+
+        for (int i = 1; i < size; ++i) {
+            for (int j = 1; j <= size - i; ++j) {
+                final Date fwdStart = settlement.add(new Period(6 * i, TimeUnit.Months));
+                final Date fwdMaturity = fwdStart.add(new Period(6 * j, TimeUnit.Months));
+
+                final Schedule schedule = new Schedule(
+                        fwdStart, fwdMaturity, index.tenor(), calendar,
+                        convention, convention, DateGeneration.Rule.Forward, false);
+
+                double swapRate = 0.0404;
+                VanillaSwap forwardSwap = new VanillaSwap(
+                        VanillaSwap.Type.Receiver, 1.0,
+                        schedule, swapRate, dayCounter,
+                        schedule, index, 0.0, index.dayCounter());
+                forwardSwap.setPricingEngine(
+                        new DiscountingSwapEngine(index.termStructure()));
+
+                // check forward pricing first — S_0 must match fair-rate of
+                // the par forward swap up to s0Tolerance.
+                final double expectedRate = forwardSwap.fairRate();
+                final double calculatedRate = liborModel.S_0(i - 1, i + j - 1);
+
+                if (Math.abs(expectedRate - calculatedRate) > s0Tolerance) {
+                    fail("Failed to reproduce fair forward swap rate"
+                            + "\n    i,j:        " + i + "," + j
+                            + "\n    calculated: " + calculatedRate
+                            + "\n    expected:   " + expectedRate);
+                }
+
+                // Re-build the swap at the fair rate (so NPV ~= 0).
+                swapRate = forwardSwap.fairRate();
+                forwardSwap = new VanillaSwap(
+                        VanillaSwap.Type.Receiver, 1.0,
+                        schedule, swapRate, dayCounter,
+                        schedule, index, 0.0, index.dayCounter());
+                forwardSwap.setPricingEngine(
+                        new DiscountingSwapEngine(index.termStructure()));
+
+                // For i == j with i <= size/2, also exercise the LFM swaption
+                // engine against an MC reference price.
+                if (i == j && i <= size / 2) {
+                    final PricingEngine swaptionEngine =
+                            new LfmSwaptionEngine(liborModel, index.termStructure());
+                    final EuropeanExercise exercise =
+                            new EuropeanExercise(process.fixingDates().get(i));
+
+                    final Swaption swaption = new Swaption(forwardSwap, exercise);
+                    swaption.setPricingEngine(swaptionEngine);
+
+                    final GeneralStatistics stat = new GeneralStatistics();
+                    for (int n = 0; n < nrTrails; ++n) {
+                        final Sample<MultiPath> path =
+                                (n % 2) != 0 ? generator.antithetic() : generator.next();
+                        final MultiPath mp = path.value();
+
+                        final double[] mcRates = new double[size];
+                        for (int k = 0; k < process.size(); ++k) {
+                            mcRates[k] = mp.get(k).get(location[i]);
+                        }
+                        final double[] dis = process.discountBond(mcRates);
+
+                        double npv = 0.0;
+                        for (int m = i; m < i + j; ++m) {
+                            npv += (swapRate - mcRates[m])
+                                    * (process.accrualEndTimes().get(m)
+                                            - process.accrualStartTimes().get(m))
+                                    * dis[m];
+                        }
+                        stat.add(Math.max(npv, 0.0));
+                    }
+
+                    // C++ compares to within 2.35 * error_estimate; mirror.
+                    final double diff = Math.abs(swaption.NPV() - stat.mean());
+                    final double bound = stat.errorEstimate() * 2.35;
+                    if (diff > bound) {
+                        fail("Failed to reproduce swaption npv"
+                                + "\n    i,j:           " + i + "," + j
+                                + "\n    MC mean:       " + stat.mean()
+                                + "\n    swaption NPV:  " + swaption.NPV()
+                                + "\n    diff:          " + diff
+                                + "\n    2.35 * stderr: " + bound);
+                    }
+                }
+            }
+        }
+    }
 }
