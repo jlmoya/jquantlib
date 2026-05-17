@@ -115,6 +115,21 @@ public class WeakReferenceObservable extends DefaultObservable {
         super.deleteObserver(observer);
     }
 
+    /**
+     * Override of {@link DefaultObservable#unwrap(Observer)} so that
+     * deferred-update registration ({@link ObservableSettings}) stores
+     * the actual user observer rather than the wrapping
+     * {@link WeakReferenceObserver}. If the referent has been GC'd,
+     * returns {@code null} so the dead reference is skipped.
+     */
+    @Override
+    protected Observer unwrap(final Observer observer) {
+        if (observer instanceof WeakReferenceObserver) {
+            return ((WeakReferenceObserver) observer).get();
+        }
+        return observer;
+    }
+
 
     //
     // inner classes

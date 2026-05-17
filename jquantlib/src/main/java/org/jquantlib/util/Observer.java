@@ -51,4 +51,20 @@ public interface Observer {
     //XXX::OBS public void update(Observable o, Object arg);
     public void update();
 
+    /**
+     * Explicitly update this instance and any nested observers. If
+     * notifications are disabled (see {@link ObservableSettings}), a call
+     * to this method still propagates updates to nested observers. The
+     * default implementation simply delegates to {@link #update()}.
+     *
+     * <p>Mirrors C++ {@code Observer::deepUpdate()} from
+     * {@code ql/patterns/observable.hpp}. Subclasses such as
+     * {@code StrippedOptionletAdapter} override this to first call
+     * {@code deepUpdate()} on each nested observable, then call
+     * {@link #update()} on themselves.
+     */
+    default void deepUpdate() {
+        update();
+    }
+
 }

@@ -59,9 +59,17 @@ public abstract class LazyObject implements Observer, Observable {
 
     protected boolean calculated;
     protected boolean frozen;
+    /**
+     * Mirrors C++ {@code LazyObject::failed_} - set when a prior
+     * {@link #performCalculations()} invocation threw, so subsequent
+     * {@link #update()} calls still forward a notification (observers
+     * must be told that the failed state is invalidated by the new
+     * input).
+     */
+    protected boolean failed;
     private   boolean alwaysForwardNotifications_;
     /**
-     * Re-entrancy guard — mirrors C++ {@code LazyObject::updating_}.
+     * Re-entrancy guard - mirrors C++ {@code LazyObject::updating_}.
      * Set to {@code true} while {@link #update()} is executing so that
      * recursive calls from a downstream {@code notifyObservers()} chain
      * return immediately, breaking any observer-cycle that would otherwise
@@ -92,7 +100,13 @@ public abstract class LazyObject implements Observer, Observable {
     public LazyObject() {
         this.calculated = false;
         this.frozen = false;
-        this.alwaysForwardNotifications_ = false;
+        this.failed = false;
+        // Mirror C++ LazyObject ctor: pick up the per-session default
+        // from LazyObject.Defaults. Note JQuantLib's Defaults default-default
+        // is 'forward first only' (false), matching JQuantLib's historical
+        // behaviour; this differs from C++ which defaults to
+        // 'always forward' (true) when QL_FASTER_LAZY_OBJECTS is undefined.
+        this.alwaysForwardNotifications_ = Defaults.instance().forwardsAllNotifications();
     }
 
     //
@@ -108,6 +122,7 @@ public abstract class LazyObject implements Observer, Observable {
     public final void recalculate() {
         final boolean wasFrozen = frozen;
         calculated = frozen = false;
+        failed = false;
         try {
             calculate();
         } finally {
@@ -138,6 +153,21 @@ public abstract class LazyObject implements Observer, Observable {
     }
 
     /**
+     * Causes the object to forward only the first notification received
+     * after each (re)calculation; subsequent notifications are
+     * discarded until the next recalculation. Inverse of
+     * {@link #alwaysForwardNotifications()}.
+     *
+     * <p>Mirrors C++ {@code LazyObject::forwardFirstNotificationOnly()}.
+     * Useful when the global default
+     * ({@link LazyObject.Defaults#alwaysForwardNotifications()}) has been
+     * flipped to forward-all but a specific instance should opt back.
+     */
+    public final void forwardFirstNotificationOnly() {
+        alwaysForwardNotifications_ = false;
+    }
+
+    /**
      * This method reverts the effect of the <i><b>freeze</b></i> method, thus re-enabling recalculations.
      */
     public final void unfreeze() {
@@ -164,8 +194,20 @@ public abstract class LazyObject implements Observer, Observable {
             calculated = true;
             try {
                 performCalculations();
+                // needed when calculate() is called directly after a
+                // prior failure - mirrors C++ failed_ = false
+                failed = false;
             } catch (final ArithmeticException e) {
                 calculated = false;
+                failed = true;
+                throw e;
+            } catch (final RuntimeException e) {
+                // Java performCalculations() signature only declares
+                // ArithmeticException, but in practice many subclasses
+                // throw plain RuntimeException; mirror C++ catch-all so
+                // failed_ semantics work for any thrown error.
+                calculated = false;
+                failed = true;
                 throw e;
             }
         }
@@ -194,19 +236,22 @@ public abstract class LazyObject implements Observer, Observable {
         // inflation curve bootstrap). C++ uses an RAII UpdateChecker + updating_
         // flag; Java uses try/finally.
         if (updating_) {
-            // recursive call — break the cycle silently (C++ default behaviour,
+            // recursive call - break the cycle silently (C++ default behaviour,
             // without QL_THROW_IN_CYCLES defined)
             return;
         }
         updating_ = true;
         try {
-            // forwards notifications only the first time
-            if (calculated || alwaysForwardNotifications_) {
+            // forwards notifications only the first time, or always if
+            // alwaysForward_, or if a prior calculation failed (so that
+            // observers are told the failed state has been invalidated)
+            if (calculated || failed || alwaysForwardNotifications_) {
                 // set to false BEFORE notifyObservers so that:
                 //   1) a downstream calculate() call that re-enters update()
-                //      and checks calculated_ sees false → no double-notification
+                //      and checks calculated_ sees false -> no double-notification
                 //   2) non-lazy observers get fresh data (not stale cached values)
                 calculated = false;
+                failed = false;
                 // observers don't expect notifications from frozen objects
                 if (!frozen)
                     //XXX::OBS notifyObservers(arg);
@@ -272,4 +317,60 @@ public abstract class LazyObject implements Observer, Observable {
         return delegatedObservable.getObservers();
     }
 
+    //
+    // per-session default settings
+    //
+
+    /**
+     * Per-session defaults for the {@link LazyObject} class. Mirrors C++
+     * {@code LazyObject::Defaults} (ql/patterns/lazyobject.hpp).
+     *
+     * <p>Singleton. Lazy objects created <em>after</em> a call to one of
+     * the setters pick up the new default in their constructor; lazy
+     * objects created before are unaffected (so toggling the default
+     * mid-test should be paired with a {@code TearDown}-style restore).
+     *
+     * <p><b>Java-vs-C++ default note:</b> JQuantLib defaults to
+     * {@code forwardsAllNotifications() == false} (i.e., forward only the
+     * first notification after recalculation). C++ defaults to
+     * {@code true} unless {@code QL_FASTER_LAZY_OBJECTS} is defined. The
+     * Java default is preserved for backwards compatibility with the
+     * existing JQuantLib test suite.
+     */
+    public static final class Defaults {
+
+        private static final Defaults INSTANCE = new Defaults();
+
+        public static Defaults instance() {
+            return INSTANCE;
+        }
+
+        // JQuantLib historical default: 'forward first only' (false).
+        private boolean forwardsAllNotifications_ = false;
+
+        private Defaults() {
+            // singleton
+        }
+
+        /**
+         * Sets the default for subsequently-created lazy objects to
+         * forward only the first notification after recalculation.
+         */
+        public void forwardFirstNotificationOnly() {
+            forwardsAllNotifications_ = false;
+        }
+
+        /**
+         * Sets the default for subsequently-created lazy objects to
+         * forward every notification (no first-only filter).
+         */
+        public void alwaysForwardNotifications() {
+            forwardsAllNotifications_ = true;
+        }
+
+        /** Returns the current default. */
+        public boolean forwardsAllNotifications() {
+            return forwardsAllNotifications_;
+        }
+    }
 }

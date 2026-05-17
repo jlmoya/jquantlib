@@ -27,34 +27,32 @@ import static org.junit.Assert.fail;
 import org.jquantlib.QL;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.util.Observable;
+import org.jquantlib.util.ObservableSettings;
 import org.jquantlib.util.Observer;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Java port of QuantLib v1.42.1 test-suite/observable.cpp (Phase 5a).
  *
- * <p>5 BOOST_AUTO_TEST_CASE methods:
+ * <p>5 BOOST_AUTO_TEST_CASE methods. Java equivalents:
  * <ul>
- *   <li>{@code testObservableSettings}: requires C++
- *       {@code ObservableSettings::disableUpdates/enableUpdates} —
- *       no Java equivalent. Phase 5a.5 carry-forward.</li>
+ *   <li>{@code testObservableSettings}: Phase 5e.5b-CFC-d-54 port via
+ *       new {@link ObservableSettings} singleton.</li>
  *   <li>{@code testAsyncGarbagCollector},
  *       {@code testMultiThreadingGlobalSettings}: depend on
  *       {@code QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN} (off by default
- *       in C++, conceptually inapplicable to Java's GC + observer model).</li>
- *   <li>{@code testDeepUpdate}: requires {@code Observer.deepUpdate} which
- *       does not exist in JQuantLib (C++ has it on selected
- *       {@code TermStructure} subclasses).</li>
- *   <li>{@code testEmptyObserverList}: portable — exercises
- *       {@code unregisterWith} on an observer with an empty list.</li>
- *   <li>{@code testAddAndDeleteObserverDuringNotifyObservers}: portable —
- *       verifies notification semantics when observers are added/removed
- *       during the notify cycle.</li>
+ *       in C++; Java does not need a thread-safe observer pattern).</li>
+ *   <li>{@code testDeepUpdate}: Phase 5a.5 carry-forward - requires
+ *       {@code StrippedOptionletAdapter} interplay; the surface
+ *       ({@code Observer.deepUpdate()}) is now present but the test
+ *       body needs the full optionlet wiring (deferred).</li>
+ *   <li>{@code testEmptyObserverList}: portable.</li>
+ *   <li>{@code testAddAndDeleteObserverDuringNotifyObservers}: portable.</li>
  *   <li>{@code testDeferredObserverLifetime}: requires
- *       {@code ZeroCouponInflationSwapHelper} + Settings interplay; the
- *       lifetime semantics are GC-dependent in Java and exercised
- *       indirectly elsewhere.</li>
+ *       {@code ZeroCouponInflationSwapHelper} + Settings interplay;
+ *       lifetime semantics are GC-dependent in Java.</li>
  * </ul>
  */
 public class ObservableTest {
@@ -63,34 +61,116 @@ public class ObservableTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no ObservableSettings.disableUpdates/"
-            + "enableUpdates global toggle (C++ ql/patterns/observable.hpp). Port the class "
-            + "and re-enable.")
-    @Test
-    public void testObservableSettings() {
+    /**
+     * Defensive teardown - always restore the global
+     * {@link ObservableSettings} to the default "updates enabled"
+     * state, even if a test threw mid-flight.
+     */
+    @After
+    public void tearDown() {
+        ObservableSettings.instance().enableUpdates();
     }
 
-    @Ignore("Phase 5a.5 carry-forward — C++ test gated on QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN; "
-            + "Java's observer pattern uses WeakReference under JVM GC, so the equivalent "
-            + "stress test is not directly portable. Optional future work.")
+    /**
+     * Mirror of C++ {@code UpdateCounter}: counts how many times
+     * {@code update()} has been called.
+     */
+    private static final class UpdateCounter implements Observer {
+        private int counter = 0;
+        @Override public void update() { ++counter; }
+        int counter() { return counter; }
+    }
+
+    /**
+     * Java port of C++ {@code testObservableSettings}. Exercises the
+     * three modes:
+     * <ul>
+     *   <li>{@code disableUpdates(false)} - drop notifications.</li>
+     *   <li>{@code disableUpdates(true)} - defer notifications;
+     *       single dispatch on {@code enableUpdates()}.</li>
+     *   <li>multiple observers + deferred batching - each observer
+     *       receives exactly one update on enableUpdates.</li>
+     * </ul>
+     */
+    @Test
+    public void testObservableSettings() {
+        QL.info("Testing observable settings...");
+
+        final SimpleQuote quote = new SimpleQuote(100.0);
+        final UpdateCounter updateCounter = new UpdateCounter();
+
+        quote.addObserver(updateCounter);
+        if (updateCounter.counter() != 0) {
+            fail("update counter value is not zero");
+        }
+
+        quote.setValue(1.0);
+        if (updateCounter.counter() != 1) {
+            fail("update counter value is not one (after first setValue)");
+        }
+
+        // disableUpdates(false): notifications dropped silently
+        ObservableSettings.instance().disableUpdates(false);
+        quote.setValue(2.0);
+        if (updateCounter.counter() != 1) {
+            fail("update counter value is not one (after disableUpdates(false))");
+        }
+        ObservableSettings.instance().enableUpdates();
+        if (updateCounter.counter() != 1) {
+            fail("update counter value is not one (after enableUpdates with no deferred)");
+        }
+
+        // disableUpdates(true): notifications deferred; one dispatch on
+        // enableUpdates() regardless of how many setValues fired
+        ObservableSettings.instance().disableUpdates(true);
+        quote.setValue(3.0);
+        if (updateCounter.counter() != 1) {
+            fail("update counter value is not one (after disableUpdates(true) + setValue)");
+        }
+        ObservableSettings.instance().enableUpdates();
+        if (updateCounter.counter() != 2) {
+            fail("update counter value is not two (after enableUpdates drained deferred)");
+        }
+
+        // multi-observer + multi-setValue batch under deferred mode
+        final UpdateCounter updateCounter2 = new UpdateCounter();
+        quote.addObserver(updateCounter2);
+        ObservableSettings.instance().disableUpdates(true);
+        for (int i = 0; i < 10; ++i) {
+            quote.setValue((double) i);
+        }
+        if (updateCounter.counter() != 2) {
+            fail("update counter value is not two (during deferred batch of 10)");
+        }
+        ObservableSettings.instance().enableUpdates();
+        if (updateCounter.counter() != 3 || updateCounter2.counter() != 1) {
+            fail("update counter values are not correct: counter=" + updateCounter.counter()
+                    + " counter2=" + updateCounter2.counter()
+                    + " (expected 3 and 1)");
+        }
+    }
+
+    @Ignore("Java does not need QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN - the JVM "
+            + "provides its own GC + memory model; the multi-threaded stress test "
+            + "from the C++ suite is not portable.")
     @Test
     public void testAsyncGarbagCollector() {
     }
 
-    @Ignore("Phase 5a.5 carry-forward — C++ test gated on QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN.")
+    @Ignore("Java does not need QL_ENABLE_THREAD_SAFE_OBSERVER_PATTERN.")
     @Test
     public void testMultiThreadingGlobalSettings() {
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib Observer has no deepUpdate(); only specific "
-            + "TermStructure subclasses (e.g. StrippedOptionletAdapter) need that surface. "
-            + "Port deepUpdate() then enable.")
+    @Ignore("Phase 5a.5 carry-forward - Observer.deepUpdate() is now present but "
+            + "the test body wiring requires StrippedOptionletAdapter + IborIndex + "
+            + "FlatForward composition; full port deferred.")
     @Test
     public void testDeepUpdate() {
     }
 
     /**
-     * A minimal {@link Observer} that does nothing — used to exercise
+     * A minimal {@link Observer} that does nothing - used to exercise
      * {@code deleteObserver} on an Observable with an unrelated observer.
      */
     private static final class DummyObserver implements Observer {
@@ -151,7 +231,7 @@ public class ObservableTest {
         int getUpdates() { return updates; }
     }
 
-    @Ignore("Phase 5a.5 carry-forward — testDeferredObserverLifetime requires "
+    @Ignore("Phase 5a.5 carry-forward - testDeferredObserverLifetime requires "
             + "ZeroCouponInflationSwapHelper+Settings interplay and is GC-dependent. "
             + "Lifetime semantics are exercised indirectly by inflation curve tests.")
     @Test

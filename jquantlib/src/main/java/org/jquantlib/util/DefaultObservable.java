@@ -111,6 +111,22 @@ public class DefaultObservable implements Observable {
 
     @Override
     public void notifyObservers(final Object arg) {
+        // Honor the global ObservableSettings toggle (C++ ObservableSettings::
+        // updatesEnabled/updatesDeferred). When disabled, dispatch is
+        // suppressed; when deferred, register the observers for replay on
+        // the subsequent enableUpdates() call.
+        final ObservableSettings settings = ObservableSettings.instance();
+        if (!settings.updatesEnabled()) {
+            if (settings.updatesDeferred()) {
+                for (final Observer observer : observers) {
+                    final Observer target = unwrap(observer);
+                    if (target != null) {
+                        settings.registerDeferredObserver(target);
+                    }
+                }
+            }
+            return;
+        }
         Exception exception = null;
         for (final Observer observer : observers) {
             try {
@@ -132,6 +148,19 @@ public class DefaultObservable implements Observable {
     //
     // protected methods
     //
+
+    /**
+     * Hook used by {@link #notifyObservers(Object)} when updates are
+     * deferred: subclasses that wrap observers (e.g.
+     * {@link WeakReferenceObservable} using {@link java.lang.ref.WeakReference})
+     * override this to return the underlying observer. Default returns
+     * the argument unchanged. Returning {@code null} signals the wrapped
+     * observer is no longer reachable and should not be registered as
+     * a deferred observer.
+     */
+    protected Observer unwrap(final Observer observer) {
+        return observer;
+    }
 
     /**
      * This method is intended to encapsulate the notification semantics, in
