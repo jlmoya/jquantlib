@@ -23,35 +23,38 @@
 package org.jquantlib.testsuite.cashflows;
 
 import org.jquantlib.QL;
-import org.junit.Ignore;
+import org.jquantlib.testsuite.experimental.coupons.CmsSpreadCouponTest;
 import org.junit.Test;
 
 /**
- * Java port of QuantLib v1.42.1 test-suite/cmsspread.cpp (Phase 5e).
+ * Java port of QuantLib v1.42.1 {@code test-suite/cmsspread.cpp} (Phase 5e).
  *
- * <p>2 BOOST_AUTO_TEST_CASE methods exercising
+ * <p>Mirrors the 2 BOOST_AUTO_TEST_CASE methods exercising
  * {@link org.jquantlib.experimental.coupons.SwapSpreadIndex} and
  * {@link org.jquantlib.experimental.coupons.CmsSpreadCoupon} pricing.
  *
- * <p>Existing Java coverage:
- * {@link org.jquantlib.testsuite.experimental.coupons.CmsSpreadCouponTest}
- * (Phase 4d) already ports both test methods. This class is created to
- * keep the C++ test-suite topology mirrored 1:1 — the existing experimental
- * test covers the same {@code testFixings} and {@code testCouponPricing}
- * cases.
+ * <h3>Phase 5e.5b-CFC-d-110 body-fill — delegation wrapper</h3>
  *
- * <h3>Phase 5e.5 carry-forward rationale</h3>
+ * <p>The full ports of {@code testFixings} and {@code testCouponPricing} live
+ * in {@link org.jquantlib.testsuite.experimental.coupons.CmsSpreadCouponTest}
+ * (Phase 4d for fixings; Phase 5e.5b-CFC-d-88 for coupon pricing, which
+ * required the {@code LinearTsrPricer} port at commit 6fad5c40).
  *
- * <p>Both methods are {@code @Ignore}'d here as
- * <em>duplicate-of-existing</em>; see
- * {@link org.jquantlib.testsuite.experimental.coupons.CmsSpreadCouponTest}
- * for the active ports of {@code testFixings} (passing) and
- * {@code testCouponPricing} (carry-forward to Phase 4d.5 / 5e.5 pending
- * {@code LinearTsrPricer}).
+ * <p>This class exists to keep the C++ test-suite topology mirrored 1:1
+ * (cmsspread.cpp lives at the top level of test-suite/, hence the
+ * cashflows package mirror here in addition to the experimental.coupons
+ * mirror). Both test methods now delegate to the experimental
+ * implementation rather than {@code @Ignore}'ing, so the smoke is
+ * exercised twice — once via the experimental package, once via the
+ * topology-mirror here — guaranteeing both entry points remain green.
  *
- * <p>Phase 5e.5 task: consolidate this skeleton into the experimental
- * file or vice versa once the LinearTsrPricer prereq is resolved
- * (WI-5e.5-CMSS-1).
+ * <p>Delegation pattern: instantiate {@link CmsSpreadCouponTest}, manually
+ * run its {@code @Before}/{@code @After} lifecycle (each JUnit class has
+ * its own annotation lifecycle, so the wrapper must drive setUp/tearDown
+ * explicitly), and invoke the corresponding {@code @Test} method.
+ *
+ * <p>WI-5e.5-CMSS-1 (consolidation tracking) is now resolved: both
+ * methods are active and exercised via delegation.
  */
 public class CmsSpreadTest {
 
@@ -59,17 +62,39 @@ public class CmsSpreadTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CMSS-1 — duplicate of "
-            + "experimental.coupons.CmsSpreadCouponTest.testFixings (Phase 4d, passing). "
-            + "Consolidation pending.")
+    /**
+     * Delegates to
+     * {@link CmsSpreadCouponTest#testFixings()} (Phase 4d port of C++
+     * {@code testFixings}). Drives the delegate's
+     * {@code @Before}/{@code @After} lifecycle manually so the wrapper
+     * has the same global-Settings hygiene as a standalone JUnit run.
+     */
     @Test
-    public void testFixings() {
+    public void testFixings() throws Exception {
+        final CmsSpreadCouponTest delegate = new CmsSpreadCouponTest();
+        delegate.setUp();
+        try {
+            delegate.testFixings();
+        } finally {
+            delegate.tearDown();
+        }
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-CMSS-1 — duplicate of "
-            + "experimental.coupons.CmsSpreadCouponTest.testCouponPricing (Phase 4d.5 deferred "
-            + "pending LinearTsrPricer port).")
+    /**
+     * Delegates to
+     * {@link CmsSpreadCouponTest#testCouponPricing()} (Phase 5e.5b-CFC-d-88
+     * port of C++ {@code testCouponPricing}; un-ignored at commit
+     * 6fad5c40 after the {@code LinearTsrPricer} port landed). Same
+     * lifecycle-drive pattern as {@link #testFixings()}.
+     */
     @Test
-    public void testCouponPricing() {
+    public void testCouponPricing() throws Exception {
+        final CmsSpreadCouponTest delegate = new CmsSpreadCouponTest();
+        delegate.setUp();
+        try {
+            delegate.testCouponPricing();
+        } finally {
+            delegate.tearDown();
+        }
     }
 }
