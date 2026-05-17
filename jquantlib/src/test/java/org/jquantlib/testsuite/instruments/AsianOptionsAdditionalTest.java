@@ -19,6 +19,7 @@ import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.experimental.asian.AnalyticContinuousGeometricAveragePriceAsianHestonEngine;
 import org.jquantlib.experimental.asian.AnalyticDiscreteGeometricAveragePriceAsianHestonEngine;
+import org.jquantlib.experimental.exoticoptions.ContinuousArithmeticAsianVecerEngine;
 import org.jquantlib.instruments.AverageType;
 import org.jquantlib.instruments.DiscreteAveragingAsianOption;
 import org.jquantlib.instruments.Option;
@@ -781,13 +782,304 @@ public class AsianOptionsAdditionalTest {
     @Test
     public void testMCDiscreteArithmeticAverageStrikeExerciseDate() { fail("not implemented"); }
 
-    @Ignore(REASON_PAST_FIXINGS)
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testPastFixings}.
+     *
+     * <p>Verifies that past-fixing accumulators (runningSum / runningProduct +
+     * pastFixings count) actually change the option price for the three engines
+     * the Java port supports today: {@link MakeMCDiscreteArithmeticAPEngine},
+     * {@link AnalyticDiscreteGeometricAveragePriceAsianEngine}, and
+     * {@link MakeMCDiscreteGeometricAPEngine}.
+     *
+     * <p>C++ tests four engines (adds MC arithmetic AS); the AS family is not
+     * yet ported under {@code REASON_MC} so we skip it here.  C++ also exercises
+     * the {@code allPastFixings} vector constructor; that overload has not been
+     * ported (see {@code REASON_PAST_FIXINGS} — the running-accumulator interface
+     * suffices for engine wiring and is the only one used by all current Java
+     * engines).
+     */
     @Test
-    public void testPastFixings() { fail("not implemented"); }
+    public void testPastFixings() {
 
-    @Ignore(REASON_PAST_FIXINGS + " + model-dependence verification (MC / FD)")
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        final SimpleQuote spotQ = new SimpleQuote(100.0);
+        final SimpleQuote qRate = new SimpleQuote(0.03);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.06);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final SimpleQuote vol = new SimpleQuote(0.20);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 100.0);
+
+        final Exercise exercise =
+                new EuropeanExercise(today.add(new org.jquantlib.time.Period(1,
+                        org.jquantlib.time.TimeUnit.Years)));
+
+        final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(spotQ),
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        // ---- MC arithmetic average-price ----
+
+        // C++ option1: pastFixings=0, runningSum=0, future fixings = today + i*Months, i=0..12.
+        // Note: C++ allows fixingDate == today (i=0), which is treated as a future fixing.
+        final List<Date> futureFixings1 = new ArrayList<Date>();
+        for (int i = 0; i <= 12; i++) {
+            futureFixings1.add(today.add(new org.jquantlib.time.Period(i,
+                    org.jquantlib.time.TimeUnit.Months)));
+        }
+        double runningSum = 0.0;
+        int pastFixings = 0;
+        final DiscreteAveragingAsianOption option1 = new DiscreteAveragingAsianOption(
+                AverageType.Arithmetic, runningSum, pastFixings, futureFixings1, payoff, exercise);
+
+        // C++ option2: pastFixings=2 with runningSum = 2 * spot * 0.8, plus same 13
+        // future fixings. C++ passes 15 fixingDates including i=-2,-1 (past); in our
+        // traditional interface we pass only future dates.
+        pastFixings = 2;
+        runningSum = pastFixings * spotQ.value() * 0.8;
+        final List<Date> futureFixings2 = new ArrayList<Date>(futureFixings1);
+        final DiscreteAveragingAsianOption option2 = new DiscreteAveragingAsianOption(
+                AverageType.Arithmetic, runningSum, pastFixings, futureFixings2, payoff, exercise);
+
+        // C++ uses MakeMCDiscreteArithmeticAPEngine<LowDiscrepancy> with 2047 samples.
+        // Java port has only PseudoRandom (MT) — keep the same sample count (no need
+        // for high precision; we only check that the two prices differ).
+        PricingEngine engine = new MakeMCDiscreteArithmeticAPEngine(stochProcess)
+                .withBrownianBridge(false)
+                .withSamples(2047)
+                .withSeed(42L)
+                .value();
+
+        option1.setPricingEngine(engine);
+        option2.setPricingEngine(engine);
+
+        double price1 = option1.NPV();
+        double price2 = option2.NPV();
+
+        if (Math.abs(price1 - price2) < 1.0e-10) {
+            fail("past fixings had no effect on arithmetic average-price option"
+                    + "\n  without fixings: " + price1
+                    + "\n  with fixings:    " + price2);
+        }
+
+        // ---- analytic geometric average-price ----
+
+        double runningProduct = 1.0;
+        pastFixings = 0;
+        final DiscreteAveragingAsianOption option3 = new DiscreteAveragingAsianOption(
+                AverageType.Geometric, runningProduct, pastFixings, futureFixings1, payoff, exercise);
+
+        pastFixings = 2;
+        runningProduct = spotQ.value() * spotQ.value();
+        final DiscreteAveragingAsianOption option4 = new DiscreteAveragingAsianOption(
+                AverageType.Geometric, runningProduct, pastFixings, futureFixings2, payoff, exercise);
+
+        engine = new AnalyticDiscreteGeometricAveragePriceAsianEngine(stochProcess);
+
+        option3.setPricingEngine(engine);
+        option4.setPricingEngine(engine);
+
+        double price3 = option3.NPV();
+        double price4 = option4.NPV();
+
+        if (Math.abs(price3 - price4) < 1.0e-10) {
+            fail("past fixings had no effect on analytic geometric average-price option"
+                    + "\n  without fixings: " + price3
+                    + "\n  with fixings:    " + price4);
+        }
+
+        // ---- MC geometric average-price ----
+
+        engine = new MakeMCDiscreteGeometricAPEngine(stochProcess)
+                .withBrownianBridge(false)
+                .withSamples(2047)
+                .withSeed(42L)
+                .value();
+
+        option3.setPricingEngine(engine);
+        option4.setPricingEngine(engine);
+
+        price3 = option3.NPV();
+        price4 = option4.NPV();
+
+        if (Math.abs(price3 - price4) < 1.0e-10) {
+            fail("past fixings had no effect on MC geometric average-price option"
+                    + "\n  without fixings: " + price3
+                    + "\n  with fixings:    " + price4);
+        }
+    }
+
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testPastFixingsModelDependency}.
+     *
+     * <p>For a deeply ITM seasoned call where past fixings ensure exercise is
+     * guaranteed, the {@link TurnbullWakemanAsianEngine} NPV must equal the
+     * expected averaging-forward formula:
+     * <pre>
+     *   NPV = D(T) * ( (sum past + sum future-forward) / N  -  K )
+     * </pre>
+     * and the corresponding put (also seasoned, deep OTM) must be zero.
+     * Greeks are cross-validated against bump-and-revalue.
+     *
+     * <p>C++ uses the new {@code allPastFixings} vector constructor; we use the
+     * traditional (runningSum, pastFixings) interface with the equivalent
+     * data — past fixings = spot = 100 each, two of them, so runningSum = 200.
+     */
     @Test
-    public void testPastFixingsModelDependency() { fail("not implemented"); }
+    public void testPastFixingsModelDependency() {
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        final SimpleQuote spotQ = new SimpleQuote(100.0);
+        final SimpleQuote qRate = new SimpleQuote(0.03);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.06);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final SimpleQuote vol = new SimpleQuote(0.20);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+
+        final StrikedTypePayoff callPayoff =
+                new PlainVanillaPayoff(Option.Type.Call, 20.0);
+        final StrikedTypePayoff putPayoff =
+                new PlainVanillaPayoff(Option.Type.Put,  20.0);
+
+        // C++: 4 fixingDates = { today-6W, today-2W, today+2W, today+6W }
+        // We pass only the 2 future ones plus runningSum=200, pastFixings=2.
+        final Date futureA = today.add(new org.jquantlib.time.Period(2,
+                org.jquantlib.time.TimeUnit.Weeks));
+        final Date futureB = today.add(new org.jquantlib.time.Period(6,
+                org.jquantlib.time.TimeUnit.Weeks));
+
+        final List<Date> futureFixingDates = new ArrayList<Date>();
+        futureFixingDates.add(futureA);
+        futureFixingDates.add(futureB);
+
+        final Exercise exercise = new EuropeanExercise(futureB);
+
+        final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(spotQ),
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final PricingEngine engine = new TurnbullWakemanAsianEngine(stochProcess);
+
+        // 2 past fixings @ spot=100 each → runningSum = 200.
+        final double runningSum = 2.0 * spotQ.value();
+        final int pastFixings = 2;
+
+        final DiscreteAveragingAsianOption callOption = new DiscreteAveragingAsianOption(
+                AverageType.Arithmetic, runningSum, pastFixings,
+                futureFixingDates, callPayoff, exercise);
+        final DiscreteAveragingAsianOption putOption = new DiscreteAveragingAsianOption(
+                AverageType.Arithmetic, runningSum, pastFixings,
+                futureFixingDates, putPayoff, exercise);
+
+        callOption.setPricingEngine(engine);
+        putOption.setPricingEngine(engine);
+
+        // Expected call NPV: averaging-forward formula. With pastFixings=2 fixings
+        // at spot=100, the running average contribution per past fixing is just
+        // spot/N for each fixing; the two future contributions are forwards:
+        //   F(t) = S * qTS.discount(t) / rTS.discount(t)
+        // Total: D(T) * ((100 + 100 + F(futureA) + F(futureB)) / 4 - K)
+        final int totalFixings = 4;
+        final double forwardA = 100.0 * qTS.discount(futureA) / rTS.discount(futureA);
+        final double forwardB = 100.0 * qTS.discount(futureB) / rTS.discount(futureB);
+        final double expectedCallNpv = rTS.discount(exercise.lastDate())
+                * ((100.0 + 100.0 + forwardA + forwardB) / totalFixings - callPayoff.strike());
+
+        final double callNpv = callOption.NPV();
+        final double putNpv  = putOption.NPV();
+
+        // Use a tight numerical tolerance — C++ uses BOOST_CHECK_EQUAL but with
+        // FP rounding through discount factors and intermediate sums we need a
+        // small slack.
+        final double tightTol = 1.0e-10;
+        if (Math.abs(callNpv - expectedCallNpv) > tightTol) {
+            fail("Seasoned call NPV did not match averaging-forward formula:"
+                    + "\n    expected:   " + expectedCallNpv
+                    + "\n    calculated: " + callNpv
+                    + "\n    error:      " + Math.abs(callNpv - expectedCallNpv));
+        }
+        if (Math.abs(putNpv) > tightTol) {
+            fail("Deeply OTM seasoned put NPV should be ~0:"
+                    + "\n    calculated: " + putNpv);
+        }
+
+        // ---- bump-and-revalue greeks ----
+
+        final double dS = 0.001;
+        final double callDelta = callOption.delta();
+        final double callGamma = callOption.gamma();
+        final double putDelta  = putOption.delta();
+        final double putGamma  = putOption.gamma();
+
+        final SimpleQuote spotUp   = new SimpleQuote(100.0 + dS);
+        final SimpleQuote spotDown = new SimpleQuote(100.0 - dS);
+
+        final BlackScholesMertonProcess stochProcessUp = new BlackScholesMertonProcess(
+                new Handle<Quote>(spotUp),
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+        final BlackScholesMertonProcess stochProcessDown = new BlackScholesMertonProcess(
+                new Handle<Quote>(spotDown),
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final PricingEngine engineUp   = new TurnbullWakemanAsianEngine(stochProcessUp);
+        final PricingEngine engineDown = new TurnbullWakemanAsianEngine(stochProcessDown);
+
+        callOption.setPricingEngine(engineUp);
+        final double callUp = callOption.NPV();
+        putOption.setPricingEngine(engineUp);
+        final double putUp = putOption.NPV();
+
+        callOption.setPricingEngine(engineDown);
+        final double callDown = callOption.NPV();
+        putOption.setPricingEngine(engineDown);
+        final double putDown = putOption.NPV();
+
+        final double callDeltaBump = (callUp - callDown) / (2 * dS);
+        final double callGammaBump = (callUp + callDown - 2 * callNpv) / (dS * dS);
+        final double putDeltaBump  = (putUp - putDown) / (2 * dS);
+        final double putGammaBump  = (putUp + putDown - 2 * putNpv) / (dS * dS);
+
+        final double greekTol = 1.0e-8;
+        if (Math.abs(callDeltaBump - callDelta) > greekTol) {
+            fail("Seasoned analytic call delta did not match numerical delta:"
+                    + "\n    analytic:   " + callDelta
+                    + "\n    bump:       " + callDeltaBump
+                    + "\n    error:      " + Math.abs(callDeltaBump - callDelta));
+        }
+        if (Math.abs(callGammaBump - callGamma) > greekTol) {
+            fail("Seasoned analytic call gamma did not match numerical gamma:"
+                    + "\n    analytic:   " + callGamma
+                    + "\n    bump:       " + callGammaBump
+                    + "\n    error:      " + Math.abs(callGammaBump - callGamma));
+        }
+        if (Math.abs(putDeltaBump - putDelta) > greekTol) {
+            fail("Seasoned analytic put delta did not match numerical delta:"
+                    + "\n    analytic:   " + putDelta
+                    + "\n    bump:       " + putDeltaBump
+                    + "\n    error:      " + Math.abs(putDeltaBump - putDelta));
+        }
+        if (Math.abs(putGammaBump - putGamma) > greekTol) {
+            fail("Seasoned analytic put gamma did not match numerical gamma:"
+                    + "\n    analytic:   " + putGamma
+                    + "\n    bump:       " + putGammaBump
+                    + "\n    error:      " + Math.abs(putGammaBump - putGamma));
+        }
+    }
 
     @Ignore(REASON_PAST_FIXINGS + " + degenerate all-past schedule")
     @Test
@@ -1103,9 +1395,83 @@ public class AsianOptionsAdditionalTest {
         }
     }
 
-    @Ignore(REASON_VECER)
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testVecerEngine}.
+     *
+     * <p>Tests the Vecer PDE engine for continuously-averaged arithmetic
+     * Asian options against the reference values in Vecer (2001) — the
+     * Java engine is wired under {@code experimental.exoticoptions.
+     * ContinuousArithmeticAsianVecerEngine} pending promotion to
+     * {@code pricingengines.asian}.  The C++ in-instruments-package wrapper
+     * test just imports the engine directly; we do the same.
+     *
+     * <p>Tolerances are per-case (1e-5 to 2e-4), matching the C++ table.
+     */
     @Test
-    public void testVecerEngine() { fail("not implemented"); }
+    public void testVecerEngine() {
+
+        // { spot, riskFreeRate, volatility, strike, length(years), result, tolerance }
+        final double[][] cases = new double[][] {
+            { 1.9, 0.05,   0.5,  2.0, 1, 0.193174, 1.0e-5 },
+            { 2.0, 0.05,   0.5,  2.0, 1, 0.246416, 1.0e-5 },
+            { 2.1, 0.05,   0.5,  2.0, 1, 0.306220, 1.0e-4 },
+            { 2.0, 0.02,   0.1,  2.0, 1, 0.055986, 2.0e-4 },
+            { 2.0, 0.18,   0.3,  2.0, 1, 0.218388, 1.0e-4 },
+            { 2.0, 0.0125, 0.25, 2.0, 2, 0.172269, 1.0e-4 },
+            { 2.0, 0.05,   0.5,  2.0, 2, 0.350095, 2.0e-4 },
+        };
+
+        final Date today = new Settings().evaluationDate();
+        final DayCounter dayCounter = new Actual360();
+
+        final Option.Type type = Option.Type.Call;
+        final YieldTermStructure qTS = Utilities.flatRate(today, 0.0, dayCounter);
+        final Handle<YieldTermStructure> q = new Handle<YieldTermStructure>(qTS);
+
+        final int timeSteps = 200;
+        final int assetSteps = 200;
+
+        for (final double[] cs : cases) {
+            final double spot = cs[0];
+            final double riskFreeRate = cs[1];
+            final double volatility = cs[2];
+            final double strike = cs[3];
+            final int length = (int) cs[4];
+            final double expected = cs[5];
+            final double tolerance = cs[6];
+
+            final Handle<Quote> u = new Handle<Quote>(new SimpleQuote(spot));
+            final YieldTermStructure rTS = Utilities.flatRate(today, riskFreeRate, dayCounter);
+            final Handle<YieldTermStructure> r = new Handle<YieldTermStructure>(rTS);
+            final BlackVolTermStructure sigmaTS = Utilities.flatVol(today, volatility, dayCounter);
+            final Handle<BlackVolTermStructure> sigma = new Handle<BlackVolTermStructure>(sigmaTS);
+
+            final BlackScholesMertonProcess process =
+                    new BlackScholesMertonProcess(u, q, r, sigma);
+
+            final Date maturity = today.add(length * 360);
+            final Exercise exercise = new EuropeanExercise(maturity);
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+            final Handle<Quote> average = new Handle<Quote>(new SimpleQuote(0.0));
+
+            final ContinuousAveragingAsianOption option =
+                    new ContinuousAveragingAsianOption(AverageType.Arithmetic, payoff, exercise);
+            option.setPricingEngine(new ContinuousArithmeticAsianVecerEngine(
+                    process, average, today, timeSteps, assetSteps, -1.0, 1.0));
+
+            final double calculated = option.NPV();
+            final double error = Math.abs(calculated - expected);
+            if (error > tolerance) {
+                fail("Failed to reproduce expected NPV (Vecer):"
+                        + "\n    spot:       " + spot
+                        + "\n    strike:     " + strike
+                        + "\n    expected:   " + expected
+                        + "\n    calculated: " + calculated
+                        + "\n    error:      " + error
+                        + "\n    tolerance:  " + tolerance);
+            }
+        }
+    }
 
     @Ignore(REASON_CHOI + " — vs MC reference")
     @Test
