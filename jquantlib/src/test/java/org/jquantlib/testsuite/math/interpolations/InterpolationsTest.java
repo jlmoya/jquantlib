@@ -34,7 +34,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.GaussianKernel;
+import org.jquantlib.math.KernelFunction;
+import org.jquantlib.math.interpolations.KernelInterpolation;
+import org.jquantlib.math.interpolations.KernelInterpolation2D;
 import org.jquantlib.math.interpolations.LagrangeInterpolation;
+import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.matrixutilities.Matrix;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -191,15 +197,169 @@ public class InterpolationsTest {
             + "C++ interpolations.cpp testSabrGuess.")
     public void testSabrGuess() { }
 
+    /**
+     * Java port of QuantLib v1.42.1 {@code testKernelInterpolation}
+     * (test-suite/interpolations.cpp lines 1503-1600).
+     *
+     * <p>Phase 1: verify that y-values at the support nodes are reproduced
+     * exactly (within the C++ tolerance of {@code 2e-5}) for several
+     * Gaussian-kernel bandwidths {@code lambda in [0.05, 2.55]}.
+     *
+     * <p>Phase 2: at a parallel test grid, compare against the reference
+     * R-pracma values given in the C++ test for {@code sigma = 2.05}.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no KernelInterpolation. "
-            + "C++ interpolations.cpp testKernelInterpolation.")
-    public void testKernelInterpolation() { }
+    public void testKernelInterpolation() {
+        QL.info("Testing kernel 1D interpolation...");
 
+        final double[] deltaGrid = { 0.10, 0.25, 0.50, 0.75, 0.90 };
+        final double[][] yd = {
+            { 11.275, 11.125, 11.250, 11.825, 12.625 },
+            { 16.025, 13.450, 11.350, 10.150, 10.075 },
+            { 10.300,  9.6375, 9.2000, 9.1125, 9.4000 }
+        };
+        final double[] lambdaVec = { 0.05, 0.50, 0.75, 1.65, 2.55 };
+
+        final double tolerance = 2.0e-5;
+        final Array x = new Array(deltaGrid);
+
+        // Phase 1: pinning at the support nodes.
+        for (final double sigma : lambdaVec) {
+            final GaussianKernel myKernel = new GaussianKernel(0.0, sigma);
+            for (final double[] currY : yd) {
+                final Array y = new Array(currY);
+                final KernelInterpolation f = new KernelInterpolation(x, y, myKernel);
+                f.update();
+                for (int dIt = 0; dIt < deltaGrid.length; ++dIt) {
+                    final double expected = currY[dIt];
+                    final double calc = f.op(deltaGrid[dIt]);
+                    assertEquals("Kernel interpolation at support node x="
+                                 + deltaGrid[dIt] + " (sigma=" + sigma + ")",
+                                 expected, calc, tolerance);
+                }
+            }
+        }
+
+        // Phase 2: reference values at the test grid (sigma = 2.05).
+        // Source: parallel implementation in R (per C++ comment).
+        final double[] testDeltaGrid = { 0.121, 0.279, 0.678, 0.790, 0.980 };
+        final double[][] ytd = {
+            { 11.23847, 11.12003, 11.58932, 11.99168, 13.29650 },
+            { 15.55922, 13.11088, 10.41615, 10.05153, 10.50741 },
+            { 10.17473,  9.557842, 9.09339, 9.149687, 9.779971 }
+        };
+        final GaussianKernel myKernel = new GaussianKernel(0.0, 2.05);
+
+        for (int j = 0; j < ytd.length; ++j) {
+            final Array y = new Array(yd[j]);
+            final KernelInterpolation f = new KernelInterpolation(x, y, myKernel);
+            f.update();
+            f.enableExtrapolation();
+            for (int dIt = 0; dIt < testDeltaGrid.length; ++dIt) {
+                final double expected = ytd[j][dIt];
+                final double calc = f.op(testDeltaGrid[dIt], true);
+                assertEquals("Kernel interpolation at test grid x="
+                             + testDeltaGrid[dIt] + " (row=" + j + ")",
+                             expected, calc, tolerance);
+            }
+        }
+    }
+
+    /**
+     * Java port of QuantLib v1.42.1 {@code testKernelInterpolation2D}
+     * (test-suite/interpolations.cpp lines 1602-1722).
+     *
+     * <p>Two stages:
+     * <ol>
+     *   <li>Gaussian kernel: 10x3 grid; verify reproduction of input
+     *       z-values at the (xi, yj) support points to {@code 1e-10}.</li>
+     *   <li>Epanechnikov kernel: 4x8 grid; same support-node consistency
+     *       check. Demonstrates use of a non-Gaussian {@link KernelFunction}.</li>
+     * </ol>
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no KernelInterpolation2D. "
-            + "C++ interpolations.cpp testKernelInterpolation2D.")
-    public void testKernelInterpolation2D() { }
+    public void testKernelInterpolation2D() {
+        QL.info("Testing kernel 2D interpolation...");
+
+        final double mean = 0.0, var = 0.18;
+        final GaussianKernel myKernel = new GaussianKernel(mean, var);
+
+        final Array xVec = new Array(new double[] {
+            0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00
+        });
+        final Array yVec = new Array(new double[] { 1.0, 2.0, 3.5 });
+
+        final Matrix M = new Matrix(xVec.size(), yVec.size());
+        // Column 0
+        M.set(0, 0, 0.25); M.set(1, 0, 0.24); M.set(2, 0, 0.23);
+        M.set(3, 0, 0.20); M.set(4, 0, 0.19); M.set(5, 0, 0.20);
+        M.set(6, 0, 0.21); M.set(7, 0, 0.22); M.set(8, 0, 0.26);
+        M.set(9, 0, 0.29);
+        // Column 1
+        M.set(0, 1, 0.27); M.set(1, 1, 0.26); M.set(2, 1, 0.25);
+        M.set(3, 1, 0.22); M.set(4, 1, 0.21); M.set(5, 1, 0.22);
+        M.set(6, 1, 0.23); M.set(7, 1, 0.24); M.set(8, 1, 0.28);
+        M.set(9, 1, 0.31);
+        // Column 2
+        M.set(0, 2, 0.21); M.set(1, 2, 0.22); M.set(2, 2, 0.27);
+        M.set(3, 2, 0.29); M.set(4, 2, 0.24); M.set(5, 2, 0.28);
+        M.set(6, 2, 0.25); M.set(7, 2, 0.22); M.set(8, 2, 0.29);
+        M.set(9, 2, 0.30);
+
+        final KernelInterpolation2D kernel2D =
+            new KernelInterpolation2D(xVec, yVec, M, myKernel);
+
+        final double tolerance = 1.0e-10;
+
+        for (int i = 0; i < M.rows(); ++i) {
+            for (int j = 0; j < M.columns(); ++j) {
+                final double calc = kernel2D.op(xVec.get(i), yVec.get(j));
+                final double expected = M.get(i, j);
+                assertEquals("2D Kernel interpolation at x=" + xVec.get(i)
+                             + ", y=" + yVec.get(j),
+                             expected, calc, tolerance);
+            }
+        }
+
+        // Alternative data set with the Epanechnikov kernel (functional-
+        // interface form mirroring the C++ free-function pointer).
+        final Array xVec1 = new Array(new double[] { 80.0, 90.0, 100.0, 110.0 });
+        final Array yVec1 = new Array(new double[] {
+            0.5, 0.7, 1.0, 2.0, 3.5, 4.5, 5.5, 6.5
+        });
+
+        final Matrix M1 = new Matrix(xVec1.size(), yVec1.size());
+        M1.set(0, 0, 10.25); M1.set(1, 0, 12.24); M1.set(2, 0, 14.23); M1.set(3, 0, 17.20);
+        M1.set(0, 1, 12.25); M1.set(1, 1, 15.24); M1.set(2, 1, 16.23); M1.set(3, 1, 16.20);
+        M1.set(0, 2, 12.25); M1.set(1, 2, 13.24); M1.set(2, 2, 13.23); M1.set(3, 2, 17.20);
+        M1.set(0, 3, 13.25); M1.set(1, 3, 15.24); M1.set(2, 3, 12.23); M1.set(3, 3, 19.20);
+        M1.set(0, 4, 14.25); M1.set(1, 4, 16.24); M1.set(2, 4, 13.23); M1.set(3, 4, 12.20);
+        M1.set(0, 5, 15.25); M1.set(1, 5, 17.24); M1.set(2, 5, 14.23); M1.set(3, 5, 12.20);
+        M1.set(0, 6, 16.25); M1.set(1, 6, 13.24); M1.set(2, 6, 15.23); M1.set(3, 6, 10.20);
+        M1.set(0, 7, 14.25); M1.set(1, 7, 14.24); M1.set(2, 7, 16.23); M1.set(3, 7, 19.20);
+
+        final KernelFunction epanechnikov = InterpolationsTest::epanechnikovKernel;
+        final KernelInterpolation2D kernel2DEp =
+            new KernelInterpolation2D(xVec1, yVec1, M1, epanechnikov);
+
+        for (int i = 0; i < M1.rows(); ++i) {
+            for (int j = 0; j < M1.columns(); ++j) {
+                final double calc = kernel2DEp.op(xVec1.get(i), yVec1.get(j));
+                final double expected = M1.get(i, j);
+                assertEquals("2D Epanechnikov Kernel interpolation at x=" + xVec1.get(i)
+                             + ", y=" + yVec1.get(j),
+                             expected, calc, tolerance);
+            }
+        }
+    }
+
+    /** Epanechnikov kernel, mirrors C++ test-suite/interpolations.cpp lines 198-205. */
+    private static double epanechnikovKernel(final double u) {
+        if (Math.abs(u) <= 1.0) {
+            return 0.75 * (1.0 - u * u);
+        }
+        return 0.0;
+    }
 
     @Test
     @Ignore("Phase 5g.5 — Java has no Bicubic spline derivatives API. "
