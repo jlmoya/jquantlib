@@ -969,9 +969,35 @@ public class LowDiscrepancySequencesTest {
         // C++ test-suite/lowdiscrepancysequences.cpp:1114
     }
 
-    @Ignore("Phase 5b.5: Burley2020SobolRsg production class not yet ported")
+    /**
+     * Java port of C++ {@code testBurley2020SobolRsgOutputBounds}
+     * (test-suite/lowdiscrepancysequences.cpp:1177). Verifies that with
+     * enough dimensions, where scrambling occasionally maps a coordinate
+     * to zero, the {@code +0.5} offset in
+     * {@link Burley2020SobolRsg#nextSequence()} keeps every output
+     * strictly inside {@code (0, 1)} (so it does not break
+     * {@code InverseCumulativeNormal}).
+     *
+     * <p>Divergence from C++ pivot: the C++ test passes
+     * {@code SobolRsg::JoeKuoD7} as the direction-integer scheme. Java
+     * {@link SobolRsg.DirectionIntegers} currently only exposes the
+     * Jaeckel family; the (0, 1)-strict bound is a property of the
+     * normalisation step, not of the direction integers, so the
+     * substitution does not weaken the test.
+     */
     @Test
     public void testBurley2020SobolRsgOutputBounds() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:1176
+        // C++ test-suite/lowdiscrepancysequences.cpp:1177
+        final org.jquantlib.math.randomnumbers.Burley2020SobolRsg rsg =
+                new org.jquantlib.math.randomnumbers.Burley2020SobolRsg(
+                        1551, 42L, SobolRsg.DirectionIntegers.Jaeckel, 43L);
+        for (int i = 0; i < 100000; i++) {
+            final double[] seq = rsg.nextSequence().value();
+            for (int j = 0; j < seq.length; j++) {
+                if (seq[j] <= 0.0 || seq[j] >= 1.0) {
+                    fail("output " + seq[j] + " at sample " + i + ", dim " + j);
+                }
+            }
+        }
     }
 }
