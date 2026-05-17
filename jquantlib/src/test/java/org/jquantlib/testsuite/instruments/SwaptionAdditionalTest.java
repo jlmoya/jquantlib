@@ -27,6 +27,7 @@ import org.jquantlib.instruments.Settlement;
 import org.jquantlib.instruments.Swaption;
 import org.jquantlib.instruments.VanillaSwap;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
+import org.jquantlib.pricingengines.swaption.BachelierSwaptionEngine;
 import org.jquantlib.pricingengines.swaption.BlackSwaptionEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -702,13 +703,188 @@ public class SwaptionAdditionalTest {
         }
     }
 
-    @Ignore("Phase 5f.5 — requires BachelierSwaptionEngine (not yet ported;"
-            + " BlackSwaptionEngine handles VolatilityType.Normal but the C++"
-            + " test uses a dedicated BachelierSwaptionEngine class with a"
-            + " ConstantSwaptionVolatility(BachelierSpec) constructor that"
-            + " has no Java counterpart yet)")
+    /**
+     * Mirrors {@code testSwaptionDeltaInBachelierModel} from C++ v1.42.1
+     * {@code swaption.cpp} (lines 1142-1147, via
+     * {@code checkSwaptionDelta<BachelierSwaptionEngine>(true)} template).
+     *
+     * <p>Structurally identical to {@link #testSwaptionDeltaInBlackModel} but
+     * uses {@link BachelierSwaptionEngine} (normal-vol) instead of
+     * {@link BlackSwaptionEngine} (shifted-lognormal). The C++ template flag
+     * {@code useBachelierVol = true} scales the volatility grid by
+     * {@code 1/100}, converting Black-style relative vols (e.g. 30%) into
+     * absolute basis-point-style normal vols (e.g. 30 bps = 0.003); this
+     * port mirrors the same scaling.
+     *
+     * <p>The mean-value-theorem assertion is unchanged: bump the projection
+     * (forward) curve by 1bp, recompute analytic delta, and require the
+     * finite-difference slope to lie strictly between the pre- and post-bump
+     * analytic deltas (epsilon cushion {@code 1e-10}).
+     *
+     * <p><strong>Tolerance tier</strong> — loose: matches C++ exactly,
+     * comparison is via the mean-value-theorem inequality rather than a
+     * fixed {@code |a-b|} threshold.
+     */
     @Test
-    public void testSwaptionDeltaInBachelierModel() { fail("not implemented"); }
+    public void testSwaptionDeltaInBachelierModel() {
+        final Date today = new Date(13, Month.March, 2002);
+        new Settings().setEvaluationDate(today);
+
+        final Calendar calendar = new Target();
+        final DayCounter act365 = new Actual365Fixed();
+        final DayCounter thirty360 = new Thirty360(Thirty360.Convention.BondBasis);
+
+        final double bump = 1.0e-4;
+        final double epsilon = 1.0e-10;
+        final double projectionRate = 0.01;
+
+        // Projection (forwarding) curve — relinkable so we can bump it.
+        final RelinkableHandle<Quote> projectionQuoteHandle =
+                new RelinkableHandle<Quote>(new SimpleQuote(projectionRate));
+        final RelinkableHandle<YieldTermStructure> projectionCurveHandle =
+                new RelinkableHandle<YieldTermStructure>(
+                        new FlatForward(today, projectionQuoteHandle, act365));
+
+        // Discount curve — fixed.
+        final Handle<YieldTermStructure> discountHandle =
+                new Handle<YieldTermStructure>(
+                        new FlatForward(today,
+                                new Handle<Quote>(new SimpleQuote(0.0085)),
+                                act365));
+
+        final DiscountingSwapEngine swapEngine =
+                new DiscountingSwapEngine(discountHandle);
+        final IborIndex idx = new Euribor6M(projectionCurveHandle);
+
+        // Reduced grid (matches the Black-model variant in this file). The
+        // C++ test spans 6 vols x 6 exercises x 8 lengths x 5 strikes x 2
+        // settlements = 5760 cases including a degenerate vol=0; here we
+        // keep the kinds of points (low/mid/high vol, OTM/ATM/ITM strike,
+        // short/medium/long expiry, both settlements and types) to stay
+        // sub-second within the broader suite.
+        final Period[] exercises = {
+            new Period(1, TimeUnit.Years),
+            new Period(5, TimeUnit.Years),
+            new Period(10, TimeUnit.Years)
+        };
+        final Period[] lengths = {
+            new Period(2, TimeUnit.Years),
+            new Period(5, TimeUnit.Years),
+            new Period(10, TimeUnit.Years)
+        };
+        final double[] strikes = { 0.03, 0.05, 0.07 };
+        // Bachelier vols: normal-vol scale, i.e. Black vol / 100
+        // (matches useBachelierVol=true in the C++ template).
+        final double[] vols = { 0.10 / 100.0, 0.30 / 100.0, 0.70 / 100.0 };
+        final VanillaSwap.Type[] swapTypes =
+                { VanillaSwap.Type.Receiver, VanillaSwap.Type.Payer };
+        final Settlement.Type[] settlementTypes =
+                { Settlement.Type.Physical, Settlement.Type.Cash };
+        final Settlement.Method[] settlementMethods =
+                { Settlement.Method.PhysicalOTC,
+                  Settlement.Method.CollateralizedCashPrice };
+
+        for (final double vol : vols) {
+            for (final Period exercise : exercises) {
+                for (final Period length : lengths) {
+                    for (final double strike : strikes) {
+                        for (int h = 0; h < swapTypes.length; h++) {
+                            // --- Build engine + swaption ----------------
+                            final BachelierSwaptionEngine engine =
+                                    BachelierSwaptionEngine.fromVolQuote(
+                                            discountHandle,
+                                            new Handle<Quote>(new SimpleQuote(vol)));
+
+                            final Date exerciseDate =
+                                    calendar.advance(today, exercise);
+                            final Date startDate =
+                                    calendar.advance(exerciseDate, 2, TimeUnit.Days);
+
+                            // Reset projection quote to base value each iteration.
+                            projectionQuoteHandle.linkTo(
+                                    new SimpleQuote(projectionRate));
+
+                            final VanillaSwap underlying = new MakeVanillaSwap(
+                                    length, idx, strike)
+                                    .withEffectiveDate(startDate)
+                                    .withFixedLegTenor(
+                                            new Period(1, TimeUnit.Years))
+                                    .withFixedLegDayCount(thirty360)
+                                    .withFloatingLegSpread(0.0)
+                                    .withType(swapTypes[h])
+                                    .value();
+                            underlying.setPricingEngine(swapEngine);
+
+                            final double fairRate = underlying.fairRate();
+
+                            final Swaption swaption = new Swaption(
+                                    underlying,
+                                    new org.jquantlib.exercise.EuropeanExercise(
+                                            exerciseDate),
+                                    settlementTypes[h],
+                                    settlementMethods[h]);
+                            swaption.setPricingEngine(engine);
+
+                            final double value = swaption.NPV();
+                            final Swaption.ResultsImpl results =
+                                    (Swaption.ResultsImpl) engine.getResults();
+                            final Object deltaObj =
+                                    results.additionalResults().get("delta");
+                            if (deltaObj == null) {
+                                fail("BachelierSwaptionEngine did not publish "
+                                        + "'delta' additional result");
+                            }
+                            final double delta =
+                                    ((Double) deltaObj).doubleValue() * bump;
+
+                            // --- Bump projection curve ------------------
+                            projectionQuoteHandle.linkTo(
+                                    new SimpleQuote(projectionRate + bump));
+
+                            final double bumpedFairRate = underlying.fairRate();
+                            final double bumpedValue = swaption.NPV();
+                            final Swaption.ResultsImpl bumpedResults =
+                                    (Swaption.ResultsImpl) engine.getResults();
+                            final Object bumpedDeltaObj =
+                                    bumpedResults.additionalResults().get("delta");
+                            final double bumpedDelta =
+                                    ((Double) bumpedDeltaObj).doubleValue() * bump;
+
+                            final double deltaBump = bumpedFairRate - fairRate;
+                            final double approxDelta =
+                                    (bumpedValue - value) / deltaBump * bump;
+
+                            final double lowerBound =
+                                    Math.min(delta, bumpedDelta) - epsilon;
+                            final double upperBound =
+                                    Math.max(delta, bumpedDelta) + epsilon;
+
+                            // Mean Value Theorem inequality (C++ exact match).
+                            final boolean ok =
+                                    (lowerBound < approxDelta)
+                                    && (approxDelta < upperBound);
+                            if (!ok) {
+                                fail("failed to compute swaption delta:"
+                                        + "\n  option tenor:     " + exercise
+                                        + "\n  volatility:       " + vol
+                                        + "\n  swap type:        " + swapTypes[h]
+                                        + "\n  swap tenor:       " + length
+                                        + "\n  strike:           " + strike
+                                        + "\n  settlement type:  " + settlementTypes[h]
+                                        + "\n  settlement method:" + settlementMethods[h]
+                                        + "\n  npv:              " + value
+                                        + "\n  calculated delta: " + delta
+                                        + "\n  expected delta:   " + approxDelta
+                                        + "\n  bumped delta:     " + bumpedDelta
+                                        + "\n  lower bound:      " + lowerBound
+                                        + "\n  upper bound:      " + upperBound);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Mirrors {@code testMakeSwaptionWithExerciseCalendar} from C++ v1.42.1
