@@ -6,6 +6,8 @@
  */
 package org.jquantlib.testsuite.instruments;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -20,6 +22,7 @@ import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.ibor.Eonia;
 import org.jquantlib.instruments.MakeOIS;
 import org.jquantlib.instruments.OvernightIndexedSwap;
+import org.jquantlib.instruments.VanillaSwap;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -40,8 +43,11 @@ import org.jquantlib.math.interpolations.factories.LogLinear;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Frequency;
+import org.jquantlib.time.MakeSchedule;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -530,10 +536,171 @@ public class OvernightIndexedSwapTest {
     }
 
     @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapWithCustomPricer() { fail("not implemented"); }
-    @Ignore(REASON_LOOKBACK) @Test public void testBootstrapWithLookbackDays() { fail("not implemented"); }
-    @Ignore(REASON_LOOKBACK) @Test public void testBootstrapWithLookbackDaysAndShift() { fail("not implemented"); }
-    @Ignore(REASON_LOOKBACK) @Test public void testBootstrapWithLockoutDays() { fail("not implemented"); }
-    @Ignore(REASON_LOOKBACK) @Test public void testBootstrapWithLockoutDaysAndShift() { fail("not implemented"); }
+
+    /**
+     * Helper for lookback / lockout / observation-shift bootstrap tests.
+     * <p>Adaptation of C++ {@code testBootstrapWithLookback}
+     * (overnightindexedswap.cpp:497-562).
+     *
+     * <p>The C++ test builds a {@link PiecewiseYieldCurve} from
+     * {@link OISRateHelper}s that are themselves configured with the same
+     * lookback / lockout / observation-shift parameters as the check-swap.
+     * The Java {@code OISRateHelper} does not yet expose those parameters
+     * (out-of-scope for this commit — would require a 16-arg overload), so
+     * we use a flat curve and exercise the production code path with a
+     * self-consistency check: build a swap with lookback / lockout /
+     * observation-shift, get its fair rate, rebuild with that rate, and
+     * verify NPV ~= 0. This validates the Java {@code OvernightIndexedSwap}
+     * + {@code MakeOIS} + {@code OvernightLeg} + {@code OvernightIndexedCoupon}
+     * + {@code CompoundingOvernightIndexedCouponPricer} chain with
+     * lookback/lockout/shift wired through.
+     *
+     * <p>The C++ guard "Telescopic formula cannot be applied" is also
+     * exercised by the higher-level test methods that pass
+     * {@code telescopicValueDates=true} with non-shifted lookback or
+     * lockout days.
+     */
+    private void runBootstrapWithLookback(final int lookbackDays,
+                                          final int lockoutDays,
+                                          final boolean applyObservationShift,
+                                          final boolean telescopicValueDates,
+                                          final int paymentLag) {
+        final CommonVars vars = new CommonVars();
+
+        // Self-consistency: build the swap, compute fair rate, rebuild at
+        // that rate, NPV must be ~= 0.
+        final double tolerance = 1.0e-10;
+        final Period[] terms = {
+                new Period(1, TimeUnit.Years), new Period(2, TimeUnit.Years),
+                new Period(5, TimeUnit.Years), new Period(10, TimeUnit.Years)
+        };
+        for (final Period term : terms) {
+            final OvernightIndexedSwap swap = new MakeOIS(term, vars.overnightIndex, 0.0,
+                                                          new Period(0, TimeUnit.Days))
+                    .withEffectiveDate(vars.settlement)
+                    .withNominal(vars.nominal)
+                    .withPaymentLag(paymentLag)
+                    .withDiscountingTermStructure(vars.termStructure)
+                    .withLookbackDays(lookbackDays)
+                    .withLockoutDays(lockoutDays)
+                    .withObservationShift(applyObservationShift)
+                    .withTelescopicValueDates(telescopicValueDates)
+                    .value();
+            final double fair = swap.fairRate();
+
+            final OvernightIndexedSwap recomputed = new MakeOIS(term, vars.overnightIndex, fair,
+                                                                 new Period(0, TimeUnit.Days))
+                    .withEffectiveDate(vars.settlement)
+                    .withNominal(vars.nominal)
+                    .withPaymentLag(paymentLag)
+                    .withDiscountingTermStructure(vars.termStructure)
+                    .withLookbackDays(lookbackDays)
+                    .withLockoutDays(lockoutDays)
+                    .withObservationShift(applyObservationShift)
+                    .withTelescopicValueDates(telescopicValueDates)
+                    .value();
+            final double npv = recomputed.NPV();
+            if (Math.abs(npv) > tolerance) {
+                fail("OIS lookback self-consistency failure:"
+                        + "\n swap length:     " + term
+                        + "\n fair rate:       " + fair
+                        + "\n NPV (should ~0): " + npv
+                        + "\n tolerance:       " + tolerance);
+            }
+        }
+        assertTrue("OIS lookback self-consistency check passed", true);
+    }
+
+    /**
+     * Port of C++ {@code testBootstrapWithLookbackDays}
+     * (overnightindexedswap.cpp:566-579).
+     * <p>Verifies that lookback-days bootstrap works with non-telescopic
+     * value dates, and that telescopic + lookback (without observation
+     * shift) is rejected with the appropriate error.
+     */
+    @Test
+    public void testBootstrapWithLookbackDays() {
+        final int lookbackDays = 2;
+        final int lockoutDays = 0;
+        final boolean applyObservationShift = false;
+        final int paymentLag = 2;
+
+        runBootstrapWithLookback(lookbackDays, lockoutDays, applyObservationShift,
+                                  false, paymentLag);
+
+        // Telescopic + lookback (without observation shift) is unsupported.
+        // Per C++ BOOST_CHECK_EXCEPTION: "Telescopic formula cannot be applied".
+        try {
+            runBootstrapWithLookback(lookbackDays, lockoutDays, applyObservationShift,
+                                      true, paymentLag);
+            fail("expected exception 'Telescopic formula cannot be applied'");
+        } catch (final RuntimeException e) {
+            // accept any error from the guard
+        }
+    }
+
+    /**
+     * Port of C++ {@code testBootstrapWithLookbackDaysAndShift}
+     * (overnightindexedswap.cpp:581-592).
+     * <p>Lookback + observation shift works under both telescopic and
+     * non-telescopic value dates.
+     */
+    @Test
+    public void testBootstrapWithLookbackDaysAndShift() {
+        final int lookbackDays = 2;
+        final int lockoutDays = 0;
+        final boolean applyObservationShift = true;
+        final int paymentLag = 2;
+
+        runBootstrapWithLookback(lookbackDays, lockoutDays, applyObservationShift,
+                                  false, paymentLag);
+        runBootstrapWithLookback(lookbackDays, lockoutDays, applyObservationShift,
+                                  true, paymentLag);
+    }
+
+    /**
+     * Port of C++ {@code testBootstrapWithLockoutDays}
+     * (overnightindexedswap.cpp:594-607).
+     * <p>Lookback + lockout days works under non-telescopic; telescopic
+     * fails without observation shift.
+     */
+    @Test
+    public void testBootstrapWithLockoutDays() {
+        final int lookbackDays = 2;
+        final int lockoutDays = 2;
+        final boolean applyObservationShift = false;
+        final int paymentLag = 0;
+
+        runBootstrapWithLookback(lookbackDays, lockoutDays, applyObservationShift,
+                                  false, paymentLag);
+
+        try {
+            runBootstrapWithLookback(lookbackDays, lockoutDays, applyObservationShift,
+                                      true, paymentLag);
+            fail("expected exception 'Telescopic formula cannot be applied'");
+        } catch (final RuntimeException e) {
+            // accept any error from the guard
+        }
+    }
+
+    /**
+     * Port of C++ {@code testBootstrapWithLockoutDaysAndShift}
+     * (overnightindexedswap.cpp:609-620).
+     * <p>Lookback + lockout + observation shift works under both
+     * telescopic and non-telescopic value dates.
+     */
+    @Test
+    public void testBootstrapWithLockoutDaysAndShift() {
+        final int lookbackDays = 2;
+        final int lockoutDays = 2;
+        final boolean applyObservationShift = true;
+        final int paymentLag = 0;
+
+        runBootstrapWithLookback(lookbackDays, lockoutDays, applyObservationShift,
+                                  false, paymentLag);
+        runBootstrapWithLookback(lookbackDays, lockoutDays, applyObservationShift,
+                                  true, paymentLag);
+    }
 
     /**
      * Port of C++ {@code overnightindexedswap.cpp::testSeasonedSwaps}.
@@ -584,11 +751,207 @@ public class OvernightIndexedSwapTest {
     @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapRegression() { fail("not implemented"); }
     @Ignore(REASON_BOOTSTRAP) @Test public void test131BootstrapRegression() { fail("not implemented"); }
     @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapWithDifferentCalendars() { fail("not implemented"); }
-    @Ignore(REASON_CONSTRUCTORS) @Test public void testConstructorsAndNominals() { fail("not implemented"); }
+
+    /**
+     * Port of C++ {@code testConstructorsAndNominals}
+     * (overnightindexedswap.cpp:780-908).
+     *
+     * <p>Exercises the four {@link OvernightIndexedSwap} constructor
+     * overloads and their {@code nominal()} / {@code nominals()} /
+     * {@code fixedNominals()} / {@code overnightNominals()} /
+     * {@code paymentFrequency()} accessors:
+     * <ol>
+     *   <li>constant notional, same schedule;</li>
+     *   <li>amortizing notionals, same schedule;</li>
+     *   <li>constant notional, different schedules;</li>
+     *   <li>amortizing notionals, different schedules.</li>
+     * </ol>
+     */
+    @Test
+    public void testConstructorsAndNominals() {
+        final CommonVars vars = new CommonVars();
+        final Date spot = vars.calendar.advance(vars.today,
+                new Period(2, TimeUnit.Days), BusinessDayConvention.Following);
+        final double nominal = 100000.0;
+
+        // ----- (1) constant notional, same schedule -----
+        final Schedule schedule = new MakeSchedule()
+                .from(spot)
+                .to(vars.calendar.advance(spot,
+                        new Period(2, TimeUnit.Years),
+                        BusinessDayConvention.Following))
+                .withCalendar(vars.calendar)
+                .withFrequency(Frequency.Annual)
+                .schedule();
+
+        final OvernightIndexedSwap ois1 = new OvernightIndexedSwap(
+                VanillaSwap.Type.Payer, nominal, schedule, 0.03,
+                new Actual360(), vars.overnightIndex);
+
+        assertEquals("ois1 fixed-schedule tenor",
+                new Period(1, TimeUnit.Years), ois1.fixedSchedule().tenor());
+        assertEquals("ois1 overnight-schedule tenor",
+                new Period(1, TimeUnit.Years), ois1.overnightSchedule().tenor());
+        assertEquals("ois1 payment frequency",
+                Frequency.Annual, ois1.paymentFrequency());
+        assertEquals("ois1 nominal", nominal, ois1.nominal(), 0.0);
+        assertEquals("ois1 nominals size", 1, ois1.nominals().length);
+        assertEquals("ois1 nominals[0]", nominal, ois1.nominals()[0], 0.0);
+        assertEquals("ois1 fixedNominals size", 1, ois1.fixedNominals().length);
+        assertEquals("ois1 fixedNominals[0]", nominal, ois1.fixedNominals()[0], 0.0);
+        assertEquals("ois1 overnightNominals size", 1, ois1.overnightNominals().length);
+        assertEquals("ois1 overnightNominals[0]", nominal, ois1.overnightNominals()[0], 0.0);
+
+        // ----- (2) amortizing notionals, same schedule -----
+        final double[] nominals2 = { nominal, nominal / 2.0 };
+        final OvernightIndexedSwap ois2 = new OvernightIndexedSwap(
+                VanillaSwap.Type.Payer, nominals2, schedule, 0.03,
+                new Actual360(), vars.overnightIndex);
+
+        assertEquals("ois2 fixed-schedule tenor",
+                new Period(1, TimeUnit.Years), ois2.fixedSchedule().tenor());
+        assertEquals("ois2 overnight-schedule tenor",
+                new Period(1, TimeUnit.Years), ois2.overnightSchedule().tenor());
+        assertEquals("ois2 payment frequency",
+                Frequency.Annual, ois2.paymentFrequency());
+
+        try {
+            ois2.nominal();
+            fail("expected 'nominal is not constant' exception");
+        } catch (final RuntimeException e) {
+            // ok
+        }
+        assertArrayEquals("ois2 nominals", nominals2, ois2.nominals(), 0.0);
+        assertArrayEquals("ois2 fixedNominals", nominals2, ois2.fixedNominals(), 0.0);
+        assertArrayEquals("ois2 overnightNominals", nominals2, ois2.overnightNominals(), 0.0);
+
+        // ----- (3) constant notional, different schedules -----
+        final Schedule fixedSchedule = schedule;
+        final Schedule overnightSchedule = new MakeSchedule()
+                .from(spot)
+                .to(vars.calendar.advance(spot,
+                        new Period(2, TimeUnit.Years),
+                        BusinessDayConvention.Following))
+                .withCalendar(vars.calendar)
+                .withFrequency(Frequency.Semiannual)
+                .schedule();
+
+        final OvernightIndexedSwap ois3 = new OvernightIndexedSwap(
+                VanillaSwap.Type.Payer, nominal, fixedSchedule, 0.03,
+                new Actual360(), overnightSchedule, vars.overnightIndex,
+                0.0, 0, BusinessDayConvention.Following, null,
+                false, RateAveraging.Type.Compound);
+
+        assertEquals("ois3 fixed-schedule tenor",
+                new Period(1, TimeUnit.Years), ois3.fixedSchedule().tenor());
+        assertEquals("ois3 overnight-schedule tenor",
+                new Period(6, TimeUnit.Months), ois3.overnightSchedule().tenor());
+        assertEquals("ois3 payment frequency",
+                Frequency.Semiannual, ois3.paymentFrequency());
+        assertEquals("ois3 nominal", nominal, ois3.nominal(), 0.0);
+        assertEquals("ois3 nominals size", 1, ois3.nominals().length);
+        assertEquals("ois3 nominals[0]", nominal, ois3.nominals()[0], 0.0);
+        assertEquals("ois3 fixedNominals size", 1, ois3.fixedNominals().length);
+        assertEquals("ois3 fixedNominals[0]", nominal, ois3.fixedNominals()[0], 0.0);
+        assertEquals("ois3 overnightNominals size", 1, ois3.overnightNominals().length);
+        assertEquals("ois3 overnightNominals[0]", nominal, ois3.overnightNominals()[0], 0.0);
+
+        // ----- (4) amortizing notionals, different schedules -----
+        final double[] fixedN4 = { nominal, nominal / 2.0 };
+        final double[] floatN4 = { nominal, nominal, nominal / 2.0, nominal / 2.0 };
+        final OvernightIndexedSwap ois4 = new OvernightIndexedSwap(
+                VanillaSwap.Type.Payer, fixedN4, fixedSchedule, 0.03,
+                new Actual360(), floatN4, overnightSchedule, vars.overnightIndex);
+
+        assertEquals("ois4 fixed-schedule tenor",
+                new Period(1, TimeUnit.Years), ois4.fixedSchedule().tenor());
+        assertEquals("ois4 overnight-schedule tenor",
+                new Period(6, TimeUnit.Months), ois4.overnightSchedule().tenor());
+        assertEquals("ois4 payment frequency",
+                Frequency.Semiannual, ois4.paymentFrequency());
+
+        try {
+            ois4.nominal();
+            fail("expected 'nominal is not constant' exception");
+        } catch (final RuntimeException e) {
+            // ok
+        }
+        try {
+            ois4.nominals();
+            fail("expected 'different nominals' exception");
+        } catch (final RuntimeException e) {
+            // ok
+        }
+        assertArrayEquals("ois4 fixedNominals", fixedN4, ois4.fixedNominals(), 0.0);
+        assertArrayEquals("ois4 overnightNominals", floatN4, ois4.overnightNominals(), 0.0);
+    }
+
     @Ignore(REASON_NOTIFY) @Test public void testNotifications() { fail("not implemented"); }
     @Ignore(REASON_MAKE_OIS) @Test public void testMakeOISDefaultSettlementDays() { fail("not implemented"); }
     @Ignore(REASON_MAKE_OIS) @Test public void testMakeOisEndOfMonthRegression2453() { fail("not implemented"); }
-    @Ignore(REASON_MAKE_OIS) @Test public void testSettlementDaysEffectiveDateConflict() { fail("not implemented"); }
+
+    /**
+     * Port of C++ {@code testSettlementDaysEffectiveDateConflict}
+     * (overnightindexedswap.cpp:1046-1094).
+     *
+     * <p>{@link MakeOIS} must reject the simultaneous setting of
+     * {@code withSettlementDays(...)} and {@code withEffectiveDate(...)}
+     * (in either order); each setter alone must work; the default
+     * (neither set) must work.
+     */
+    @Test
+    public void testSettlementDaysEffectiveDateConflict() {
+        final Date today = new Date(5, Month.February, 2009);
+        new Settings().setEvaluationDate(today);
+        final RelinkableHandle<YieldTermStructure> yts =
+                new RelinkableHandle<YieldTermStructure>();
+        yts.linkTo(new FlatForward(today, 0.05, new Actual365Fixed()));
+        final Eonia index = new Eonia(yts);
+        final Date effectiveDate = new Date(9, Month.February, 2009);
+
+        // settlementDays first, then effectiveDate -> error.
+        try {
+            new MakeOIS(new Period(5, TimeUnit.Years), index, 0.03)
+                    .withSettlementDays(2)
+                    .withEffectiveDate(effectiveDate)
+                    .value();
+            fail("expected 'cannot set both' exception (settlementDays then effectiveDate)");
+        } catch (final RuntimeException e) {
+            // ok
+        }
+
+        // effectiveDate first, then settlementDays -> error.
+        try {
+            new MakeOIS(new Period(5, TimeUnit.Years), index, 0.03)
+                    .withEffectiveDate(effectiveDate)
+                    .withSettlementDays(2)
+                    .value();
+            fail("expected 'cannot set both' exception (effectiveDate then settlementDays)");
+        } catch (final RuntimeException e) {
+            // ok
+        }
+
+        // settlementDays alone works.
+        final OvernightIndexedSwap swap1 = new MakeOIS(
+                new Period(5, TimeUnit.Years), index, 0.03)
+                .withSettlementDays(2)
+                .value();
+        assertTrue("swap1 startDate non-null", !swap1.startDate().isNull());
+
+        // effectiveDate alone works.
+        final OvernightIndexedSwap swap2 = new MakeOIS(
+                new Period(5, TimeUnit.Years), index, 0.03)
+                .withEffectiveDate(effectiveDate)
+                .value();
+        assertEquals("swap2 startDate equals effectiveDate",
+                effectiveDate, swap2.startDate());
+
+        // neither set (constructor defaults) works.
+        final OvernightIndexedSwap swap3 = new MakeOIS(
+                new Period(5, TimeUnit.Years), index, 0.03)
+                .value();
+        assertTrue("swap3 startDate non-null", !swap3.startDate().isNull());
+    }
 
     // unused-suppress to keep references to constants (used as labels)
     private static final String UNUSED1 = REASON_BOOTSTRAP + REASON_MAKE_OIS;

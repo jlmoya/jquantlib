@@ -27,6 +27,10 @@
 
 package org.jquantlib.instruments;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.jquantlib.QL;
 import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.FixedRateLeg;
@@ -38,6 +42,7 @@ import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.math.Constants;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Schedule;
 
 /**
@@ -57,7 +62,8 @@ public class OvernightIndexedSwap extends Swap {
     static final /*@Spread*/ double basisPoint = 1.0e-4;
 
     private final VanillaSwap.Type type_;
-    private final double nominal_;
+    private final double[] fixedNominals_;
+    private final double[] overnightNominals_;
     private final Schedule fixedSchedule_;
     private final double fixedRate_;
     private final DayCounter fixedDC_;
@@ -69,6 +75,9 @@ public class OvernightIndexedSwap extends Swap {
     private final Calendar paymentCalendar_;
     private final boolean telescopicValueDates_;
     private final RateAveraging.Type averagingMethod_;
+    private final int lookbackDays_;
+    private final int lockoutDays_;
+    private final boolean applyObservationShift_;
 
     private double fairRate_ = Double.NaN;
     private double fairSpread_ = Double.NaN;
@@ -100,7 +109,25 @@ public class OvernightIndexedSwap extends Swap {
              false, RateAveraging.Type.Compound);
     }
 
-    /** Full constructor (separate fixed and overnight schedules). */
+    /**
+     * Single-schedule, multi-nominal (amortizing) constructor.
+     * <p>Mirror of C++ overload taking {@code std::vector<Real> nominals}
+     * (overnightindexedswap.hpp:60-74).
+     */
+    public OvernightIndexedSwap(
+            final VanillaSwap.Type type,
+            final double[] nominals,
+            final Schedule schedule,
+            final double fixedRate,
+            final DayCounter fixedDC,
+            final OvernightIndex overnightIndex) {
+        this(type, nominals, schedule, fixedRate, fixedDC, nominals, schedule,
+             overnightIndex, 0.0, 0, BusinessDayConvention.Following, null,
+             false, RateAveraging.Type.Compound,
+             Constants.NULL_NATURAL, 0, false);
+    }
+
+    /** Full single-nominal constructor (separate fixed and overnight schedules). */
     public OvernightIndexedSwap(
             final VanillaSwap.Type type,
             final double nominal,
@@ -115,10 +142,94 @@ public class OvernightIndexedSwap extends Swap {
             final Calendar paymentCalendar,
             final boolean telescopicValueDates,
             final RateAveraging.Type averagingMethod) {
+        this(type, new double[]{nominal}, fixedSchedule, fixedRate, fixedDC,
+             new double[]{nominal}, overnightSchedule, overnightIndex,
+             spread, paymentLag, paymentAdjustment, paymentCalendar,
+             telescopicValueDates, averagingMethod,
+             Constants.NULL_NATURAL, 0, false);
+    }
+
+    /**
+     * Full single-nominal constructor with lookback / lockout / observation-shift.
+     * <p>Mirror of C++ overload taking {@code lookbackDays / lockoutDays /
+     * applyObservationShift} (overnightindexedswap.hpp:42-58 and 76-91).
+     */
+    public OvernightIndexedSwap(
+            final VanillaSwap.Type type,
+            final double nominal,
+            final Schedule fixedSchedule,
+            final double fixedRate,
+            final DayCounter fixedDC,
+            final Schedule overnightSchedule,
+            final OvernightIndex overnightIndex,
+            final double spread,
+            final int paymentLag,
+            final BusinessDayConvention paymentAdjustment,
+            final Calendar paymentCalendar,
+            final boolean telescopicValueDates,
+            final RateAveraging.Type averagingMethod,
+            final int lookbackDays,
+            final int lockoutDays,
+            final boolean applyObservationShift) {
+        this(type, new double[]{nominal}, fixedSchedule, fixedRate, fixedDC,
+             new double[]{nominal}, overnightSchedule, overnightIndex,
+             spread, paymentLag, paymentAdjustment, paymentCalendar,
+             telescopicValueDates, averagingMethod,
+             lookbackDays, lockoutDays, applyObservationShift);
+    }
+
+    /**
+     * Multi-nominal, single-schedule constructor with separate fixed and overnight
+     * schedules. Mirrors C++ overload taking {@code std::vector<Real>
+     * fixedNominals + std::vector<Real> overnightNominals}
+     * (overnightindexedswap.hpp:93-109).
+     */
+    public OvernightIndexedSwap(
+            final VanillaSwap.Type type,
+            final double[] fixedNominals,
+            final Schedule fixedSchedule,
+            final double fixedRate,
+            final DayCounter fixedDC,
+            final double[] overnightNominals,
+            final Schedule overnightSchedule,
+            final OvernightIndex overnightIndex) {
+        this(type, fixedNominals, fixedSchedule, fixedRate, fixedDC,
+             overnightNominals, overnightSchedule, overnightIndex,
+             0.0, 0, BusinessDayConvention.Following, null,
+             false, RateAveraging.Type.Compound,
+             Constants.NULL_NATURAL, 0, false);
+    }
+
+    /**
+     * Full constructor (separate fixed and overnight schedules + multi-nominal).
+     * Mirror of C++ private-delegated ctor (overnightindexedswap.cpp:128-170).
+     */
+    public OvernightIndexedSwap(
+            final VanillaSwap.Type type,
+            final double[] fixedNominals,
+            final Schedule fixedSchedule,
+            final double fixedRate,
+            final DayCounter fixedDC,
+            final double[] overnightNominals,
+            final Schedule overnightSchedule,
+            final OvernightIndex overnightIndex,
+            final double spread,
+            final int paymentLag,
+            final BusinessDayConvention paymentAdjustment,
+            final Calendar paymentCalendar,
+            final boolean telescopicValueDates,
+            final RateAveraging.Type averagingMethod,
+            final int lookbackDays,
+            final int lockoutDays,
+            final boolean applyObservationShift) {
         super(2);
-        QL.require(nominal > 0.0, "nominal must be > 0");
+        QL.require(fixedNominals != null && fixedNominals.length > 0,
+                "no fixed nominal given");
+        QL.require(overnightNominals != null && overnightNominals.length > 0,
+                "no overnight nominal given");
         this.type_ = type;
-        this.nominal_ = nominal;
+        this.fixedNominals_ = fixedNominals.clone();
+        this.overnightNominals_ = overnightNominals.clone();
         this.fixedSchedule_ = fixedSchedule;
         this.fixedRate_ = fixedRate;
         this.fixedDC_ = fixedDC;
@@ -131,17 +242,24 @@ public class OvernightIndexedSwap extends Swap {
                 ? overnightSchedule.calendar() : paymentCalendar;
         this.telescopicValueDates_ = telescopicValueDates;
         this.averagingMethod_ = averagingMethod;
+        this.lookbackDays_ = lookbackDays;
+        this.lockoutDays_ = lockoutDays;
+        this.applyObservationShift_ = applyObservationShift;
 
         // Fixed leg
         final Leg fixedLeg = new FixedRateLeg(fixedSchedule_, fixedDC_)
-                .withNotionals(nominal)
+                .withNotionals(fixedNominals_)
                 .withCouponRates(fixedRate)
                 .withPaymentAdjustment(paymentAdjustment_)
                 .Leg();
 
         // Overnight leg
+        final List<Double> overnightNominalList = new ArrayList<Double>(overnightNominals_.length);
+        for (final double n : overnightNominals_) {
+            overnightNominalList.add(n);
+        }
         final Leg floatingLeg = new OvernightLeg(overnightSchedule_, overnightIndex_)
-                .withNotionals(nominal)
+                .withNotionals(overnightNominalList)
                 .withPaymentDayCounter(overnightIndex_.dayCounter())
                 .withPaymentAdjustment(paymentAdjustment_)
                 .withPaymentCalendar(paymentCalendar_)
@@ -149,6 +267,9 @@ public class OvernightIndexedSwap extends Swap {
                 .withSpreads(spread)
                 .withTelescopicValueDates(telescopicValueDates_)
                 .withAveragingMethod(averagingMethod_)
+                .withLookbackDays(lookbackDays_)
+                .withLockoutDays(lockoutDays_)
+                .withObservationShift(applyObservationShift_)
                 .leg();
 
         for (final CashFlow cf : floatingLeg) {
@@ -171,7 +292,47 @@ public class OvernightIndexedSwap extends Swap {
     //
 
     public VanillaSwap.Type type() { return type_; }
-    public double nominal() { return nominal_; }
+
+    /**
+     * Returns the (single) nominal, throwing if the swap is amortizing.
+     * Mirror of C++ {@code FixedVsFloatingSwap::nominal()} guard
+     * (fixedvsfloatingswap.cpp).
+     */
+    public double nominal() {
+        QL.require(fixedNominals_.length == 1
+                && (overnightNominals_.length == 1)
+                && fixedNominals_[0] == overnightNominals_[0],
+                "nominal is not constant");
+        return fixedNominals_[0];
+    }
+
+    /**
+     * Returns the unified nominals vector (requires fixedNominals
+     * == overnightNominals exactly).
+     * Mirror of C++ {@code FixedVsFloatingSwap::nominals()} guard.
+     */
+    public double[] nominals() {
+        QL.require(Arrays.equals(fixedNominals_, overnightNominals_),
+                "different nominals on fixed and floating leg");
+        return fixedNominals_.clone();
+    }
+
+    public double[] fixedNominals() { return fixedNominals_.clone(); }
+    public double[] overnightNominals() { return overnightNominals_.clone(); }
+
+    /**
+     * Joint payment frequency: max of the fixed-schedule frequency and
+     * the overnight-schedule frequency. Mirror of C++
+     * {@code OvernightIndexedSwap::paymentFrequency()}
+     * (overnightindexedswap.hpp:113-116).
+     */
+    public Frequency paymentFrequency() {
+        final Frequency f1 = fixedSchedule_.tenor().frequency();
+        final Frequency f2 = overnightSchedule_.tenor().frequency();
+        // C++ std::max compares the underlying int values.
+        return f1.toInteger() >= f2.toInteger() ? f1 : f2;
+    }
+
     public Schedule fixedSchedule() { return fixedSchedule_; }
     public double fixedRate() { return fixedRate_; }
     public DayCounter fixedDayCount() { return fixedDC_; }
@@ -183,6 +344,9 @@ public class OvernightIndexedSwap extends Swap {
     public Calendar paymentCalendar() { return paymentCalendar_; }
     public boolean telescopicValueDates() { return telescopicValueDates_; }
     public RateAveraging.Type averagingMethod() { return averagingMethod_; }
+    public int lookbackDays() { return lookbackDays_; }
+    public int lockoutDays() { return lockoutDays_; }
+    public boolean applyObservationShift() { return applyObservationShift_; }
 
     public Leg fixedLeg() { return legs.get(0); }
     public Leg overnightLeg() { return legs.get(1); }

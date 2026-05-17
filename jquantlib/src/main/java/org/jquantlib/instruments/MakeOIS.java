@@ -45,6 +45,12 @@ import org.jquantlib.time.TimeUnit;
  * <b>Phase 5e.5b-CFC-d-107:</b> lookback / lockout / observation-shift
  * builder knobs added (matched to C++ MakeOIS). Separate fixed/overnight
  * schedule rules deferred.
+ * <p>
+ * <b>Phase 5e.5b-CFC-d-116:</b> lookback / lockout / observation-shift
+ * now flowed through to the {@link OvernightIndexedSwap} ctor; the
+ * {@code withSettlementDays} / {@code withEffectiveDate} mutual-exclusion
+ * guard is enforced (mirror of C++
+ * {@code testSettlementDaysEffectiveDateConflict}).
  *
  * @category instruments
  *
@@ -74,16 +80,14 @@ public class MakeOIS {
     private double overnightSpread_ = 0.0;
     private RateAveraging.Type averagingMethod_ = RateAveraging.Type.Compound;
     private boolean telescopicValueDates_ = false;
-    @SuppressWarnings("unused")
     private int lookbackDays_ = Constants.NULL_NATURAL;
-    @SuppressWarnings("unused")
     private int lockoutDays_ = 0;
-    @SuppressWarnings("unused")
     private boolean applyObservationShift_ = false;
 
     private DateGeneration.Rule rule_ = DateGeneration.Rule.Backward;
     private boolean endOfMonth_;
     private boolean isDefaultEOM_ = true;
+    private boolean conflictRequested_ = false;
 
     private Handle<YieldTermStructure> discountingTermStructure_ = new Handle<YieldTermStructure>();
     private PricingEngine engine_ = null;
@@ -126,13 +130,25 @@ public class MakeOIS {
         return this;
     }
 
+    /**
+     * Setter pair {@code withSettlementDays}/{@code withEffectiveDate}: only
+     * one can be active at build time; calling both (in either order) flips
+     * an immutable conflict flag that {@link #value()} rejects, mirroring
+     * C++ {@code MakeOIS::withSettlementDays} / {@code withEffectiveDate}
+     * guard (overnightindexedswap.cpp testSettlementDaysEffectiveDateConflict).
+     */
     public MakeOIS withSettlementDays(final int settlementDays) {
+        if (!effectiveDate_.isNull()) {
+            this.conflictRequested_ = true;
+        }
         this.settlementDays_ = settlementDays;
-        this.effectiveDate_ = new Date();
         return this;
     }
 
     public MakeOIS withEffectiveDate(final Date d) {
+        if (settlementDays_ != Constants.NULL_NATURAL) {
+            this.conflictRequested_ = true;
+        }
         this.effectiveDate_ = d;
         return this;
     }
@@ -199,10 +215,9 @@ public class MakeOIS {
     }
 
     /**
-     * Mirror of C++ {@code MakeOIS::withLookbackDays}.
-     * <p>Stored on the builder; the {@code OvernightIndexedSwap} ctor
-     * pass-through awaits a follow-up extension (OIS itself owns the
-     * leg-building; un-touched in Phase 5e.5b-CFC-d-107).
+     * Mirror of C++ {@code MakeOIS::withLookbackDays} — value is propagated
+     * to the {@link OvernightIndexedSwap} ctor (and thence the underlying
+     * {@link org.jquantlib.cashflow.OvernightLeg}).
      */
     public MakeOIS withLookbackDays(final int lookbackDays) {
         this.lookbackDays_ = lookbackDays;
@@ -235,7 +250,7 @@ public class MakeOIS {
      * Build the {@link OvernightIndexedSwap}.
      */
     public OvernightIndexedSwap value() {
-        QL.require(effectiveDate_.isNull() || settlementDays_ == Constants.NULL_NATURAL,
+        QL.require(!conflictRequested_,
             "cannot set both an explicit effective date and settlement days; "
             + "use one or the other");
 
@@ -285,7 +300,8 @@ public class MakeOIS {
                     schedule, overnightIndex_, overnightSpread_,
                     paymentLag_, paymentAdjustment_,
                     paymentCalendar_ != null ? paymentCalendar_ : calendar_,
-                    telescopicValueDates_, averagingMethod_);
+                    telescopicValueDates_, averagingMethod_,
+                    lookbackDays_, lockoutDays_, applyObservationShift_);
             if (engine_ == null) {
                 final Handle<YieldTermStructure> disc =
                     discountingTermStructure_.empty()
@@ -305,7 +321,8 @@ public class MakeOIS {
                 schedule, overnightIndex_, overnightSpread_,
                 paymentLag_, paymentAdjustment_,
                 paymentCalendar_ != null ? paymentCalendar_ : calendar_,
-                telescopicValueDates_, averagingMethod_);
+                telescopicValueDates_, averagingMethod_,
+                lookbackDays_, lockoutDays_, applyObservationShift_);
 
         if (engine_ == null && !discountingTermStructure_.empty()) {
             ois.setPricingEngine(new DiscountingSwapEngine(discountingTermStructure_));
