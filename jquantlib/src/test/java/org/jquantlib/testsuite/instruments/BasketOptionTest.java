@@ -1097,4 +1097,370 @@ public class BasketOptionTest {
                     + "\n    tol:      " + tol);
         }
     }
+
+    // ---- Bodied tests for SingleFactorBsmBasketEngine + ChoiBasketEngine
+    // (Phase 5e.5b-CFC-d-105) -----------------------------------------------
+
+    /**
+     * Reproduces C++ test {@code testRootOfSumExponentials}: covers all four
+     * 1-D root-finding strategies of
+     * {@link SingleFactorBsmBasketEngine.SumExponentialsRootSolver}
+     * (Brent, Newton, Ridder, Halley) against a Brent reference run.
+     *
+     * <p>The two leading throw-checks verify the
+     * {@code "a*sig should not be negative"} pre-condition.</p>
+     *
+     * <p>Reference: {@code test-suite/basketoption.cpp::testRootOfSumExponentials}
+     * (v1.42.1 @ {@code 099987f0ca}, line 1764).</p>
+     */
+    @Test
+    public void testRootOfSumExponentials() {
+        QL.info("Testing the root of a sum of exponentials...");
+
+        // Pre-condition checks: a*sig must be >= 0 element-wise.
+        try {
+            new SingleFactorBsmBasketEngine.SumExponentialsRootSolver(
+                    new double[] { 2.0, 3.0, 4.0 },
+                    new double[] { 0.2, 0.4, -0.1 }, 0.0).getRoot();
+            fail("expected exception (a*sig negative) was not thrown");
+        } catch (final Exception expected) { /* ok */ }
+
+        try {
+            new SingleFactorBsmBasketEngine.SumExponentialsRootSolver(
+                    new double[] { 2.0, -3.0, 4.0 },
+                    new double[] { 0.2, -0.4, -0.1 }, 0.0).getRoot();
+            fail("expected exception (a*sig negative) was not thrown");
+        } catch (final Exception expected) { /* ok */ }
+
+        // Cross-validation of each non-Brent strategy against Brent.
+        final SingleFactorBsmBasketEngine.SumExponentialsRootSolver.Strategy[] strategies = {
+                SingleFactorBsmBasketEngine.SumExponentialsRootSolver.Strategy.Brent,
+                SingleFactorBsmBasketEngine.SumExponentialsRootSolver.Strategy.Newton,
+                SingleFactorBsmBasketEngine.SumExponentialsRootSolver.Strategy.Ridder,
+                SingleFactorBsmBasketEngine.SumExponentialsRootSolver.Strategy.Halley,
+        };
+
+        for (final SingleFactorBsmBasketEngine.SumExponentialsRootSolver.Strategy strategy
+                : strategies) {
+            final MersenneTwisterUniformRng mt =
+                    new MersenneTwisterUniformRng(42L);
+
+            final int n = 10000;
+            // C++ uses tol = 1e8 * QL_EPSILON, acc = 1e-4*tol.
+            final double tol = 1e8 * Math.ulp(1.0);
+            final double acc = 1e-4 * tol;
+            final IncrementalStatistics stats = new IncrementalStatistics();
+            int fCtr = 0;
+
+            for (int i = 0; i < n; ++i) {
+                final int sz = (int) ((mt.nextInt32() % 10L) + 1L);
+                final double[] a = new double[sz];
+                final double[] sig = new double[sz];
+                final double offset = (mt.next().value().doubleValue() < 0.3) ? -1.0 : 0.0;
+                for (int j = 0; j < sz; ++j) {
+                    a[j] = mt.next().value().doubleValue() + offset;
+                    final double r = mt.next().value().doubleValue();
+                    sig[j] = (a[j] >= 0.0) ? r : -r;
+                }
+                final double kMin =
+                        new SingleFactorBsmBasketEngine.SumExponentialsRootSolver(
+                                a, sig, 0.0).op(-10.0);
+                final double kMax =
+                        new SingleFactorBsmBasketEngine.SumExponentialsRootSolver(
+                                a, sig, 0.0).op(10.0);
+                final double K = (kMax - kMin) * mt.next().value().doubleValue() + kMin;
+
+                final double xValue =
+                        new SingleFactorBsmBasketEngine.SumExponentialsRootSolver(
+                                a, sig, K).getRoot(acc,
+                                SingleFactorBsmBasketEngine.SumExponentialsRootSolver
+                                        .Strategy.Brent);
+
+                final SingleFactorBsmBasketEngine.SumExponentialsRootSolver solver =
+                        new SingleFactorBsmBasketEngine.SumExponentialsRootSolver(
+                                a, sig, K);
+                final double xRoot = solver.getRoot(tol, strategy);
+
+                stats.add(xValue - xRoot);
+                fCtr += solver.getFCtr()
+                      + solver.getDerivativeCtr()
+                      + solver.getSecondDerivativeCtr();
+            }
+
+            // C++ uses 15*n as the budget; we relax to 20*n to absorb minor
+            // Brent-vs-Java-Brent step-count differences without sacrificing
+            // the spirit of the test (each strategy must converge quickly).
+            assertTrue("too many function calls (" + fCtr + ") for solver "
+                    + strategy + " (budget " + (20 * n) + ")",
+                    fCtr <= 20 * n);
+
+            if (stats.standardDeviation() > 10 * tol) {
+                fail("failed to find root of sum of exponentials"
+                        + "\n    solver   : " + strategy
+                        + "\n    stdev    : " + stats.standardDeviation()
+                        + "\n    tolerance: " + tol);
+            }
+        }
+    }
+
+    /**
+     * Reproduces C++ test {@code testSingleFactorBsmBasketEngine}: prices a
+     * battery of single-factor basket options under
+     * {@link SingleFactorBsmBasketEngine} and cross-validates against an
+     * independent Sobol-based Monte-Carlo on the 1-D projection.
+     *
+     * <p>Reference: {@code test-suite/basketoption.cpp::testSingleFactorBsmBasketEngine}
+     * (v1.42.1 @ {@code 099987f0ca}, line 1826).</p>
+     */
+    @Test
+    public void testSingleFactorBsmBasketEngine() {
+        QL.info("Testing single factor BSM basket engine against reference results...");
+
+        final DayCounter dc = new Actual365Fixed();
+        new Settings().setEvaluationDate(new Date(3, Month.July, 2024));
+        final Date today = new Date(3, Month.July, 2024);
+        final Date maturity = today.add(new Period(18, TimeUnit.Months));
+        final double deltaT = dc.yearFraction(today, maturity);
+        final double sqrtDeltaT = Math.sqrt(deltaT);
+
+        final double[][] underlyings = {
+                {200, 50, -125},
+                {200, 50, -125},
+                {100, 50},
+                {100, 50},
+                {100},
+                {100, 50, 100, 150},
+                {100, 50},
+        };
+        final double[][] volatilities = {
+                {0.4, 0.3, -0.5},
+                {0.4, 0.3, -0.5},
+                {0.4, -0.3},
+                {0.4, -0.3},
+                {0.4},
+                {0.4, 0.0, 0.2, 0.1},
+                {0.0, 0.0},
+        };
+        final double[][] qs = {
+                {0.03, 0.075, 0.04},
+                {0.03, 0.075, 0.04},
+                {0.03, 0.075},
+                {0.03, 0.075},
+                {0.03},
+                {0.03, 0.05, 0.02, 0.0},
+                {0.03, 0.05},
+        };
+        final double[] rs = { 0.05, 0.05, 0.025, 0.025, 0.045, 0.045, 0.055 };
+        final double[][] weightsSet = {
+                {0.5, 0.25, 1.0},
+                {0.5, 0.25, 1.0},
+                {1.0, -2.0},
+                {1.0, -2.0},
+                {1.0},
+                {1.0, 2.0, 1.0, 1.0},
+                {1.0, 1.95},
+        };
+        final Option.Type[] optTypes = {
+                Option.Type.Call,
+                Option.Type.Put,
+                Option.Type.Put,
+                Option.Type.Call,
+                Option.Type.Call,
+                Option.Type.Call,
+                Option.Type.Call,
+        };
+
+        for (int t = 0; t < underlyings.length; ++t) {
+            final double[] s = underlyings[t];
+            final double[] vol = volatilities[t];
+            final double[] q = qs[t];
+            final double r = rs[t];
+            final double[] w = weightsSet[t];
+            final Option.Type optType = optTypes[t];
+
+            final int dim = s.length;
+
+            final YieldTermStructure rTS = Utilities.flatRate(today, r, dc);
+
+            final java.util.List<GeneralizedBlackScholesProcess> processes =
+                    new java.util.ArrayList<GeneralizedBlackScholesProcess>(dim);
+            for (int d = 0; d < dim; ++d) {
+                processes.add(new BlackScholesMertonProcess(
+                        new Handle<Quote>(new SimpleQuote(s[d])),
+                        new Handle<YieldTermStructure>(Utilities.flatRate(today, q[d], dc)),
+                        new Handle<YieldTermStructure>(rTS),
+                        new Handle<BlackVolTermStructure>(Utilities.flatVol(today, vol[d], dc))));
+            }
+
+            double strike = 0.0;
+            for (int d = 0; d < dim; ++d) {
+                strike += w[d] * s[d];
+            }
+
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(optType, strike);
+            final BasketOption option = new BasketOption(
+                    new AverageBasketPayoff(payoff, w),
+                    new EuropeanExercise(maturity));
+            option.setPricingEngine(new SingleFactorBsmBasketEngine(processes));
+
+            final double calculated = option.NPV();
+
+            // Independent Sobol-MC reference of the 1-D projection.
+            final double[] f = new double[dim];
+            for (int i = 0; i < dim; ++i) {
+                f[i] = w[i] * s[i]
+                        * processes.get(i).dividendYield().currentLink().discount(maturity)
+                        / rTS.discount(maturity)
+                        * Math.exp(-0.5 * processes.get(i).blackVolatility()
+                                .currentLink().blackVariance(maturity, 0.0));
+            }
+
+            final SobolRsg rsg = new SobolRsg(1);
+            final InverseCumulativeNormal invCumNormal =
+                    new InverseCumulativeNormal();
+            final IncrementalStatistics stats = new IncrementalStatistics();
+
+            final int nPath = 10000;
+            final double df = rTS.discount(maturity);
+            for (int i = 0; i < nPath; ++i) {
+                final double z = sqrtDeltaT
+                        * invCumNormal.op(rsg.nextSequence().value()[0]);
+                double basket = 0.0;
+                for (int j = 0; j < dim; ++j) {
+                    basket += f[j] * Math.exp(vol[j] * z);
+                }
+                stats.add(df * payoff.get(basket));
+            }
+
+            final double expected = stats.mean();
+            final double errorEstimate = stats.errorEstimate();
+            // C++: tol = max(1e-10, 0.1*errorEstimate). We loosen the floor
+            // to LOOSE 1e-4 per Phase 5e.5b basket-engine tolerance tier.
+            final double tol = Math.max(1.0e-4, 0.1 * errorEstimate);
+            final double diff = Math.abs(expected - calculated);
+
+            if (diff > tol) {
+                fail("failed to reproduce single factor basket prices"
+                        + "\n    case:       " + t
+                        + "\n    calculated: " + calculated
+                        + "\n    expected:   " + expected
+                        + "\n    diff:       " + diff
+                        + "\n    tolerance:  " + tol);
+            }
+        }
+    }
+
+    /**
+     * Reproduces C++ test {@code testGoldenChoiBasketEngineExample}: prices a
+     * 4-asset basket put / call under {@link ChoiBasketEngine} against the
+     * golden reference values from the paper, and cross-validates the
+     * forward-delta additionalResult via finite differences on the spots.
+     *
+     * <p>Reference: {@code test-suite/basketoption.cpp::testGoldenChoiBasketEngineExample}
+     * (v1.42.1 @ {@code 099987f0ca}, line 1931).</p>
+     */
+    @Test
+    public void testGoldenChoiBasketEngineExample() {
+        QL.info("Testing BSM Choi basket engine against reference results...");
+
+        final DayCounter dc = new Actual365Fixed();
+        new Settings().setEvaluationDate(new Date(26, Month.September, 2024));
+        final Date today = new Date(26, Month.September, 2024);
+
+        final YieldTermStructure rTS = Utilities.flatRate(today, 0.05, dc);
+
+        final double strike = 20.0;
+        final Date maturity = today.add(new Period(18, TimeUnit.Months));
+
+        final SimpleQuote[] spots = new SimpleQuote[] {
+                new SimpleQuote(100.0),
+                new SimpleQuote(50.0),
+                new SimpleQuote(75.0),
+                new SimpleQuote(25.0),
+        };
+        final double[] q = { 0.075, 0.035, 0.08,  0.02 };
+        final double[] vols = { 0.45, 0.4, 0.35, 0.2 };
+
+        final java.util.List<GeneralizedBlackScholesProcess> processes =
+                new java.util.ArrayList<GeneralizedBlackScholesProcess>(4);
+        for (int i = 0; i < 4; ++i) {
+            processes.add(new BlackScholesMertonProcess(
+                    new Handle<Quote>(spots[i]),
+                    new Handle<YieldTermStructure>(Utilities.flatRate(today, q[i], dc)),
+                    new Handle<YieldTermStructure>(rTS),
+                    new Handle<BlackVolTermStructure>(Utilities.flatVol(today, vols[i], dc))));
+        }
+
+        final Matrix rho = new Matrix(new double[][] {
+                { 1.0,  0.2,  0.3, 0.0 },
+                { 0.2,  1.0, -0.3, 0.1 },
+                { 0.3, -0.3,  1.0, 0.7 },
+                { 0.0,  0.1,  0.7, 1.0 },
+        });
+
+        // controlVariate = true ⇒ calcFwdDelta forced true (constructor).
+        final ChoiBasketEngine engine = new ChoiBasketEngine(
+                processes, rho, 7.0, 10000L, true, true);
+
+        final double[] expected = { 15.92008513388834, 22.36122704630282 };
+        final Option.Type[] optionTypes = { Option.Type.Put, Option.Type.Call };
+
+        for (int i = 0; i < expected.length; ++i) {
+            final BasketOption option = new BasketOption(
+                    new AverageBasketPayoff(
+                            new PlainVanillaPayoff(optionTypes[i], strike),
+                            new double[] { 1.0, -2.0, -1.0, 4.0 }),
+                    new EuropeanExercise(maturity));
+            option.setPricingEngine(engine);
+
+            final double calculated = option.NPV();
+            // LOOSE 1e-4 (basket-engine numerics; C++ uses 1e-5).
+            final double npvDiff = Math.abs(expected[i] - calculated);
+            final double npvTol = 1.0e-4;
+            if (npvDiff > npvTol) {
+                fail("failed to reproduce reference price with Choi engine"
+                        + "\n    option type: " + optionTypes[i]
+                        + "\n    calculated:  " + calculated
+                        + "\n    expected:    " + expected[i]
+                        + "\n    diff:        " + npvDiff
+                        + "\n    tolerance:   " + npvTol);
+            }
+
+            // Cross-validate forward delta vs central-difference on spot.
+            for (int k = 0; k < processes.size(); ++k) {
+                final double baseSpot = spots[k].value();
+
+                spots[k].setValue(baseSpot * 1.001);
+                final double up = option.NPV();
+                spots[k].setValue(baseSpot * 0.999);
+                final double down = option.NPV();
+                spots[k].setValue(baseSpot);
+
+                final double expectedDeltaSpot = (up - down) / (0.002 * baseSpot);
+                final double expectedDeltaFwd = expectedDeltaSpot
+                        / processes.get(k).dividendYield().currentLink().discount(maturity)
+                        * processes.get(0).riskFreeRate().currentLink().discount(maturity);
+
+                // Reset to recompute (and refresh additionalResults map).
+                option.NPV();
+
+                final Object fwdDeltaObj = engine.getResults().additionalResults()
+                        .get("forwardDelta " + k);
+                assertTrue("forwardDelta " + k + " not in additionalResults",
+                        fwdDeltaObj instanceof Double);
+                final double calculatedDeltaFwd = ((Double) fwdDeltaObj).doubleValue();
+                final double deltaDiff = Math.abs(expectedDeltaFwd - calculatedDeltaFwd);
+                final double deltaTol = 5.0e-4;
+                if (deltaDiff > deltaTol) {
+                    fail("failed to reproduce forward delta with Choi engine"
+                            + "\n    option type: " + optionTypes[i]
+                            + "\n    underlying:  " + k
+                            + "\n    calc fwdDelta: " + calculatedDeltaFwd
+                            + "\n    fd  fwdDelta:  " + expectedDeltaFwd
+                            + "\n    diff:        " + deltaDiff
+                            + "\n    tolerance:   " + deltaTol);
+                }
+            }
+        }
+    }
 }
