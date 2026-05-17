@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
@@ -26,7 +27,9 @@ import org.jquantlib.math.distributions.GammaFunction;
 import org.jquantlib.math.integrals.DiscreteSimpsonIntegral;
 import org.jquantlib.math.integrals.GaussLobattoIntegral;
 import org.jquantlib.math.interpolations.NaturalCubicInterpolation;
+import org.jquantlib.math.interpolations.factories.BicubicSpline;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
@@ -35,6 +38,7 @@ import org.jquantlib.methods.finitedifferences.meshers.Predefined1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher;
 import org.jquantlib.methods.finitedifferences.operators.FdmBlackScholesFwdOp;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
+import org.jquantlib.methods.finitedifferences.operators.FdmLocalVolFwdOp;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp.TransformationType;
 import org.jquantlib.methods.finitedifferences.schemes.DouglasScheme;
@@ -42,12 +46,16 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmMesherIntegral;
 import org.jquantlib.methods.finitedifferences.utilities.SquareRootProcessRNDCalculator;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.BlackVolTermStructure;
+import org.jquantlib.termstructures.LocalVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.BlackVarianceSurface;
+import org.jquantlib.termstructures.volatilities.equityfx.NoExceptLocalVolSurface;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
@@ -188,6 +196,28 @@ public class HestonSLVModelTest {
                                               final double x0,
                                               final double maturity,
                                               final int tGrid) {
+        return fokkerPlanckPrice1D(mesher, op, payoff, x0, maturity, tGrid, 1000);
+    }
+
+    /**
+     * Variant of {@code fokkerPlanckPrice1D} that exposes the
+     * {@link GaussLobattoIntegral} max-iteration cap. Only used by the
+     * local-vol test ({@code testBlackScholesFokkerPlanckFwdEquationLocalVol})
+     * which needs a higher cap than C++'s default 1000: Java's
+     * {@code LocalVolSurface.localVolImpl} uses a denser strike-perturbation
+     * stencil (smaller {@code dy}, non-forward-aware) than C++'s
+     * forward-aware Dupire formula, so the Fokker-Planck-evolved density
+     * carries finer-scale wiggles that drive more Gauss-Lobatto subdivisions
+     * to hit 1e-6 abs accuracy. The integral converges to the same value
+     * either way; only the iteration count differs.
+     */
+    private static double fokkerPlanckPrice1D(final FdmMesher mesher,
+                                              final FdmLinearOpComposite op,
+                                              final StrikedTypePayoff payoff,
+                                              final double x0,
+                                              final double maturity,
+                                              final int tGrid,
+                                              final int maxIterations) {
         final Array x = mesher.locations(0);
         final int n = x.size();
         final Array p = new Array(n).fill(0.0);
@@ -243,7 +273,7 @@ public class HestonSLVModelTest {
             @Override
             public double op(final double v) { return spline.op(v, true); }
         };
-        return new GaussLobattoIntegral(1000, 1.0e-6).op(f, x.first(), x.last());
+        return new GaussLobattoIntegral(maxIterations, 1.0e-6).op(f, x.first(), x.last());
     }
 
     /* ---- 1. Fokker-Planck forward PDE -------------------------------- */
@@ -450,30 +480,252 @@ public class HestonSLVModelTest {
     @Test
     public void testHestonFokkerPlanckFwdEquationLogLVLeverage() { fail("not implemented"); }
 
-    // Phase 5e.5b-CFC-d-147 reassessment: NoExceptLocalVolSurface,
-    // FdmLocalVolFwdOp and BlackScholesMertonProcess are all ported; a
-    // body-fill of this test (using a test-local SmoothBlackVarianceSurface
-    // backed by BicubicSplineInterpolation to bypass the production
-    // BlackVarianceSurface's strike-axis off-by-one ctor bug and
-    // bilinear-only setInterpolation) reaches 27 / 28 (i, j) cases within
-    // the C++ 0.05 tolerance, but the (i=1, j=3) concentrated-mesher case
-    // (strike 75.555, maturity 41/365) misses by ~0.006
-    // (24.798 vs 24.854 expected). The residual comes from differences
-    // between Java BicubicSplineInterpolation and C++ Bicubic at the lower
-    // strike boundary — Java uses natural-spline (second-derivative=0)
-    // end conditions which under-curve the Dupire local-vol near the
-    // surface edge, producing a slight FDM under-pricing. Per CLAUDE.md
-    // "Never loosen tolerance to force green"; un-ignore once
-    // BicubicSplineInterpolation honors the C++ end-condition choice
-    // (or once a production BlackVarianceSurface rewrite with Bicubic
-    // matches the C++ surface bit-for-bit).
-    @Ignore("Phase 5h.5-SLV-c — body-fill 27/28 cases pass; concentrated-mesher "
-            + "(i=1,j=3) misses C++ tol=0.05 by ~0.006 due to Java "
-            + "BicubicSplineInterpolation end-condition differences at the "
-            + "strike-axis boundary. Un-ignore when Java Bicubic end "
-            + "conditions match C++.")
+    /**
+     * Java port of C++ helper {@code createSmoothImpliedVol}
+     * (test-suite/hestonslvmodel.cpp:489). Builds the smooth-implied-vol
+     * surface used by {@code testBlackScholesFokkerPlanckFwdEquationLocalVol}:
+     * 8 dates ({@code todaysDate + {13, 41, 75, 165, 256, 345, 524, 703}})
+     * x 20 strikes, with a fixed 8x20 volatility matrix, then a
+     * {@link BlackVarianceSurface} configured with
+     * {@link BlackVarianceSurface.Extrapolation#ConstantExtrapolation}
+     * on both sides and the {@link BicubicSpline} 2-D interpolator
+     * (the C++ {@code Bicubic} template specialisation).
+     */
+    private static final class SmoothImpliedVol {
+        final double[] strikes;
+        final Date[]   dates;
+        final BlackVarianceSurface surface;
+        SmoothImpliedVol(final double[] strikes, final Date[] dates,
+                         final BlackVarianceSurface surface) {
+            this.strikes = strikes; this.dates = dates; this.surface = surface;
+        }
+    }
+
+    private static SmoothImpliedVol createSmoothImpliedVol(final DayCounter dc) {
+        final Date todaysDate = new Settings().evaluationDate();
+        final int[] offsets = {13, 41, 75, 165, 256, 345, 524, 703};
+        final Date[] dates = new Date[offsets.length];
+        for (int k = 0; k < offsets.length; ++k) {
+            dates[k] = todaysDate.clone().addAssign(offsets[k]);
+        }
+        final double[] surfaceStrikes = {
+            2.222222222, 11.11111111, 44.44444444, 75.55555556, 80.0,
+            84.44444444, 88.88888889, 93.33333333, 97.77777778, 100.0,
+            102.2222222, 106.6666667, 111.1111111, 115.5555556, 120.0,
+            124.4444444, 166.6666667, 222.2222222, 444.4444444, 666.6666667
+        };
+        final double[] v = {
+            1.015873, 1.015873, 0.915873, 0.89729, 0.796493, 0.730914, 0.631335, 0.568895,
+            0.851309, 0.821309, 0.781309, 0.641309, 0.635593, 0.583653, 0.508045, 0.463182,
+            0.686034, 0.630534, 0.590534, 0.500534, 0.448706, 0.416661, 0.375470, 0.353442,
+            0.526034, 0.482263, 0.447713, 0.387703, 0.355064, 0.337438, 0.316966, 0.306859,
+            0.497587, 0.464373, 0.430764, 0.374052, 0.344336, 0.328607, 0.310619, 0.301865,
+            0.479511, 0.446815, 0.414194, 0.361010, 0.334204, 0.320301, 0.304664, 0.297180,
+            0.461866, 0.429645, 0.398092, 0.348638, 0.324680, 0.312512, 0.299082, 0.292785,
+            0.444801, 0.413014, 0.382634, 0.337026, 0.315788, 0.305239, 0.293855, 0.288660,
+            0.428604, 0.397219, 0.368109, 0.326282, 0.307555, 0.298483, 0.288972, 0.284791,
+            0.420971, 0.389782, 0.361317, 0.321274, 0.303697, 0.295302, 0.286655, 0.282948,
+            0.413749, 0.382754, 0.354917, 0.316532, 0.300016, 0.292251, 0.284420, 0.281164,
+            0.400889, 0.370272, 0.343525, 0.307904, 0.293204, 0.286549, 0.280189, 0.277767,
+            0.390685, 0.360399, 0.334344, 0.300507, 0.287149, 0.281380, 0.276271, 0.274588,
+            0.383477, 0.353434, 0.327580, 0.294408, 0.281867, 0.276746, 0.272655, 0.271617,
+            0.379106, 0.349214, 0.323160, 0.289618, 0.277362, 0.272641, 0.269332, 0.268846,
+            0.377073, 0.347258, 0.320776, 0.286077, 0.273617, 0.269057, 0.266293, 0.266265,
+            0.399925, 0.369232, 0.338895, 0.289042, 0.265509, 0.255589, 0.249308, 0.249665,
+            0.423432, 0.406891, 0.373720, 0.314667, 0.281009, 0.263281, 0.246451, 0.242166,
+            0.453704, 0.453704, 0.453704, 0.381255, 0.334578, 0.305527, 0.268909, 0.251367,
+            0.517748, 0.517748, 0.517748, 0.416577, 0.364770, 0.331595, 0.287423, 0.264285
+        };
+        final Matrix blackVolMatrix = new Matrix(surfaceStrikes.length, dates.length);
+        for (int i = 0; i < surfaceStrikes.length; ++i) {
+            for (int j = 0; j < dates.length; ++j) {
+                blackVolMatrix.set(i, j, v[i * dates.length + j]);
+            }
+        }
+        final BlackVarianceSurface surface = new BlackVarianceSurface(
+                todaysDate, dates, new Array(surfaceStrikes), blackVolMatrix, dc,
+                BlackVarianceSurface.Extrapolation.ConstantExtrapolation,
+                BlackVarianceSurface.Extrapolation.ConstantExtrapolation);
+        // C++: volTS->setInterpolation<Bicubic>();
+        surface.setInterpolation(new BicubicSpline());
+        return new SmoothImpliedVol(surfaceStrikes, dates, surface);
+    }
+
+    /**
+     * Tests the Fokker-Planck forward equation for a Black-Scholes process
+     * with a Dupire local-vol coefficient derived from a {@link BlackVarianceSurface}.
+     * Mirrors C++ {@code testBlackScholesFokkerPlanckFwdEquationLocalVol}
+     * (test-suite/hestonslvmodel.cpp:1363). Tolerance 0.05 absolute (matches C++).
+     *
+     * <p>For each maturity i in {1, 3, 5, 7} and strike index j in
+     * {3, 5, 7, 9, 11, 13, 15} (4 x 7 = 28 cases), builds a vanilla European
+     * call, prices via {@link AnalyticEuropeanEngine}, then evolves a Dirac
+     * density through the {@link FdmLocalVolFwdOp} on three meshes (uniform,
+     * concentrated at {@code s0}, shifted concentration at {@code s0*1.1})
+     * and compares the discounted Fokker-Planck price.
+     *
+     * <p><strong>Production-bug status (Phase 5e.5b-CFC-d-150):</strong>
+     * the two {@link BlackVarianceSurface} bugs identified in
+     * {@code 7e57f275} are fixed — the ctor no longer pads the strike axis
+     * off-by-one, and {@code setInterpolation} now honours its supplied
+     * {@code Interpolation2D.Interpolator2D} (rather than always falling
+     * back to {@link org.jquantlib.math.interpolations.factories.Bilinear
+     * Bilinear}). A round-trip check confirms the production surface
+     * reproduces all 8x20 input vol knots bit-for-bit when configured with
+     * {@link BicubicSpline}.
+     *
+     * <p><strong>Remaining blocker:</strong> with the fixed surface +
+     * {@link NoExceptLocalVolSurface} fallback to 0.2 vol on degenerate
+     * Dupire denominators, this body-fill reaches 46 / 84 mesher sub-cases
+     * within the C++ {@code tol=0.05}; the other 38 miss by 0.05-0.34. The
+     * residual traces to {@link
+     * org.jquantlib.termstructures.volatilities.LocalVolSurface
+     * LocalVolSurface.localVolImpl} using a denser strike-perturbation
+     * stencil than C++ {@code ql/termstructures/volatility/equityfx/localvolsurface.cpp}:
+     * C++ uses {@code dy = (|y|>0.001) ? y*0.0001 : 1e-6} and a
+     * forward-aware strikept {@code strike*dr*dqpt/(drpt*dq)} for the time
+     * derivative; Java uses {@code dy = (y!=0) ? y*1e-6 : 1e-6} and a
+     * non-forward-aware {@code strike} for {@code wpt/wmt}. The 100x
+     * finer perturbation amplifies surface noise; the non-forward-aware
+     * time derivative skews {@code dwdt} when {@code r != q}. Un-ignore
+     * once {@code LocalVolSurface.localVolImpl} is re-aligned to v1.42.1.
+     */
+    @Ignore("Phase 5e.5b-CFC-d-150 — production BlackVarianceSurface bugs fixed; "
+            + "body-fill landed but 38/84 mesher sub-cases miss the C++ tol=0.05 "
+            + "by 0.05-0.34. Residual traces to LocalVolSurface.localVolImpl "
+            + "divergence from C++ (denser strike-perturbation stencil + "
+            + "non-forward-aware time derivative). Un-ignore once LocalVolSurface "
+            + "is re-aligned to v1.42.1.")
     @Test
-    public void testBlackScholesFokkerPlanckFwdEquationLocalVol() { fail("not implemented"); }
+    public void testBlackScholesFokkerPlanckFwdEquationLocalVol() {
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final Date todaysDate = new Date(5, Month.July, 2014);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final double s0 = 100.0;
+        final double x0 = Math.log(s0);
+        final double r = 0.035;
+        final double q = 0.01;
+
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dayCounter));
+
+        final SmoothImpliedVol smoothImpliedVol = createSmoothImpliedVol(dayCounter);
+        final double[] strikes = smoothImpliedVol.strikes;
+        final Date[]   dates   = smoothImpliedVol.dates;
+        final Handle<BlackVolTermStructure> vTS =
+                new Handle<BlackVolTermStructure>(smoothImpliedVol.surface);
+
+        final int xGrid = 101;
+        final int tGrid = 51;
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final BlackScholesMertonProcess process =
+                new BlackScholesMertonProcess(spot, qTS, rTS, vTS);
+
+        final LocalVolTermStructure localVol =
+                new NoExceptLocalVolSurface(vTS, rTS, qTS, spot, 0.2);
+
+        final PricingEngine engine = new AnalyticEuropeanEngine(process);
+
+        for (int i = 1; i < dates.length; i += 2) {
+            for (int j = 3; j < strikes.length - 3; j += 2) {
+                final Date exDate = dates[i];
+                final Date maturityDate = exDate;
+                final double maturity = dc.yearFraction(todaysDate, maturityDate);
+                final Exercise exercise = new EuropeanExercise(exDate);
+
+                // Uniform mesher (no cPoint).
+                final FdmMesher uniformMesher = new FdmMesherComposite(
+                        new FdmBlackScholesMesher(xGrid, process, maturity, s0,
+                                Double.NaN, Double.NaN, 0.0001, 1.5,
+                                Double.NaN, 0.1,
+                                null, 0.0));
+                final FdmLinearOpComposite uniformBSFwdOp =
+                        new FdmLocalVolFwdOp(uniformMesher,
+                                spot.currentLink(), rTS.currentLink(),
+                                qTS.currentLink(), localVol);
+
+                // Concentrated mesher: cPoint at (s0, 0.1).
+                final FdmMesher concentratedMesher = new FdmMesherComposite(
+                        new FdmBlackScholesMesher(xGrid, process, maturity, s0,
+                                Double.NaN, Double.NaN, 0.0001, 1.5,
+                                s0, 0.1,
+                                null, 0.0));
+                final FdmLinearOpComposite concentratedBSFwdOp =
+                        new FdmLocalVolFwdOp(concentratedMesher,
+                                spot.currentLink(), rTS.currentLink(),
+                                qTS.currentLink(), localVol);
+
+                // Shifted mesher: cPoint at (s0*1.1, 0.2).
+                final FdmMesher shiftedMesher = new FdmMesherComposite(
+                        new FdmBlackScholesMesher(xGrid, process, maturity, s0,
+                                Double.NaN, Double.NaN, 0.0001, 1.5,
+                                s0 * 1.1, 0.2,
+                                null, 0.0));
+                final FdmLinearOpComposite shiftedBSFwdOp =
+                        new FdmLocalVolFwdOp(shiftedMesher,
+                                spot.currentLink(), rTS.currentLink(),
+                                qTS.currentLink(), localVol);
+
+                final StrikedTypePayoff payoff =
+                        new PlainVanillaPayoff(Option.Type.Call, strikes[j]);
+
+                final VanillaOption option = new VanillaOption(payoff, exercise);
+                option.setPricingEngine(engine);
+
+                final double expected = option.NPV();
+                // 100000-iter Gauss-Lobatto cap (vs. C++ default 1000) — see
+                // fokkerPlanckPrice1D variant docs above.
+                final int maxIter = 100000;
+                final double calcUniform = fokkerPlanckPrice1D(uniformMesher,
+                        uniformBSFwdOp, payoff, x0, maturity, tGrid, maxIter)
+                        * rTS.currentLink().discount(maturityDate);
+                final double calcConcentrated = fokkerPlanckPrice1D(concentratedMesher,
+                        concentratedBSFwdOp, payoff, x0, maturity, tGrid, maxIter)
+                        * rTS.currentLink().discount(maturityDate);
+                final double calcShifted = fokkerPlanckPrice1D(shiftedMesher,
+                        shiftedBSFwdOp, payoff, x0, maturity, tGrid, maxIter)
+                        * rTS.currentLink().discount(maturityDate);
+
+                final double tol = 0.05;
+
+                if (Math.abs(expected - calcUniform) > tol) {
+                    fail("failed to reproduce european option price with a uniform mesher"
+                            + "\n   i:          " + i
+                            + "\n   j:          " + j
+                            + "\n   strike:     " + strikes[j]
+                            + "\n   maturity:   " + maturity
+                            + "\n   calculated: " + calcUniform
+                            + "\n   expected:   " + expected
+                            + "\n   tolerance:  " + tol);
+                }
+                if (Math.abs(expected - calcConcentrated) > tol) {
+                    fail("failed to reproduce european option price with a concentrated mesher"
+                            + "\n   i:          " + i
+                            + "\n   j:          " + j
+                            + "\n   strike:     " + strikes[j]
+                            + "\n   maturity:   " + maturity
+                            + "\n   calculated: " + calcConcentrated
+                            + "\n   expected:   " + expected
+                            + "\n   tolerance:  " + tol);
+                }
+                if (Math.abs(expected - calcShifted) > tol) {
+                    fail("failed to reproduce european option price with a shifted mesher"
+                            + "\n   i:          " + i
+                            + "\n   j:          " + j
+                            + "\n   strike:     " + strikes[j]
+                            + "\n   maturity:   " + maturity
+                            + "\n   calculated: " + calcShifted
+                            + "\n   expected:   " + expected
+                            + "\n   tolerance:  " + tol);
+                }
+            }
+        }
+    }
 
     /* ---- 2. Square-root boundary / stationary -------------------------- */
 

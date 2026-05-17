@@ -42,8 +42,8 @@ package org.jquantlib.termstructures.volatilities;
 
 import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.math.interpolations.Interpolation;
 import org.jquantlib.math.interpolations.Interpolation2D;
-import org.jquantlib.math.interpolations.Interpolation.Interpolator;
 import org.jquantlib.math.interpolations.factories.Bilinear;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
@@ -57,13 +57,19 @@ import org.jquantlib.util.Visitor;
  * This class calculates time/strike dependent Black volatilities using as input
  * a matrix of Black volatilities observed in the market.
  *
- * The calculation is performed interpolating on the variance surface. Bilinear
+ * <p>The calculation is performed interpolating on the variance surface. Bilinear
  * interpolation is used as default; this can be changed by the
- * setInterpolation() method.
+ * {@link #setInterpolation(Interpolation2D.Interpolator2D)} method.
+ *
+ * <p>Mirrors C++ v1.42.1
+ * {@code ql/termstructures/volatility/equityfx/blackvariancesurface.{hpp,cpp}}.
+ * The ctor pads the time axis with a leading {@code t=0.0} sentinel so the
+ * variance surface interpolates correctly down to the reference date. The
+ * variance matrix is padded along the time (column) axis with a leading column
+ * of zeros; the strike (row) axis is NOT padded.
  *
  * @author Richard Gomes
  */
-// TODO: check time extrapolation
 public class BlackVarianceSurface extends BlackVarianceTermStructure {
 
     public enum Extrapolation {
@@ -78,12 +84,11 @@ public class BlackVarianceSurface extends BlackVarianceTermStructure {
     private final DayCounter dayCounter;
     private final Date maxDate;
     private final /* @Time */ Array times;
-    private /* @Real */ Array strikes;
+    private final /* @Real */ Array strikes;
     private final /* @Variance */ Matrix variances;
     private Interpolation2D varianceSurface;
     private final Extrapolation lowerExtrapolation;
     private final Extrapolation upperExtrapolation;
-    private final Interpolation2D.Interpolator2D factory;
 
 
     //
@@ -108,38 +113,44 @@ public class BlackVarianceSurface extends BlackVarianceTermStructure {
             final Extrapolation upperExtrapolation) {
 
         super(referenceDate);
-        QL.require(dates.length == blackVolMatrix.columns() , "mismatch between date vector and vol matrix colums"); // TODO: message
-        QL.require(strikes.size() == blackVolMatrix.rows() , "mismatch between money-strike vector and vol matrix rows"); // TODO: message
-        QL.require(dates[0].gt(referenceDate) , "cannot have dates[0] <= referenceDate"); // TODO: message
+        QL.require(dates.length == blackVolMatrix.columns(), "mismatch between date vector and vol matrix columns");
+        QL.require(strikes.size() == blackVolMatrix.rows(), "mismatch between money-strike vector and vol matrix rows");
+        // Mirror C++: QL_REQUIRE(dates[0] >= referenceDate, "cannot have dates[0] < referenceDate")
+        QL.require(dates[0].ge(referenceDate), "cannot have dates[0] < referenceDate");
 
         this.dayCounter = dayCounter;
-        this.maxDate = dates[dates.length-1]; // TODO: code review: index seems to be wrong
-        // TODO: code review :: use of clone()
+        this.maxDate = dates[dates.length - 1];
         this.strikes = strikes.clone();
         this.lowerExtrapolation = lowerExtrapolation;
         this.upperExtrapolation = upperExtrapolation;
 
-
-        this.times = new Array(dates.length+1); // TODO: verify if length is correct
-        this.variances = new Matrix(strikes.size(), dates.length+1); // TODO: verify if length is correct
-        this.strikes = new Array(strikes.size()+1); // TODO: verify if length is correct
-
-        for(int i = 1; i < strikes.size()+1; i++) {
-            this.strikes.set(i, strikes.get(i-1));
+        // C++ pads only the time axis:
+        //   times_ = vector<Time>(dates.size()+1); times_[0] = 0.0;
+        //   variances_ = Matrix(strikes.size(), dates.size()+1);
+        //   variances_[i][0] = 0.0 for all i;
+        // No padding of the strike axis -- prior Java padded {@code this.strikes}
+        // to {@code strikes.size()+1} without padding the variance matrix, which
+        // produced an off-by-one strike/variance mapping. Bug fix mirrors C++
+        // exactly.
+        this.times = new Array(dates.length + 1);
+        this.times.set(0, 0.0);
+        this.variances = new Matrix(this.strikes.size(), dates.length + 1);
+        for (int i = 0; i < blackVolMatrix.rows(); i++) {
+            this.variances.set(i, 0, 0.0);
         }
 
         for (int j = 1; j <= blackVolMatrix.columns(); j++) {
-            times.set(j, timeFromReference(dates[j-1]));
-            QL.require(times.get(j) > times.get(j-1) , "dates must be sorted unique!"); // TODO: message
+            times.set(j, timeFromReference(dates[j - 1]));
+            QL.require(times.get(j) > times.get(j - 1), "dates must be sorted unique!");
             for (int i = 0; i < blackVolMatrix.rows(); i++) {
-                final double elem = blackVolMatrix.get(i, j-1);
-                final double ijvar = times.get(j) * elem * elem;
-                variances.set(i, j, ijvar);
-                QL.require(ijvar >= variances.get(i, j-1) , "variance must be non-decreasing"); // TODO: message
+                final double vol = blackVolMatrix.get(i, j - 1);
+                final double variance = times.get(j) * vol * vol;
+                variances.set(i, j, variance);
             }
         }
-        // default: bilinear interpolation
-        factory = new Bilinear();
+
+        // default: bilinear interpolation (mirrors C++ setInterpolation<Bilinear>()).
+        setInterpolation(new Bilinear());
     }
 
 
@@ -147,11 +158,35 @@ public class BlackVarianceSurface extends BlackVarianceTermStructure {
     // public methods
     //
 
-    public void setInterpolation(final Interpolator i) {
+    /**
+     * Re-interpolate the variance surface using a 2-D interpolation factory.
+     * Mirrors C++ template {@code setInterpolation<Interpolator>()}.
+     *
+     * @param i 2-D interpolator factory; if {@code null}, falls back to
+     *          {@link Bilinear} (preserves the prior Java null-safe contract).
+     */
+    public void setInterpolation(final Interpolation2D.Interpolator2D i) {
+        final Interpolation2D.Interpolator2D factory = (i != null) ? i : new Bilinear();
         varianceSurface = factory.interpolate(times, strikes, variances);
-        varianceSurface.enableExtrapolation();
         varianceSurface.update();
         notifyObservers();
+    }
+
+    /**
+     * Deprecated overload kept for backward compatibility with callers that
+     * pass the 1-D {@link Interpolation.Interpolator} type (e.g. legacy
+     * samples). The argument is ignored; the surface falls back to
+     * {@link Bilinear}. Real callers should use
+     * {@link #setInterpolation(Interpolation2D.Interpolator2D)}.
+     *
+     * @deprecated 2-D surfaces require a 2-D factory; this overload only
+     *             accepts {@code null} or a 1-D dummy and silently falls
+     *             back to Bilinear. Migrate to
+     *             {@link #setInterpolation(Interpolation2D.Interpolator2D)}.
+     */
+    @Deprecated
+    public void setInterpolation(final Interpolation.Interpolator ignored) {
+        setInterpolation((Interpolation2D.Interpolator2D) null);
     }
 
 
@@ -185,7 +220,7 @@ public class BlackVarianceSurface extends BlackVarianceTermStructure {
     }
 
     @Override
-    protected final/* @Variance */double blackVarianceImpl(/* @Time */final double t, /* @Real */double strike) /* @ReadOnly */{
+    protected final/* @Variance */double blackVarianceImpl(/* @Time */final double t, /* @Real */double strike) /* @ReadOnly */ {
 
         if (t == 0.0) {
             return 0.0;
@@ -195,16 +230,16 @@ public class BlackVarianceSurface extends BlackVarianceTermStructure {
         if (strike < strikes.first() && lowerExtrapolation == Extrapolation.ConstantExtrapolation) {
             strike = strikes.first();
         }
-        if (strike > strikes.last()  && upperExtrapolation == Extrapolation.ConstantExtrapolation) {
+        if (strike > strikes.last() && upperExtrapolation == Extrapolation.ConstantExtrapolation) {
             strike = strikes.last();
         }
 
         if (t <= times.last()) {
-            return varianceSurface.op(t, strike);
+            return varianceSurface.op(t, strike, true);
         } else {
             // t>times_.back() || extrapolate
             /* @Time */final double lastTime = times.last();
-            return varianceSurface.op(lastTime, strike) * t / lastTime;
+            return varianceSurface.op(lastTime, strike, true) * t / lastTime;
         }
     }
 
@@ -215,7 +250,7 @@ public class BlackVarianceSurface extends BlackVarianceTermStructure {
 
     @Override
     public void accept(final PolymorphicVisitor pv) {
-        final Visitor<BlackVarianceSurface> v = (pv!=null) ? pv.visitor(this.getClass()) : null;
+        final Visitor<BlackVarianceSurface> v = (pv != null) ? pv.visitor(this.getClass()) : null;
         if (v != null) {
             v.visit(this);
         } else {
