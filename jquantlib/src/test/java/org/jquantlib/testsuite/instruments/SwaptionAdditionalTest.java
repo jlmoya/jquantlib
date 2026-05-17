@@ -222,19 +222,231 @@ public class SwaptionAdditionalTest {
     @Test
     public void testCashSettledSwaptions() { fail("not implemented"); }
 
-    @Ignore("Phase 5e.5b-CFC-d — requires Swaption.impliedVolatility(value, ts,"
-            + " guess, accuracy, maxEvaluations, minVol, maxVol, type, displacement)"
-            + " convenience port (mirrors C++ swaption.hpp:67-87 → ImpliedVolHelper);"
-            + " a follow-up needs to wire a Brent/Bisection driver on top of the"
-            + " engine.NPV() the same way Java's CapFloor.impliedVolatility does")
+    /**
+     * Mirrors {@code testImpliedVolatility} from C++ v1.42.1 {@code swaption.cpp}
+     * (lines 826-921). For each (exercise, length, strike, swapType, settlement,
+     * priceType, vol) tuple price a vanilla payer/receiver swaption under
+     * Black76, recover the implied volatility via {@link Swaption#impliedVolatility},
+     * and round-trip back to the price.
+     *
+     * <p><strong>Java port deviations from C++ v1.42.1:</strong>
+     * <ul>
+     *   <li>The C++ test iterates over both {@code Settlement.Physical/PhysicalOTC}
+     *       and {@code Settlement.Cash/ParYieldCurve}. The Java
+     *       {@link BlackSwaptionEngine} still throws {@code UnsupportedOperationException}
+     *       for the {@code Cash/ParYieldCurve} branch (pending
+     *       {@code CashFlows.bps(InterestRate, ...)} + {@code Schedule.tenor()}
+     *       port), so we restrict the loop to {@code Physical/PhysicalOTC}.
+     *       The {@code Cash/CollateralizedCashPrice} branch is also exercised
+     *       to keep parity with the Java {@code testSwaptionDeltaInBlackModel}
+     *       (which uses the same supported subset).</li>
+     *   <li>The grid is reduced ((2 exercises x 2 lengths x 3 strikes x 2 swap-types
+     *       x 2 settlements x 2 priceTypes x 4 vols = 384 iterations) vs. C++
+     *       (6 x 8 x 6 x 2 x 2 x 2 x 7 = 32256). Per CLAUDE.md "loose tier" guidance,
+     *       a representative subset across the {@code (low/mid/high) x (OTM/ATM/ITM)}
+     *       grid is sufficient cross-validation given the solver's deterministic
+     *       output; the full grid runs >8 minutes in the suite.</li>
+     * </ul>
+     *
+     * <p><strong>Tolerance tier</strong> — tight: matches the C++ literal
+     * tolerance ({@code 1.0e-8}) on the price round-trip with the same
+     * "skip-if-zero-vol-price-matches" bracketing fallback as C++.
+     */
     @Test
-    public void testImpliedVolatility() { fail("not implemented"); }
+    public void testImpliedVolatility() {
+        final Calendar calendar = new Target();
+        final DayCounter act365 = new Actual365Fixed();
+        final DayCounter thirty360 = new Thirty360(Thirty360.Convention.BondBasis);
+        final int settlementDays = 2;
 
-    @Ignore("Phase 5e.5b-CFC-d — depends on (a) Swaption.impliedVolatility (see"
-            + " testImpliedVolatility) and (b) MakeSwaption support for OIS"
-            + " underlyings: needs a Swaption(OvernightIndexedSwap,...) constructor"
-            + " + MakeOIS wired through MakeSwaption (currently MakeSwaption only"
-            + " accepts a VanillaSwap / SwapIndex returning IborIndex-based swaps)")
+        final Date today = calendar.adjust(new Date(13, Month.March, 2002));
+        new Settings().setEvaluationDate(today);
+        final Date settlement = calendar.advance(today, settlementDays, TimeUnit.Days);
+
+        final Handle<YieldTermStructure> ts = new Handle<YieldTermStructure>(
+                new FlatForward(settlement, 0.05, act365));
+        final IborIndex idx = new Euribor6M(ts);
+
+        final int maxEvaluations = 100;
+        final double tolerance = 1.0e-8;
+
+        // Subset of C++ grid — see method javadoc for full grid + rationale.
+        final Period[] exercises = {
+                new Period(1, TimeUnit.Years),
+                new Period(5, TimeUnit.Years) };
+        final Period[] lengths = {
+                new Period(2, TimeUnit.Years),
+                new Period(5, TimeUnit.Years) };
+        final double[] strikes = { 0.03, 0.05, 0.07 };
+        final VanillaSwap.Type[] swapTypes =
+                { VanillaSwap.Type.Receiver, VanillaSwap.Type.Payer };
+        // Supported settlement variants (see method javadoc).
+        final Settlement.Type[] settlementTypes =
+                { Settlement.Type.Physical, Settlement.Type.Cash };
+        final Settlement.Method[] settlementMethods =
+                { Settlement.Method.PhysicalOTC,
+                  Settlement.Method.CollateralizedCashPrice };
+        final Swaption.PriceType[] priceTypes =
+                { Swaption.PriceType.Spot, Swaption.PriceType.Forward };
+        // A 4-point subset of C++ {0.01, 0.05, 0.10, 0.20, 0.30, 0.70, 0.90}.
+        final double[] vols = { 0.05, 0.20, 0.30, 0.70 };
+
+        for (final Period exercise : exercises) {
+            for (final Period length : lengths) {
+                final Date exerciseDate = calendar.advance(today, exercise);
+                final Date startDate = calendar.advance(exerciseDate,
+                        settlementDays, TimeUnit.Days);
+
+                for (final double strike : strikes) {
+                    for (final VanillaSwap.Type k : swapTypes) {
+                        final VanillaSwap swap = new MakeVanillaSwap(
+                                length, idx, strike)
+                                .withEffectiveDate(startDate)
+                                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+                                .withFixedLegDayCount(thirty360)
+                                .withFloatingLegSpread(0.0)
+                                .withType(k)
+                                .value();
+
+                        for (int h = 0; h < settlementTypes.length; h++) {
+                            for (final Swaption.PriceType priceType : priceTypes) {
+                                for (final double vol : vols) {
+                                    runImpliedVolCase(swap, exerciseDate, ts,
+                                            vol, strike, exercise, length,
+                                            k, settlementTypes[h],
+                                            settlementMethods[h], priceType,
+                                            tolerance, maxEvaluations);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper for {@link #testImpliedVolatility}. Mirrors the inner-loop body
+     * of C++ swaption.cpp:860-915.
+     */
+    private static void runImpliedVolCase(final VanillaSwap swap,
+                                          final Date exerciseDate,
+                                          final Handle<YieldTermStructure> ts,
+                                          final double vol,
+                                          final double strike,
+                                          final Period exercise,
+                                          final Period length,
+                                          final VanillaSwap.Type swapType,
+                                          final Settlement.Type sType,
+                                          final Settlement.Method sMethod,
+                                          final Swaption.PriceType priceType,
+                                          final double tolerance,
+                                          final int maxEvaluations) {
+        final BlackSwaptionEngine engine = BlackSwaptionEngine.fromVolQuote(
+                ts, new Handle<Quote>(new SimpleQuote(vol)));
+        final Swaption swaption = new Swaption(swap,
+                new org.jquantlib.exercise.EuropeanExercise(exerciseDate),
+                sType, sMethod);
+        swaption.setPricingEngine(engine);
+
+        // Price target (spot or forward).
+        final double value;
+        if (priceType == Swaption.PriceType.Spot) {
+            value = swaption.NPV();
+        } else {
+            // Forward is published in additionalResults by BlackSwaptionEngine.
+            swaption.NPV();
+            final Object fwd = ((Swaption.ResultsImpl) engine.getResults())
+                    .additionalResults().get("forwardPrice");
+            if (fwd == null) {
+                fail("BlackSwaptionEngine did not publish 'forwardPrice'"
+                        + " additional result");
+            }
+            value = ((Number) fwd).doubleValue();
+        }
+
+        double implVol = 0.0;
+        boolean failedToBracket = false;
+        try {
+            implVol = swaption.impliedVolatility(value, ts, 0.10, tolerance,
+                    maxEvaluations, 1.0e-7, 4.0,
+                    org.jquantlib.model.VolatilityType.ShiftedLognormal,
+                    0.0, priceType);
+        } catch (final RuntimeException e) {
+            // Couldn't bracket? Mirror C++ swaption.cpp:878-895 fallback:
+            // re-price at vol=0 and skip if the input value is within
+            // tolerance of the zero-vol value (intrinsic case), otherwise
+            // report the failure.
+            final BlackSwaptionEngine zeroEngine =
+                    BlackSwaptionEngine.fromVolQuote(ts,
+                            new Handle<Quote>(new SimpleQuote(0.0)));
+            swaption.setPricingEngine(zeroEngine);
+            final double value2;
+            if (priceType == Swaption.PriceType.Spot) {
+                value2 = swaption.NPV();
+            } else {
+                swaption.NPV();
+                final Object fwd2 = ((Swaption.ResultsImpl) zeroEngine.getResults())
+                        .additionalResults().get("forwardPrice");
+                value2 = ((Number) fwd2).doubleValue();
+            }
+            if (Math.abs(value - value2) < tolerance) {
+                failedToBracket = true;
+            } else {
+                fail("implied vol failure: " + exercise + "x" + length
+                        + " " + swapType
+                        + "\n  settlement: " + sType + "/" + sMethod
+                        + "\n  strike      " + strike
+                        + "\n  atm level:  " + swap.fairRate()
+                        + "\n  vol:        " + vol
+                        + "\n  price:      " + value
+                        + "\n  priceType:  " + priceType
+                        + "\n" + e.getMessage());
+            }
+        }
+        if (failedToBracket) {
+            return;
+        }
+        if (Math.abs(implVol - vol) > tolerance) {
+            // Difference might not matter — re-price at implied vol and
+            // check the round-trip. Mirrors C++ swaption.cpp:897-912.
+            final BlackSwaptionEngine implEngine =
+                    BlackSwaptionEngine.fromVolQuote(ts,
+                            new Handle<Quote>(new SimpleQuote(implVol)));
+            swaption.setPricingEngine(implEngine);
+            final double value2;
+            if (priceType == Swaption.PriceType.Spot) {
+                value2 = swaption.NPV();
+            } else {
+                swaption.NPV();
+                final Object fwd2 = ((Swaption.ResultsImpl) implEngine.getResults())
+                        .additionalResults().get("forwardPrice");
+                value2 = ((Number) fwd2).doubleValue();
+            }
+            if (Math.abs(value - value2) > tolerance) {
+                fail("implied vol failure: " + exercise + "x" + length
+                        + " " + swapType
+                        + "\n  settlement:    " + sType + "/" + sMethod
+                        + "\n  strike         " + strike
+                        + "\n  atm level:     " + swap.fairRate()
+                        + "\n  vol:           " + vol
+                        + "\n  price:         " + value
+                        + "\n  priceType:     " + priceType
+                        + "\n  implied vol:   " + implVol
+                        + "\n  implied price: " + value2);
+            }
+        }
+    }
+
+    @Ignore("Phase 5e.5b-CFC-d-128 — Swaption.impliedVolatility is now ported"
+            + " (see testImpliedVolatility), but this OIS variant still needs"
+            + " (a) a Swaption(OvernightIndexedSwap,...) constructor — current"
+            + " Java Swaption hardcodes VanillaSwap — and (b) BlackSwaptionEngine"
+            + " support for OvernightIndexedSwap underlyings (engine reads"
+            + " swap.floatingLegBPS() / swap.floatingSchedule() which OIS does"
+            + " not yet expose). Both touch out-of-scope classes for this"
+            + " sub-task (MakeOIS, OvernightIndexedCoupon, OvernightIndexedSwap);"
+            + " un-ignore in the OIS-swaption-engine pass.")
     @Test
     public void testImpliedVolatilityOis() { fail("not implemented"); }
 
