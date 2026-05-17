@@ -168,13 +168,17 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
     /**
      * Mirrors C++ blackcapfloorengine.cpp lines 77-166.
      *
-     * <p>The full C++ engine also populates additionalResults
+     * <p>Populates {@code results.value} plus the named additionalResults
      * (vega, optionletsPrice, optionletsVega, optionletsDelta,
-     * optionletsDiscountFactor, optionletsAtmForward, optionletsStdDev).
-     * Phase 2e WI-2 ports the {@code value} aggregation only. Java's
-     * {@link CapFloor.ResultsImpl} carries the {@code additionalResults}
-     * map via Instrument.ResultsImpl, so wiring those in is a tactical
-     * follow-up that doesn't change the {@code NPV()} surface.
+     * optionletsDiscountFactor, optionletsAtmForward, optionletsStdDev)
+     * exactly as C++ does — Phase 5e.5b-CFC-d-49 finished the port.
+     *
+     * <p>When the OVS is stripped under the Bachelier (Normal) model the
+     * engine falls back to {@code bachelierBlackFormula} for the optionlet
+     * value to stay compatible with legacy callers. The analytic vega /
+     * delta entries are then left at zero — the proper Java
+     * {@code BachelierCapFloorEngine} (Phase 5e.5 WI-5e.5-CF-2) owns that
+     * dispatch.
      */
     @Override
     public void calculate() {
@@ -182,7 +186,13 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
         final CapFloor.ResultsImpl results = (CapFloor.ResultsImpl) results_;
 
         double value = 0.0;
+        double vega = 0.0;
         final int optionlets = arguments.startDates.length;
+        final double[] values = new double[optionlets];
+        final double[] deltas = new double[optionlets];
+        final double[] vegas = new double[optionlets];
+        final double[] stdDevs = new double[optionlets];
+        final double[] discountFactors = new double[optionlets];
         final CapFloor.Type type = arguments.type;
         final Date today = vol_.currentLink().referenceDate();
         final Date settlement = discountCurve_.currentLink().referenceDate();
@@ -204,6 +214,7 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
             // caplets.
             if (paymentDate.gt(settlement)) {
                 final double d = discountCurve_.currentLink().discount(paymentDate);
+                discountFactors[i] = d;
                 final double accrualFactor = arguments.nominals[i]
                         * arguments.gearings[i]
                         * arguments.accrualTimes[i];
@@ -216,42 +227,82 @@ public class BlackCapFloorEngine extends CapFloor.Engine {
                     sqrtTime = Math.sqrt(vol_.currentLink().timeFromReference(fixingDate));
                 }
 
-                double letValue = 0.0;
                 if (type == CapFloor.Type.Cap || type == CapFloor.Type.Collar) {
                     final double strike = arguments.capRates[i];
-                    double stdDev = 0.0;
                     if (sqrtTime > 0.0) {
-                        stdDev = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
+                        stdDevs[i] = Math.sqrt(
+                                vol_.currentLink().blackVariance(fixingDate, strike));
+                        if (!useBachelier) {
+                            vegas[i] = BlackFormula.blackFormulaStdDevDerivative(
+                                    strike, forward, stdDevs[i],
+                                    discountedAccrual, displacement_)
+                                    * sqrtTime;
+                            deltas[i] = BlackFormula.blackFormulaAssetItmProbability(
+                                    Option.Type.Call, strike, forward,
+                                    stdDevs[i], displacement_);
+                        }
                     }
                     // include caplets with past fixing date
-                    letValue = useBachelier
+                    values[i] = useBachelier
                             ? BlackFormula.bachelierBlackFormula(Option.Type.Call,
-                                    strike, forward, stdDev, discountedAccrual)
+                                    strike, forward, stdDevs[i], discountedAccrual)
                             : BlackFormula.blackFormula(Option.Type.Call,
-                                    strike, forward, stdDev, discountedAccrual, displacement_);
+                                    strike, forward, stdDevs[i], discountedAccrual, displacement_);
                 }
                 if (type == CapFloor.Type.Floor || type == CapFloor.Type.Collar) {
                     final double strike = arguments.floorRates[i];
-                    double stdDev = 0.0;
+                    double floorletVega = 0.0;
+                    double floorletDelta = 0.0;
                     if (sqrtTime > 0.0) {
-                        stdDev = Math.sqrt(vol_.currentLink().blackVariance(fixingDate, strike));
+                        stdDevs[i] = Math.sqrt(
+                                vol_.currentLink().blackVariance(fixingDate, strike));
+                        if (!useBachelier) {
+                            floorletVega = BlackFormula.blackFormulaStdDevDerivative(
+                                    strike, forward, stdDevs[i],
+                                    discountedAccrual, displacement_)
+                                    * sqrtTime;
+                            // C++: Integer(Option::Put) * blackFormulaAssetItmProbability(Put, ...)
+                            //      = -1 * Phi(-d1) — a non-positive delta.
+                            floorletDelta = Option.Type.Put.toInteger()
+                                    * BlackFormula.blackFormulaAssetItmProbability(
+                                            Option.Type.Put, strike, forward,
+                                            stdDevs[i], displacement_);
+                        }
                     }
                     final double floorlet = useBachelier
                             ? BlackFormula.bachelierBlackFormula(Option.Type.Put,
-                                    strike, forward, stdDev, discountedAccrual)
+                                    strike, forward, stdDevs[i], discountedAccrual)
                             : BlackFormula.blackFormula(Option.Type.Put,
-                                    strike, forward, stdDev, discountedAccrual, displacement_);
+                                    strike, forward, stdDevs[i], discountedAccrual, displacement_);
                     if (type == CapFloor.Type.Floor) {
-                        letValue = floorlet;
+                        values[i] = floorlet;
+                        vegas[i] = floorletVega;
+                        deltas[i] = floorletDelta;
                     } else {
                         // a collar is long a cap and short a floor
-                        letValue -= floorlet;
+                        values[i] -= floorlet;
+                        vegas[i] -= floorletVega;
+                        deltas[i] -= floorletDelta;
                     }
                 }
-                value += letValue;
+                value += values[i];
+                vega += vegas[i];
             }
         }
         QL.require(!Double.isNaN(value), "BlackCapFloorEngine produced NaN value");
         results.value = value;
+
+        // Populate additionalResults exactly as C++ does (lines 157-165).
+        // The keys must match the C++ names verbatim so call-sites that
+        // read results via Instrument.result(key) port without churn.
+        results.additionalResults().put("vega", vega);
+        results.additionalResults().put("optionletsPrice", values);
+        results.additionalResults().put("optionletsVega", vegas);
+        results.additionalResults().put("optionletsDelta", deltas);
+        results.additionalResults().put("optionletsDiscountFactor", discountFactors);
+        results.additionalResults().put("optionletsAtmForward", arguments.forwards);
+        if (type != CapFloor.Type.Collar) {
+            results.additionalResults().put("optionletsStdDev", stdDevs);
+        }
     }
 }
