@@ -35,8 +35,10 @@ import org.jquantlib.indexes.YoYInflationIndex;
 import org.jquantlib.indexes.ZeroInflationIndex;
 import org.jquantlib.indexes.inflation.AUCPI;
 import org.jquantlib.indexes.inflation.EUHICP;
+import org.jquantlib.indexes.inflation.EUHICPXT;
 import org.jquantlib.indexes.inflation.UKHICP;
 import org.jquantlib.indexes.inflation.UKRPI;
+import org.jquantlib.indexes.inflation.USCPI;
 import org.jquantlib.indexes.inflation.YYEUHICP;
 import org.jquantlib.indexes.inflation.YYUKRPI;
 import org.jquantlib.instruments.YearOnYearInflationSwap;
@@ -51,6 +53,7 @@ import org.jquantlib.termstructures.InflationTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.YoYInflationTermStructure;
 import org.jquantlib.termstructures.ZeroInflationTermStructure;
+import org.jquantlib.termstructures.inflation.GlobalBootstrap;
 import org.jquantlib.termstructures.inflation.InterpolatedZeroInflationCurve;
 import org.jquantlib.termstructures.inflation.PiecewiseYoYInflationCurve;
 import org.jquantlib.termstructures.inflation.PiecewiseZeroInflationCurve;
@@ -67,7 +70,10 @@ import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
+import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedKingdom;
+import org.jquantlib.time.calendars.UnitedStates;
 import org.jquantlib.util.Pair;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -1814,64 +1820,475 @@ public class InflationTest {
     // testUsCpiLinearBootstrapAtMonthStart — inflation.cpp:1887-1964
     // ===================================================================
     @Test
-    @Ignore("Phase 2u/2v: USCPI not ported."
-            + " Phase 2x: ZeroCouponInflationSwapHelper missing"
-            + " (quote, lag, startDate, endDate, ...) overload + Linear interpolation.")
+    @Ignore("Phase 5e.5b-CFC-d follow-up: ZeroCouponInflationSwapHelper"
+            + " does not yet implement the CPI::Linear pillar-choice logic"
+            + " (C++ inflationhelpers.cpp:114-153 — Pillar::LastRelevantDate"
+            + " with startDate_-based weight, fixing issue #2454). Java helper"
+            + " unconditionally sets latestDate = fixingPeriod.first(); with"
+            + " CPI::Linear the curve's max date ends up one period short of"
+            + " what the swap actually needs, producing 'date past max curve"
+            + " date' bootstrap failures. Production-port required.")
     public void testUsCpiLinearBootstrapAtMonthStart() {
-        // C++: regression test for QuantLib issue #2454 (US CPI Linear
-        // bootstrap stability across evaluation dates). Requires:
-        //   - USCPI index class
-        //   - ZeroCouponInflationSwapHelper(quote, lag, startDate, endDate,
-        //                                    cal, bdc, dc, index, CPI::Linear)
+        // Faithful port of C++ inflation.cpp:1887-1964 — regression test for
+        // QuantLib issue #2454 (US CPI Linear bootstrap stability across
+        // evaluation dates).
+        //
+        // Conventions: T+2 settlement (US GovernmentBond calendar),
+        // 3-month observation lag, unadjusted maturity dates.
+
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("USA CPI");
+
+        final double[] tenors = new double[] { 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24, 60, 120, 360 };
+        final double[] rates = new double[] {
+                0.0285, 0.0268, 0.0252, 0.0241, 0.0237, 0.0232, 0.0229, 0.0225,
+                0.0223, 0.0221, 0.0230, 0.0238, 0.0245, 0.0252, 0.0260
+        };
+
+        final Calendar calendar = new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
+        final Period observationLag = new Period(3, TimeUnit.Months);
+        final DayCounter dc = new Thirty360(Thirty360.Convention.BondBasis);
+        final Date baseDate = new Date(1, Month.November, 2025);
+
+        // US CPI-U (NSA) monthly fixings, approximate 2025 values.
+        final Date[] fixDates = new Date[] {
+                new Date(1, Month.January, 2025),  new Date(1, Month.February, 2025),
+                new Date(1, Month.March, 2025),    new Date(1, Month.April, 2025),
+                new Date(1, Month.May, 2025),      new Date(1, Month.June, 2025),
+                new Date(1, Month.July, 2025),     new Date(1, Month.August, 2025),
+                new Date(1, Month.September, 2025),new Date(1, Month.October, 2025),
+                new Date(1, Month.November, 2025), new Date(1, Month.December, 2025)
+        };
+        final double[] fixValues = new double[] {
+                309.685, 310.326, 311.054, 311.538, 311.862, 312.104,
+                312.332, 312.558, 312.816, 313.025, 313.314, 313.580
+        };
+
+        int failureCount = 0;
+
+        for (Date evalDate = new Date(1, Month.February, 2026);
+                evalDate.le(new Date(28, Month.February, 2026));
+                evalDate = evalDate.inc()) {
+
+            new Settings().setEvaluationDate(evalDate);
+
+            final RelinkableHandle<ZeroInflationTermStructure> hz =
+                    new RelinkableHandle<>();
+            final USCPI index = new USCPI(false, hz);
+            for (int i = 0; i < fixDates.length; ++i) {
+                index.addFixing(fixDates[i], fixValues[i], true);
+            }
+
+            final Date startDate = calendar.advance(evalDate, 2, TimeUnit.Days);
+            final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
+            for (int i = 0; i < tenors.length; ++i) {
+                final Date endDate = startDate.add(
+                        new Period((int) tenors[i], TimeUnit.Months));
+                helpers.add(new ZeroCouponInflationSwapHelper(
+                        new Handle<Quote>(new SimpleQuote(rates[i])),
+                        observationLag, startDate, endDate, calendar,
+                        BusinessDayConvention.ModifiedFollowing, dc, index,
+                        CPI.InterpolationType.Linear));
+            }
+
+            try {
+                final PiecewiseZeroInflationCurve<Linear> curve =
+                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                                evalDate, baseDate, Frequency.Monthly, dc, helpers);
+                hz.linkTo(curve);
+                curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
+            } catch (final Exception e) {
+                failureCount++;
+            }
+
+            org.jquantlib.indexes.IndexManager.getInstance().clearHistory("USA CPI");
+        }
+
+        assertEquals("CPI::Linear bootstrap should not fail at any Feb 2026 date",
+                0, failureCount);
     }
 
     // ===================================================================
     // testEuHicpFlatBootstrapAtMonthStart — inflation.cpp:1966-2057
     // ===================================================================
     @Test
-    @Ignore("Phase 2u/2v: EUHICPXT not ported."
-            + " Phase 2v: GlobalBootstrap for inflation curves not ported."
-            + " Phase 2x: ZeroCouponInflationSwapHelper dual-date + Flat overload.")
     public void testEuHicpFlatBootstrapAtMonthStart() {
-        // C++: exercises both IterativeBootstrap and GlobalBootstrap with
-        // EUHICPXT + CPI::Flat across February dates. Requires GlobalBootstrap
-        // template for inflation curves (Phase 2v).
+        // Faithful port of C++ inflation.cpp:1966-2057 — exercises both
+        // IterativeBootstrap and GlobalBootstrap with EUHICPXT + CPI::Flat
+        // across February dates.
+        //
+        // Conventions: T+2 settlement (TARGET calendar),
+        // 3-month observation lag, unadjusted maturity dates.
+
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("EU HICPXT");
+
+        final int[] tenorsYears = new int[] { 1, 2, 3, 4, 5, 7, 10, 15, 20, 30 };
+        final double[] rates = new double[] {
+                0.0182, 0.0178, 0.0185, 0.0188, 0.0190, 0.0195, 0.0201,
+                0.0210, 0.0218, 0.0229
+        };
+
+        final Calendar calendar = new Target();
+        final Period observationLag = new Period(3, TimeUnit.Months);
+        final DayCounter dc = new Thirty360(Thirty360.Convention.BondBasis);
+        final Date baseDate = new Date(1, Month.December, 2025);
+
+        // EU HICP ex-tobacco monthly fixings, approximate 2025 values.
+        final Date[] fixDates = new Date[] {
+                new Date(1, Month.January, 2025),  new Date(1, Month.February, 2025),
+                new Date(1, Month.March, 2025),    new Date(1, Month.April, 2025),
+                new Date(1, Month.May, 2025),      new Date(1, Month.June, 2025),
+                new Date(1, Month.July, 2025),     new Date(1, Month.August, 2025),
+                new Date(1, Month.September, 2025),new Date(1, Month.October, 2025),
+                new Date(1, Month.November, 2025), new Date(1, Month.December, 2025)
+        };
+        final double[] fixValues = new double[] {
+                126.42, 126.81, 127.19, 127.51, 127.62, 127.85,
+                127.23, 127.58, 128.07, 128.41, 128.62, 128.89
+        };
+
+        int failureCount = 0;
+        int globalFailureCount = 0;
+
+        for (Date evalDate = new Date(1, Month.February, 2026);
+                evalDate.le(new Date(28, Month.February, 2026));
+                evalDate = evalDate.inc()) {
+
+            new Settings().setEvaluationDate(evalDate);
+
+            final RelinkableHandle<ZeroInflationTermStructure> hz =
+                    new RelinkableHandle<>();
+            final EUHICPXT index = new EUHICPXT(false, hz);
+            for (int i = 0; i < fixDates.length; ++i) {
+                index.addFixing(fixDates[i], fixValues[i], true);
+            }
+
+            final Date startDate = calendar.advance(evalDate, 2, TimeUnit.Days);
+            final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
+            for (int i = 0; i < tenorsYears.length; ++i) {
+                final Date endDate = startDate.add(
+                        new Period(tenorsYears[i], TimeUnit.Years));
+                helpers.add(new ZeroCouponInflationSwapHelper(
+                        new Handle<Quote>(new SimpleQuote(rates[i])),
+                        observationLag, startDate, endDate, calendar,
+                        BusinessDayConvention.ModifiedFollowing, dc, index,
+                        CPI.InterpolationType.Flat));
+            }
+
+            // IterativeBootstrap
+            try {
+                final PiecewiseZeroInflationCurve<Linear> curve =
+                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                                evalDate, baseDate, Frequency.Monthly, dc, helpers);
+                hz.linkTo(curve);
+                curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
+            } catch (final Exception e) {
+                failureCount++;
+            }
+
+            hz.linkTo(null);
+
+            // GlobalBootstrap
+            try {
+                final PiecewiseZeroInflationCurve<Linear> curve =
+                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                                evalDate, baseDate, Frequency.Monthly, dc, helpers,
+                                1.0e-14, new GlobalBootstrap());
+                hz.linkTo(curve);
+                curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
+            } catch (final Exception e) {
+                globalFailureCount++;
+            }
+
+            org.jquantlib.indexes.IndexManager.getInstance().clearHistory("EU HICPXT");
+        }
+
+        assertEquals("IterativeBootstrap should not fail at any Feb 2026 date",
+                0, failureCount);
+        assertEquals("GlobalBootstrap should not fail at any Feb 2026 date",
+                0, globalFailureCount);
     }
 
     // ===================================================================
     // testUkRpiFlatBootstrapAtMonthStart — inflation.cpp:2059-2151
     // ===================================================================
     @Test
-    @Ignore("Phase 2v: GlobalBootstrap for inflation curves not ported."
-            + " Phase 2x: ZeroCouponInflationSwapHelper dual-date overload."
-            + " The IterativeBootstrap branch alone (without GlobalBootstrap)"
-            + " could be partially ported once Phase 2x lands.")
     public void testUkRpiFlatBootstrapAtMonthStart() {
-        // C++: similar to testEuHicpFlatBootstrapAtMonthStart but with UK
-        // conventions (T+0 settlement, 2M lag).
+        // Faithful port of C++ inflation.cpp:2059-2151 — UK RPI bootstrap
+        // stability across evaluation dates with UK conventions:
+        //   T+0 settlement, 2-month observation lag, London calendar.
+
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
+
+        final int[] tenorsYears = new int[] { 1, 2, 3, 5, 7, 10, 15, 20, 30, 50 };
+        final double[] rates = new double[] {
+                0.0335, 0.0328, 0.0322, 0.0318, 0.0316, 0.0315,
+                0.0320, 0.0325, 0.0330, 0.0332
+        };
+
+        final Calendar calendar = new UnitedKingdom();
+        final Period observationLag = new Period(2, TimeUnit.Months);
+        final DayCounter dc = new Thirty360(Thirty360.Convention.BondBasis);
+        final Date baseDate = new Date(1, Month.December, 2025);
+
+        // UK RPI monthly fixings, approximate 2025 values.
+        final Date[] fixDates = new Date[] {
+                new Date(1, Month.January, 2025),  new Date(1, Month.February, 2025),
+                new Date(1, Month.March, 2025),    new Date(1, Month.April, 2025),
+                new Date(1, Month.May, 2025),      new Date(1, Month.June, 2025),
+                new Date(1, Month.July, 2025),     new Date(1, Month.August, 2025),
+                new Date(1, Month.September, 2025),new Date(1, Month.October, 2025),
+                new Date(1, Month.November, 2025), new Date(1, Month.December, 2025)
+        };
+        final double[] fixValues = new double[] {
+                378.2, 379.1, 380.3, 381.5, 382.0, 382.4,
+                381.8, 382.1, 383.0, 383.5, 383.9, 384.2
+        };
+
+        int failureCount = 0;
+        int globalFailureCount = 0;
+
+        for (Date evalDate = new Date(1, Month.February, 2026);
+                evalDate.le(new Date(28, Month.February, 2026));
+                evalDate = evalDate.inc()) {
+
+            new Settings().setEvaluationDate(evalDate);
+
+            final RelinkableHandle<ZeroInflationTermStructure> hz =
+                    new RelinkableHandle<>();
+            final UKRPI index = new UKRPI(Frequency.Monthly, false, false, hz);
+            for (int i = 0; i < fixDates.length; ++i) {
+                index.addFixing(fixDates[i], fixValues[i], true);
+            }
+
+            // UK RPI: T+0 settlement
+            final Date startDate = evalDate;
+            final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
+            for (int i = 0; i < tenorsYears.length; ++i) {
+                final Date endDate = startDate.add(
+                        new Period(tenorsYears[i], TimeUnit.Years));
+                helpers.add(new ZeroCouponInflationSwapHelper(
+                        new Handle<Quote>(new SimpleQuote(rates[i])),
+                        observationLag, startDate, endDate, calendar,
+                        BusinessDayConvention.ModifiedFollowing, dc, index,
+                        CPI.InterpolationType.Flat));
+            }
+
+            // IterativeBootstrap
+            try {
+                final PiecewiseZeroInflationCurve<Linear> curve =
+                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                                evalDate, baseDate, Frequency.Monthly, dc, helpers);
+                hz.linkTo(curve);
+                curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
+            } catch (final Exception e) {
+                failureCount++;
+            }
+
+            hz.linkTo(null);
+
+            // GlobalBootstrap
+            try {
+                final PiecewiseZeroInflationCurve<Linear> curve =
+                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                                evalDate, baseDate, Frequency.Monthly, dc, helpers,
+                                1.0e-14, new GlobalBootstrap());
+                hz.linkTo(curve);
+                curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
+            } catch (final Exception e) {
+                globalFailureCount++;
+            }
+
+            org.jquantlib.indexes.IndexManager.getInstance().clearHistory("UK RPI");
+        }
+
+        assertEquals("IterativeBootstrap should not fail at any Feb 2026 date",
+                0, failureCount);
+        assertEquals("GlobalBootstrap should not fail at any Feb 2026 date",
+                0, globalFailureCount);
     }
 
     // ===================================================================
     // testUsCpiLinearGlobalBootstrapAtMonthStart — inflation.cpp:2153-2229
     // ===================================================================
     @Test
-    @Ignore("Phase 2u/2v: USCPI not ported."
-            + " Phase 2v: GlobalBootstrap for inflation curves not ported.")
+    @Ignore("Phase 5e.5b-CFC-d follow-up: same blocker as"
+            + " testUsCpiLinearBootstrapAtMonthStart —"
+            + " ZeroCouponInflationSwapHelper does not yet implement the"
+            + " CPI::Linear Pillar::LastRelevantDate logic (C++"
+            + " inflationhelpers.cpp:114-153). The GlobalBootstrap path"
+            + " also depends on helper.latestDate() being the correct"
+            + " (Linear-interpolation-aware) right node.")
     public void testUsCpiLinearGlobalBootstrapAtMonthStart() {
-        // C++: GlobalBootstrap variant of testUsCpiLinearBootstrapAtMonthStart.
+        // Faithful port of C++ inflation.cpp:2153-2229 — GlobalBootstrap
+        // variant of testUsCpiLinearBootstrapAtMonthStart. GlobalBootstrap
+        // solves all curve nodes simultaneously via Levenberg-Marquardt; for
+        // CPI::Linear with sub-annual helpers it provides additional
+        // robustness by deduplicating pillars rather than hard-failing.
+
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("USA CPI");
+
+        final double[] tenors = new double[] { 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24, 60, 120, 360 };
+        final double[] rates = new double[] {
+                0.0285, 0.0268, 0.0252, 0.0241, 0.0237, 0.0232, 0.0229, 0.0225,
+                0.0223, 0.0221, 0.0230, 0.0238, 0.0245, 0.0252, 0.0260
+        };
+
+        final Calendar calendar = new UnitedStates(UnitedStates.Market.GOVERNMENTBOND);
+        final Period observationLag = new Period(3, TimeUnit.Months);
+        final DayCounter dc = new Thirty360(Thirty360.Convention.BondBasis);
+        final Date baseDate = new Date(1, Month.November, 2025);
+
+        final Date[] fixDates = new Date[] {
+                new Date(1, Month.January, 2025),  new Date(1, Month.February, 2025),
+                new Date(1, Month.March, 2025),    new Date(1, Month.April, 2025),
+                new Date(1, Month.May, 2025),      new Date(1, Month.June, 2025),
+                new Date(1, Month.July, 2025),     new Date(1, Month.August, 2025),
+                new Date(1, Month.September, 2025),new Date(1, Month.October, 2025),
+                new Date(1, Month.November, 2025), new Date(1, Month.December, 2025)
+        };
+        final double[] fixValues = new double[] {
+                309.685, 310.326, 311.054, 311.538, 311.862, 312.104,
+                312.332, 312.558, 312.816, 313.025, 313.314, 313.580
+        };
+
+        int failureCount = 0;
+
+        for (Date evalDate = new Date(1, Month.February, 2026);
+                evalDate.le(new Date(28, Month.February, 2026));
+                evalDate = evalDate.inc()) {
+
+            new Settings().setEvaluationDate(evalDate);
+
+            final RelinkableHandle<ZeroInflationTermStructure> hz =
+                    new RelinkableHandle<>();
+            final USCPI index = new USCPI(false, hz);
+            for (int i = 0; i < fixDates.length; ++i) {
+                index.addFixing(fixDates[i], fixValues[i], true);
+            }
+
+            final Date startDate = calendar.advance(evalDate, 2, TimeUnit.Days);
+            final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
+            for (int i = 0; i < tenors.length; ++i) {
+                final Date endDate = startDate.add(
+                        new Period((int) tenors[i], TimeUnit.Months));
+                helpers.add(new ZeroCouponInflationSwapHelper(
+                        new Handle<Quote>(new SimpleQuote(rates[i])),
+                        observationLag, startDate, endDate, calendar,
+                        BusinessDayConvention.ModifiedFollowing, dc, index,
+                        CPI.InterpolationType.Linear));
+            }
+
+            try {
+                final PiecewiseZeroInflationCurve<Linear> curve =
+                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                                evalDate, baseDate, Frequency.Monthly, dc, helpers,
+                                1.0e-14, new GlobalBootstrap());
+                hz.linkTo(curve);
+                curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
+            } catch (final Exception e) {
+                failureCount++;
+            }
+
+            org.jquantlib.indexes.IndexManager.getInstance().clearHistory("USA CPI");
+        }
+
+        assertEquals("GlobalBootstrap CPI::Linear should not fail at any Feb 2026 date",
+                0, failureCount);
     }
 
     // ===================================================================
     // testPillarCollisionWithDifferentMonthLengths — inflation.cpp:2231-2319
     // ===================================================================
     @Test
-    @Ignore("Phase 2u/2v: USCPI not ported."
-            + " Phase 2x: ZeroCouponInflationSwapHelper dual-date overload"
-            + " + the startDate_-based pillar-weight fix (issue #2454).")
+    @Ignore("Phase 5e.5b-CFC-d follow-up: this test directly exercises the"
+            + " startDate_-based pillar-weight fix from C++ issue #2454"
+            + " (inflationhelpers.cpp:131-138). ZeroCouponInflationSwapHelper"
+            + " currently lacks any CPI::Linear pillar logic at all — must"
+            + " port the Pillar::Choice {LastRelevantDate, MaturityDate,"
+            + " CustomDate} machinery and the startDate_ weight calculation"
+            + " before this test can run.")
     public void testPillarCollisionWithDifferentMonthLengths() {
-        // C++: regression test for QuantLib issue #2454 — verifies that
-        // CPI::Linear pillar assignment uses startDate_ rather than maturity_
-        // so that consecutive helpers don't collide on the same pillar.
+        // Faithful port of C++ inflation.cpp:2231-2319 — regression test for
+        // QuantLib issue #2454. Verifies that CPI::Linear pillar assignment
+        // uses startDate_ rather than maturity_ so that consecutive helpers
+        // don't collide on the same pillar across months of different length.
+
+        org.jquantlib.indexes.IndexManager.getInstance().clearHistory("USA CPI");
+
+        final double[] tenors = new double[] {
+                3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 18, 24, 60, 120, 360
+        };
+        final double[] rates = new double[] {
+                0.0285, 0.0268, 0.0252, 0.0241, 0.0237, 0.0232, 0.0229, 0.0225,
+                0.0223, 0.0221, 0.0220, 0.0230, 0.0238, 0.0245, 0.0252, 0.0260
+        };
+
+        final Calendar calendar = new NullCalendar();
+        final Period observationLag = new Period(3, TimeUnit.Months);
+        final DayCounter dc = new Thirty360(Thirty360.Convention.BondBasis);
+        final Date baseDate = new Date(1, Month.November, 2025);
+
+        final Date[] fixDates = new Date[] {
+                new Date(1, Month.January, 2025),  new Date(1, Month.February, 2025),
+                new Date(1, Month.March, 2025),    new Date(1, Month.April, 2025),
+                new Date(1, Month.May, 2025),      new Date(1, Month.June, 2025),
+                new Date(1, Month.July, 2025),     new Date(1, Month.August, 2025),
+                new Date(1, Month.September, 2025),new Date(1, Month.October, 2025),
+                new Date(1, Month.November, 2025), new Date(1, Month.December, 2025),
+                new Date(1, Month.January, 2026), new Date(1, Month.February, 2026),
+                new Date(1, Month.March, 2026)
+        };
+        final double[] fixValues = new double[] {
+                309.685, 310.326, 311.054, 311.538, 311.862, 312.104,
+                312.332, 312.558, 312.816, 313.025, 313.314, 313.580,
+                314.012, 314.382, 314.715
+        };
+
+        int failureCount = 0;
+
+        // Loop February and March 2026 with T+0 settlement.
+        for (Date evalDate = new Date(1, Month.February, 2026);
+                evalDate.le(new Date(31, Month.March, 2026));
+                evalDate = evalDate.inc()) {
+
+            new Settings().setEvaluationDate(evalDate);
+
+            final RelinkableHandle<ZeroInflationTermStructure> hz =
+                    new RelinkableHandle<>();
+            final USCPI index = new USCPI(false, hz);
+            for (int i = 0; i < fixDates.length; ++i) {
+                index.addFixing(fixDates[i], fixValues[i], true);
+            }
+
+            // T+0 settlement
+            final Date startDate = evalDate;
+            final List<ZeroCouponInflationSwapHelper> helpers = new ArrayList<>();
+            for (int i = 0; i < tenors.length; ++i) {
+                final Date endDate = startDate.add(
+                        new Period((int) tenors[i], TimeUnit.Months));
+                helpers.add(new ZeroCouponInflationSwapHelper(
+                        new Handle<Quote>(new SimpleQuote(rates[i])),
+                        observationLag, startDate, endDate, calendar,
+                        BusinessDayConvention.Unadjusted, dc, index,
+                        CPI.InterpolationType.Linear));
+            }
+
+            try {
+                final PiecewiseZeroInflationCurve<Linear> curve =
+                        new PiecewiseZeroInflationCurve<>(Linear.class,
+                                evalDate, baseDate, Frequency.Monthly, dc, helpers);
+                hz.linkTo(curve);
+                curve.zeroRate(evalDate.add(new Period(1, TimeUnit.Years)));
+            } catch (final Exception e) {
+                failureCount++;
+            }
+
+            org.jquantlib.indexes.IndexManager.getInstance().clearHistory("USA CPI");
+        }
+
+        assertEquals("CPI::Linear pillar assignment should be collision-free"
+                + " across Feb/Mar 2026 with sub-annual helpers including 13M",
+                0, failureCount);
     }
 
     // ===================================================================
