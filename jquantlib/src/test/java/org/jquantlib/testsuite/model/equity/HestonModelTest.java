@@ -191,15 +191,18 @@ public class HestonModelTest {
             + "is not yet ported to Java. ExponentialFittingHestonEngine reaches the "
             + "same code path. Body-fill ready in branch — enable once Ci/Si land.";
 
-    private static final String REASON_EXPANSION =
-            "Phase 5h.5: HestonExpansion family ported (HestonExpansionEngine, FordeHestonExpansion, "
-            + "LPP2HestonExpansion — commits 41966c40 + 24b3a98c); test bodies are "
-            + "`fail(\"not implemented\")` — needs full port from C++ hestonmodel.cpp.";
-
     private static final String REASON_PTD =
-            "Phase 5h.5: PiecewiseTimeDependentHestonModel now ported (commit 6f5a5a33); "
-            + "AnalyticPTDHestonEngine + MultipleStrikesEngine still missing — needs port + "
-            + "body fill from C++ hestonmodel.cpp.";
+            "Phase 5h.5: PiecewiseTimeDependentHestonModel + AnalyticPTDHestonEngine "
+            + "(Gatheral) ported (commits 6f5a5a33 / 8797ec49). Remaining PTD tests "
+            + "(testPiecewiseTimeDependentComparison + ChFAsymtotic) require "
+            + "AnalyticPTDHestonEngine::AndersenPiterbarg complex-log dispatch + "
+            + "discreteTrapezoid(n) Fourier integration, both of which throw "
+            + "UnsupportedOperationException in the Java AnalyticPTDHestonEngine port "
+            + "(see AnalyticPTDHestonEngine.calculate() AndersenPiterbarg case + "
+            + "AnalyticHestonEngine.Integration.discreteTrapezoid carry-forward). "
+            + "testMultipleStrikesEngine requires FdHestonVanillaEngine."
+            + "enableMultipleStrikesCaching(strikes) — the cachedArgs2results_ "
+            + "multi-strike caching is not yet ported (Phase 2m FD-Heston scope).";
 
     private static final String REASON_PDF =
             "Phase 5h.5: AnalyticPDFHestonEngine now ported (commit f5e89141); test bodies "
@@ -2523,13 +2526,325 @@ public class HestonModelTest {
         // expansion path in AnalyticHestonEngine.chF().
     }
 
-    @Ignore(REASON_EXPANSION)
+    /**
+     * Phase 5e.5b-CFC-d-173 body-fill — verbatim port of C++
+     * {@code testSmallSigmaExpansion4ExpFitting} (hestonmodel.cpp:2745-2861).
+     *
+     * <p>Cross-validates the small-{@code sigma} regime of
+     * {@link org.jquantlib.pricingengines.vanilla.ExponentialFittingHestonEngine}
+     * against closed-form Black 1976 prices. Two blocks:
+     * <ol>
+     *   <li><strong>Special case</strong> — fixed kappa/theta/v0/rho;
+     *       sigma stepping {@code 1e-4, 1e-5, ..., 1e-12}. Tolerance
+     *       {@code 0.01 * sigma}, ATM-ish moneyness.</li>
+     *   <li><strong>Generic cases</strong> — sigma fixed at {@code 1e-13};
+     *       sweep kappa × theta × v0 × maturity × strike; tolerance
+     *       {@code 1e-10}. Option type toggles call/put with each price
+     *       evaluation (matches the C++ in-loop flip).</li>
+     * </ol>
+     *
+     * <p>For all parameter tuples here,
+     * {@link AnalyticHestonEngine#optimalControlVariate(double, double, double, double, double, double)}
+     * selects {@link AnalyticHestonEngine.ComplexLogFormula#AngledContour}
+     * (the {@code AsymptoticChF} branch — which would require Ci/Si — is
+     * never reached).
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:2745-2861} v1.42.1.
+     */
     @Test
-    public void testSmallSigmaExpansion4ExpFitting() { fail("not implemented"); }
+    public void testSmallSigmaExpansion4ExpFitting() {
+        final Date todaysDate = new Date(13, Month.March, 2020);
+        new Settings().setEvaluationDate(todaysDate);
 
-    @Ignore(REASON_EXPANSION)
+        final DayCounter dc = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate,
+                        new Handle<Quote>(new SimpleQuote(0.05)), dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate,
+                        new Handle<Quote>(new SimpleQuote(0.075)), dc));
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(100.0));
+
+        // ----- special case: reduce sigma --------------------------------
+        {
+            final Date maturityDate = new Date(14, Month.March, 2021);
+            final double maturity = dc.yearFraction(todaysDate, maturityDate);
+            final double fwd = spot.currentLink().value()
+                    * qTS.currentLink().discount(maturity)
+                    / rTS.currentLink().discount(maturity);
+
+            final double v0    = 0.04;
+            final double rho   = -0.5;
+            final double kappa = 4.0;
+            final double theta = 0.04;
+
+            final double moneyness = 0.1;
+            final double strike = Math.exp(-moneyness * Math.sqrt(theta * maturity)) * fwd;
+
+            final double expected = org.jquantlib.pricingengines.BlackFormula
+                    .blackFormula(Option.Type.Call, strike, fwd,
+                            Math.sqrt(v0 * maturity),
+                            rTS.currentLink().discount(maturity));
+
+            final VanillaOption option = new VanillaOption(
+                    new PlainVanillaPayoff(Option.Type.Call, strike),
+                    new EuropeanExercise(maturityDate));
+
+            for (double sigma = 1e-4; sigma > 1e-12; sigma *= 0.1) {
+                option.setPricingEngine(
+                        new org.jquantlib.pricingengines.vanilla
+                                .ExponentialFittingHestonEngine(
+                                        new HestonModel(new HestonProcess(
+                                                rTS, qTS, spot,
+                                                v0, kappa, theta, sigma, rho))));
+                final double calculated = option.NPV();
+                final double diff = Math.abs(expected - calculated);
+
+                if (diff > 0.01 * sigma) {
+                    fail("failed to reproduce Black-Scholes prices "
+                            + "for Heston model with very small sigma"
+                            + "\n  expected  : " + expected
+                            + "\n  calculated: " + calculated
+                            + "\n  sigma     : " + sigma
+                            + "\n  diff      : " + diff
+                            + "\n  tolerance : " + (0.01 * sigma));
+                }
+            }
+        }
+
+        // ----- generic cases: sigma fixed at 1e-13 ------------------------
+        final double[] kappas = { 0.5, 1.0, 4.0 };
+        final double[] thetas = { 0.04, 0.09 };
+        final double[] v0s    = { 0.025, 0.20 };
+        final int[] maturityDays = { 1, 31, 182, 1850 };
+
+        Option.Type optionType = Option.Type.Call;
+        for (final int days : maturityDays) {
+            final Date maturityDate = todaysDate.add(new org.jquantlib.time.Period(
+                    days, org.jquantlib.time.TimeUnit.Days));
+            final double df = rTS.currentLink().discount(maturityDate);
+            final double fwd = spot.currentLink().value()
+                    * qTS.currentLink().discount(maturityDate) / df;
+
+            final Exercise exercise = new EuropeanExercise(maturityDate);
+            final double t = dc.yearFraction(todaysDate, maturityDate);
+
+            for (final double kappa : kappas) {
+                for (final double theta : thetas) {
+                    for (final double v0 : v0s) {
+                        final PricingEngine engine =
+                                new org.jquantlib.pricingengines.vanilla
+                                        .ExponentialFittingHestonEngine(
+                                                new HestonModel(new HestonProcess(
+                                                        rTS, qTS, spot,
+                                                        v0, kappa, theta, 1e-13, -0.8)));
+
+                        final double stdDev = Math.sqrt(
+                                ((1.0 - Math.exp(-kappa * t)) * (v0 - theta)
+                                        / (kappa * t) + theta) * t);
+
+                        for (double strike = spot.currentLink().value() * Math.exp(-10.0 * stdDev);
+                                strike < spot.currentLink().value() * Math.exp(10.0 * stdDev);
+                                strike *= 1.2) {
+
+                            final VanillaOption option = new VanillaOption(
+                                    new PlainVanillaPayoff(optionType, strike),
+                                    exercise);
+                            option.setPricingEngine(engine);
+                            final double calculated = option.NPV();
+
+                            final double expected = org.jquantlib.pricingengines
+                                    .BlackFormula.blackFormula(
+                                            optionType, strike, fwd, stdDev, df);
+                            final double diff = Math.abs(expected - calculated);
+                            if (diff > 1e-10) {
+                                fail("failed to reproduce Black-Scholes prices "
+                                        + "for Heston model with very small sigma"
+                                        + "\n  expected  : " + expected
+                                        + "\n  calculated: " + calculated
+                                        + "\n  diff      : " + diff
+                                        + "\n  tolerance : " + 1e-10);
+                            }
+
+                            optionType = (optionType == Option.Type.Call)
+                                    ? Option.Type.Put : Option.Type.Call;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Phase 5e.5b-CFC-d-173 body-fill — verbatim port of C++
+     * {@code testExponentialFitting4StrikesAndMaturities}
+     * (hestonmodel.cpp:2863-3003).
+     *
+     * <p>Cross-validates the
+     * {@link org.jquantlib.pricingengines.vanilla.ExponentialFittingHestonEngine}
+     * against hard-coded high-precision reference values produced by a
+     * boost::multiprecision implementation of the Andersen-Piterbarg /
+     * angled-contour control-variate Heston engine
+     * (<a href="https://github.com/klausspanderen/HestonExponentialFitting">
+     * HestonExponentialFitting</a>) at extreme moneyness (up to ±20 std-dev)
+     * and four maturities (1D, 1M, 1Y, 10Y).
+     *
+     * <p>Call/put parity is applied to the reference (call) values to derive
+     * the expected put price.
+     *
+     * <p>Tolerance: {@code 1e-8} absolute. This is the test that pins down
+     * AP / angled-contour numerical accuracy at deep OTM extremes — every
+     * reference value is good to roughly machine precision.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:2863-3003} v1.42.1.
+     */
     @Test
-    public void testExponentialFitting4StrikesAndMaturities() { fail("not implemented"); }
+    public void testExponentialFitting4StrikesAndMaturities() {
+        final Date todaysDate = new Date(13, Month.May, 2020);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final DayCounter dc = new Actual365Fixed();
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate,
+                        new Handle<Quote>(new SimpleQuote(0.0507)), dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate,
+                        new Handle<Quote>(new SimpleQuote(0.0469)), dc));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(1.0));
+
+        final double[] moneyness = { -20, -10, -5, 2.5, 1, 0, 1, 2.5, 5, 10, 20 };
+        // 1D, 1M, 1Y, 10Y maturities (Period units).
+        final org.jquantlib.time.Period[] maturities = {
+                new org.jquantlib.time.Period(1, org.jquantlib.time.TimeUnit.Days),
+                new org.jquantlib.time.Period(1, org.jquantlib.time.TimeUnit.Months),
+                new org.jquantlib.time.Period(1, org.jquantlib.time.TimeUnit.Years),
+                new org.jquantlib.time.Period(10, org.jquantlib.time.TimeUnit.Years)
+        };
+
+        final double v0    =  0.04;
+        final double rho   = -0.6;
+        final double sigma =  0.75;
+        final double kappa =  2.5;
+        final double theta =  0.06;
+
+        // Reference values produced by boost::multiprecision implementation
+        // of AnalyticHestonEngine (Andersen-Piterbarg / angled-contour CV).
+        // See https://github.com/klausspanderen/HestonExponentialFitting.
+        final double[] referenceValues = {
+                1.1631865252540813e-58,
+                1.06426822273258466e-49,
+                6.92896489110422086e-16,
+                8.19515526286263236e-06,
+                0.000625608178476390504,
+                0.00417261379371945684,
+                0.000625608178476390504,
+                8.19515526286263236e-06,
+                1.92308901296741414e-10,
+                1.57327901822368115e-23,
+                5.7830515043285098e-58,
+                3.56081886910098813e-48,
+                2.9489071194212509e-23,
+                1.54181757781090727e-11,
+                0.000367960011879847279,
+                0.00493886106106039818,
+                0.0227152343265593776,
+                0.00493886106106039818,
+                0.000367960011879847279,
+                3.06653474407784574e-06,
+                8.86665241279348934e-11,
+                1.51206812371708868e-20,
+                4.18506719865401643e-29,
+                2.46637786897559908e-15,
+                1.75338784910563671e-08,
+                0.00284789176080218294,
+                0.0199133097064688458,
+                0.0776848755698912041,
+                0.0199133097064688458,
+                0.00284789176080218294,
+                0.00012462190796343504,
+                2.59755319566692257e-07,
+                1.13853114743124721e-12,
+                4.27612073892114211e-39,
+                1.08387452075906664e-25,
+                4.15179522944463802e-11,
+                0.00134157732880653131,
+                0.029018582813884912,
+                0.176405213088554197,
+                0.029018582813884912,
+                0.00134157732880653131,
+                5.43674074281991917e-06,
+                6.51443921040230507e-11,
+                9.25756999394709285e-21
+        };
+
+        final HestonModel model = new HestonModel(new HestonProcess(
+                rTS, qTS, s0, v0, kappa, theta, sigma, rho));
+
+        final PricingEngine engine =
+                new org.jquantlib.pricingengines.vanilla
+                        .ExponentialFittingHestonEngine(model);
+
+        int idx = 0;
+        for (final org.jquantlib.time.Period mat : maturities) {
+            final Date maturityDate = todaysDate.add(mat);
+            final double t = dc.yearFraction(todaysDate, maturityDate);
+
+            final Exercise exercise = new EuropeanExercise(maturityDate);
+
+            final double df = rTS.currentLink().discount(t);
+            final double fwd = s0.currentLink().value()
+                    * qTS.currentLink().discount(t) / df;
+
+            for (int j = 0; j < moneyness.length; ++j, ++idx) {
+                final double strike =
+                        Math.exp(-moneyness[j] * Math.sqrt(theta * t)) * fwd;
+
+                for (int k = 0; k < 2; ++k) {
+                    final Option.Type type = (k != 0)
+                            ? Option.Type.Put : Option.Type.Call;
+                    final PlainVanillaPayoff payoff =
+                            new PlainVanillaPayoff(type, strike);
+
+                    final VanillaOption option = new VanillaOption(payoff, exercise);
+                    option.setPricingEngine(engine);
+
+                    final double calculated = option.NPV();
+
+                    final double expected;
+                    if (payoff.optionType() == Option.Type.Call) {
+                        if (fwd < strike) {
+                            expected = referenceValues[idx];
+                        } else {
+                            expected = (fwd - strike) * df + referenceValues[idx];
+                        }
+                    } else {
+                        if (fwd > strike) {
+                            expected = referenceValues[idx];
+                        } else {
+                            expected = referenceValues[idx] - (fwd - strike) * df;
+                        }
+                    }
+
+                    final double diff = Math.abs(calculated - expected);
+                    final double tol = 1e-8;
+                    if (diff > tol) {
+                        fail("failed to reproduce cached extreme Heston model "
+                                + "prices with exponential-fitted Gauss-Laguerre "
+                                + "quadrature rule"
+                                + "\n  forward   : " + fwd
+                                + "\n  strike    : " + strike
+                                + "\n  expected  : " + expected
+                                + "\n  calculated: " + calculated
+                                + "\n  diff      : " + diff
+                                + "\n  tolerance : " + tol);
+                    }
+                }
+            }
+        }
+    }
 
     /* ---- 7. Piecewise time-dependent Heston -------------------------- */
 
