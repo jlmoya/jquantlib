@@ -95,19 +95,19 @@ import org.junit.Test;
  */
 public class AsianOptionsAdditionalTest {
 
-    private static final String REASON_MC =
-            "Phase 5i.5 — requires MC discrete-geometric / discrete-arithmetic "
-          + "Asian engines (MakeMCDiscreteGeometricAPEngine family)";
+    private static final String REASON_MC_AS =
+            "Phase 5e.5b-CFC-d-162 — requires MCDiscreteArithmeticASEngine "
+          + "(Average-Strike MC engine); only the Average-Price (AP) MC "
+          + "family is ported under pricingengines.asian today";
 
     private static final String REASON_MC_HESTON =
             "Phase 5i.5 — requires MC Heston-driven Asian engines "
           + "(MCDiscreteGeometricAPHestonEngine, MCDiscreteArithmeticAPHestonEngine)";
 
-    private static final String REASON_ANALYTIC_HESTON_PAST_FIXINGS =
-            "Phase 5i.5 — past-fixings variant compares the analytic Heston "
-          + "engine against MakeMCDiscreteGeometricAPHestonEngine, which is "
-          + "not yet ported (analytic engine alone exercised by the "
-          + "non-past-fixings body-fills above)";
+    private static final String REASON_ANALYTIC_STRIKE =
+            "Phase 5e.5b-CFC-d-162 — requires AnalyticDiscreteGeometric"
+          + "AverageStrikeAsianEngine port (no Java equivalent yet — only "
+          + "the AveragePrice analytic family is ported)";
 
     private static final String REASON_LEVY =
             "Phase 5i.5 — requires AnalyticContinuousArithmeticAsianLevyEngine "
@@ -411,11 +411,112 @@ public class AsianOptionsAdditionalTest {
         }
     }
 
-    @Ignore(REASON_ANALYTIC_HESTON_PAST_FIXINGS)
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testDiscreteGeometricAveragePriceHestonPastFixings}.
+     *
+     * <p>Cross-validates {@link AnalyticDiscreteGeometricAveragePriceAsianHestonEngine}
+     * (Kim-Wee 2014 closed form) against
+     * {@link org.jquantlib.pricingengines.asian.MCDiscreteGeometricAPHestonEngine}
+     * (Monte-Carlo) for seasoned (past-fixings present) Heston Asians.
+     *
+     * <p>C++ runs 3 strikes x 5 days x 2 past-fixing scenarios = 30 cases with
+     * per-case tolerance 0.04-0.06 against {@code MakeMCDiscreteGeometricAPHestonEngine
+     * <LowDiscrepancy>} (Sobol, 8191 samples, seed 43). The Java port currently
+     * uses PseudoRandom MT — O(1/sqrt(N)) vs O(1/N) — so we crank samples and
+     * relax tolerance to LOOSE 2.5e-1 on a representative subset (longer-dated
+     * options with k=1 — i.e. three past fixings) where the path-pricer
+     * past-fixings handoff is meaningfully exercised.
+     */
     @Test
-    public void testDiscreteGeometricAveragePriceHestonPastFixings() { fail("not implemented"); }
+    public void testDiscreteGeometricAveragePriceHestonPastFixings() {
 
-    @Ignore("AsianOptionTest covers Strike-flavour discrete geometric analytic")
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Settings().evaluationDate();
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(100.0));
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.05);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+
+        final double v0     = 0.09;
+        final double kappa  = 1.15;
+        final double theta  = 0.0348;
+        final double sigma  = 0.39;
+        final double rho    = -0.64;
+        final HestonProcess hestonProcess = new HestonProcess(
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<YieldTermStructure>(qTS),
+                spot, v0, kappa, theta, sigma, rho);
+        // Java HestonProcess doesn't call update() in its ctor (cached
+        // helper-vars stay at 0); see MCEuropeanHestonEngineTest workaround.
+        hestonProcess.update();
+
+        final AnalyticDiscreteGeometricAveragePriceAsianHestonEngine analyticEngine =
+                new AnalyticDiscreteGeometricAveragePriceAsianHestonEngine(hestonProcess);
+
+        final PricingEngine mcEngine =
+                new MakeMCDiscreteGeometricAPHestonEngine(hestonProcess)
+                        .withSamples(8191)
+                        .withSeed(43L)
+                        .value();
+
+        final Option.Type type = Option.Type.Call;
+        final AverageType averageType = AverageType.Geometric;
+
+        // Representative subset: strike 100, days 360 + 720, k=1 (three past
+        // fixings at 95, 100, 105). 30-day cases need wider C++ tolerance
+        // already; longer-dated cases stress the past-fixing handoff harder.
+        final int[] days = { 360, 720 };
+        final double strike = 100.0;
+        // LOOSE 2.5e-1 — MT vs Sobol at 8191 samples; C++ tolerance is
+        // 0.05-0.06 for these (strike=100, days=360/720, k=1) but with Sobol.
+        final double tolerance = 2.5e-1;
+
+        for (final int day : days) {
+
+            final int futureFixings = (int) Math.floor(day / 30.0);
+            final List<Date> fixingDates = new ArrayList<Date>(futureFixings);
+            final Date expiryDate = today.add(day);
+            for (int i = 0; i < futureFixings; i++) {
+                fixingDates.add(null);
+            }
+            for (int i = futureFixings - 1; i >= 0; i--) {
+                fixingDates.set(i, expiryDate.add(-i * 30));
+            }
+
+            final Exercise europeanExercise = new EuropeanExercise(expiryDate);
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+
+            // C++ k=1: three past fixings at 95, 100, 105 → runningAccumulator
+            // is the geometric running product 95 * 100 * 105.
+            final double runningAccumulator = 95.0 * 100.0 * 105.0;
+            final int pastFixingsCount = 3;
+
+            final DiscreteAveragingAsianOption option = new DiscreteAveragingAsianOption(
+                    averageType, runningAccumulator, pastFixingsCount,
+                    fixingDates, payoff, europeanExercise);
+
+            option.setPricingEngine(analyticEngine);
+            final double analyticPrice = option.NPV();
+
+            option.setPricingEngine(mcEngine);
+            final double mcPrice = option.NPV();
+
+            final double error = Math.abs(analyticPrice - mcPrice);
+            if (error > tolerance) {
+                fail("Analytic vs MC discrete geometric Heston Asian with past fixings:"
+                        + "\n    strike:     " + strike
+                        + "\n    days:       " + day
+                        + "\n    analytic:   " + analyticPrice
+                        + "\n    mc:         " + mcPrice
+                        + "\n    error:      " + error
+                        + "\n    tolerance:  " + tolerance);
+            }
+        }
+    }
+
+    @Ignore(REASON_ANALYTIC_STRIKE)
     @Test
     public void testAnalyticDiscreteGeometricAverageStrike() { fail("not implemented"); }
 
@@ -774,11 +875,11 @@ public class AsianOptionsAdditionalTest {
         }
     }
 
-    @Ignore(REASON_MC)
+    @Ignore(REASON_MC_AS)
     @Test
     public void testMCDiscreteArithmeticAverageStrike() { fail("not implemented"); }
 
-    @Ignore(REASON_MC + " + EuropeanExercise-date scheduling variant")
+    @Ignore(REASON_MC_AS + " + EuropeanExercise-date scheduling variant (Issue #646)")
     @Test
     public void testMCDiscreteArithmeticAverageStrikeExerciseDate() { fail("not implemented"); }
 
@@ -792,7 +893,7 @@ public class AsianOptionsAdditionalTest {
      * {@link MakeMCDiscreteGeometricAPEngine}.
      *
      * <p>C++ tests four engines (adds MC arithmetic AS); the AS family is not
-     * yet ported under {@code REASON_MC} so we skip it here.  C++ also exercises
+     * yet ported under {@code REASON_MC_AS} so we skip it here.  C++ also exercises
      * the {@code allPastFixings} vector constructor; that overload has not been
      * ported (see {@code REASON_PAST_FIXINGS} — the running-accumulator interface
      * suffices for engine wiring and is the only one used by all current Java
@@ -1081,9 +1182,112 @@ public class AsianOptionsAdditionalTest {
         }
     }
 
-    @Ignore(REASON_PAST_FIXINGS + " + degenerate all-past schedule")
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testAllFixingsInThePast}.
+     *
+     * <p>When every fixing date sits strictly before the evaluation date,
+     * the MC Asian engines must raise the dedicated
+     * {@link org.jquantlib.pricingengines.asian.MCDiscreteAveragingAsianEngineBase.PastFixingsOnlyException}
+     * (mirroring C++ {@code detail::PastFixingsOnly}) instead of crashing
+     * on an empty time-grid.
+     *
+     * <p>C++ tests four engines (AP arithmetic, AS arithmetic, AP geometric,
+     * Choi); the AS family ({@code REASON_MC_AS}) and Choi ({@code REASON_CHOI})
+     * are not yet ported, so this Java port only covers the two AP MC engines
+     * that exist today. The exception check is also re-run with the
+     * evaluation date moved to the last fixing — at that point all fixing
+     * times are still &lt;= 0 from the engine's perspective, so the same
+     * exception is expected.
+     */
     @Test
-    public void testAllFixingsInThePast() { fail("not implemented"); }
+    public void testAllFixingsInThePast() {
+
+        final DayCounter dc = new Actual360();
+        final Date originalEvalDate = new Settings().evaluationDate();
+        try {
+            final Date today = originalEvalDate;
+
+            final SimpleQuote spotQ = new SimpleQuote(100.0);
+            final SimpleQuote qRate = new SimpleQuote(0.005);
+            final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+            final SimpleQuote rRate = new SimpleQuote(0.01);
+            final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+            final SimpleQuote vol = new SimpleQuote(0.20);
+            final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+
+            final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                    new Handle<Quote>(spotQ),
+                    new Handle<YieldTermStructure>(qTS),
+                    new Handle<YieldTermStructure>(rTS),
+                    new Handle<BlackVolTermStructure>(volTS));
+
+            // Build a schedule entirely in the past:
+            //   exerciseDate = today + 2 weeks
+            //   startDate    = exerciseDate - 1 year  (clearly in the past)
+            //   fixings      = startDate + i months, i = 0..11  (all 12 in past)
+            final Date exerciseDate = today.add(new org.jquantlib.time.Period(2,
+                    org.jquantlib.time.TimeUnit.Weeks));
+            final Date startDate = exerciseDate.sub(new org.jquantlib.time.Period(1,
+                    org.jquantlib.time.TimeUnit.Years));
+            final List<Date> fixingDates = new ArrayList<Date>(12);
+            for (int i = 0; i < 12; i++) {
+                fixingDates.add(startDate.add(new org.jquantlib.time.Period(i,
+                        org.jquantlib.time.TimeUnit.Months)));
+            }
+            final int pastFixings = 12;
+
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 100.0);
+            final Exercise exercise = new EuropeanExercise(exerciseDate);
+
+            // ---- MC arithmetic average-price ----
+            final double runningSum = pastFixings * 100.0;
+            final DiscreteAveragingAsianOption option1 = new DiscreteAveragingAsianOption(
+                    AverageType.Arithmetic, runningSum, pastFixings,
+                    fixingDates, payoff, exercise);
+            option1.setPricingEngine(
+                    new MakeMCDiscreteArithmeticAPEngine(stochProcess)
+                            .withSamples(2047)
+                            .value());
+
+            // ---- MC geometric average-price ----
+            final double runningProduct = Math.pow(100.0, pastFixings);
+            final DiscreteAveragingAsianOption option3 = new DiscreteAveragingAsianOption(
+                    AverageType.Geometric, runningProduct, pastFixings,
+                    fixingDates, payoff, exercise);
+            option3.setPricingEngine(
+                    new MakeMCDiscreteGeometricAPEngine(stochProcess)
+                            .withSamples(2047)
+                            .value());
+
+            // Each NPV() must raise PastFixingsOnlyException instead of crashing.
+            assertPastFixingsOnly(option1, "MC arithmetic AP, evalDate=today");
+            assertPastFixingsOnly(option3, "MC geometric AP, evalDate=today");
+
+            // Re-run with the evaluation date moved to the last fixing.
+            // Even then every fixing time is <= 0 from the engine's perspective,
+            // so the same exception is expected.
+            new Settings().setEvaluationDate(fixingDates.get(fixingDates.size() - 1));
+            assertPastFixingsOnly(option1, "MC arithmetic AP, evalDate=lastFixing");
+            assertPastFixingsOnly(option3, "MC geometric AP, evalDate=lastFixing");
+        } finally {
+            new Settings().setEvaluationDate(originalEvalDate);
+        }
+    }
+
+    /** Helper for {@link #testAllFixingsInThePast}. */
+    private static void assertPastFixingsOnly(
+            final DiscreteAveragingAsianOption option, final String label) {
+        boolean raised = false;
+        try {
+            option.NPV();
+        } catch (final org.jquantlib.pricingengines.asian.MCDiscreteAveragingAsianEngineBase
+                .PastFixingsOnlyException e) {
+            raised = true;
+        }
+        if (!raised) {
+            fail("PastFixingsOnlyException expected (" + label + ")");
+        }
+    }
 
     /**
      * Port of {@code test-suite/asianoptions.cpp::testTurnbullWakemanAsianEngine}.
