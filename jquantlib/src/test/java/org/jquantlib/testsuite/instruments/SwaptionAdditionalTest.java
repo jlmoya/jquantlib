@@ -13,6 +13,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.CashFlow;
+import org.jquantlib.cashflow.Leg;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.Thirty360;
@@ -30,14 +32,18 @@ import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.testsuite.util.Tolerance;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedStates;
@@ -115,23 +121,57 @@ import org.junit.Test;
  */
 public class SwaptionAdditionalTest {
 
-    @Ignore("Phase 5e.5b-CFC-d — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve"
-            + " path (currently throws UnsupportedOperationException); needs"
-            + " CashFlows.bps(InterestRate,...) + Schedule.tenor()/hasTenor() port")
+    /**
+     * Mirrors {@code testStrikeDependency} from C++ v1.42.1 {@code swaption.cpp}
+     * (lines 172-263). For each (exercise, length, swap-type) tuple price
+     * the swaption across an ascending grid of strikes under both
+     * {@code Settlement.Physical/PhysicalOTC} and
+     * {@code Settlement.Cash/ParYieldCurve}, then verify the NPV sequence is
+     * monotone in strike (payer non-increasing, receiver non-decreasing).
+     *
+     * <p><strong>Tolerance tier</strong> — exact (monotonicity test).
+     *
+     * <p>The grid is shrunk relative to C++ (6 x 8 = 48 cells) to a
+     * representative 3 x 3 = 9 cells so the test stays fast; the
+     * monotonicity property holds at every point of the grid.
+     */
     @Test
-    public void testStrikeDependency() { fail("not implemented"); }
+    public void testStrikeDependency() {
+        runStrikeDependency(makeCommonVars());
+    }
 
-    @Ignore("Phase 5e.5b-CFC-d — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve"
-            + " path (currently throws UnsupportedOperationException); needs"
-            + " CashFlows.bps(InterestRate,...) + Schedule.tenor()/hasTenor() port")
+    /**
+     * Mirrors {@code testSpreadDependency} from C++ v1.42.1 {@code swaption.cpp}
+     * (lines 265-349). For each (exercise, length, swap-type) tuple price the
+     * swaption across an ascending grid of floating-leg spreads under both
+     * {@code Settlement.Physical/PhysicalOTC} and
+     * {@code Settlement.Cash/ParYieldCurve}, and verify the NPV sequence is
+     * monotone in spread (payer non-decreasing, receiver non-increasing).
+     *
+     * <p><strong>Tolerance tier</strong> — exact (monotonicity).
+     */
     @Test
-    public void testSpreadDependency() { fail("not implemented"); }
+    public void testSpreadDependency() {
+        runSpreadDependency(makeCommonVars());
+    }
 
-    @Ignore("Phase 5e.5b-CFC-d — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve"
-            + " path (currently throws UnsupportedOperationException); needs"
-            + " CashFlows.bps(InterestRate,...) + Schedule.tenor()/hasTenor() port")
+    /**
+     * Mirrors {@code testSpreadTreatment} from C++ v1.42.1 {@code swaption.cpp}
+     * (lines 351-410). For each (exercise, length, swap-type, spread) tuple
+     * verifies that a swaption on a spread-bearing fixed-vs-floating swap is
+     * equivalent (NPV agreement within 1e-6) to a swaption on the
+     * spread-adjusted equivalent swap (fixed rate bumped by
+     * {@code spread * |floatingLegBPS / fixedLegBPS|}), under both
+     * physical and Cash/ParYieldCurve settlement. Cross-checks the
+     * engine's internal spread-correction logic.
+     *
+     * <p><strong>Tolerance tier</strong> — tight (1e-6 abs on NPV ratio,
+     * matching C++ literal).
+     */
     @Test
-    public void testSpreadTreatment() { fail("not implemented"); }
+    public void testSpreadTreatment() {
+        runSpreadTreatment(makeCommonVars());
+    }
 
     /**
      * Mirrors {@code testCachedValue} from C++ v1.42.1 {@code swaption.cpp}.
@@ -208,19 +248,44 @@ public class SwaptionAdditionalTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d — testVega iterates over Settlement.Cash/ParYieldCurve"
-            + " annuity branch (engine still throws UnsupportedOperationException);"
-            + " analytic vega is now published as an additional result, so this"
-            + " test will un-ignore as soon as the ParYieldCurve cash-annuity"
-            + " path lands (same dependency as testStrikeDependency et al.)")
+    /**
+     * Mirrors {@code testVega} from C++ v1.42.1 {@code swaption.cpp}
+     * (lines 463-528). For each (exercise, length, strike, settlement, vol)
+     * tuple compute the analytic Vega per percentage-point (the
+     * {@code "vega"} additional result, published by
+     * {@link BlackSwaptionEngine} since CFC-d-73) and cross-validate against
+     * a central finite-difference vega across {@code +/- 1e-8} vol bumps.
+     * Skip cells where the FD vega is negligible compared to NPV. The
+     * iteration also exercises the new {@code Settlement.Cash/ParYieldCurve}
+     * annuity branch (Phase 5e.5b-CFC-d-142).
+     *
+     * <p><strong>Tolerance tier</strong> — loose (relative 0.015 on
+     * {@code |analytic - numerical| / numerical}, matching C++ literal).
+     */
     @Test
-    public void testVega() { fail("not implemented"); }
+    public void testVega() {
+        runVega(makeCommonVars());
+    }
 
-    @Ignore("Phase 5e.5b-CFC-d — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve"
-            + " path (currently throws UnsupportedOperationException); needs"
-            + " CashFlows.bps(InterestRate,...) + Schedule.tenor()/hasTenor() port")
+    /**
+     * Mirrors {@code testCashSettledSwaptions} from C++ v1.42.1
+     * {@code swaption.cpp} (lines 530-824). For each (exercise, length)
+     * builds four fixed-leg conventions (Unadjusted/30-360,
+     * Unadjusted/Act-365, ModifiedFollowing/30-360,
+     * ModifiedFollowing/Act-365), prices a physical-settled and a
+     * Cash/ParYieldCurve-settled swaption against each, and checks that
+     * the NPV ratio (cash/physical) equals the corresponding annuity
+     * ratio (cash-annuity / fixedLegBPS-annuity) within 1e-10. Cross-validates
+     * the cash-annuity formula against an analytic discount-curve replication
+     * built on top of {@link FlatForward}.
+     *
+     * <p><strong>Tolerance tier</strong> — tight (1e-10 abs on annuity-ratio
+     * mismatch, matching C++ literal).
+     */
     @Test
-    public void testCashSettledSwaptions() { fail("not implemented"); }
+    public void testCashSettledSwaptions() {
+        runCashSettledSwaptions(makeCommonVars());
+    }
 
     /**
      * Mirrors {@code testImpliedVolatility} from C++ v1.42.1 {@code swaption.cpp}
@@ -775,5 +840,533 @@ public class SwaptionAdditionalTest {
 
         assertTrue("swaption should be calculated after NPV()",
                 swaption.isCalculated());
+    }
+
+    //--------------------------------------------------------------------
+    // CommonVars-style fixture + helpers, mirroring C++ swaption.cpp
+    // CommonVars (lines 61-145). Shared by testStrikeDependency,
+    // testSpreadDependency, testSpreadTreatment, testVega and
+    // testCashSettledSwaptions.
+    //--------------------------------------------------------------------
+
+    /** Fixture container: mirrors C++ {@code CommonVars} (swaption.cpp:61). */
+    private static final class CommonVars {
+        final Date today;
+        final Date settlement;
+        final double nominal = 1000000.0;
+        final Calendar calendar;
+        final BusinessDayConvention fixedConvention = BusinessDayConvention.Unadjusted;
+        final Frequency fixedFrequency = Frequency.Annual;
+        final DayCounter fixedDayCount =
+                new Thirty360(Thirty360.Convention.BondBasis);
+        final BusinessDayConvention floatingConvention;
+        final Period floatingTenor;
+        final IborIndex index;
+        final int settlementDays = 2;
+        final Handle<YieldTermStructure> termStructure;
+
+        CommonVars() {
+            // Build off a fixed date so the test is deterministic; matches
+            // the deterministic fixtures used by the other body-filled tests
+            // in this class.
+            this.calendar = new Target();
+            this.today = calendar.adjust(new Date(13, Month.March, 2002));
+            new Settings().setEvaluationDate(today);
+            this.settlement = calendar.advance(today, settlementDays,
+                    TimeUnit.Days);
+            this.termStructure = new Handle<YieldTermStructure>(
+                    new FlatForward(settlement, 0.05, new Actual365Fixed()));
+            this.index = new Euribor6M(termStructure);
+            this.floatingConvention = index.businessDayConvention();
+            this.floatingTenor = index.tenor();
+        }
+
+        /** Returned by {@link #makeSwaptionWithEngine} so callers can read
+         *  the engine's additional-results map without needing a public
+         *  {@code Swaption.pricingEngine()} accessor on the Java side. */
+        static final class SwaptionAndEngine {
+            final Swaption swaption;
+            final BlackSwaptionEngine engine;
+            SwaptionAndEngine(final Swaption s, final BlackSwaptionEngine e) {
+                this.swaption = s;
+                this.engine = e;
+            }
+        }
+
+        SwaptionAndEngine makeSwaptionWithEngine(final VanillaSwap swap,
+                                                 final Date exercise,
+                                                 final double volatility,
+                                                 final Settlement.Type sType,
+                                                 final Settlement.Method sMethod) {
+            // C++ default cash-annuity model is SwapRate (swaption.cpp:86);
+            // mirror that here by wiring a ConstantSwaptionVolatility surface
+            // around the supplied vol quote so we can pass the full
+            // constructor that exposes the CashAnnuityModel.
+            final Handle<org.jquantlib.termstructures.SwaptionVolatilityStructure> surface =
+                    new Handle<org.jquantlib.termstructures.SwaptionVolatilityStructure>(
+                            new org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility(
+                                    0,
+                                    new org.jquantlib.time.calendars.NullCalendar(),
+                                    BusinessDayConvention.Following,
+                                    new Handle<Quote>(new SimpleQuote(volatility)),
+                                    new Actual365Fixed()));
+            final BlackSwaptionEngine engine = new BlackSwaptionEngine(
+                    termStructure, surface,
+                    BlackSwaptionEngine.CashAnnuityModel.SwapRate, 0.0);
+            final Swaption swaption = new Swaption(swap,
+                    new org.jquantlib.exercise.EuropeanExercise(exercise),
+                    sType, sMethod);
+            swaption.setPricingEngine(engine);
+            return new SwaptionAndEngine(swaption, engine);
+        }
+
+        Swaption makeSwaption(final VanillaSwap swap,
+                              final Date exercise,
+                              final double volatility,
+                              final Settlement.Type sType,
+                              final Settlement.Method sMethod) {
+            return makeSwaptionWithEngine(swap, exercise, volatility, sType,
+                    sMethod).swaption;
+        }
+
+        /** Convenience: physical-settled / PhysicalOTC. */
+        Swaption makeSwaption(final VanillaSwap swap, final Date exercise,
+                              final double volatility) {
+            return makeSwaption(swap, exercise, volatility,
+                    Settlement.Type.Physical, Settlement.Method.PhysicalOTC);
+        }
+    }
+
+    private static CommonVars makeCommonVars() {
+        return new CommonVars();
+    }
+
+    // Reduced iteration grids matching the existing
+    // testSwaptionDeltaInBlackModel pattern (CFC-d-73): keep all "kinds"
+    // of point C++ exercises (short/medium/long expiry, low/mid/high vol,
+    // OTM/ATM/ITM strikes, both swap types, both settlements) but shrink
+    // the grid so the suite stays under a few seconds.
+    private static final Period[] EXERCISES = {
+            new Period(1, TimeUnit.Years),
+            new Period(5, TimeUnit.Years),
+            new Period(10, TimeUnit.Years) };
+    private static final Period[] LENGTHS = {
+            new Period(2, TimeUnit.Years),
+            new Period(5, TimeUnit.Years),
+            new Period(10, TimeUnit.Years) };
+    private static final VanillaSwap.Type[] SWAP_TYPES = {
+            VanillaSwap.Type.Receiver, VanillaSwap.Type.Payer };
+
+    /** Mirrors swaption.cpp:172-263 ({@code testStrikeDependency}). */
+    private static void runStrikeDependency(final CommonVars vars) {
+        final double[] strikes = { 0.03, 0.04, 0.05, 0.06, 0.07 };
+        final double vol = 0.20;
+        for (final Period exercise : EXERCISES) {
+            for (final Period length : LENGTHS) {
+                for (final VanillaSwap.Type k : SWAP_TYPES) {
+                    final Date exerciseDate = vars.calendar.advance(
+                            vars.today, exercise);
+                    final Date startDate = vars.calendar.advance(
+                            exerciseDate, vars.settlementDays, TimeUnit.Days);
+                    final double[] values = new double[strikes.length];
+                    final double[] valuesCash = new double[strikes.length];
+                    for (int s = 0; s < strikes.length; s++) {
+                        final VanillaSwap swap = new MakeVanillaSwap(
+                                length, vars.index, strikes[s])
+                                .withEffectiveDate(startDate)
+                                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+                                .withFixedLegDayCount(vars.fixedDayCount)
+                                .withFloatingLegSpread(0.0)
+                                .withType(k)
+                                .value();
+                        values[s] = vars.makeSwaption(swap, exerciseDate,
+                                vol).NPV();
+                        valuesCash[s] = vars.makeSwaption(swap, exerciseDate,
+                                vol, Settlement.Type.Cash,
+                                Settlement.Method.ParYieldCurve).NPV();
+                    }
+                    if (k == VanillaSwap.Type.Payer) {
+                        assertMonotoneDecreasing(values, "Payer/physical",
+                                exercise, length, strikes);
+                        assertMonotoneDecreasing(valuesCash, "Payer/cash",
+                                exercise, length, strikes);
+                    } else {
+                        assertMonotoneIncreasing(values, "Receiver/physical",
+                                exercise, length, strikes);
+                        assertMonotoneIncreasing(valuesCash, "Receiver/cash",
+                                exercise, length, strikes);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void assertMonotoneDecreasing(final double[] xs,
+                                                 final String label,
+                                                 final Period exercise,
+                                                 final Period length,
+                                                 final double[] params) {
+        for (int i = 0; i + 1 < xs.length; i++) {
+            if (xs[i] < xs[i + 1]) {
+                fail(label + " NPV is increasing with the strike:"
+                        + "\n  exercise: " + exercise
+                        + "\n  length:   " + length
+                        + "\n  value[" + i + "]   = " + xs[i]
+                        + " at param=" + params[i]
+                        + "\n  value[" + (i + 1) + "] = " + xs[i + 1]
+                        + " at param=" + params[i + 1]);
+            }
+        }
+    }
+
+    private static void assertMonotoneIncreasing(final double[] xs,
+                                                 final String label,
+                                                 final Period exercise,
+                                                 final Period length,
+                                                 final double[] params) {
+        for (int i = 0; i + 1 < xs.length; i++) {
+            if (xs[i] > xs[i + 1]) {
+                fail(label + " NPV is decreasing with the parameter:"
+                        + "\n  exercise: " + exercise
+                        + "\n  length:   " + length
+                        + "\n  value[" + i + "]   = " + xs[i]
+                        + " at param=" + params[i]
+                        + "\n  value[" + (i + 1) + "] = " + xs[i + 1]
+                        + " at param=" + params[i + 1]);
+            }
+        }
+    }
+
+    /** Mirrors swaption.cpp:265-349 ({@code testSpreadDependency}). */
+    private static void runSpreadDependency(final CommonVars vars) {
+        final double[] spreads = { -0.002, -0.001, 0.0, 0.001, 0.002 };
+        for (final Period exercise : EXERCISES) {
+            for (final Period length : LENGTHS) {
+                for (final VanillaSwap.Type k : SWAP_TYPES) {
+                    final Date exerciseDate = vars.calendar.advance(
+                            vars.today, exercise);
+                    final Date startDate = vars.calendar.advance(
+                            exerciseDate, vars.settlementDays, TimeUnit.Days);
+                    final double[] values = new double[spreads.length];
+                    final double[] valuesCash = new double[spreads.length];
+                    for (int s = 0; s < spreads.length; s++) {
+                        final VanillaSwap swap = new MakeVanillaSwap(
+                                length, vars.index, 0.06)
+                                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+                                .withFixedLegDayCount(vars.fixedDayCount)
+                                .withEffectiveDate(startDate)
+                                .withFloatingLegSpread(spreads[s])
+                                .withType(k)
+                                .value();
+                        values[s] = vars.makeSwaption(swap, exerciseDate,
+                                0.20).NPV();
+                        valuesCash[s] = vars.makeSwaption(swap, exerciseDate,
+                                0.20, Settlement.Type.Cash,
+                                Settlement.Method.ParYieldCurve).NPV();
+                    }
+                    if (k == VanillaSwap.Type.Payer) {
+                        // payer NPV non-decreasing in spread
+                        assertMonotoneIncreasing(values, "Payer/physical",
+                                exercise, length, spreads);
+                        assertMonotoneIncreasing(valuesCash, "Payer/cash",
+                                exercise, length, spreads);
+                    } else {
+                        // receiver NPV non-increasing in spread
+                        assertMonotoneDecreasing(values, "Receiver/physical",
+                                exercise, length, spreads);
+                        assertMonotoneDecreasing(valuesCash, "Receiver/cash",
+                                exercise, length, spreads);
+                    }
+                }
+            }
+        }
+    }
+
+    /** Mirrors swaption.cpp:351-410 ({@code testSpreadTreatment}). */
+    private static void runSpreadTreatment(final CommonVars vars) {
+        final double[] spreads = { -0.002, -0.001, 0.0, 0.001, 0.002 };
+        for (final Period exercise : EXERCISES) {
+            for (final Period length : LENGTHS) {
+                for (final VanillaSwap.Type k : SWAP_TYPES) {
+                    final Date exerciseDate = vars.calendar.advance(
+                            vars.today, exercise);
+                    final Date startDate = vars.calendar.advance(
+                            exerciseDate, vars.settlementDays, TimeUnit.Days);
+                    for (final double spread : spreads) {
+                        final VanillaSwap swap = new MakeVanillaSwap(
+                                length, vars.index, 0.06)
+                                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+                                .withFixedLegDayCount(vars.fixedDayCount)
+                                .withEffectiveDate(startDate)
+                                .withFloatingLegSpread(spread)
+                                .withType(k)
+                                .value();
+                        // We need the spread correction; price via a
+                        // DiscountingSwapEngine first to populate fixedLegBPS
+                        // and floatingLegBPS.
+                        swap.setPricingEngine(new DiscountingSwapEngine(
+                                vars.termStructure));
+                        final double correction = spread
+                                * swap.floatingLegBPS() / swap.fixedLegBPS();
+                        final VanillaSwap equivalent = new MakeVanillaSwap(
+                                length, vars.index, 0.06 + correction)
+                                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+                                .withFixedLegDayCount(vars.fixedDayCount)
+                                .withEffectiveDate(startDate)
+                                .withFloatingLegSpread(0.0)
+                                .withType(k)
+                                .value();
+                        final Swaption s1 = vars.makeSwaption(swap,
+                                exerciseDate, 0.20);
+                        final Swaption s2 = vars.makeSwaption(equivalent,
+                                exerciseDate, 0.20);
+                        final Swaption s1Cash = vars.makeSwaption(swap,
+                                exerciseDate, 0.20, Settlement.Type.Cash,
+                                Settlement.Method.ParYieldCurve);
+                        final Swaption s2Cash = vars.makeSwaption(equivalent,
+                                exerciseDate, 0.20, Settlement.Type.Cash,
+                                Settlement.Method.ParYieldCurve);
+                        if (Math.abs(s1.NPV() - s2.NPV()) > 1.0e-6) {
+                            fail("wrong spread treatment (physical):"
+                                    + "\n  exercise: " + exerciseDate
+                                    + "\n  length:   " + length
+                                    + "\n  type:     " + k
+                                    + "\n  spread:   " + spread
+                                    + "\n  original swaption value:   " + s1.NPV()
+                                    + "\n  equivalent swaption value: " + s2.NPV());
+                        }
+                        if (Math.abs(s1Cash.NPV() - s2Cash.NPV()) > 1.0e-6) {
+                            fail("wrong spread treatment (cash/ParYieldCurve):"
+                                    + "\n  exercise: " + exerciseDate
+                                    + "\n  length:   " + length
+                                    + "\n  type:     " + k
+                                    + "\n  spread:   " + spread
+                                    + "\n  original swaption value:   " + s1Cash.NPV()
+                                    + "\n  equivalent swaption value: " + s2Cash.NPV());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** Mirrors swaption.cpp:463-528 ({@code testVega}). */
+    private static void runVega(final CommonVars vars) {
+        final Settlement.Type[] types = {
+                Settlement.Type.Physical, Settlement.Type.Cash };
+        final Settlement.Method[] methods = {
+                Settlement.Method.PhysicalOTC,
+                Settlement.Method.ParYieldCurve };
+        final double[] strikes = { 0.03, 0.04, 0.05, 0.06, 0.07 };
+        // C++ vols include 0.01 (almost intrinsic) which is degenerate
+        // for the FD vega check; keep the same {mid, high} subset that
+        // exercises the analytic-vs-FD agreement.
+        final double[] vols = { 0.20, 0.30, 0.70, 0.90 };
+        final double shift = 1.0e-8;
+        for (final Period exercise : EXERCISES) {
+            final Date exerciseDate = vars.calendar.advance(vars.today, exercise);
+            final Date startDate = vars.calendar.advance(exerciseDate,
+                    vars.settlementDays, TimeUnit.Days);
+            for (final Period length : LENGTHS) {
+                for (final double strike : strikes) {
+                    for (int h = 0; h < types.length; h++) {
+                        final VanillaSwap swap = new MakeVanillaSwap(
+                                length, vars.index, strike)
+                                .withEffectiveDate(startDate)
+                                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+                                .withFixedLegDayCount(vars.fixedDayCount)
+                                .withFloatingLegSpread(0.0)
+                                .withType(SWAP_TYPES[h])
+                                .value();
+                        for (final double vol : vols) {
+                            final CommonVars.SwaptionAndEngine pair =
+                                    vars.makeSwaptionWithEngine(swap,
+                                            exerciseDate, vol, types[h],
+                                            methods[h]);
+                            final Swaption swaption = pair.swaption;
+                            final BlackSwaptionEngine engine = pair.engine;
+                            final Swaption s1 = vars.makeSwaption(swap,
+                                    exerciseDate, vol - shift,
+                                    types[h], methods[h]);
+                            final Swaption s2 = vars.makeSwaption(swap,
+                                    exerciseDate, vol + shift,
+                                    types[h], methods[h]);
+                            final double swaptionNPV = swaption.NPV();
+                            final double numericalVegaPerPoint =
+                                    (s2.NPV() - s1.NPV()) / (200.0 * shift);
+                            if (numericalVegaPerPoint / swaptionNPV
+                                    > 1.0e-7) {
+                                final Object vegaObj = ((Swaption.ResultsImpl)
+                                        engine.getResults())
+                                        .additionalResults().get("vega");
+                                if (vegaObj == null) {
+                                    fail("BlackSwaptionEngine did not publish"
+                                            + " 'vega' additional result");
+                                }
+                                final double analyticalVegaPerPoint =
+                                        ((Double) vegaObj).doubleValue()
+                                                / 100.0;
+                                final double discrepancy = Math.abs(
+                                        analyticalVegaPerPoint
+                                                - numericalVegaPerPoint)
+                                        / numericalVegaPerPoint;
+                                final double tolerance = 0.015;
+                                if (discrepancy > tolerance) {
+                                    fail("failed to compute swaption vega:"
+                                            + "\n  option tenor: " + exercise
+                                            + "\n  vol:          " + vol
+                                            + "\n  swap type:    " + SWAP_TYPES[h]
+                                            + "\n  swap tenor:   " + length
+                                            + "\n  strike:       " + strike
+                                            + "\n  settlement:   " + types[h]
+                                            + "\n  npv:          " + swaptionNPV
+                                            + "\n  analytical:   "
+                                            + analyticalVegaPerPoint
+                                            + "\n  numerical:    "
+                                            + numericalVegaPerPoint
+                                            + "\n  discrepancy:  " + discrepancy
+                                            + "\n  tolerance:    " + tolerance);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** Mirrors swaption.cpp:530-824 ({@code testCashSettledSwaptions}). */
+    private static void runCashSettledSwaptions(final CommonVars vars) {
+        final double strike = 0.05;
+        final DayCounter act365 = new Actual365Fixed();
+        final DayCounter thirty360 =
+                new Thirty360(Thirty360.Convention.BondBasis);
+        for (final Period exercise : EXERCISES) {
+            for (final Period length : LENGTHS) {
+                final Date exerciseDate = vars.calendar.advance(vars.today,
+                        exercise);
+                final Date startDate = vars.calendar.advance(exerciseDate,
+                        vars.settlementDays, TimeUnit.Days);
+                final Date maturity = vars.calendar.advance(startDate, length,
+                        vars.floatingConvention);
+
+                final Schedule floatSchedule = new Schedule(startDate, maturity,
+                        vars.floatingTenor, vars.calendar,
+                        vars.floatingConvention, vars.floatingConvention,
+                        DateGeneration.Rule.Forward, false);
+
+                final Schedule fixedScheduleU = new Schedule(startDate, maturity,
+                        new Period(vars.fixedFrequency), vars.calendar,
+                        BusinessDayConvention.Unadjusted,
+                        BusinessDayConvention.Unadjusted,
+                        DateGeneration.Rule.Forward, true);
+                final Schedule fixedScheduleA = new Schedule(startDate, maturity,
+                        new Period(vars.fixedFrequency), vars.calendar,
+                        BusinessDayConvention.ModifiedFollowing,
+                        BusinessDayConvention.ModifiedFollowing,
+                        DateGeneration.Rule.Forward, true);
+
+                final VanillaSwap swapU360 = new VanillaSwap(SWAP_TYPES[0],
+                        vars.nominal, fixedScheduleU, strike, thirty360,
+                        floatSchedule, vars.index, 0.0,
+                        vars.index.dayCounter());
+                final VanillaSwap swapU365 = new VanillaSwap(SWAP_TYPES[0],
+                        vars.nominal, fixedScheduleU, strike, act365,
+                        floatSchedule, vars.index, 0.0,
+                        vars.index.dayCounter());
+                final VanillaSwap swapA360 = new VanillaSwap(SWAP_TYPES[0],
+                        vars.nominal, fixedScheduleA, strike, thirty360,
+                        floatSchedule, vars.index, 0.0,
+                        vars.index.dayCounter());
+                final VanillaSwap swapA365 = new VanillaSwap(SWAP_TYPES[0],
+                        vars.nominal, fixedScheduleA, strike, act365,
+                        floatSchedule, vars.index, 0.0,
+                        vars.index.dayCounter());
+
+                final DiscountingSwapEngine swapEngine =
+                        new DiscountingSwapEngine(vars.termStructure);
+                swapU360.setPricingEngine(swapEngine);
+                swapU365.setPricingEngine(swapEngine);
+                swapA360.setPricingEngine(swapEngine);
+                swapA365.setPricingEngine(swapEngine);
+
+                final double annU360 = signedAnnuity(swapU360);
+                final double annU365 = signedAnnuity(swapU365);
+                final double annA360 = signedAnnuity(swapA360);
+                final double annA365 = signedAnnuity(swapA365);
+
+                final double cashAnnU360 = cashAnnuity(vars, swapU360,
+                        strike, thirty360);
+                final double cashAnnU365 = cashAnnuity(vars, swapU365,
+                        strike, act365);
+                final double cashAnnA360 = cashAnnuity(vars, swapA360,
+                        strike, thirty360);
+                final double cashAnnA365 = cashAnnuity(vars, swapA365,
+                        strike, act365);
+
+                checkCashRatio(vars, swapU360, exerciseDate, length,
+                        annU360, cashAnnU360, "Unadjusted/30-360");
+                checkCashRatio(vars, swapU365, exerciseDate, length,
+                        annU365, cashAnnU365, "Unadjusted/Act-365");
+                checkCashRatio(vars, swapA360, exerciseDate, length,
+                        annA360, cashAnnA360, "ModFollowing/30-360");
+                checkCashRatio(vars, swapA365, exerciseDate, length,
+                        annA365, cashAnnA365, "ModFollowing/Act-365");
+            }
+        }
+    }
+
+    private static double signedAnnuity(final VanillaSwap swap) {
+        final double raw = swap.fixedLegBPS() / 1.0e-4;
+        return (swap.type() == VanillaSwap.Type.Payer) ? -raw : raw;
+    }
+
+    /**
+     * Replication of the C++ cash-annuity formula
+     * ({@code sum_i amount_i/strike * flatRate.discount(date_i)}) used to
+     * validate the engine's internal computation.
+     */
+    private static double cashAnnuity(final CommonVars vars,
+                                      final VanillaSwap swap,
+                                      final double strike,
+                                      final DayCounter dc) {
+        final YieldTermStructure flat = new FlatForward(vars.settlement,
+                swap.fairRate(), dc, Compounding.Compounded,
+                vars.fixedFrequency);
+        final Leg fixedLeg = swap.fixedLeg();
+        double sum = 0.0;
+        for (int i = 0; i < fixedLeg.size(); i++) {
+            final CashFlow cf = fixedLeg.get(i);
+            sum += cf.amount() / strike * flat.discount(cf.date());
+        }
+        return sum;
+    }
+
+    private static void checkCashRatio(final CommonVars vars,
+                                       final VanillaSwap swap,
+                                       final Date exerciseDate,
+                                       final Period length,
+                                       final double annuity,
+                                       final double cashAnnuity,
+                                       final String label) {
+        final Swaption physical = vars.makeSwaption(swap, exerciseDate, 0.20);
+        final double valuePhysical = physical.NPV();
+        final Swaption cash = vars.makeSwaption(swap, exerciseDate, 0.20,
+                Settlement.Type.Cash, Settlement.Method.ParYieldCurve);
+        final double valueCash = cash.NPV();
+        final double npvRatio = valueCash / valuePhysical;
+        final double annuityRatio = cashAnnuity / annuity;
+        if (Math.abs(annuityRatio - npvRatio) > 1.0e-10) {
+            fail("NPV ratio != annuity ratio for " + label + ":"
+                    + "\n  length:           " + length
+                    + "\n  exercise:         " + exerciseDate
+                    + "\n  physical NPV:     " + valuePhysical
+                    + "\n  fixedLegBPS ann:  " + annuity
+                    + "\n  cash NPV:         " + valueCash
+                    + "\n  cashAnnuity:      " + cashAnnuity
+                    + "\n  NPV ratio:        " + npvRatio
+                    + "\n  annuity ratio:    " + annuityRatio
+                    + "\n  diff:             " + (annuityRatio - npvRatio));
+        }
     }
 }

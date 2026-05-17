@@ -32,7 +32,11 @@
 package org.jquantlib.pricingengines.swaption;
 
 import org.jquantlib.QL;
+import org.jquantlib.cashflow.CashFlows;
+import org.jquantlib.cashflow.FixedRateCoupon;
+import org.jquantlib.cashflow.Leg;
 import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.Settlement;
@@ -44,11 +48,14 @@ import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.InterestRate;
 import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Frequency;
 import org.jquantlib.time.calendars.NullCalendar;
 
 /**
@@ -86,12 +93,17 @@ import org.jquantlib.time.calendars.NullCalendar;
  *     {@code null} {@code vega} entry — the {@code delta} entry is correct
  *     in both cases via the dedicated forward-derivative formulae.
  * <li>The C++ engine handles three settlement methods (Physical, Cash with
- *     CollateralizedCashPrice, Cash with ParYieldCurve). The ParYieldCurve
- *     branch requires {@code CashFlows::bps(InterestRate, ...)} and
- *     {@code Schedule::tenor()/hasTenor()} which are not yet ported on the
- *     Java side. The Java port supports Physical and CollateralizedCashPrice
- *     out of the box; ParYieldCurve throws a clear error directing the caller
- *     to file a follow-up.
+ *     CollateralizedCashPrice, Cash with ParYieldCurve). Phase 5e.5b-CFC-d-142
+ *     ports the {@code ParYieldCurve} branch on top of the now-available
+ *     {@link CashFlows#bps(Leg, InterestRate, Date)} and
+ *     {@link org.jquantlib.time.Schedule#tenor()} /
+ *     {@link org.jquantlib.time.Schedule#hasTenor()} surface area: the cash
+ *     annuity is {@code |CashFlows.bps(fixedLeg, InterestRate(atmForward, ...),
+ *     discountDate) / basisPoint| * discountCurve_.discount(discountDate)}
+ *     where {@code discountDate} is the swap accrual-start date when
+ *     {@link CashAnnuityModel#DiscountCurve} (C++ default) and the curve
+ *     reference date when {@link CashAnnuityModel#SwapRate}. Mirrors C++
+ *     exactly (blackswaptionengine.hpp:275-293).
  * </ul>
  *
  * @see Swaption
@@ -237,7 +249,8 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
         results.additionalResults().put("strike", strike);
         results.additionalResults().put("atmForward", atmForward);
 
-        // Annuity: depends on settlement type / method.
+        // Annuity: depends on settlement type / method. Mirrors C++
+        // blackswaptionengine.hpp:269-296.
         final double annuity;
         if (args.settlementType == Settlement.Type.Physical
                 || (args.settlementType == Settlement.Type.Cash
@@ -245,14 +258,36 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
             annuity = Math.abs(swap.fixedLegBPS()) / BASIS_POINT;
         } else if (args.settlementType == Settlement.Type.Cash
                 && args.settlementMethod == Settlement.Method.ParYieldCurve) {
-            // Requires CashFlows.bps(InterestRate, ...) + Schedule.tenor() /
-            // Schedule.hasTenor() — both not yet ported on the Java side.
-            // Throw a clear error so the caller (and any future port pass)
-            // sees the missing surface area.
-            throw new UnsupportedOperationException(
-                    "Cash/ParYieldCurve settlement is not yet implemented in the Java"
-                    + " BlackSwaptionEngine port (requires CashFlows.bps(InterestRate)"
-                    + " + Schedule.tenor()). Use Physical or CollateralizedCashPrice.");
+            // Cash/ParYieldCurve annuity, C++ blackswaptionengine.hpp:275-293.
+            // The cash settlement date is assumed equal to the swap start
+            // date. With CashAnnuityModel.DiscountCurve (C++ default) the
+            // par-yield discount factor is read at the accrual-start date;
+            // with SwapRate it is read at the valuation date (C++ takes this
+            // from swap->valuationDate(); Java reads the discount curve's
+            // reference date — which is what DiscountingSwapEngine itself
+            // would have stored on swap.valuationDate()).
+            final Leg fixedLeg = swap.fixedLeg();
+            final FixedRateCoupon firstCoupon =
+                    (FixedRateCoupon) fixedLeg.get(0);
+            final DayCounter dayCount = firstCoupon.dayCounter();
+            final Date discountDate =
+                    (model_ == CashAnnuityModel.DiscountCurve)
+                            ? firstCoupon.accrualStartDate()
+                            : discountCurve_.currentLink().referenceDate();
+            // Match C++: default freq=Annual, override only when the fixed
+            // schedule was built with a tenor.
+            Frequency freq = Frequency.Annual;
+            final org.jquantlib.time.Schedule fixedSchedule =
+                    swap.fixedSchedule();
+            if (fixedSchedule.hasTenor()) {
+                freq = fixedSchedule.tenor().frequency();
+            }
+            final InterestRate ir = new InterestRate(atmForward, dayCount,
+                    Compounding.Compounded, freq);
+            final double fixedLegCashBPS =
+                    CashFlows.getInstance().bps(fixedLeg, ir, discountDate);
+            annuity = Math.abs(fixedLegCashBPS / BASIS_POINT)
+                    * discountCurve_.currentLink().discount(discountDate);
         } else {
             throw new IllegalStateException(
                     "invalid (settlementType, settlementMethod) pair: "
