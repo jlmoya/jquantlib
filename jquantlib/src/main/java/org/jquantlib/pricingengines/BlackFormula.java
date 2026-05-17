@@ -753,6 +753,85 @@ public class BlackFormula {
         return blackFormulaCashItmProbability(payoff.optionType(), strike, forward, stddev, displacement);
     }
 
+    // ---
+    // ---
+    // ---
+
+    /**
+     * Black 1976 probability of being in the money (in the asset martingale
+     * measure), i.e. N(d1). This is the analytic forward delta for a
+     * cash-or-nothing / asset-or-nothing payoff under the displaced-diffusion
+     * model.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
+     * (ql/pricingengines/blackformula.cpp:593-613).
+     *
+     * @note Instead of volatility it uses standard deviation, i.e.
+     *       volatility*sqrt(timeToMaturity)
+     */
+    public static /*@Real*/ double blackFormulaAssetItmProbability(
+            final Option.Type optionType,
+            @Real final double strike,
+            @Real final double forward,
+            @StdDev final double stddev) {
+
+        return blackFormulaAssetItmProbability(optionType, strike, forward, stddev, 0.0);
+    }
+
+    /**
+     * Black 1976 probability of being in the money (in the asset martingale
+     * measure), i.e. N(d1), with displacement.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code blackFormulaAssetItmProbability}
+     * (ql/pricingengines/blackformula.cpp:593-613).
+     */
+    public static /*@Real*/ double blackFormulaAssetItmProbability(
+            final Option.Type optionType,
+            @Real final double strike,
+            @Real final double forward,
+            @StdDev final double stddev,
+            @Real final double displacement) {
+
+        // C++ calls checkParameters(strike, forward, displacement) here;
+        // mirror the documented invariants (forward and strike+displacement
+        // must be non-negative) inline.
+        QL.require(strike + displacement >= 0.0,
+                "strike + displacement must be non-negative");
+        QL.require(forward + displacement > 0.0,
+                "forward + displacement must be positive");
+        QL.require(stddev >= 0.0, "stddev must be non-negative");
+
+        final int sign = optionType.toInteger();
+
+        if (stddev == 0.0) {
+            return (forward * sign < strike * sign) ? 1.0 : 0.0;
+        }
+
+        final double fShifted = forward + displacement;
+        final double kShifted = strike + displacement;
+        if (kShifted == 0.0) {
+            return (optionType == Option.Type.Call) ? 1.0 : 0.0;
+        }
+        final double d1 = Math.log(fShifted / kShifted) / stddev + 0.5 * stddev;
+        final CumulativeNormalDistribution phi = new CumulativeNormalDistribution();
+        return phi.op(sign * d1);
+    }
+
+    /**
+     * Black 1976 N(d1) for a PlainVanillaPayoff (asset martingale measure),
+     * with displacement. Mirrors C++ v1.42.1
+     * {@code blackFormulaAssetItmProbability(PlainVanillaPayoff,...)}.
+     */
+    public static /*@Real*/ double blackFormulaAssetItmProbability(
+            final PlainVanillaPayoff payoff,
+            @Real final double forward,
+            @StdDev final double stddev,
+            @Real final double displacement) {
+
+        return blackFormulaAssetItmProbability(payoff.optionType(),
+                payoff.strike(), forward, stddev, displacement);
+    }
+
 
     // ---
     // ---
