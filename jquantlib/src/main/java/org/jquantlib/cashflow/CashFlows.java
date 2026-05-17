@@ -657,6 +657,123 @@ public class CashFlows {
         return result;
     }
 
+    /**
+     * Accrued amount with default settlement date. Mirrors C++
+     * {@code CashFlows::accruedAmount(leg, includeSettlementDateFlows)}
+     * (header default {@code settlementDate = Date()}) which dispatches to
+     * the three-arg form and falls back to
+     * {@link Settings#evaluationDate()}. Phase 5e.5b-CFC-d-97.
+     */
+    public static double accruedAmount(final Leg leg,
+                                       final boolean includeSettlementDateFlows) {
+        return accruedAmount(leg, includeSettlementDateFlows, new Date());
+    }
+
+    /**
+     * Accrued time-period of a leg. Mirrors C++
+     * {@code CashFlows::accruedPeriod(leg, includeSettlementDateFlows,
+     * settlementDate)} (cashflows.cpp:340-356). Returns the day-count
+     * fraction from the active coupon's accrual-start date up to
+     * {@code settlementDate}, using the coupon's day counter and reference
+     * period; returns 0 when no still-pending cashflow exists.
+     *
+     * <p>Inlines C++ {@code Coupon::accruedPeriod(d)} (coupon.cpp:57-69)
+     * since the JQL {@link Coupon} base class doesn't yet expose that
+     * accessor. Phase 5e.5b-CFC-d-97.
+     */
+    public static double accruedPeriod(final Leg leg,
+                                       final boolean includeSettlementDateFlows,
+                                       Date settlementDate) {
+        if (settlementDate == null || settlementDate.isNull()) {
+            settlementDate = new Settings().evaluationDate();
+        }
+        final int idx = nextCashFlow(leg, includeSettlementDateFlows, settlementDate);
+        if (idx >= leg.size()) {
+            return 0.0;
+        }
+        final Date paymentDate = leg.get(idx).date();
+        for (int i = idx; i < leg.size() && leg.get(i).date().equals(paymentDate); ++i) {
+            final CashFlow cf = leg.get(i);
+            if (cf instanceof Coupon) {
+                final Coupon cp = (Coupon) cf;
+                if (settlementDate.le(cp.accrualStartDate())
+                        || settlementDate.gt(cp.date())) {
+                    return 0.0;
+                }
+                final Date exDate = cp.exCouponDate();
+                final boolean tradingEx = exDate != null && !exDate.isNull()
+                        && settlementDate.ge(exDate);
+                if (tradingEx) {
+                    final Date hi = settlementDate.ge(cp.accrualEndDate())
+                            ? settlementDate : cp.accrualEndDate();
+                    return -cp.dayCounter().yearFraction(settlementDate, hi,
+                            cp.referencePeriodStart(), cp.referencePeriodEnd());
+                }
+                final Date hi = settlementDate.le(cp.accrualEndDate())
+                        ? settlementDate : cp.accrualEndDate();
+                return cp.dayCounter().yearFraction(cp.accrualStartDate(), hi,
+                        cp.referencePeriodStart(), cp.referencePeriodEnd());
+            }
+        }
+        return 0.0;
+    }
+
+    /**
+     * Accrued time-period with default settlement date. Mirrors C++ header
+     * default {@code settlementDate = Date()}. Phase 5e.5b-CFC-d-97.
+     */
+    public static double accruedPeriod(final Leg leg,
+                                       final boolean includeSettlementDateFlows) {
+        return accruedPeriod(leg, includeSettlementDateFlows, new Date());
+    }
+
+    /**
+     * Accrued days of a leg. Mirrors C++
+     * {@code CashFlows::accruedDays(leg, includeSettlementDateFlows,
+     * settlementDate)} (cashflows.cpp:358-374). Returns the day count from
+     * the active coupon's accrual-start date up to {@code settlementDate},
+     * using the coupon's day counter; returns 0 when no still-pending
+     * cashflow exists.
+     *
+     * <p>Inlines C++ {@code Coupon::accruedDays(d)} (coupon.cpp:71-78).
+     * Phase 5e.5b-CFC-d-97.
+     */
+    public static long accruedDays(final Leg leg,
+                                   final boolean includeSettlementDateFlows,
+                                   Date settlementDate) {
+        if (settlementDate == null || settlementDate.isNull()) {
+            settlementDate = new Settings().evaluationDate();
+        }
+        final int idx = nextCashFlow(leg, includeSettlementDateFlows, settlementDate);
+        if (idx >= leg.size()) {
+            return 0L;
+        }
+        final Date paymentDate = leg.get(idx).date();
+        for (int i = idx; i < leg.size() && leg.get(i).date().equals(paymentDate); ++i) {
+            final CashFlow cf = leg.get(i);
+            if (cf instanceof Coupon) {
+                final Coupon cp = (Coupon) cf;
+                if (settlementDate.le(cp.accrualStartDate())
+                        || settlementDate.gt(cp.date())) {
+                    return 0L;
+                }
+                final Date hi = settlementDate.le(cp.accrualEndDate())
+                        ? settlementDate : cp.accrualEndDate();
+                return cp.dayCounter().dayCount(cp.accrualStartDate(), hi);
+            }
+        }
+        return 0L;
+    }
+
+    /**
+     * Accrued days with default settlement date. Mirrors C++ header default
+     * {@code settlementDate = Date()}. Phase 5e.5b-CFC-d-97.
+     */
+    public static long accruedDays(final Leg leg,
+                                   final boolean includeSettlementDateFlows) {
+        return accruedDays(leg, includeSettlementDateFlows, new Date());
+    }
+
     /*
      * BPS Functions implied from quantlib default variables
      * since we cannot assign variables to defaults in the parameter lists of functions,

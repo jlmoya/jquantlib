@@ -13,12 +13,16 @@ import org.jquantlib.Settings;
 import org.jquantlib.cashflow.BlackIborCouponPricer;
 import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.CashFlows;
+import org.jquantlib.cashflow.Coupon;
+import org.jquantlib.cashflow.FixedRateLeg;
 import org.jquantlib.cashflow.FloatingRateCoupon;
 import org.jquantlib.cashflow.IborCoupon;
 import org.jquantlib.cashflow.IborLeg;
 import org.jquantlib.cashflow.Leg;
 import org.jquantlib.cashflow.SimpleCashFlow;
+import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.ibor.USDLibor;
@@ -34,11 +38,13 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Frequency;
+import org.jquantlib.time.MakeSchedule;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
+import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -347,12 +353,67 @@ public class CashFlowsTest {
                 .Leg();
     }
 
-    @Ignore("Phase 5d.5 — needs CashFlows.accruedPeriod(Leg, boolean), "
-            + "CashFlows.accruedDays(Leg, boolean), and CashFlows.accruedAmount(Leg, boolean) "
-            + "static overloads that default the settlement date to Settings.evaluationDate. "
-            + "Java CashFlows currently exposes only the (Leg, boolean, Date) variants; "
-            + "the default-date overloads need porting from C++ cashflows.cpp.")
-    @Test public void testDefaultSettlementDate() { fail("not implemented"); }
+    /**
+     * Mirrors C++ {@code CashFlowTests::testDefaultSettlementDate}
+     * (test-suite/cashflows.cpp v1.42.1 lines 224-252). Verifies that the
+     * default-settlement-date overloads of
+     * {@link CashFlows#accruedPeriod(Leg, boolean)},
+     * {@link CashFlows#accruedDays(Leg, boolean)}, and
+     * {@link CashFlows#accruedAmount(Leg, boolean)} fall back to
+     * {@link Settings#evaluationDate()} (matching C++ header default
+     * {@code settlementDate = Date()}).
+     *
+     * <p>Phase 5e.5b-CFC-d-97 — bodied after porting the default-date
+     * static overloads + MakeSchedule fluent API
+     * ({@code .from/.to/.withFrequency/.withCalendar/.withConvention}).
+     */
+    @Test
+    public void testDefaultSettlementDate() {
+        final Settings settings = new Settings();
+        final Date savedEval = settings.evaluationDate();
+        try {
+            final Date today = settings.evaluationDate();
+            // C++ MakeSchedule().from(today-2*Months).to(today+4*Months)
+            //   .withFrequency(Semiannual).withCalendar(TARGET())
+            //   .withConvention(Unadjusted).backwards()
+            final Schedule schedule = new MakeSchedule()
+                    .from(today.sub(new Period(2, TimeUnit.Months)))
+                    .to(today.add(new Period(4, TimeUnit.Months)))
+                    .withFrequency(Frequency.Semiannual)
+                    .withCalendar(new Target())
+                    .withConvention(BusinessDayConvention.Unadjusted)
+                    .backwards()
+                    .schedule();
+
+            // C++ FixedRateLeg(schedule).withNotionals(100.0)
+            //   .withCouponRates(0.03, Actual360()).withPaymentCalendar(TARGET())
+            //   .withPaymentAdjustment(Following).
+            // Java FixedRateLeg takes the day counter at construction time.
+            final Leg leg = new FixedRateLeg(schedule, new Actual360())
+                    .withNotionals(100.0)
+                    .withCouponRates(0.03)
+                    .withPaymentCalendar(new Target())
+                    .withPaymentAdjustment(BusinessDayConvention.Following)
+                    .Leg();
+
+            final double accruedPeriod = CashFlows.accruedPeriod(leg, false);
+            if (accruedPeriod == 0.0) {
+                fail("null accrued period with default settlement date");
+            }
+
+            final long accruedDays = CashFlows.accruedDays(leg, false);
+            if (accruedDays == 0L) {
+                fail("no accrued days with default settlement date");
+            }
+
+            final double accruedAmount = CashFlows.accruedAmount(leg, false);
+            if (accruedAmount == 0.0) {
+                fail("null accrued amount with default settlement date");
+            }
+        } finally {
+            settings.setEvaluationDate(savedEval);
+        }
+    }
 
     @Ignore("Phase 5d.5 — needs Coupon.exCouponDate() accessor + "
             + "FixedRateLeg.withExCouponPeriod(Period, Calendar, BusinessDayConvention, boolean) "
@@ -369,13 +430,47 @@ public class CashFlowsTest {
             + "the Schedule generator is aligned.")
     @Test public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
 
-    @Ignore("Phase 5d.5 — requires MakeSchedule fluent methods .withCalendar / "
-            + ".withTenor / .withTerminationDateConvention / .withFirstDate / "
-            + ".withNextToLastDate (currently only constructor + .withRule/.endOfMonth/"
-            + ".withFirstDate/.withNextToLastDate are ported) AND the Schedule generator "
-            + "must handle the GovernmentBond-calendar end-of-calendar-month snapping "
-            + "exposed by the 30-Sep-2017 -> 30-Sep-2022 semi-annual schedule.")
+    @Ignore("Phase 5e.5b-CFC-d-97 — MakeSchedule fluent setters "
+            + "(.withCalendar / .withTenor / .from / .to / .withConvention / "
+            + ".withTerminationDateConvention / .withFirstDate / .withNextToLastDate) "
+            + "are now ported and the test compiles cleanly against the C++ "
+            + "fluent shape (see commented body below). Remaining blocker is "
+            + "the Java Schedule generator: for the 30-Sep-2017 → 30-Sep-2022 "
+            + "semi-annual schedule with endOfMonth=true + Unadjusted + "
+            + "firstDate=31-Mar-2018, the first regular reference start currently "
+            + "snaps to 29-Sep-2017 instead of 30-Sep-2017. Fix requires changes "
+            + "to time.Schedule (out of scope for this commit — Schedule is owned "
+            + "by a parallel-running agent).")
     @Test public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() { fail("not implemented"); }
+    /*
+     * Ready-to-uncomment body once Schedule generator is aligned:
+     *
+     *   final Schedule schedule = new MakeSchedule()
+     *           .withCalendar(new UnitedStates(UnitedStates.Market.GOVERNMENTBOND))
+     *           .from(new Date(30, Month.September, 2017))
+     *           .to(new Date(30, Month.September, 2022))
+     *           .withTenor(new Period(6, TimeUnit.Months))
+     *           .withConvention(BusinessDayConvention.Unadjusted)
+     *           .withTerminationDateConvention(BusinessDayConvention.Unadjusted)
+     *           .withFirstDate(new Date(31, Month.March, 2018))
+     *           .withNextToLastDate(new Date(31, Month.March, 2022))
+     *           .endOfMonth()
+     *           .backwards()
+     *           .schedule();
+     *   final Leg leg = new FixedRateLeg(schedule,
+     *           new ActualActual(ActualActual.Convention.ISMA))
+     *           .withNotionals(100.0)
+     *           .withCouponRates(0.01875)
+     *           .Leg();
+     *   final Coupon firstCoupon = (Coupon) leg.get(0);
+     *   final Date expectedRefStart = new Date(30, Month.September, 2017);
+     *   if (!firstCoupon.referencePeriodStart().equals(expectedRefStart)) {
+     *       fail("Expected reference start date at end of calendar day of "
+     *           + "the month, got " + firstCoupon.referencePeriodStart());
+     *   }
+     *   assertEquals("First coupon amount mismatch", 0.9375,
+     *           firstCoupon.amount(), 0.9375 * 1.0e-4);
+     */
 
     @Ignore("Phase 5d.5 — same Schedule(...,endOfMonth=true) generator divergence as "
             + "testIrregularFirstCouponReferenceDatesAtEndOfMonth, but applied to the "
