@@ -1473,17 +1473,325 @@ public class AsianOptionsAdditionalTest {
         }
     }
 
-    @Ignore(REASON_CHOI + " — vs MC reference")
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testChoiAsianEngineVsMC}.
+     *
+     * <p>Cross-validates {@link org.jquantlib.pricingengines.asian.ChoiAsianEngine}
+     * against the Monte-Carlo arithmetic-Asian engine
+     * ({@link MakeMCDiscreteArithmeticAPEngine}) for an option with past
+     * fixings and monthly future fixings out to a 13-month maturity.
+     *
+     * <p>The C++ test uses {@code MakeMCDiscreteArithmeticAPEngine<LowDiscrepancy>}
+     * with 32000 Sobol samples (O(1/N) convergence) and asserts tol=0.01;
+     * the Java port wires {@link MakeMCDiscreteArithmeticAPEngine} (PseudoRandom MT,
+     * O(1/sqrt(N))) and relaxes the tolerance to LOOSE 1e-1 so the test is
+     * deterministic and cheap.  The point of the test is to confirm Choi
+     * tracks MC, not to bit-match the C++ reference.
+     *
+     * <p>Tolerance: LOOSE {@code 1e-1} (vs C++ {@code 1e-2}, justified by
+     * pseudo- vs low-discrepancy MC convergence gap).
+     */
     @Test
-    public void testChoiAsianEngineVsMC() { fail("not implemented"); }
+    public void testChoiAsianEngineVsMC() {
 
-    @Ignore(REASON_CHOI + " — special cases (deep ITM/OTM, very short maturity)")
-    @Test
-    public void testChoiAsianEngineSpecialCases() { fail("not implemented"); }
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Settings().evaluationDate();
+        final Date maturity = today.add(new org.jquantlib.time.Period(
+                13, org.jquantlib.time.TimeUnit.Months));
 
-    @Ignore(REASON_SEASONED)
+        final List<Date> fixingDates = new ArrayList<Date>();
+        Date next = today.add(new org.jquantlib.time.Period(
+                1, org.jquantlib.time.TimeUnit.Months));
+        final Date stopBefore = maturity.sub(new org.jquantlib.time.Period(
+                1, org.jquantlib.time.TimeUnit.Months));
+        fixingDates.add(next);
+        while (fixingDates.get(fixingDates.size() - 1).lt(stopBefore)) {
+            next = fixingDates.get(fixingDates.size() - 1)
+                    .add(new org.jquantlib.time.Period(
+                            1, org.jquantlib.time.TimeUnit.Months));
+            fixingDates.add(next);
+        }
+
+        final int pastFixingsCount = 2;
+        final double runningAccumulator = pastFixingsCount * 97.0;
+
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Call, 110.0);
+        final Exercise exercise = new EuropeanExercise(maturity);
+
+        final DiscreteAveragingAsianOption option = new DiscreteAveragingAsianOption(
+                AverageType.Arithmetic, runningAccumulator, pastFixingsCount,
+                fixingDates, payoff, exercise);
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle<Quote>(new SimpleQuote(100.0)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, 0.035, dc)),
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, 0.1, dc)),
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(today, 0.5, dc)));
+
+        option.setPricingEngine(
+                new MakeMCDiscreteArithmeticAPEngine(process)
+                        .withSamples(32000)
+                        .withSeed(43L)
+                        .value());
+        final double expected = option.NPV();
+
+        option.setPricingEngine(
+                new org.jquantlib.pricingengines.asian.ChoiAsianEngine(
+                        process, 20.0, 2L << 12));
+        final double calculated = option.NPV();
+
+        final double diff = Math.abs(calculated - expected);
+        // LOOSE 1e-1 (vs C++ 1e-2) — see method-level Javadoc.
+        final double tol = 1.0e-1;
+        if (diff > tol) {
+            fail("ChoiAsianEngine vs MC:"
+                    + "\n    expected (MC): " + expected
+                    + "\n    calculated:    " + calculated
+                    + "\n    diff:          " + diff
+                    + "\n    tolerance:     " + tol);
+        }
+    }
+
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testChoiAsianEngineSpecialCases}.
+     *
+     * <p>Exercises the three closed-form degenerate paths of
+     * {@link org.jquantlib.pricingengines.asian.ChoiAsianEngine}:
+     * <ol>
+     *   <li>single future fixing (futureFixings == 1) — closed-form
+     *       {@code blackFormula} against a 1-asset forward;</li>
+     *   <li>fixingDate equal to today (pushed to past) leaving a single
+     *       past-only branch (futureFixings == 0);</li>
+     *   <li>empty fixingDates list — pure intrinsic-on-past-avg branch.</li>
+     * </ol>
+     *
+     * <p>Tolerance: tight {@code 1000 * QL_EPSILON} (matches C++).
+     */
     @Test
-    public void testContinuousSeasonedAsianOptions() { fail("not implemented"); }
+    public void testChoiAsianEngineSpecialCases() {
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Settings().evaluationDate();
+        final Date maturity = today.add(new org.jquantlib.time.Period(
+                1, org.jquantlib.time.TimeUnit.Years));
+
+        final int pastFixingsCount = 2;
+        final double runningAccumulator = pastFixingsCount * 97.0;
+
+        final Handle<YieldTermStructure> rTS =
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, 0.2, dc));
+        final Handle<YieldTermStructure> qTS =
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, 0.075, dc));
+        final Handle<BlackVolTermStructure> vTS =
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(today, 0.5, dc));
+
+        final BlackScholesMertonProcess process = new BlackScholesMertonProcess(
+                new Handle<Quote>(new SimpleQuote(100.0)),
+                qTS, rTS, vTS);
+
+        final PricingEngine choiEngine =
+                new org.jquantlib.pricingengines.asian.ChoiAsianEngine(process);
+
+        final PlainVanillaPayoff payoff = new PlainVanillaPayoff(Option.Type.Put, 103.0);
+        final Exercise exercise = new EuropeanExercise(maturity);
+
+        final double tol = 1000.0 * org.jquantlib.math.Constants.QL_EPSILON;
+
+        // --- Case 1: futureFixings == 1 (today + 3 weeks; today fixing pushed to past) ---
+        {
+            final List<Date> fixingDates = new ArrayList<Date>();
+            fixingDates.add(today);
+            fixingDates.add(today.add(new org.jquantlib.time.Period(
+                    3, org.jquantlib.time.TimeUnit.Weeks)));
+
+            final DiscreteAveragingAsianOption asianOption = new DiscreteAveragingAsianOption(
+                    AverageType.Arithmetic, runningAccumulator, pastFixingsCount,
+                    fixingDates, payoff, exercise);
+            asianOption.setPricingEngine(choiEngine);
+
+            final double calculated = asianOption.NPV();
+
+            // After "today" fixing is pushed to past, futureFixings=1, pastFixings=3,
+            // runningAccumulator -> runningAccumulator + spot.  Per C++ Choi:
+            //   effective strike = K - (running + spot)/(pastFixings+2)
+            //   forward          = spot / (pastFixings+2) * qDisc(fix) / rDisc(fix)
+            //   stdDev           = sqrt(blackVariance(fix, K))
+            //   value            = blackFormula(type, strike, fwd, stdDev, rDisc(maturity))
+            final Date lastFix = fixingDates.get(1);
+            final double effStrike = payoff.strike()
+                    - (runningAccumulator + process.x0()) / (pastFixingsCount + 2);
+            final double fwd = 100.0 / (pastFixingsCount + 2)
+                    * qTS.currentLink().discount(lastFix)
+                    / rTS.currentLink().discount(lastFix);
+            final double stdDev = Math.sqrt(
+                    vTS.currentLink().blackVariance(lastFix, payoff.strike()));
+            final double expected = org.jquantlib.pricingengines.BlackFormula.blackFormula(
+                    payoff.optionType(), effStrike, fwd, stdDev,
+                    rTS.currentLink().discount(maturity));
+
+            final double diff = Math.abs(calculated - expected);
+            if (diff > tol) {
+                fail("ChoiAsianEngine special-case 1 (1 future fixing):"
+                        + "\n    expected:   " + expected
+                        + "\n    calculated: " + calculated
+                        + "\n    diff:       " + diff
+                        + "\n    tolerance:  " + tol);
+            }
+        }
+
+        // --- Case 2: only "today" in fixing dates (pushed to past, futureFixings=0) ---
+        {
+            final List<Date> fixingDates = new ArrayList<Date>();
+            fixingDates.add(today);
+
+            final DiscreteAveragingAsianOption asianOption = new DiscreteAveragingAsianOption(
+                    AverageType.Arithmetic, runningAccumulator, pastFixingsCount,
+                    fixingDates, payoff, exercise);
+            asianOption.setPricingEngine(choiEngine);
+
+            final double calculated = asianOption.NPV();
+            final double expected = rTS.currentLink().discount(maturity)
+                    * payoff.get(
+                        (runningAccumulator + process.x0()) / (pastFixingsCount + 1));
+
+            final double diff = Math.abs(calculated - expected);
+            if (diff > tol) {
+                fail("ChoiAsianEngine special-case 2 (only today in fixings):"
+                        + "\n    expected:   " + expected
+                        + "\n    calculated: " + calculated
+                        + "\n    diff:       " + diff
+                        + "\n    tolerance:  " + tol);
+            }
+        }
+
+        // --- Case 3: empty fixing dates (pure intrinsic on past-only average) ---
+        {
+            final List<Date> fixingDates = new ArrayList<Date>();
+            final DiscreteAveragingAsianOption asianOption = new DiscreteAveragingAsianOption(
+                    AverageType.Arithmetic, runningAccumulator, pastFixingsCount,
+                    fixingDates, payoff, exercise);
+            asianOption.setPricingEngine(choiEngine);
+
+            final double calculated = asianOption.NPV();
+            final double expected = rTS.currentLink().discount(maturity)
+                    * payoff.get(runningAccumulator / pastFixingsCount);
+
+            final double diff = Math.abs(calculated - expected);
+            if (diff > tol) {
+                fail("ChoiAsianEngine special-case 3 (empty fixings):"
+                        + "\n    expected:   " + expected
+                        + "\n    calculated: " + calculated
+                        + "\n    diff:       " + diff
+                        + "\n    tolerance:  " + tol);
+            }
+        }
+    }
+
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testContinuousSeasonedAsianOptions}.
+     *
+     * <p>Sanity checks for the seasoned continuously-averaged Asian-option
+     * path through {@link ContinuousArithmeticAsianLevyEngine} (no Choi
+     * involvement on the seasoned branch — the engine accepts a
+     * {@code startDate} and a {@code currentAverage} quote):
+     * <ul>
+     *   <li>Test 1: build the fresh (unseasoned) option NPV;</li>
+     *   <li>Test 2: a seasoned put with {@code currentAverage} below strike
+     *       must be cheaper than the fresh option;</li>
+     *   <li>Test 3: a seasoned put with {@code currentAverage} above the
+     *       lower-average seasoned put must be cheaper still.</li>
+     * </ul>
+     *
+     * <p>Test 4 (seasoned geometric throws) is omitted — the Java analytic
+     * continuous-geometric engine does not yet implement the seasoned-throws
+     * guard.
+     */
+    @Test
+    public void testContinuousSeasonedAsianOptions() {
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(15, org.jquantlib.time.Month.November, 2025);
+        final Date settlementDate = new Date(17, org.jquantlib.time.Month.November, 2025);
+        new Settings().setEvaluationDate(today);
+
+        try {
+            final double spot = 100.0;
+            final double dividendYield = 0.03;
+            final double riskFreeRate = 0.06;
+            final double volatility = 0.20;
+            final Date maturity = new Date(17, org.jquantlib.time.Month.November, 2026);
+            final Date startDate = new Date(17, org.jquantlib.time.Month.August, 2025);
+
+            final Handle<Quote> underlyingH = new Handle<Quote>(new SimpleQuote(spot));
+            final Handle<YieldTermStructure> flatTermStructure =
+                    new Handle<YieldTermStructure>(
+                            new org.jquantlib.termstructures.yieldcurves.FlatForward(
+                                    settlementDate, riskFreeRate, dc));
+            final Handle<YieldTermStructure> flatDividendTS =
+                    new Handle<YieldTermStructure>(
+                            new org.jquantlib.termstructures.yieldcurves.FlatForward(
+                                    settlementDate, dividendYield, dc));
+            final Handle<BlackVolTermStructure> flatVolTS =
+                    new Handle<BlackVolTermStructure>(
+                            new org.jquantlib.termstructures.volatilities.BlackConstantVol(
+                                    settlementDate,
+                                    new org.jquantlib.time.calendars.Target(),
+                                    volatility, dc));
+
+            final BlackScholesMertonProcess bsmProcess = new BlackScholesMertonProcess(
+                    underlyingH, flatDividendTS, flatTermStructure, flatVolTS);
+
+            final double strike = 100.0;
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, strike);
+            final Exercise europeanExercise = new EuropeanExercise(maturity);
+
+            // Test 1: Fresh continuous arithmetic option
+            final ContinuousAveragingAsianOption freshOption =
+                    new ContinuousAveragingAsianOption(
+                            AverageType.Arithmetic, settlementDate, payoff, europeanExercise);
+            freshOption.setPricingEngine(
+                    new ContinuousArithmeticAsianLevyEngine(bsmProcess,
+                            new Handle<Quote>(new SimpleQuote(0.0))));
+            final double freshNPV = freshOption.NPV();
+
+            // Test 2: Seasoned with current average below strike → cheaper than fresh
+            final double currentAverage = 98.5;
+            final ContinuousAveragingAsianOption seasonedOption =
+                    new ContinuousAveragingAsianOption(
+                            AverageType.Arithmetic, startDate, payoff, europeanExercise);
+            seasonedOption.setPricingEngine(
+                    new ContinuousArithmeticAsianLevyEngine(bsmProcess,
+                            new Handle<Quote>(new SimpleQuote(currentAverage))));
+            final double seasonedNPV = seasonedOption.NPV();
+
+            if (seasonedNPV >= freshNPV) {
+                fail("Seasoned Asian put option NPV (" + seasonedNPV
+                        + ") should be less than fresh option NPV (" + freshNPV
+                        + ") when current average (" + currentAverage
+                        + ") is below strike (" + strike + ")");
+            }
+
+            // Test 3: Seasoned with higher average → even cheaper
+            final double highAverage = 102.0;
+            final ContinuousAveragingAsianOption seasonedHighOption =
+                    new ContinuousAveragingAsianOption(
+                            AverageType.Arithmetic, startDate, payoff, europeanExercise);
+            seasonedHighOption.setPricingEngine(
+                    new ContinuousArithmeticAsianLevyEngine(bsmProcess,
+                            new Handle<Quote>(new SimpleQuote(highAverage))));
+            final double seasonedHighNPV = seasonedHighOption.NPV();
+
+            if (seasonedHighNPV >= seasonedNPV) {
+                fail("Seasoned Asian put with higher average (" + highAverage
+                        + ") should have lower NPV (" + seasonedHighNPV
+                        + ") than seasoned option with lower average ("
+                        + currentAverage + ", NPV=" + seasonedNPV + ")");
+            }
+        } finally {
+            // Restore the evaluation date for any subsequent tests
+            new Settings().setEvaluationDate(Date.todaysDate());
+        }
+    }
 
     /** Port of {@code test-suite/utilities.hpp::timeToDays(t, 360)}. */
     private static int timeToDays360(final double t) {
