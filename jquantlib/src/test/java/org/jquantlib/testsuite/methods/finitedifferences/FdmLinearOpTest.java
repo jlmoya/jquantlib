@@ -853,10 +853,232 @@ public class FdmLinearOpTest {
         fail("not implemented");
     }
 
-    @Ignore("Phase 5j.5 — requires FdmHestonHullWhiteOp test path (FdHestonHullWhiteVanillaEngineTest covers engine)")
+    /** {@code testFdmHestonHullWhiteOp} — Java port of v1.42.1
+     * {@code test-suite/fdmlinearop.cpp::testFdmHestonHullWhiteOp}.
+     *
+     * <p>Phase 5e.5b-CFC-d-152: body-filled. Cross-validates that
+     * {@link org.jquantlib.methods.finitedifferences.operators.FdmHestonHullWhiteOp}
+     * produces the same value when consumed by two independent rollback
+     * paths:
+     * <ul>
+     *   <li><strong>Direct path:</strong> {@code HundsdorferScheme} +
+     *       manual {@link org.jquantlib.math.interpolations.BicubicSplineInterpolation}
+     *       (per-r-slice) composed with a
+     *       {@link org.jquantlib.math.interpolations.MonotonicNaturalCubicInterpolation}
+     *       over the short-rate axis.</li>
+     *   <li><strong>Solver path:</strong> {@link org.jquantlib.methods.finitedifferences.solvers.Fdm3DimSolver}
+     *       which performs the same interpolation composition internally.</li>
+     * </ul>
+     *
+     * <p>The C++ test additionally compares {@code FdmNdimSolver} against
+     * {@code Fdm3DimSolver} (both N-dim and 3-dim paths) and against a
+     * precalculated MC reference of 4.73. {@code FdmNdimSolver} is <b>not
+     * yet ported</b> to Java (see Phase 5j.5 carry-forward); that sub-check
+     * is omitted here. The MC reference check is also omitted in favour of
+     * the much-tighter solver-vs-direct consistency check (1e-4) — the MC
+     * comparison adds nothing the engine-level
+     * {@code FdHestonHullWhiteVanillaEngineTest} doesn't already cover at
+     * 1% tolerance.
+     *
+     * <p>Grid sizes are reduced from C++ {@code 51x31x31, tGrid=100} to
+     * {@code 21x21x11, tGrid=25} for CI runtime — the consistency check
+     * is sensitive only to the FD operator's algebraic correctness, not
+     * to absolute pricing accuracy.
+     *
+     * <p>Tolerance: tier-loose {@code 1e-4} (C++ verbatim).
+     */
     @Test
     public void testFdmHestonHullWhiteOp() {
-        fail("not implemented");
+        final org.jquantlib.time.Date today = new org.jquantlib.time.Date(
+                28, org.jquantlib.time.Month.March, 2004);
+        new org.jquantlib.Settings().setEvaluationDate(today);
+
+        final org.jquantlib.time.Date exerciseDate = new org.jquantlib.time.Date(
+                28, org.jquantlib.time.Month.March, 2012);
+
+        final org.jquantlib.daycounters.DayCounter dc =
+                new org.jquantlib.daycounters.Actual365Fixed();
+        final double maturity = dc.yearFraction(today, exerciseDate);
+
+        final int[] dim = { 21, 21, 11 };
+
+        // Market — flat 5% rates, 2% dividends (C++ uses ZeroCurve with 25
+        // equal-rate points; flat-forward is algebraically identical for the
+        // operator coefficients).
+        final org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote> s0 =
+                new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(
+                        new org.jquantlib.quotes.SimpleQuote(100.0));
+        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> rTS =
+                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        org.jquantlib.testsuite.util.Utilities.flatRate(0.05, dc));
+        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> qTS =
+                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        org.jquantlib.testsuite.util.Utilities.flatRate(0.02, dc));
+
+        // Heston: v0=0.04, kappa=1.0, theta=0.03, sigma=0.4, rho=-0.7.
+        // NOTE: Java HestonModel uses PositiveConstraint on rho (pre-existing
+        // divergence from C++; see FdHestonHullWhiteVanillaEngineTest note),
+        // but the underlying HestonProcess accepts negative rho directly,
+        // which is all FdmHestonHullWhiteOp uses. Match the C++ rho=-0.7.
+        final double v0 = 0.04;
+        final org.jquantlib.processes.HestonProcess hestonProcess =
+                new org.jquantlib.processes.HestonProcess(
+                        rTS, qTS, s0, v0, 1.0, v0 * 0.75, 0.4, -0.7);
+
+        // Hull-White forward process (a=0.00883, sigma=0.01) with measure
+        // time set to maturity — matches C++ createHestonHullWhite.
+        final org.jquantlib.processes.HullWhiteForwardProcess hwFwdProcess =
+                new org.jquantlib.processes.HullWhiteForwardProcess(rTS, 0.00883, 0.01);
+        hwFwdProcess.setForwardMeasureTime(maturity);
+
+        final double equityShortRateCorr = -0.7;
+
+        final org.jquantlib.processes.HybridHestonHullWhiteProcess jointProcess =
+                new org.jquantlib.processes.HybridHestonHullWhiteProcess(
+                        hestonProcess, hwFwdProcess, equityShortRateCorr);
+
+        // Mesher: log-spot uniform, Heston-variance, short-rate uniform.
+        final org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher m0 =
+                new org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher(
+                        Math.log(22.0), Math.log(440.0), dim[0]);
+        final org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher m1 =
+                new org.jquantlib.methods.finitedifferences.meshers.FdmHestonVarianceMesher(
+                        dim[1], hestonProcess, maturity);
+        final org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher m2 =
+                new org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher(
+                        -0.15, 0.15, dim[2]);
+
+        final FdmMesher mesher =
+                new org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite(
+                        m0, m1, m2);
+
+        // Inner-value calculator — vanilla call K=160, log-spot direction (0).
+        final org.jquantlib.instruments.Payoff payoff =
+                new org.jquantlib.instruments.PlainVanillaPayoff(
+                        org.jquantlib.instruments.Option.Type.Call, 160.0);
+        final org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator calculator =
+                new org.jquantlib.methods.finitedifferences.utilities.FdmLogInnerValue(
+                        payoff, mesher, 0);
+
+        // Empty boundary set + empty step conditions — matches C++ test.
+        final org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet bcSet =
+                new org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet();
+        final org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite emptyConditions =
+                new org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite(
+                        new ArrayList<List<Double>>(),
+                        new org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite.Conditions());
+
+        final int tGrid = 25;
+        final int dampingSteps = 0;
+        final org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc desc =
+                new org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc(
+                        mesher, bcSet, emptyConditions, calculator,
+                        maturity, tGrid, dampingSteps);
+
+        // Construct the operator under test.
+        final org.jquantlib.processes.HullWhiteProcess hwProcess =
+                new org.jquantlib.processes.HullWhiteProcess(
+                        hestonProcess.riskFreeRate(),
+                        hwFwdProcess.a(), hwFwdProcess.sigma());
+
+        final org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite linearOp =
+                new org.jquantlib.methods.finitedifferences.operators.FdmHestonHullWhiteOp(
+                        mesher, hestonProcess, hwProcess, jointProcess.eta());
+
+        // ---- Direct path: HundsdorferScheme rollback + manual interpolation
+        final Array rhs = new Array(mesher.layout().size());
+        for (final FdmLinearOpIterator iter : mesher.layout()) {
+            rhs.set(iter.index(), calculator.avgInnerValue(iter, maturity));
+        }
+
+        final double theta = 0.5 + Math.sqrt(3.0) / 6.0;
+        final org.jquantlib.methods.finitedifferences.schemes.HundsdorferScheme hsEvolver =
+                new org.jquantlib.methods.finitedifferences.schemes.HundsdorferScheme(
+                        theta, 0.5, linearOp);
+
+        final double dt = maturity / tGrid;
+        hsEvolver.setStep(dt);
+        double t = maturity;
+        for (int i = 0; i < tGrid; ++i, t -= dt) {
+            hsEvolver.step(rhs, t);
+        }
+
+        // Collect per-axis coordinates (matches C++ tx/ty/tr loops).
+        final List<Double> tx = new ArrayList<Double>();
+        final List<Double> ty = new ArrayList<Double>();
+        final List<Double> tr = new ArrayList<Double>();
+        for (final FdmLinearOpIterator iter : mesher.layout()) {
+            if (iter.coordinates()[1] == 0 && iter.coordinates()[2] == 0) {
+                tx.add(mesher.location(iter, 0));
+            }
+            if (iter.coordinates()[0] == 0 && iter.coordinates()[2] == 0) {
+                ty.add(mesher.location(iter, 1));
+            }
+            if (iter.coordinates()[0] == 0 && iter.coordinates()[1] == 0) {
+                tr.add(mesher.location(iter, 2));
+            }
+        }
+
+        // Per-r-slice bicubic interpolation, then monotonic-cubic over r.
+        // C++ uses BicubicSpline(ty, tx, ret) with ret[i][j]=rhs[i+j*dim[0]+k*dim[0]*dim[1]]
+        // and evaluates at (v0, log(x0)).
+        // In JQuantLib's BicubicSplineInterpolation(vx, vy, mz), op(vx,vy)
+        // resolves to mz.get(j=locateY(vy), i=locateX(vx)). So with vx=ty,
+        // vy=tx, we need a matrix shaped (tx.size, ty.size) = (dim[0], dim[1])
+        // with cell (i_x, j_y) = rhs[i+j*dim[0]+k*dim[0]*dim[1]].
+        final double x0   = 100.0;
+        final double r0   = 0.0;
+
+        final Array vxArr = new Array(ty.size());
+        for (int k = 0; k < ty.size(); ++k) vxArr.set(k, ty.get(k));
+        final Array vyArr = new Array(tx.size());
+        for (int k = 0; k < tx.size(); ++k) vyArr.set(k, tx.get(k));
+
+        final Array yPerR = new Array(tr.size());
+        for (int k = 0; k < dim[2]; ++k) {
+            final org.jquantlib.math.matrixutilities.Matrix ret =
+                    new org.jquantlib.math.matrixutilities.Matrix(dim[0], dim[1]);
+            for (int i = 0; i < dim[0]; ++i) {
+                for (int j = 0; j < dim[1]; ++j) {
+                    ret.set(i, j, rhs.get(i + j * dim[0] + k * dim[0] * dim[1]));
+                }
+            }
+            final org.jquantlib.math.interpolations.BicubicSplineInterpolation interp2d =
+                    new org.jquantlib.math.interpolations.BicubicSplineInterpolation(
+                            vxArr, vyArr, ret);
+            yPerR.set(k, interp2d.op(v0, Math.log(x0)));
+        }
+
+        final Array trArr = new Array(tr.size());
+        for (int k = 0; k < tr.size(); ++k) trArr.set(k, tr.get(k));
+        final double directCalc =
+                new org.jquantlib.math.interpolations.MonotonicNaturalCubicInterpolation(
+                        trArr, yPerR).op(r0);
+
+        // ---- Solver path: Fdm3DimSolver
+        final org.jquantlib.methods.finitedifferences.solvers.Fdm3DimSolver solver3d =
+                new org.jquantlib.methods.finitedifferences.solvers.Fdm3DimSolver(
+                        desc,
+                        org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc.Hundsdorfer(),
+                        linearOp);
+
+        final double solverCalc = solver3d.interpolateAt(Math.log(x0), v0, r0);
+
+        // C++ tolerance verbatim: 1e-4 absolute on PV agreement.
+        if (Math.abs(directCalc - solverCalc) > 1.0e-4) {
+            fail("Error in calculating PV for Heston Hull White Option"
+                    + "\n  direct path:   " + directCalc
+                    + "\n  solver path:   " + solverCalc
+                    + "\n  abs diff:      " + Math.abs(directCalc - solverCalc));
+        }
+
+        // NOTE: C++ test additionally checks (a) FdmNdimSolver vs Fdm3DimSolver
+        // PV and theta agreement at tol 1e-4, and (b) directCalc vs precalculated
+        // MC reference value 4.73 at tol 3*0.025=0.075. (a) is omitted because
+        // FdmNdimSolver is not yet ported (Phase 5j.5 carry-forward); (b) is
+        // omitted because FdHestonHullWhiteVanillaEngineTest already verifies
+        // engine-level pricing accuracy at 1% tolerance using the production
+        // path through FdHestonHullWhiteVanillaEngine + Fdm3DimSolver.
     }
 
     /** {@code testBiCGstab} — BiCGStab + ILU on a small SparseMatrix system.
