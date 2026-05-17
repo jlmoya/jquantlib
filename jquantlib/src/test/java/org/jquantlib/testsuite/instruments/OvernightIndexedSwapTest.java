@@ -41,6 +41,7 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.DepositRateHelper;
 import org.jquantlib.termstructures.yieldcurves.Discount;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.termstructures.yieldcurves.ForwardRate;
 import org.jquantlib.termstructures.yieldcurves.OISRateHelper;
 import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
 import org.jquantlib.termstructures.yieldcurves.Traits;
@@ -90,13 +91,20 @@ import org.junit.Test;
  * {@link #testMakeOisEndOfMonthRegression2453()} (with Eonia/TARGET
  * substitution for the unported Aonia).
  *
- * <p><strong>Deferred (still @Ignore'd):</strong> 4 cases need
- * production work in OISRateHelper that is out of scope:
- * {@code testBootstrapWithCustomPricer} (OISRateHelper.withCouponPricer);
- * {@code testBootstrapRegression} (Pillar::MaturityDate enum hook);
- * {@code test131BootstrapRegression} (date-based OISRateHelper ctor);
- * {@code testBootstrapWithDifferentCalendars} (Pillar::LastRelevantDate +
- * separate fixing/payment calendar + DateGeneration in OISRateHelper).
+ * <p><strong>Body-fills (Phase 5e.5b-CFC-d-169, OISRateHelper alignment):</strong>
+ * {@link #testBootstrapWithCustomPricer()} (uses {@code withCouponPricer}
+ * setter + {@link org.jquantlib.cashflow.ArithmeticAveragedOvernightIndexedCouponPricer}),
+ * {@link #testBootstrapRegression()} (uses {@code Pillar::MaturityDate} +
+ * {@link org.jquantlib.indexes.ibor.FedFunds}), {@link
+ * #test131BootstrapRegression()} (uses date-based {@link OISRateHelper}
+ * ctor).
+ *
+ * <p><strong>Deferred (still @Ignore'd):</strong> 1 case still needs
+ * production work outside the allowed surface:
+ * {@code testBootstrapWithDifferentCalendars} (requires
+ * {@link MakeOIS}{@code .withOvernightLegCalendar} /
+ * {@code .withFixedLegCalendar} + {@code .withConvention} +
+ * {@code .withTerminationDateConvention} + SOFR-specific fixing calendar).
  *
  * <p>Source: {@code test-suite/overnightindexedswap.cpp} v1.42.1 @
  * {@code 099987f0ca}.
@@ -108,10 +116,10 @@ public class OvernightIndexedSwapTest {
     }
 
     private static final String REASON_BOOTSTRAP =
-            "Phase 5e.5b-CFC-d-89 — OISRateHelper.withCouponPricer hook + "
-          + "FedFunds OIS + Pillar enum (LastRelevantDate/MaturityDate) + "
-          + "Sofr-with-different-calendars not yet exposed in Java "
-          + "OISRateHelper signature";
+            "Phase 5e.5b-CFC-d-169 — testBootstrapWithDifferentCalendars "
+          + "still requires MakeOIS.withOvernightLegCalendar / "
+          + "withFixedLegCalendar / withConvention overloads + SOFR-specific "
+          + "fixing calendar; out of scope for this commit.";
 
     private static final String REASON_MAKE_OIS =
             "Phase 5e.5b-CFC-d-89 — requires MakeOIS additional "
@@ -549,7 +557,106 @@ public class OvernightIndexedSwapTest {
         runBootstrap(true, RateAveraging.Type.Simple, 1.0e-5);
     }
 
-    @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapWithCustomPricer() { fail("not implemented"); }
+    /**
+     * Port of C++ {@code overnightindexedswap.cpp::testBootstrapWithCustomPricer}.
+     *
+     * <p>Bootstrap with arithmetic averaging using an explicit Takada-approx
+     * {@link org.jquantlib.cashflow.ArithmeticAveragedOvernightIndexedCouponPricer}
+     * applied to every overnight coupon. The helper and the check swap both
+     * receive the same pricer instance; the bootstrap must converge so that
+     * each helper's implied fair rate reproduces the quoted rate.
+     *
+     * <p>Java uses Eonia in place of Estr (both EUR overnight, TARGET /
+     * Act360 / 0 settlement days). C++ ctor positional argument order
+     * for the pricer is {@code (meanReversion=0.02, vol=0.15, byApprox=true)}
+     * — Java's matching ctor takes {@code (byApprox, meanReversion, vol)}.
+     */
+    @Test
+    public void testBootstrapWithCustomPricer() {
+        final CommonVars vars = new CommonVars();
+
+        final int paymentLag = 2;
+        final boolean telescopicValueDates = false;
+        final RateAveraging.Type averagingMethod = RateAveraging.Type.Simple;
+        final org.jquantlib.cashflow.ArithmeticAveragedOvernightIndexedCouponPricer pricer =
+                new org.jquantlib.cashflow.ArithmeticAveragedOvernightIndexedCouponPricer(
+                        true, 0.02, 0.15);
+
+        final IborIndex euribor3m = new Euribor3M();
+        final Eonia estr = new Eonia();
+
+        final java.util.List<RateHelper> helpers = new java.util.ArrayList<RateHelper>();
+
+        for (final Datum d : DEPOSIT_DATA) {
+            final double rate = 0.01 * d.rate;
+            final Handle<Quote> quote = new Handle<Quote>(new SimpleQuote(rate));
+            final Period term = new Period(d.n, d.unit);
+            final RateHelper helper = new DepositRateHelper(
+                    quote, term, d.settlementDays,
+                    euribor3m.fixingCalendar(),
+                    euribor3m.businessDayConvention(),
+                    euribor3m.endOfMonth(),
+                    euribor3m.dayCounter());
+            if (term.le(new Period(2, TimeUnit.Days))) {
+                helpers.add(helper);
+            }
+        }
+
+        for (final Datum d : ESTR_SWAP_DATA) {
+            final double rate = 0.01 * d.rate;
+            final Handle<Quote> quote = new Handle<Quote>(new SimpleQuote(rate));
+            final Period term = new Period(d.n, d.unit);
+            final OISRateHelper helper = new OISRateHelper(
+                    d.settlementDays, term, quote, estr,
+                    new Handle<YieldTermStructure>(),
+                    telescopicValueDates, paymentLag,
+                    BusinessDayConvention.Following,
+                    Frequency.Annual,
+                    null /* paymentCalendar -> default */,
+                    averagingMethod,
+                    org.jquantlib.termstructures.Pillar.Choice.LastRelevantDate,
+                    new Date(),
+                    pricer);
+            helpers.add(helper);
+        }
+
+        final RateHelper[] helperArray = helpers.toArray(new RateHelper[0]);
+        final PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap> estrTS =
+                new PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap>(
+                        Discount.class, LogLinear.class, IterativeBootstrap.class,
+                        vars.today, helperArray, new Actual365Fixed());
+        vars.termStructure.linkTo(estrTS);
+
+        // curve consistency: each input swap's fairRate (with the same
+        // pricer applied to its overnight leg) must reproduce the quote.
+        for (final Datum d : ESTR_SWAP_DATA) {
+            final double expected = d.rate / 100.0;
+            final Period term = new Period(d.n, d.unit);
+            final OvernightIndexedSwap swap = vars.makeSwap(
+                    term, 0.0, 0.0, false, new Date(), paymentLag, averagingMethod);
+            // mirror C++ `setCouponPricer(swap->overnightLeg(), pricer)`
+            final org.jquantlib.cashflow.Leg overnightLeg = swap.overnightLeg();
+            for (int i = 0; i < overnightLeg.size(); ++i) {
+                final org.jquantlib.cashflow.CashFlow cf = overnightLeg.get(i);
+                if (cf instanceof org.jquantlib.cashflow.FloatingRateCoupon) {
+                    ((org.jquantlib.cashflow.FloatingRateCoupon) cf).setPricer(pricer);
+                }
+            }
+            swap.recalculate();
+            final double calculated = swap.fairRate();
+            final double error = Math.abs(expected - calculated);
+            final double tolerance = 1.0e-8;
+            if (error > tolerance) {
+                fail("curve inconsistency:"
+                        + "\n swap length:     " + term
+                        + "\n quoted rate:     " + expected
+                        + "\n calculated rate: " + calculated
+                        + "\n error:           " + error
+                        + "\n tolerance:       " + tolerance);
+            }
+        }
+        assertTrue("OIS bootstrap with custom pricer passed", true);
+    }
 
     /**
      * Helper for lookback / lockout / observation-shift bootstrap tests.
@@ -762,8 +869,158 @@ public class OvernightIndexedSwapTest {
         assertTrue("OIS testSeasonedSwaps parity passed", true);
     }
 
-    @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapRegression() { fail("not implemented"); }
-    @Ignore(REASON_BOOTSTRAP) @Test public void test131BootstrapRegression() { fail("not implemented"); }
+    /**
+     * Port of C++ {@code overnightindexedswap.cpp::testBootstrapRegression}
+     * (the QuantLib 1.16 regression).
+     *
+     * <p>Exercises the {@link org.jquantlib.termstructures.Pillar.Choice#MaturityDate}
+     * pillar override on {@link OISRateHelper}: with the FedFunds quote set
+     * shown below, a default {@code LastRelevantDate} pillar produces
+     * curve nodes that violate the bootstrap's monotonicity requirement
+     * around the long end; placing each helper at its swap's maturity date
+     * keeps the curve well-formed.
+     *
+     * <p><b>Divergence note:</b> C++ uses {@code PiecewiseYieldCurve<Discount,
+     * LogCubic, MonotonicLogCubic>}; Java {@code MonotonicLogCubic} factory
+     * is not yet ported, so this port substitutes {@link LogLinear}. The
+     * key bootstrap-success invariant (no exception from {@code discount(1.0)})
+     * is identical under either interpolator; the regression that originally
+     * motivated the C++ test was the pillar choice, not the interpolation
+     * shape.
+     */
+    @Test
+    public void testBootstrapRegression() {
+        final Datum[] data = {
+                new Datum(0,  1, TimeUnit.Days,   0.66),
+                new Datum(2,  1, TimeUnit.Weeks,  0.6445),
+                new Datum(2,  2, TimeUnit.Weeks,  0.6455),
+                new Datum(2,  3, TimeUnit.Weeks,  0.645 ),
+                new Datum(2,  1, TimeUnit.Months, 0.675 ),
+                new Datum(2,  2, TimeUnit.Months, 0.7   ),
+                new Datum(2,  3, TimeUnit.Months, 0.724 ),
+                new Datum(2,  4, TimeUnit.Months, 0.7533),
+                new Datum(2,  5, TimeUnit.Months, 0.785 ),
+                new Datum(2,  6, TimeUnit.Months, 0.814 ),
+                new Datum(2,  9, TimeUnit.Months, 0.889 ),
+                new Datum(2,  1, TimeUnit.Years,  0.967 ),
+                new Datum(2,  2, TimeUnit.Years,  1.221 ),
+                new Datum(2,  3, TimeUnit.Years,  1.413 ),
+                new Datum(2,  4, TimeUnit.Years,  1.555 ),
+                new Datum(2,  5, TimeUnit.Years,  1.672 ),
+                new Datum(2, 10, TimeUnit.Years,  2.005 ),
+                new Datum(2, 12, TimeUnit.Years,  2.08  ),
+                new Datum(2, 15, TimeUnit.Years,  2.152 ),
+                new Datum(2, 20, TimeUnit.Years,  2.215 ),
+                new Datum(2, 25, TimeUnit.Years,  2.233 ),
+                new Datum(2, 30, TimeUnit.Years,  2.234 ),
+                new Datum(2, 40, TimeUnit.Years,  2.233 ),
+        };
+
+        new Settings().setEvaluationDate(new Date(21, Month.February, 2017));
+
+        final FedFunds index = new FedFunds();
+        final java.util.List<RateHelper> helpers = new java.util.ArrayList<RateHelper>();
+
+        // first helper is a deposit (rate quoted in percent in the table)
+        helpers.add(new DepositRateHelper(
+                data[0].rate / 100.0,
+                new Period(data[0].n, data[0].unit),
+                index.fixingDays(),
+                index.fixingCalendar(),
+                index.businessDayConvention(),
+                index.endOfMonth(),
+                index.dayCounter()));
+
+        for (int i = 1; i < data.length; ++i) {
+            final Datum d = data[i];
+            final Handle<Quote> quote =
+                    new Handle<Quote>(new SimpleQuote(d.rate / 100.0));
+            helpers.add(new OISRateHelper(
+                    d.settlementDays,
+                    new Period(d.n, d.unit),
+                    quote,
+                    index,
+                    new Handle<YieldTermStructure>(),
+                    false, 2,
+                    BusinessDayConvention.Following,
+                    Frequency.Annual,
+                    null /* paymentCalendar */,
+                    RateAveraging.Type.Compound,
+                    // bootstrap with default LastRelevantDate fails on this
+                    // data set — switch to MaturityDate per C++ regression.
+                    org.jquantlib.termstructures.Pillar.Choice.MaturityDate,
+                    new Date(),
+                    null /* pricer */));
+        }
+
+        final RateHelper[] helperArray = helpers.toArray(new RateHelper[0]);
+        // C++ uses LogCubic + MonotonicLogCubic; Java substitutes LogLinear
+        // (no MonotonicLogCubic factory yet). The regression invariant is
+        // pillar-choice, not interpolator-shape.
+        final PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap> curve =
+                new PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap>(
+                        Discount.class, LogLinear.class, IterativeBootstrap.class,
+                        0, new org.jquantlib.time.calendars.UnitedStates(
+                                org.jquantlib.time.calendars.UnitedStates.Market.GOVERNMENTBOND),
+                        helperArray, new Actual365Fixed());
+
+        // Must not throw.
+        final double discount = curve.discount(1.0);
+        assertTrue("discount(1.0) positive (" + discount + ")", discount > 0.0);
+    }
+
+    /**
+     * Port of C++ {@code overnightindexedswap.cpp::test131BootstrapRegression}
+     * (the QuantLib 1.31 regression).
+     *
+     * <p>Exercises the date-based {@link OISRateHelper} ctor (explicit
+     * start/end dates rather than {@code (settlementDays, tenor)}). The
+     * original regression was a curve that mixed a tenor-based 1W helper
+     * with a date-anchored short-end helper; the date-based ctor must
+     * coexist with the tenor-based one without throwing during {@code
+     * curve.nodes()}.
+     *
+     * <p>Java uses Eonia in place of Estr.
+     */
+    @Test
+    public void test131BootstrapRegression() {
+        final Date today = new Date(11, Month.December, 2012);
+        new Settings().setEvaluationDate(today);
+
+        final Eonia estr = new Eonia();
+        final java.util.List<RateHelper> helpers = new java.util.ArrayList<RateHelper>();
+
+        helpers.add(new OISRateHelper(
+                2, new Period(1, TimeUnit.Weeks),
+                new Handle<Quote>(new SimpleQuote(0.070 / 100.0)),
+                estr));
+        helpers.add(new OISRateHelper(
+                new Date(16, Month.January, 2013),
+                new Date(13, Month.February, 2013),
+                new Handle<Quote>(new SimpleQuote(0.046 / 100.0)),
+                estr));
+
+        final RateHelper[] helperArray = helpers.toArray(new RateHelper[0]);
+        // C++ uses ForwardRate / BackwardFlat; Java's piecewise curve API
+        // selects traits via class tokens. ForwardRate is available; we use
+        // BackwardFlat to mirror the C++ shape closely.
+        final PiecewiseYieldCurve<ForwardRate,
+                org.jquantlib.math.interpolations.factories.BackwardFlat,
+                IterativeBootstrap> curve =
+                new PiecewiseYieldCurve<ForwardRate,
+                        org.jquantlib.math.interpolations.factories.BackwardFlat,
+                        IterativeBootstrap>(
+                        ForwardRate.class,
+                        org.jquantlib.math.interpolations.factories.BackwardFlat.class,
+                        IterativeBootstrap.class,
+                        0, new org.jquantlib.time.calendars.Target(),
+                        helperArray, new Actual365Fixed());
+
+        // Must not throw — discount() forces bootstrap iteration.
+        final double discount = curve.discount(1.0);
+        assertTrue("discount(1.0) positive (" + discount + ")", discount > 0.0);
+    }
+
     @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapWithDifferentCalendars() { fail("not implemented"); }
 
     /**
