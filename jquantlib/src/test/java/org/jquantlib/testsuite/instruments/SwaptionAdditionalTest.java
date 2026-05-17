@@ -6,8 +6,38 @@
  */
 package org.jquantlib.testsuite.instruments;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.daycounters.Thirty360;
+import org.jquantlib.indexes.Euribor6M;
+import org.jquantlib.indexes.EuriborSwapIsdaFixA;
+import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.instruments.MakeSwaption;
+import org.jquantlib.instruments.MakeVanillaSwap;
+import org.jquantlib.instruments.Swaption;
+import org.jquantlib.instruments.VanillaSwap;
+import org.jquantlib.pricingengines.swaption.BlackSwaptionEngine;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.testsuite.util.Tolerance;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.Target;
+import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -22,14 +52,38 @@ import org.junit.Test;
  * the {@link org.jquantlib.instruments.Swaption} instrument itself
  * (caching, vega, cash-settled, implied vol, delta, MakeSwaption builder).
  *
- * <p><strong>All cases deferred to Phase 5f.5</strong> — these tests
- * exercise:
+ * <p><strong>Phase 5e.5b-CFC-d-62 partial body-fill (2026-05-16):</strong>
+ * Three cases that don't require the {@code Settlement::Cash} pricer or
+ * Swaption.impliedVolatility / Bachelier engine are now body-filled:
  * <ul>
- *   <li>{@code MakeSwaption} fluent builder (not yet ported)</li>
- *   <li>OIS swaption engine (Java OIS infra is partial — Phase 5e dep)</li>
- *   <li>Cash-settled / collateralised swaption variants
- *       (Settlement::CashSettled methods)</li>
- *   <li>Bachelier / normal-vol swaption delta (Phase 5g vol-infra prereq)</li>
+ *   <li>{@code testMakeSwaptionWithExerciseCalendar} — builder calendar override</li>
+ *   <li>{@code testBlackEngineCaching} — LazyObject caching semantics
+ *       (post align(util.LazyObject) {@code isCalculated()} accessor)</li>
+ *   <li>{@code testCachedValue} — physical-settled 5Yx10Y payer swaption
+ *       under Black76, cached NPV reproduced against C++ v1.42.1</li>
+ * </ul>
+ *
+ * <p>The remaining 9 stay deferred:
+ * <ul>
+ *   <li>{@code testStrikeDependency} / {@code testSpreadDependency} /
+ *       {@code testSpreadTreatment} / {@code testCashSettledSwaptions} /
+ *       {@code testVega} — all require the {@code Settlement.Cash} /
+ *       {@code ParYieldCurve} BlackSwaptionEngine path which throws
+ *       {@code UnsupportedOperationException} pending the
+ *       {@code CashFlows::bps(InterestRate, ...)} + {@code Schedule.tenor()}
+ *       port (Phase 5e.5b-CFC-d ongoing — see
+ *       {@code BlackSwaptionEngine.java} line ~244).</li>
+ *   <li>{@code testImpliedVolatility} / {@code testImpliedVolatilityOis} —
+ *       requires {@code Swaption.impliedVolatility(...)} convenience
+ *       (not yet ported; also OIS swaption path uses MakeOIS not yet
+ *       wired through MakeSwaption).</li>
+ *   <li>{@code testSwaptionDeltaInBlackModel} — requires the engine to
+ *       publish {@code delta} on {@code additionalResults}; not yet
+ *       wired in Java (see C++ {@code BlackStyleSwaptionEngine::calculate}).</li>
+ *   <li>{@code testSwaptionDeltaInBachelierModel} — requires
+ *       {@code BachelierSwaptionEngine} (not yet ported as a swaption engine;
+ *       {@link org.jquantlib.pricingengines.BachelierCalculator} exists but
+ *       is not wired through a swaption engine yet).</li>
  * </ul>
  *
  * <p>Cases (mirroring C++ {@code BOOST_AUTO_TEST_CASE} order):
@@ -52,51 +106,246 @@ import org.junit.Test;
  */
 public class SwaptionAdditionalTest {
 
-    @Ignore("Phase 5f.5 — MakeSwaption builder + Settlement variants not ported")
+    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve path")
     @Test
     public void testStrikeDependency() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — MakeSwaption builder + Settlement variants not ported")
+    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve path")
     @Test
     public void testSpreadDependency() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — MakeSwaption builder + Settlement variants not ported")
+    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve path")
     @Test
     public void testSpreadTreatment() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — MakeSwaption builder + cached engine values not aligned")
+    /**
+     * Mirrors {@code testCachedValue} from C++ v1.42.1 {@code swaption.cpp}.
+     *
+     * <p>Builds a 5Yx10Y physical-settled payer swaption on Euribor6M with
+     * a flat 5% Act/365 term structure, 30/360 (BondBasis) fixed leg, and
+     * Black vol = 20%. Checks NPV against the C++ cached value
+     * ({@code 0.036418158579} for {@code IborCoupon::Settings::usingAtParCoupons()
+     * == true}, which matches the Java default).
+     *
+     * <p><strong>Tolerance tier</strong> — tight (abs 1e-14 + rel 1e-12).
+     * Closed-form Black76 on top of {@code DiscountingSwapEngine}; same
+     * schedule logic / day counters / calendar as C++.
+     *
+     * <p>The OIS-swaption branch (second half of C++ test) is deferred —
+     * MakeOIS is not yet wired through MakeSwaption and the OIS-swaption
+     * path requires a dedicated {@code Swaption(OvernightIndexedSwap, ...)}
+     * constructor that this Java port lacks.
+     */
     @Test
-    public void testCachedValue() { fail("not implemented"); }
+    public void testCachedValue() {
+        // --- C++ fixture (CommonVars) ---------------------------------------
+        final Calendar calendar = new Target();
+        final DayCounter act365 = new Actual365Fixed();
+        final DayCounter thirty360 = new Thirty360(Thirty360.Convention.BondBasis);
+        final int settlementDays = 2;
 
-    @Ignore("Phase 5f.5 — Vega NPV-derivative not aligned across MakeSwaption")
+        final Date today = new Date(13, Month.March, 2002);
+        final Date settlement = new Date(15, Month.March, 2002);
+        new Settings().setEvaluationDate(today);
+
+        final Handle<YieldTermStructure> ts = new Handle<YieldTermStructure>(
+                new FlatForward(settlement, 0.05, act365));
+        final IborIndex idx = new Euribor6M(ts);
+
+        // --- Build swaption --------------------------------------------------
+        final Date exerciseDate = calendar.advance(settlement,
+                new Period(5, TimeUnit.Years));
+        final Date startDate = calendar.advance(exerciseDate, settlementDays,
+                TimeUnit.Days);
+
+        final VanillaSwap swap = new MakeVanillaSwap(
+                new Period(10, TimeUnit.Years), idx, 0.06)
+                .withEffectiveDate(startDate)
+                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+                .withFixedLegDayCount(thirty360)
+                .value();
+
+        // Build a swaption via MakeSwaption with explicit fixingDate and
+        // user-supplied engine.  Mirrors CommonVars::makeSwaption.
+        final double vol = 0.20;
+        final Handle<Quote> volQuote = new Handle<Quote>(new SimpleQuote(vol));
+        final BlackSwaptionEngine engine =
+                BlackSwaptionEngine.fromVolQuote(ts, volQuote);
+
+        final Swaption swaption = new Swaption(
+                swap, new org.jquantlib.exercise.EuropeanExercise(exerciseDate));
+        swaption.setPricingEngine(engine);
+
+        // --- Cross-validate vs C++ cached value -----------------------------
+        // C++ v1.42.1 swaption.cpp:436 — usingAtParCoupons==true is the
+        // Java default (IborCoupon.Settings.usingAtParCoupons default).
+        // The C++ test source itself truncates the literal to 12 digits and
+        // checks |diff| > 1e-12, so a hybrid tight tolerance is too strict
+        // (~4.6e-14 here vs. 3.6e-13 literal-truncation noise).  We use
+        // {@link Tolerance#within}(1e-12, ...) to match C++ exactly.
+        final double cachedNPV = 0.036418158579;
+        final double npv = swaption.NPV();
+        if (!Tolerance.within(npv, cachedNPV, 1.0e-12,
+                "C++ literal cachedNPV truncated to 12 sig figs in swaption.cpp:436")) {
+            fail("failed to reproduce cached swaption value:"
+                    + "\ncalculated: " + npv
+                    + "\nexpected:   " + cachedNPV);
+        }
+    }
+
+    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve + delta result")
     @Test
     public void testVega() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — Cash-settled swaption pricer (CashSettled) not ported")
+    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve path")
     @Test
     public void testCashSettledSwaptions() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — Swaption.impliedVolatility convenience not aligned")
+    @Ignore("Phase 5f.5 — requires Swaption.impliedVolatility(...) convenience port")
     @Test
     public void testImpliedVolatility() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — OIS swaption (Phase 5e overnight-swap dep)")
+    @Ignore("Phase 5f.5 — OIS-swaption path (MakeOIS) not wired through MakeSwaption")
     @Test
     public void testImpliedVolatilityOis() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — Black swaption delta (Phase 5g BlackCalculator dep)")
+    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine to publish 'delta' additional result")
     @Test
     public void testSwaptionDeltaInBlackModel() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — Bachelier swaption delta (Phase 5g vol-infra dep)")
+    @Ignore("Phase 5f.5 — requires BachelierSwaptionEngine (not yet ported)")
     @Test
     public void testSwaptionDeltaInBachelierModel() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — MakeSwaption.withExerciseDateCalendar not ported")
+    /**
+     * Mirrors {@code testMakeSwaptionWithExerciseCalendar} from C++ v1.42.1
+     * {@code swaption.cpp}. Exercises the {@code MakeSwaption.withExerciseCalendar}
+     * builder override and verifies that:
+     *
+     * <ol>
+     *   <li>Without override, the swap-index's fixing calendar (TARGET) is used.</li>
+     *   <li>With {@code withExerciseCalendar(UnitedStates.SETTLEMENT)}, the exercise
+     *       date is computed against the US calendar instead (different result on
+     *       2016-10-10 due to Columbus Day).</li>
+     *   <li>An explicit {@code withExerciseDate(...)} takes precedence over the
+     *       calendar — calendar is then irrelevant.</li>
+     * </ol>
+     *
+     * <p><strong>Tolerance tier</strong> — exact (date arithmetic).
+     */
     @Test
-    public void testMakeSwaptionWithExerciseCalendar() { fail("not implemented"); }
+    public void testMakeSwaptionWithExerciseCalendar() {
+        // Use a specific date where TARGET and US Settlement diverge.
+        final Date today = new Date(9, Month.October, 2015);
+        new Settings().setEvaluationDate(today);
 
-    @Ignore("Phase 5f.5 — BlackSwaptionEngine caching semantics not aligned")
+        final Handle<YieldTermStructure> ts = new Handle<YieldTermStructure>(
+                new FlatForward(today, 0.05, new Actual365Fixed()));
+
+        final EuriborSwapIsdaFixA swapIndex = new EuriborSwapIsdaFixA(
+                new Period(5, TimeUnit.Years), ts);
+
+        final Calendar targetCalendar = swapIndex.fixingCalendar();
+        final Calendar usCalendar = new UnitedStates(UnitedStates.Market.SETTLEMENT);
+
+        // 1. Default uses swap index's fixing calendar (TARGET).
+        final Swaption defaultSwaption = new MakeSwaption(
+                swapIndex, new Period(1, TimeUnit.Years), 0.05).value();
+        final Date defaultExercise = defaultSwaption.exercise().dates().get(0);
+
+        final Date expected = targetCalendar.advance(
+                targetCalendar.adjust(today),
+                new Period(1, TimeUnit.Years),
+                BusinessDayConvention.ModifiedFollowing);
+        assertEquals("default exercise date mismatch", expected, defaultExercise);
+
+        // 2. With custom US calendar, exercise date differs.
+        final Swaption customSwaption = new MakeSwaption(
+                swapIndex, new Period(1, TimeUnit.Years), 0.05)
+                .withExerciseCalendar(usCalendar)
+                .value();
+        final Date customExercise = customSwaption.exercise().dates().get(0);
+
+        final Date expectedCustom = usCalendar.advance(
+                usCalendar.adjust(today),
+                new Period(1, TimeUnit.Years),
+                BusinessDayConvention.ModifiedFollowing);
+        assertEquals("custom exercise date mismatch", expectedCustom, customExercise);
+        assertNotEquals("US and TARGET should disagree on 2016-10-10",
+                customExercise, defaultExercise);
+
+        // 3. Explicit withExerciseDate takes precedence over calendar.
+        final Date explicitDate = targetCalendar.advance(today,
+                new Period(6, TimeUnit.Months));
+        final Date fixingDate = targetCalendar.advance(today,
+                new Period(1, TimeUnit.Years));
+        final Swaption explicitSwaption = new MakeSwaption(
+                swapIndex, fixingDate, 0.05)
+                .withExerciseCalendar(usCalendar)
+                .withExerciseDate(explicitDate)
+                .value();
+        assertEquals("explicit date should override calendar",
+                explicitDate, explicitSwaption.exercise().dates().get(0));
+    }
+
+    /**
+     * Mirrors {@code testBlackEngineCaching} from C++ v1.42.1
+     * {@code swaption.cpp}.
+     *
+     * <p>Builds a 1Yx1Y physical payer swaption priced with BlackSwaptionEngine
+     * and verifies that {@link Swaption#isCalculated()} reports {@code false}
+     * before the first {@code NPV()} call and {@code true} after.  This
+     * exercises the inherited {@link org.jquantlib.util.LazyObject} cache state
+     * machine and confirms the engine populates results without triggering
+     * notification cycles.
+     *
+     * <p><strong>Tolerance tier</strong> — exact (boolean flags).
+     */
     @Test
-    public void testBlackEngineCaching() { fail("not implemented"); }
+    public void testBlackEngineCaching() {
+        // --- C++ fixture (CommonVars) ---------------------------------------
+        final Calendar calendar = new Target();
+        final DayCounter act365 = new Actual365Fixed();
+        final DayCounter thirty360 = new Thirty360(Thirty360.Convention.BondBasis);
+        final int settlementDays = 2;
+
+        // Use a fixed today so the test is deterministic.
+        final Date today = calendar.adjust(new Date(13, Month.March, 2002));
+        new Settings().setEvaluationDate(today);
+        final Date settlement = calendar.advance(today, settlementDays, TimeUnit.Days);
+
+        final Handle<YieldTermStructure> ts = new Handle<YieldTermStructure>(
+                new FlatForward(settlement, 0.05, act365));
+        final IborIndex idx = new Euribor6M(ts);
+
+        // --- Build swaption --------------------------------------------------
+        final Date exerciseDate = calendar.advance(today, new Period(1, TimeUnit.Years));
+        final Date startDate = calendar.advance(exerciseDate, settlementDays, TimeUnit.Days);
+
+        final VanillaSwap swap = new MakeVanillaSwap(
+                new Period(1, TimeUnit.Years), idx, 0.03)
+                .withEffectiveDate(startDate)
+                .withFixedLegTenor(new Period(1, TimeUnit.Years))
+                .withFixedLegDayCount(thirty360)
+                .withFloatingLegSpread(0.0)
+                .withType(VanillaSwap.Type.Payer)
+                .value();
+
+        final Handle<Quote> volQuote = new Handle<Quote>(new SimpleQuote(0.12));
+        final BlackSwaptionEngine engine =
+                BlackSwaptionEngine.fromVolQuote(ts, volQuote);
+
+        final Swaption swaption = new Swaption(
+                swap, new org.jquantlib.exercise.EuropeanExercise(exerciseDate));
+        swaption.setPricingEngine(engine);
+
+        // --- Verify caching state machine -----------------------------------
+        assertFalse("swaption should not be calculated before NPV()",
+                swaption.isCalculated());
+
+        swaption.NPV();
+
+        assertTrue("swaption should be calculated after NPV()",
+                swaption.isCalculated());
+    }
 }

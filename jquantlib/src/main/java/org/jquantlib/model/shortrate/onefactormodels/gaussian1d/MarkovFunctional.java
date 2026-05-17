@@ -1225,7 +1225,7 @@ public class MarkovFunctional extends Gaussian1dModel {
     @Override
     protected void generateArguments() {
         ((MfStateProcess) stateProcess_).setVols(arrayCopy(sigma_.params()));
-        if (isCalculated()) {
+        if (isModelCalibrated()) {
             updateNumeraireTabulation();
         } else {
             calculate();
@@ -1234,10 +1234,13 @@ public class MarkovFunctional extends Gaussian1dModel {
     }
 
     /**
-     * Java equivalent of C++ CalibratedModel::isCalculated() — proxy via
-     * LazyObject's getter (Phase 2j convention).
+     * Java equivalent of C++ CalibratedModel::isCalculated() — Phase 2j stub
+     * that always reports false (forcing recomputation on every parameter
+     * change). Renamed from {@code isCalculated()} in Phase 5e.5b-CFC-d-62
+     * because LazyObject now exposes a {@code public isCalculated()} which
+     * cannot be shadowed (Java JLS §8.4.6.3 forbids reducing access).
      */
-    private boolean isCalculated() {
+    private boolean isModelCalibrated() {
         return false; // Conservative default — recompute on parameter change.
     }
 

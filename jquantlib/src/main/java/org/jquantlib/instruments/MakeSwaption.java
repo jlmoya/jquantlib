@@ -157,6 +157,16 @@ public class MakeSwaption {
         return this;
     }
 
+    /**
+     * Alias for {@link #withExerciseCalendar(Calendar)}. The C++
+     * MakeSwaption only exposes {@code withExerciseCalendar}; this alias
+     * is supplied for callers using the more explicit name and is a no-op
+     * over {@link #withExerciseCalendar(Calendar)}.
+     */
+    public MakeSwaption withExerciseDateCalendar(final Calendar cal) {
+        return withExerciseCalendar(cal);
+    }
+
     public MakeSwaption withUnderlyingType(final VanillaSwap.Type type) {
         this.underlyingType_ = type;
         return this;

@@ -132,6 +132,19 @@ public abstract class LazyObject implements Observer, Observable {
     }
 
     /**
+     * Returns whether a calculation has been performed and is currently cached.
+     * Mirrors C++ {@code LazyObject::isCalculated()}.
+     * <p>Phase 5e.5b-CFC-d-62 alignment.
+     * <p>Not declared {@code final} because legacy code in
+     * {@link org.jquantlib.model.shortrate.onefactormodels.gaussian1d.MarkovFunctional}
+     * declares a same-named private method (Java disallows shadowing a
+     * {@code final} superclass method even with {@code private}).
+     */
+    public boolean isCalculated() {
+        return calculated;
+    }
+
+    /**
      * This method constrains the object to return the presently cached results on successive invocations, even if arguments upon
      * which they depend should change.
      */
