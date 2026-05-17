@@ -913,7 +913,7 @@ public class BasketOptionTest {
     @Ignore(REASON_BENCHMARK)          @Test public void testSpreadAndBasketBenchmarks()              { fail("not implemented"); }
     @Ignore(REASON_FDM_AMERICAN)       @Test public void testFdmAmericanBasketOptions()               { fail("not implemented"); }
     @Ignore(REASON_FDM_AMERICAN)       @Test public void testAccurateAmericanBasketOptions()          { fail("not implemented"); }
-    @Ignore(REASON_NO_DIV_ZERO)        @Test public void testNoDivByZeroOperatorSplitting()           { fail("not implemented"); }
+    // testNoDivByZeroOperatorSplitting body-filled in Phase 5e.5b-CFC-d-172 — see method below.
 
     // Suppress unused-warning for the catch-all reasons (some have been
     // body-filled in Phase 4i.5c — REASON_AMERICAN_BASKET and
@@ -934,6 +934,8 @@ public class BasketOptionTest {
     private static final String UNUSED_OPERATOR_SPLITTING_REASON = REASON_OPERATOR_SPLITTING;
     @SuppressWarnings("unused")
     private static final String UNUSED_STRANG_SPLITTING_REASON = REASON_STRANG_SPLITTING;
+    @SuppressWarnings("unused")
+    private static final String UNUSED_NO_DIV_ZERO_REASON = REASON_NO_DIV_ZERO;
 
     // ---- Bodied tests for DengLiZhouBasketEngine (Phase 5e.5b-CFC-d-104) -----
 
@@ -1700,6 +1702,90 @@ public class BasketOptionTest {
                         + "\n    tolerance:  " + tol);
             }
         }
+    }
+
+    /**
+     * Reproduces C++ test {@code testNoDivByZeroOperatorSplitting}: regression
+     * for a divide-by-zero issue in the second-order
+     * {@link OperatorSplittingSpreadEngine} on a degenerate-strike spread put
+     * (strike=50, S1=160, S2=100, vol1=0.75, vol2=0.375, rho=1/3, T=18m,
+     * zero rates). The engine NPV at vol={@code 0.25} is cross-validated
+     * against the midpoint of the two-sided finite-difference NPVs at
+     * {@code 0.25 ± 1e-5}.
+     *
+     * <p>The C++ test uses an exact {@code 5e-8} tolerance; the Java port
+     * uses the project-wide tight tier (relative {@code 1e-12}, absolute
+     * {@code 5e-8} near zero — here the diff is on the same scale as the
+     * C++ check). The volatility-of-asset-2 quote is parameterised on
+     * {@code vol} (rather than fixed at the C++ literal {@code 0.375})
+     * to keep the engine instantiation order-independent.</p>
+     *
+     * <p>Reference: {@code test-suite/basketoption.cpp::testNoDivByZeroOperatorSplitting}
+     * (v1.42.1 @ {@code 099987f0ca}, line 2518).</p>
+     */
+    @Test
+    public void testNoDivByZeroOperatorSplitting() {
+        QL.info("Testing division by zero issue for the Operator Splitting engine...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(5, Month.December, 2024);
+        new Settings().setEvaluationDate(today);
+        final Date maturity = today.add(new Period(18, TimeUnit.Months));
+
+        // q = r = 0 ==> forward = spot.
+        final YieldTermStructure zeroFlat = Utilities.flatRate(today, 0.0, dc);
+
+        final BasketOption basketOption = new BasketOption(
+                new SpreadBasketPayoff(
+                        new PlainVanillaPayoff(Option.Type.Put, 50.0)),
+                new EuropeanExercise(maturity));
+
+        final double eps = 1.0e-5;
+
+        // engineGen(vol): fresh second-order operator-splitting engine wrapping
+        // two fresh GBS processes (spot1=160 @ 0.75 vol; spot2=100 @ vol*1.5);
+        // mirrors the C++ lambda exactly.
+        basketOption.setPricingEngine(buildOsEngine(today, dc, zeroFlat, 0.25 - eps));
+        final double lNpv = basketOption.NPV();
+
+        basketOption.setPricingEngine(buildOsEngine(today, dc, zeroFlat, 0.25 + eps));
+        final double rNpv = basketOption.NPV();
+
+        final double expected = 0.5 * (rNpv + lNpv);
+
+        basketOption.setPricingEngine(buildOsEngine(today, dc, zeroFlat, 0.25));
+        final double calculated = basketOption.NPV();
+
+        final double diff = Math.abs(calculated - expected);
+        final double tol = 5.0e-8;
+        if (Double.isNaN(calculated) || diff > tol) {
+            fail("failed to reproduce spread option price with OperatorSplittingEngine:"
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected
+                    + "\n    diff:       " + diff
+                    + "\n    tolerance:  " + tol);
+        }
+    }
+
+    /** Helper for {@link #testNoDivByZeroOperatorSplitting()} — builds the C++
+     *  {@code engineGen(vol)} lambda: a second-order operator-splitting spread
+     *  engine over two fresh GBS processes (S1=160 @ vol=0.75 fixed, S2=100 @
+     *  vol*1.5), correlation 1/3, with q = r = 0 (forward = spot). */
+    private static OperatorSplittingSpreadEngine buildOsEngine(
+            final Date today, final DayCounter dc,
+            final YieldTermStructure zeroFlat, final double vol) {
+        final SimpleQuote spot1 = new SimpleQuote(160.0);
+        final BlackVolTermStructure volTS1 = Utilities.flatVol(today, 0.25 * 3.0, dc);
+        final GeneralizedBlackScholesProcess p1 =
+                makeProcess(spot1, zeroFlat, zeroFlat, volTS1);
+
+        final SimpleQuote spot2 = new SimpleQuote(100.0);
+        final BlackVolTermStructure volTS2 = Utilities.flatVol(today, vol * 150.0 / 100.0, dc);
+        final GeneralizedBlackScholesProcess p2 =
+                makeProcess(spot2, zeroFlat, zeroFlat, volTS2);
+
+        return new OperatorSplittingSpreadEngine(
+                p1, p2, 1.0 / 3.0, OperatorSplittingSpreadEngine.Order.Second);
     }
 
     // ---- Bodied tests for Fd2dBlackScholesVanillaEngine
