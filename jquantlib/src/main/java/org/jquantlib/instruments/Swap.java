@@ -219,6 +219,15 @@ public class Swap extends Instrument {
         return d;
     }
 
+    /**
+     * Returns leg {@code j} of this swap. Mirrors C++ v1.42.1
+     * {@code Swap::leg(Size j)} ({@code ql/instruments/swap.hpp:160}).
+     */
+    public Leg leg(final int j) /* @ReadOnly */ {
+        QL.require(j < legs.size(), "leg index out of range");
+        return legs.get(j);
+    }
+
 
     //
     // overrides Instrument

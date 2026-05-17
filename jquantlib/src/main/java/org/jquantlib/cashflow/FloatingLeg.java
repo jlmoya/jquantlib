@@ -220,7 +220,7 @@ public class FloatingLeg< InterestRateIndexType extends InterestRateIndex,
                       Date.class, // start date
                       Date.class, // enddate
                       int.class, // fixing days
-                      IborIndex.class, // IbotIndex
+                      typeIRT,    // InterestRateIndex subclass (IborIndex or SwapIndex)
                       double.class, // gearing
                       double.class, // spread
                       Date.class, // refperiodstart
@@ -256,7 +256,7 @@ public class FloatingLeg< InterestRateIndexType extends InterestRateIndex,
                             Date.class, // start date
                             Date.class, // enddate
                             int.class, // fixing days
-                            IborIndex.class, // IborIndex
+                            typeIRT,    // InterestRateIndex subclass (IborIndex or SwapIndex)
                             double.class, // gearing
                             double.class, // spread
                             double.class, //caps
