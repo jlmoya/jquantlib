@@ -42,6 +42,7 @@ import org.jquantlib.pricingengines.basket.ChoiBasketEngine;
 import org.jquantlib.pricingengines.basket.DengLiZhouBasketEngine;
 import org.jquantlib.pricingengines.basket.KirkEngine;
 import org.jquantlib.pricingengines.basket.MCAmericanBasketEngine;
+import org.jquantlib.pricingengines.basket.OperatorSplittingSpreadEngine;
 import org.jquantlib.pricingengines.basket.SingleFactorBsmBasketEngine;
 import org.jquantlib.pricingengines.basket.StulzEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
@@ -900,8 +901,8 @@ public class BasketOptionTest {
     @Ignore(REASON_BARRAQUAND)         @Test public void testBarraquandThreeValues()                  { fail("not implemented"); }
     @Ignore(REASON_LOCAL_VOL_SPREAD)   @Test public void testLocalVolatilitySpreadOption()            { fail("not implemented"); }
     @Ignore(REASON_2D_PDE)             @Test public void test2DPDEGreeks()                            { fail("not implemented"); }
-    @Ignore(REASON_OPERATOR_SPLITTING) @Test public void testOperatorSplittingSpreadEngine()          { fail("not implemented"); }
-    @Ignore(REASON_STRANG_SPLITTING)   @Test public void testStrangSplittingSpreadEngineVsMathematica() { fail("not implemented"); }
+    // testOperatorSplittingSpreadEngine + testStrangSplittingSpreadEngineVsMathematica
+    // body-filled in Phase 5e.5b-CFC-d-149 — see methods below.
     @Ignore(REASON_KIRK_PDE)           @Test public void testPDEvsApproximations()                    { fail("not implemented"); }
     @Ignore(REASON_NDIM_PDE)           @Test public void testNdimPDEvs2dimPDE()                       { fail("not implemented"); }
     @Ignore(REASON_NDIM_PDE)           @Test public void testNdimPDEinDifferentDims()                 { fail("not implemented"); }
@@ -928,6 +929,10 @@ public class BasketOptionTest {
     private static final String UNUSED_BSM_BASKET_REASON = REASON_BSM_BASKET;
     @SuppressWarnings("unused")
     private static final String UNUSED_GOLDEN_CHOI_REASON = REASON_GOLDEN_CHOI;
+    @SuppressWarnings("unused")
+    private static final String UNUSED_OPERATOR_SPLITTING_REASON = REASON_OPERATOR_SPLITTING;
+    @SuppressWarnings("unused")
+    private static final String UNUSED_STRANG_SPLITTING_REASON = REASON_STRANG_SPLITTING;
 
     // ---- Bodied tests for DengLiZhouBasketEngine (Phase 5e.5b-CFC-d-104) -----
 
@@ -1460,6 +1465,238 @@ public class BasketOptionTest {
                             + "\n    diff:        " + deltaDiff
                             + "\n    tolerance:   " + deltaTol);
                 }
+            }
+        }
+    }
+
+    // ---- Bodied tests for OperatorSplittingSpreadEngine
+    // (Phase 5e.5b-CFC-d-149) -----------------------------------------------
+
+    /**
+     * Reproduces C++ test {@code testOperatorSplittingSpreadEngine}: the
+     * first-order (Lo-Hayashi-Park splitting) and second-order (Strang
+     * splitting) operator-splitting spread option approximations of
+     * Chi-Fai Lo (2015) against literal reference values from the C++
+     * test-suite.
+     *
+     * <p>The C++ test uses {@code BlackProcess} (a {@code BlackScholesMerton}
+     * special case with q = r so forward = spot) and sets the spot quote to
+     * the desired forward {@code F = S * dq/df} directly. We mirror that here
+     * by using {@link BlackScholesMertonProcess} with q = r and spot = forward.
+     *
+     * <p>Tolerances mirror the C++ test: 1.0e-4 for the first-order and
+     * 5.0e-4 for the second-order approximations.</p>
+     *
+     * <p>Reference: {@code test-suite/basketoption.cpp::testOperatorSplittingSpreadEngine}
+     * (v1.42.1 @ {@code 099987f0ca}, line 1144).</p>
+     */
+    @Test
+    public void testOperatorSplittingSpreadEngine() {
+        QL.info("Testing Strang Operator Splitting spread engine...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(1, Month.March, 2025);
+        new Settings().setEvaluationDate(today);
+        // T = 1 year ~ 365 days under Actual365Fixed.
+        final Date maturity = today.add(new Period(365, TimeUnit.Days));
+
+        final double r = 0.05;
+        final double q1 = 0.03;
+        final double q2 = 0.02;
+
+        final SimpleQuote rQuote = new SimpleQuote(r);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rQuote, dc);
+        final YieldTermStructure q1TS = Utilities.flatRate(today, q1, dc);
+        final YieldTermStructure q2TS = Utilities.flatRate(today, q2, dc);
+
+        final double df = rTS.discount(maturity);
+        final double dq1 = q1TS.discount(maturity);
+        final double dq2 = q2TS.discount(maturity);
+
+        final double f1 = 110.0 * dq1 / df;
+        final double f2 = 90.0 * dq2 / df;
+
+        // BlackProcess(spot=F, rTS, volTS) <==> GBS with q = r and spot = F,
+        // so the engine's forward = spot = F.
+        final SimpleQuote spot1 = new SimpleQuote(f1);
+        final SimpleQuote spot2 = new SimpleQuote(f2);
+        final BlackVolTermStructure volTS1 = Utilities.flatVol(today, 0.3, dc);
+        final BlackVolTermStructure volTS2 = Utilities.flatVol(today, 0.2, dc);
+
+        final GeneralizedBlackScholesProcess p1 = makeProcess(spot1, rTS, rTS, volTS1);
+        final GeneralizedBlackScholesProcess p2 = makeProcess(spot2, rTS, rTS, volTS2);
+
+        // {rho, first-order expected, second-order expected} from C++ test.
+        final double[][] testData = new double[][] {
+                { -0.9, 18.9323, 18.9361 },
+                { -0.7, 18.0092, 18.0120 },
+                { -0.5, 17.0325, 17.0344 },
+                { -0.4, 16.5211, 16.5227 },
+                { -0.3, 15.9925, 15.9937 },
+                { -0.2, 15.4449, 15.4458 },
+                { -0.1, 14.8762, 14.8768 },
+                {  0.0, 14.2840, 14.2843 },
+                {  0.1, 13.6651, 13.6654 },
+                {  0.2, 13.0160, 13.0161 },
+                {  0.3, 12.3319, 12.3319 },
+                {  0.4, 11.6067, 11.6067 },
+                {  0.5, 10.8323, 10.8323 },
+                {  0.7,  9.0863,  9.0862 },
+                {  0.9,  6.9148,  6.9134 }
+        };
+
+        final BasketOption option = new BasketOption(
+                new SpreadBasketPayoff(
+                        new PlainVanillaPayoff(Option.Type.Call, 20.0)),
+                new EuropeanExercise(maturity));
+
+        for (final double[] row : testData) {
+            final double rho = row[0];
+
+            // First-order approximation: tol = 1e-4 per C++ test.
+            option.setPricingEngine(new OperatorSplittingSpreadEngine(
+                    p1, p2, rho, OperatorSplittingSpreadEngine.Order.First));
+            double npv = option.NPV();
+            double expected = row[1];
+            double diff = Math.abs(npv - expected);
+            double tol = 1.0e-4;
+            if (diff > tol) {
+                fail("failed to reproduce first-order operator-splitting reference:"
+                        + "\n    rho:        " + rho
+                        + "\n    calculated: " + npv
+                        + "\n    expected:   " + expected
+                        + "\n    diff:       " + diff
+                        + "\n    tolerance:  " + tol);
+            }
+
+            // Second-order approximation: tol = 5e-4 per C++ test.
+            option.setPricingEngine(new OperatorSplittingSpreadEngine(
+                    p1, p2, rho, OperatorSplittingSpreadEngine.Order.Second));
+            npv = option.NPV();
+            expected = row[2];
+            diff = Math.abs(npv - expected);
+            tol = 5.0e-4;
+            if (diff > tol) {
+                fail("failed to reproduce second-order operator-splitting reference:"
+                        + "\n    rho:        " + rho
+                        + "\n    calculated: " + npv
+                        + "\n    expected:   " + expected
+                        + "\n    diff:       " + diff
+                        + "\n    tolerance:  " + tol);
+            }
+        }
+    }
+
+    /**
+     * Reproduces C++ test {@code testStrangSplittingSpreadEngineVsMathematica}:
+     * compares both operator-splitting orders against Mathematica reference
+     * values precomputed in the C++ test-suite.
+     *
+     * <p>The C++ test uses bit-exact tolerance ({@code 100*QL_EPSILON*expected}).
+     * We use the project-wide LOOSE tier ({@code 1e-4}) to absorb cross-platform
+     * libm drift; the Java port still reproduces the C++ values to several
+     * decimals on x86_64 + macOS aarch64 builds we cross-check.</p>
+     *
+     * <p>Reference: {@code test-suite/basketoption.cpp::testStrangSplittingSpreadEngineVsMathematica}
+     * (v1.42.1 @ {@code 099987f0ca}, line 1240).</p>
+     */
+    @Test
+    public void testStrangSplittingSpreadEngineVsMathematica() {
+        QL.info("Testing Strang Operator Splitting spread engine vs Mathematica results...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(27, Month.May, 2024);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote rQuote = new SimpleQuote(0.05);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rQuote, dc);
+        final SimpleQuote vol2Q = new SimpleQuote(0.2);
+        final BlackVolTermStructure volTS2 = Utilities.flatVol(today, vol2Q, dc);
+
+        // {T, K, vol1, rho, kirkNPV, strang1, strang2} from C++ test.
+        final double[][] testCases = new double[][] {
+                {  5.0, 20.0, 0.1,  0.6, 15.39520956886349, 15.39641179190707, 15.41992212706643 },
+                { 10.0, 20.0, 0.1,  0.6, 22.91537136258191, 22.89480115264337, 22.95919510928365 },
+                { 20.0, 20.0, 0.1,  0.6, 33.69859018569740, 33.59697949481467, 33.73582501903848 },
+                {  1.0, 20.0, 0.3,  0.6, 10.97517111578040, 10.97662152028116, 10.97661321814579 },
+                {  2.0, 20.0, 0.3,  0.6, 15.68896063758723, 15.69277461480688, 15.69275497617036 },
+                {  3.0, 20.0, 0.3,  0.6, 19.33110275816226, 19.33760645637910, 19.33758123861756 },
+                {  4.0, 20.0, 0.3,  0.6, 22.40185479100672, 22.41113452093983, 22.41111679131122 },
+                {  5.0, 20.0, 0.3,  0.6, 25.09737848235137, 25.10937922536118, 25.10938819057636 },
+                {  1.0, 10.0, 0.3,  0.6, 16.10447007803242, 16.10494344785443, 16.10494658134660 },
+                {  1.0, 40.0, 0.3,  0.6,  4.65751918957598,  4.65707965703009,  4.65697300898159 },
+                {  1.0, 60.0, 0.3,  0.6,  1.83735906790182,  1.83123048190994,  1.83124184374351 },
+                {  1.0, 20.0, 0.5,  0.6, 18.79838447214884, 18.79674735337080, 18.79654551825391 },
+                {  1.0, 20.0, 0.3, -0.9, 20.17112122874686, 20.14780367419582, 20.15151348149147 },
+                {  1.0, 20.0, 0.3,  0.0, 15.38036208157481, 15.37697052349819, 15.37728179978961 },
+                {  2.0, 20.0, 0.3, -0.5, 25.80847626931109, 25.77323435009942, 25.77810550213640 }
+        };
+
+        final double s1 = 110.0;
+        final double s2 = 90.0;
+        // LOOSE 1e-4 per project rule; C++ uses 100*QL_EPSILON*expected (~bit-exact).
+        final double tol = 1.0e-4;
+
+        for (final double[] tc : testCases) {
+            final double T = tc[0];
+            final double K = tc[1];
+            final double vol1 = tc[2];
+            final double rho = tc[3];
+            final double strang1Expected = tc[5];
+            final double strang2Expected = tc[6];
+
+            final Date maturityDate = today.add(
+                    new Period((int) Math.round(T * 365.0), TimeUnit.Days));
+            final SimpleQuote vol1Q = new SimpleQuote(vol1);
+            final BlackVolTermStructure volTS1 = Utilities.flatVol(today, vol1Q, dc);
+
+            final double dr = rTS.discount(maturityDate);
+            final double F1 = s1 / dr;
+            final double F2 = s2 / dr;
+
+            // BlackProcess <==> GBS with q = r, spot = forward.
+            final SimpleQuote spot1 = new SimpleQuote(F1);
+            final SimpleQuote spot2 = new SimpleQuote(F2);
+            final GeneralizedBlackScholesProcess p1 = makeProcess(spot1, rTS, rTS, volTS1);
+            final GeneralizedBlackScholesProcess p2 = makeProcess(spot2, rTS, rTS, volTS2);
+
+            final BasketOption option = new BasketOption(
+                    new SpreadBasketPayoff(
+                            new PlainVanillaPayoff(Option.Type.Call, K)),
+                    new EuropeanExercise(maturityDate));
+
+            // First-order operator splitting vs Mathematica.
+            option.setPricingEngine(new OperatorSplittingSpreadEngine(
+                    p1, p2, rho, OperatorSplittingSpreadEngine.Order.First));
+            double npv = option.NPV();
+            double diff = Math.abs(npv - strang1Expected);
+            if (diff > tol) {
+                fail("failed to reproduce first-order Strang splitting (Mathematica):"
+                        + "\n    T:          " + T
+                        + "\n    K:          " + K
+                        + "\n    vol1:       " + vol1
+                        + "\n    rho:        " + rho
+                        + "\n    calculated: " + npv
+                        + "\n    expected:   " + strang1Expected
+                        + "\n    diff:       " + diff
+                        + "\n    tolerance:  " + tol);
+            }
+
+            // Second-order (Strang) operator splitting vs Mathematica.
+            option.setPricingEngine(new OperatorSplittingSpreadEngine(
+                    p1, p2, rho, OperatorSplittingSpreadEngine.Order.Second));
+            npv = option.NPV();
+            diff = Math.abs(npv - strang2Expected);
+            if (diff > tol) {
+                fail("failed to reproduce second-order Strang splitting (Mathematica):"
+                        + "\n    T:          " + T
+                        + "\n    K:          " + K
+                        + "\n    vol1:       " + vol1
+                        + "\n    rho:        " + rho
+                        + "\n    calculated: " + npv
+                        + "\n    expected:   " + strang2Expected
+                        + "\n    diff:       " + diff
+                        + "\n    tolerance:  " + tol);
             }
         }
     }
