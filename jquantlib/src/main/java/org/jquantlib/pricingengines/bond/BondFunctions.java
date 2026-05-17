@@ -650,4 +650,62 @@ public final class BondFunctions {
         return bond.dirtyPriceFromZSpread(zSpread,
                 discount.dayCounter(), compounding, frequency, settlement);
     }
+
+    /**
+     * Implied Z-spread from a bond price. Mirrors C++
+     * {@code BondFunctions::zSpread(bond, price, discount, comp, freq,
+     * settlement, accuracy, maxIterations, guess)}
+     * (bondfunctions.cpp:540-568): converts the supplied {@code price} to
+     * the dirty NPV on the bond's cashflows ({@code price.amount() +
+     * accrued} if clean, then re-scaled by {@code notional/100}), and
+     * delegates the root-finding to {@link CashFlows#zSpread}.
+     *
+     * <p>Phase 5e.5b-CFC-d-98.
+     */
+    public static double zSpread(final Bond bond,
+                                 final Price price,
+                                 final YieldTermStructure discount,
+                                 final Compounding compounding,
+                                 final Frequency frequency,
+                                 Date settlement,
+                                 final double accuracy,
+                                 final int maxIterations,
+                                 final double guess) {
+        if (settlement == null || settlement.isNull()) {
+            settlement = bond.settlementDate();
+        }
+        QL.require(isTradable(bond, settlement),
+                "non tradable at " + settlement
+                    + " (maturity being " + bond.maturityDate() + ")");
+
+        double dirty = price.amount();
+        if (price.type() == Price.Type.Clean) {
+            dirty += bond.accruedAmount(settlement);
+        }
+        // C++: dirty /= 100.0 / bond.notional(settlement);
+        dirty /= 100.0 / bond.notional(settlement);
+
+        return CashFlows.zSpread(bond.cashflows(),
+                                 dirty,
+                                 discount,
+                                 compounding, frequency,
+                                 false, settlement, settlement,
+                                 accuracy, maxIterations, guess);
+    }
+
+    /**
+     * Convenience overload of {@link #zSpread(Bond, Price,
+     * YieldTermStructure, Compounding, Frequency, Date, double, int,
+     * double)} with the C++ canonical defaults
+     * {@code (accuracy=1e-10, maxIterations=100, guess=0.0)}.
+     */
+    public static double zSpread(final Bond bond,
+                                 final Price price,
+                                 final YieldTermStructure discount,
+                                 final Compounding compounding,
+                                 final Frequency frequency,
+                                 final Date settlement) {
+        return zSpread(bond, price, discount, compounding, frequency,
+                       settlement, 1.0e-10, 100, 0.0);
+    }
 }

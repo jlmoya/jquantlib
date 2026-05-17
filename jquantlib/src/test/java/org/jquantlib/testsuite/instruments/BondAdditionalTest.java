@@ -76,9 +76,147 @@ public class BondAdditionalTest {
           + "CashFlows.java rewrite (owned by another in-flight agent).")
     @Test public void testAtmRate() { fail("not implemented"); }
 
-    @Ignore("Phase 5d.5 — requires CashFlows.zSpread + BondFunctions.zSpread "
-          + "(root-finder over dirty-price-from-z-spread; not yet ported)")
-    @Test public void testZspread() { fail("not implemented"); }
+    /**
+     * Faithful Java port of {@code testZspread} from
+     * {@code test-suite/bonds.cpp:276-386} (v1.42.1). Round-trips clean and
+     * dirty bond prices through {@link BondFunctions#cleanPrice} /
+     * {@link BondFunctions#dirtyPrice} and back through
+     * {@link BondFunctions#zSpread} for the full Cartesian sweep over
+     * {@code issueMonths x lengths x coupons x frequencies x compoundings x
+     * spreads} (5,400 cases). Tolerance {@code 1e-7} matches C++.
+     *
+     * <p>Bond is attached to a {@link DiscountingBondEngine} backed by the
+     * same flat 3% curve passed to the Z-spread helpers, so the cleanPrice /
+     * dirtyPrice paths (which retrieve the curve from the engine) agree
+     * bit-for-bit with the {@link CashFlows#zSpread} root-finder (which
+     * takes the curve directly).
+     *
+     * <p>Phase 5e.5b-CFC-d-98.
+     */
+    @Test
+    public void testZspread() {
+        // CommonVars-equivalent setup (bonds.cpp:69-87).
+        final Calendar calendar = new org.jquantlib.time.calendars.Target();
+        final Date today = calendar.adjust(Date.todaysDate());
+        new Settings().setEvaluationDate(today);
+        final double faceAmount = 1000000.0;
+
+        final double tolerance = 1.0e-7;
+        final int maxEvaluations = 100;
+
+        final Handle<YieldTermStructure> discountCurve =
+                new Handle<YieldTermStructure>(
+                        Utilities.flatRate(today, 0.03, new Actual360()));
+
+        final int[] issueMonths = { -24, -18, -12, -6, 0, 6, 12, 18, 24 };
+        final int[] lengths = { 3, 5, 10, 15, 20 };
+        final int settlementDays = 3;
+        final double[] coupons = { 0.02, 0.05, 0.08 };
+        final Frequency[] frequencies = { Frequency.Semiannual, Frequency.Annual };
+        final DayCounter bondDayCount = new Thirty360(Thirty360.Convention.BondBasis);
+        final BusinessDayConvention accrualConvention = BusinessDayConvention.Unadjusted;
+        final BusinessDayConvention paymentConvention = BusinessDayConvention.ModifiedFollowing;
+        final double redemption = 100.0;
+
+        final double[] spreads = { -0.01, -0.005, 0.0, 0.005, 0.01 };
+        final Compounding[] compoundings = { Compounding.Compounded, Compounding.Continuous };
+
+        for (final int issueMonth : issueMonths) {
+            for (final int length : lengths) {
+                for (final double coupon : coupons) {
+                    for (final Frequency frequency : frequencies) {
+                        for (final Compounding n : compoundings) {
+
+                            final Date dated = calendar.advance(today, issueMonth,
+                                    org.jquantlib.time.TimeUnit.Months);
+                            final Date issue = dated;
+                            final Date maturity = calendar.advance(issue, length,
+                                    org.jquantlib.time.TimeUnit.Years);
+
+                            final Schedule sch = new Schedule(dated, maturity,
+                                    new Period(frequency), calendar,
+                                    accrualConvention, accrualConvention,
+                                    DateGeneration.Rule.Backward, false);
+
+                            final FixedRateBond bond = new FixedRateBond(
+                                    settlementDays, faceAmount, sch,
+                                    new double[] { coupon }, bondDayCount,
+                                    paymentConvention, redemption, issue);
+                            bond.setPricingEngine(new DiscountingBondEngine(discountCurve));
+
+                            for (final double spread : spreads) {
+
+                                // ---- Clean-price round-trip ----
+                                final double cleanAmt = BondFunctions.cleanPrice(bond,
+                                        discountCurve.currentLink(),
+                                        spread, n, frequency, new Date());
+                                final BondFunctions.Price cleanPrice =
+                                        new BondFunctions.Price(cleanAmt,
+                                                BondFunctions.Price.Type.Clean);
+                                double calculated = BondFunctions.zSpread(bond,
+                                        cleanPrice, discountCurve.currentLink(),
+                                        n, frequency, new Date(),
+                                        tolerance, maxEvaluations, 0.0);
+
+                                if (Math.abs(spread - calculated) > tolerance) {
+                                    // the difference might not matter
+                                    final double price2 = BondFunctions.cleanPrice(bond,
+                                            discountCurve.currentLink(),
+                                            calculated, n, frequency, new Date());
+                                    if (Math.abs(cleanPrice.amount() - price2)
+                                            / cleanPrice.amount() > tolerance) {
+                                        fail("Z-spread recalculation failed (clean):"
+                                                + "\n  issue:     " + issue
+                                                + "\n  maturity:  " + maturity
+                                                + "\n  coupon:    " + coupon
+                                                + "\n  frequency: " + frequency
+                                                + "\n  Z-spread:  " + spread + " "
+                                                + (n == Compounding.Compounded
+                                                        ? "compounded" : "continuous")
+                                                + "\n  clean price:  " + cleanPrice.amount()
+                                                + "\n  Z-spread':    " + calculated
+                                                + "\n  clean price': " + price2);
+                                    }
+                                }
+
+                                // ---- Dirty-price round-trip ----
+                                final double dirtyAmt = BondFunctions.dirtyPrice(bond,
+                                        discountCurve.currentLink(),
+                                        spread, n, frequency, new Date());
+                                final BondFunctions.Price dirtyPrice =
+                                        new BondFunctions.Price(dirtyAmt,
+                                                BondFunctions.Price.Type.Dirty);
+                                calculated = BondFunctions.zSpread(bond,
+                                        dirtyPrice, discountCurve.currentLink(),
+                                        n, frequency, new Date(),
+                                        tolerance, maxEvaluations, 0.0);
+
+                                if (Math.abs(spread - calculated) > tolerance) {
+                                    final double price2 = BondFunctions.dirtyPrice(bond,
+                                            discountCurve.currentLink(),
+                                            calculated, n, frequency, new Date());
+                                    if (Math.abs(dirtyPrice.amount() - price2)
+                                            / dirtyPrice.amount() > tolerance) {
+                                        fail("Z-spread recalculation failed (dirty):"
+                                                + "\n  issue:        " + issue
+                                                + "\n  maturity:     " + maturity
+                                                + "\n  coupon:       " + coupon
+                                                + "\n  frequency:    " + frequency
+                                                + "\n  Z-spread:     " + spread + " "
+                                                + (n == Compounding.Compounded
+                                                        ? "compounded" : "continuous")
+                                                + "\n  dirty price:  " + dirtyPrice.amount()
+                                                + "\n  Z-spread':    " + calculated
+                                                + "\n  dirty price': " + price2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Faithful Java port of {@code testExCouponGilt} from

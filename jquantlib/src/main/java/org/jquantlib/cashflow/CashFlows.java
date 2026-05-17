@@ -31,10 +31,13 @@ import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.solvers1D.Brent;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.InterestRate;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.termstructures.yieldcurves.ZeroSpreadedTermStructure;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Period;
@@ -772,6 +775,123 @@ public class CashFlows {
     public static long accruedDays(final Leg leg,
                                    final boolean includeSettlementDateFlows) {
         return accruedDays(leg, includeSettlementDateFlows, new Date());
+    }
+
+    //
+    // Z-spread functions
+    //
+    // Faithful Java port of CashFlows::npv(zSpread) and CashFlows::zSpread
+    // from ql/cashflows/cashflows.cpp v1.42.1 (lines 1144-1240). Both wrap
+    // a {@link ZeroSpreadedTermStructure} over the supplied discount curve
+    // and re-use the static NPV machinery already in this class.
+    //
+
+    /**
+     * NPV of the cash flows under a Z-spread on the discount curve.
+     * Mirrors C++ {@code CashFlows::npv(leg, discountCurve, zSpread, comp,
+     * freq, includeSettlementDateFlows, settlementDate, npvDate)}
+     * (cashflows.cpp:1144-1173). The spread is added on top of the curve's
+     * zero rate under the given {@code (compounding, frequency)} pair.
+     *
+     * <p>Phase 5e.5b-CFC-d-98.
+     */
+    public static double npv(final Leg leg,
+                             final YieldTermStructure discountCurve,
+                             final double zSpread,
+                             final Compounding compounding,
+                             final Frequency frequency,
+                             final boolean includeSettlementDateFlows,
+                             Date settlementDate,
+                             Date npvDate) {
+        if (leg.isEmpty()) {
+            return 0.0;
+        }
+        if (settlementDate == null || settlementDate.isNull()) {
+            settlementDate = new Settings().evaluationDate();
+        }
+        if (npvDate == null || npvDate.isNull()) {
+            npvDate = settlementDate;
+        }
+        final Handle<YieldTermStructure> discountCurveHandle =
+                new Handle<YieldTermStructure>(discountCurve);
+        final Handle<Quote> zSpreadQuoteHandle =
+                new Handle<Quote>(new SimpleQuote(zSpread));
+        final ZeroSpreadedTermStructure spreadedCurve =
+                new ZeroSpreadedTermStructure(discountCurveHandle,
+                                              zSpreadQuoteHandle,
+                                              compounding, frequency);
+        return npv(leg, spreadedCurve,
+                   includeSettlementDateFlows,
+                   settlementDate, npvDate);
+    }
+
+    /**
+     * Implied Z-spread. Mirrors C++ {@code CashFlows::zSpread(leg, npv,
+     * discount, compounding, frequency, includeSettlementDateFlows,
+     * settlementDate, npvDate, accuracy, maxIterations, guess)}
+     * (cashflows.cpp:1188-1223): root-finds the spread such that the
+     * z-spread-discounted NPV matches the target {@code npv}, using
+     * {@link Brent} with the canonical defaults
+     * {@code (accuracy=1e-10, maxIterations=100, guess=0.0, step=0.01)}.
+     *
+     * <p>Phase 5e.5b-CFC-d-98.
+     */
+    public static double zSpread(final Leg leg,
+                                 final double npv,
+                                 final YieldTermStructure discount,
+                                 final Compounding compounding,
+                                 final Frequency frequency,
+                                 final boolean includeSettlementDateFlows,
+                                 Date settlementDate,
+                                 Date npvDate,
+                                 final double accuracy,
+                                 final int maxIterations,
+                                 final double guess) {
+        if (settlementDate == null || settlementDate.isNull()) {
+            settlementDate = new Settings().evaluationDate();
+        }
+        if (npvDate == null || npvDate.isNull()) {
+            npvDate = settlementDate;
+        }
+        final SimpleQuote zSpreadQuote = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> discountHandle =
+                new Handle<YieldTermStructure>(discount);
+        final Handle<Quote> zSpreadHandle = new Handle<Quote>(zSpreadQuote);
+        final ZeroSpreadedTermStructure spreadedCurve =
+                new ZeroSpreadedTermStructure(discountHandle, zSpreadHandle,
+                                              compounding, frequency);
+        final Date sd = settlementDate;
+        final Date nd = npvDate;
+        final Ops.DoubleOp objFunction = new Ops.DoubleOp() {
+            @Override
+            public double op(final double s) {
+                zSpreadQuote.setValue(s);
+                final double calc = npv(leg, spreadedCurve,
+                                        includeSettlementDateFlows, sd, nd);
+                return npv - calc;
+            }
+        };
+        final Brent solver = new Brent();
+        solver.setMaxEvaluations(maxIterations);
+        final double step = 0.01;
+        return solver.solve(objFunction, accuracy, guess, step);
+    }
+
+    /**
+     * Convenience overload with the C++ canonical defaults
+     * {@code (accuracy=1e-10, maxIterations=100, guess=0.0)}.
+     */
+    public static double zSpread(final Leg leg,
+                                 final double npv,
+                                 final YieldTermStructure discount,
+                                 final Compounding compounding,
+                                 final Frequency frequency,
+                                 final boolean includeSettlementDateFlows,
+                                 final Date settlementDate,
+                                 final Date npvDate) {
+        return zSpread(leg, npv, discount, compounding, frequency,
+                       includeSettlementDateFlows, settlementDate, npvDate,
+                       1.0e-10, 100, 0.0);
     }
 
     /*
