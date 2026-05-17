@@ -1,0 +1,235 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "case1_expected_settlement": 89.44607586609752,
+        "case1_npv_settlement": 89.44607586609757,
+        "case2_npv_settlement": 89.44607586609757,
+        "case3_expected_settlement": 89.44607586609752,
+        "case3_npv_settlement": 89.44607586609757,
+        "case4_npv_settlement": 89.44607586609757
+      },
+      "inputs": {
+        "flatRate": 0.03,
+        "timeSteps": 240,
+        "today_serial": 38141
+      },
+      "name": "testInterplay"
+    },
+    {
+      "expected": {
+        "callable_cleanPrice": 110.6083494609341,
+        "plain_cleanPrice": 114.65941220897514,
+        "puttable_cleanPrice": 114.66271340118868
+      },
+      "inputs": {
+        "flatRate": 0.032,
+        "timeSteps": 240,
+        "today_serial": 38141
+      },
+      "name": "testConsistency"
+    },
+    {
+      "expected": {
+        "npv_at_0.03": 88.08608544071241,
+        "npv_at_0.04": 87.45263926380356
+      },
+      "inputs": {
+        "timeSteps": 240,
+        "today_serial": 38141
+      },
+      "name": "testObservability"
+    },
+    {
+      "expected": {
+        "cfb_empty_cleanPrice": 112.84875947714448,
+        "cfb_oom_cleanPrice": 112.84875947714448,
+        "czb_empty_cleanPrice": 71.85653457511174,
+        "czb_oom_cleanPrice": 71.85653457511174,
+        "fixed_cleanPrice": 112.84875947714458,
+        "zero_cleanPrice": 71.85653457511171
+      },
+      "inputs": {
+        "timeSteps": 240,
+        "today_serial": 38141
+      },
+      "name": "testDegenerate"
+    },
+    {
+      "expected": {
+        "callable_cleanPrice": 110.60834946093415,
+        "mixed_cleanPrice": 110.97398403063768,
+        "puttable_cleanPrice": 115.1658492587932
+      },
+      "inputs": {
+        "flatRate": 0.032,
+        "timeSteps": 240,
+        "today_serial": 38141
+      },
+      "name": "testCached"
+    },
+    {
+      "expected": {
+        "cleanPrice": 74.54494134581076
+      },
+      "inputs": {
+        "flatRate": 0.03,
+        "today_serial": 44824,
+        "vol": 0.3
+      },
+      "name": "testBlackEngine"
+    },
+    {
+      "expected": {
+        "clean_after": 78.50000000001654,
+        "dirty_after": 78.50000000000618,
+        "vol_for_clean_target": 0.7648653269451157,
+        "vol_for_dirty_target": 0.7934012085473411
+      },
+      "inputs": {
+        "flatRate": 0.03,
+        "targetPrice": 78.5,
+        "today_serial": 38141
+      },
+      "name": "testImpliedVol"
+    },
+    {
+      "expected": {
+        "calculated_cleanPrice": 44.70971553808225,
+        "callDate_serial": 45642,
+        "expected": 44.7181370467534,
+        "settlement_serial": 44827
+      },
+      "inputs": {
+        "flatRate": 0.05,
+        "strike": 50.0,
+        "today_serial": 44824,
+        "vol": 1e-10
+      },
+      "name": "testBlackEngineDeepInTheMoney"
+    },
+    {
+      "expected": {
+        "cleanPrice": 104.23185995529222
+      },
+      "inputs": {
+        "timeSteps": 240,
+        "today_serial": 43840
+      },
+      "name": "testCallableFixedRateBondWithArbitrarySchedule"
+    },
+    {
+      "expected": {
+        "npv_pairs": [
+          {
+            "callDate_serial": 44596,
+            "diff": 2.842170943040401e-14,
+            "i": -10,
+            "npv_callable": 103.38979774384106,
+            "npv_fixed": 103.38979774384109
+          },
+          {
+            "callDate_serial": 44599,
+            "diff": 2.842170943040401e-14,
+            "i": -7,
+            "npv_callable": 103.41427847639096,
+            "npv_fixed": 103.41427847639099
+          },
+          {
+            "callDate_serial": 44600,
+            "diff": 1.4210854715202004e-14,
+            "i": -6,
+            "npv_callable": 103.42243632622709,
+            "npv_fixed": 103.4224363262271
+          },
+          {
+            "callDate_serial": 44601,
+            "diff": 2.842170943040401e-14,
+            "i": -5,
+            "npv_callable": 103.43059297906738,
+            "npv_fixed": 103.43059297906741
+          },
+          {
+            "callDate_serial": 44602,
+            "diff": 4.263256414560601e-14,
+            "i": -4,
+            "npv_callable": 103.43874843501857,
+            "npv_fixed": 103.43874843501861
+          },
+          {
+            "callDate_serial": 44603,
+            "diff": 0.0,
+            "i": -3,
+            "npv_callable": 103.44690269418739,
+            "npv_fixed": 103.44690269418739
+          },
+          {
+            "callDate_serial": 44606,
+            "diff": 1.4210854715202004e-14,
+            "i": 0,
+            "npv_callable": 103.47135829206577,
+            "npv_fixed": 103.47135829206576
+          },
+          {
+            "callDate_serial": 44607,
+            "diff": 1.4210854715202004e-14,
+            "i": 1,
+            "npv_callable": 103.47964272125569,
+            "npv_fixed": 103.4796427212557
+          },
+          {
+            "callDate_serial": 44608,
+            "diff": 1.4210854715202004e-14,
+            "i": 2,
+            "npv_callable": 103.48792594680182,
+            "npv_fixed": 103.48792594680184
+          },
+          {
+            "callDate_serial": 44609,
+            "diff": 2.842170943040401e-14,
+            "i": 3,
+            "npv_callable": 103.49620796881113,
+            "npv_fixed": 103.49620796881116
+          },
+          {
+            "callDate_serial": 44610,
+            "diff": 2.842170943040401e-14,
+            "i": 4,
+            "npv_callable": 103.50448878739067,
+            "npv_fixed": 103.5044887873907
+          },
+          {
+            "callDate_serial": 44614,
+            "diff": 2.842170943040401e-14,
+            "i": 8,
+            "npv_callable": 103.5376000295512,
+            "npv_fixed": 103.53760002955123
+          },
+          {
+            "callDate_serial": 44615,
+            "diff": 1.4210854715202004e-14,
+            "i": 9,
+            "npv_callable": 103.5458748325869,
+            "npv_fixed": 103.54587483258692
+          },
+          {
+            "callDate_serial": 44616,
+            "diff": 4.263256414560601e-14,
+            "i": 10,
+            "npv_callable": 103.55414843283478,
+            "npv_fixed": 103.55414843283482
+          }
+        ]
+      },
+      "inputs": {
+        "today_serial": 44334
+      },
+      "name": "testSnappingExerciseDate2ClosestCouponDate"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-17T00:08:48Z",
+  "generated_by": "callablebonds_probe",
+  "test_group": "experimental/callablebonds"
+}
