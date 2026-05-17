@@ -58,6 +58,13 @@ public class DateGeneration {
         ThirdWednesday   (4),
 
         /**
+         * All dates including effective date and termination date are taken to be on the third wednesday
+         * of their month (with forward calculation).
+         * Mirrors C++ {@code DateGeneration::ThirdWednesdayInclusive}.
+         */
+        ThirdWednesdayInclusive   (10),
+
+        /**
          * All dates but the effective date are taken to be the twentieth of their month (used for CDS schedules in emerging
          * markets.) The termination date is also modified.
          */
@@ -136,6 +143,8 @@ public class DateGeneration {
                 return "CDS";
             case 9:
                 return "CDS2015";
+            case 10:
+                return "ThirdWednesdayInclusive";
             default:
                 throw new LibraryException(UNKNOWN_DATE_GENERATION_RULE);
             }

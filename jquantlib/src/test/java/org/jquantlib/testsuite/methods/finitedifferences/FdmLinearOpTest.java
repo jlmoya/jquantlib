@@ -592,25 +592,262 @@ public class FdmLinearOpTest {
         }
     }
 
-    /** {@code testFdmHestonBarrier} / {@code testFdmHestonAmerican} /
-     * {@code testFdmHestonExpress} / {@code testFdmHestonHullWhiteOp} —
-     * all require {@code FdmHestonOp} + {@code FdHestonBarrierEngine} +
-     * {@code FdHestonVanillaEngine} which are NOT yet ported (Phase 4n.5
-     * carry-forward).  See Phase 5j.5 plan.
+    /** {@code testFdmHestonBarrier} — Java port of v1.42.1
+     * {@code test-suite/fdmlinearop.cpp::testFdmHestonBarrier}.
+     *
+     * <p>Phase 5e.5b-CFC-d-56: body-filled. Builds a 200x100 uniform
+     * log-spot/variance grid, applies an upper Dirichlet boundary at
+     * {@code log(135) ≈ 4.905275} (knock-out barrier), and rolls back 50
+     * Hundsdorfer steps from t=1.0 to t=0. The barrier knock-out is enforced
+     * via {@link org.jquantlib.methods.finitedifferences.utilities.FdmTimeDepDirichletBoundary}
+     * (constant 0.0) on the Upper boundary of dim 0 (log-spot).
+     *
+     * <p>Tolerance: tier-tight {@code 1e-6} (C++ verbatim).
      */
-    @Ignore("Phase 5j.5: FdmHestonOp + FdHestonBarrierEngine now ported (commits 7dbb9bd2 + a1dffb9e); test body is `fail(\"not implemented\")` — needs full port from C++ test-suite/fdmlinearop.cpp::testFdmHestonBarrier")
     @Test
     public void testFdmHestonBarrier() {
-        fail("not implemented");
+        final int[] dim = { 200, 100 };
+        final double[][] boundaries = { { 3.8, 4.905274778 }, { 0.0, 1.0 } };
+        final FdmMesher mesher = uniformMesher(dim, boundaries);
+
+        final org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote> s0 =
+                new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(
+                        new org.jquantlib.quotes.SimpleQuote(100.0));
+
+        final org.jquantlib.daycounters.DayCounter dc =
+                new org.jquantlib.daycounters.Actual365Fixed();
+        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> rTS =
+                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        org.jquantlib.testsuite.util.Utilities.flatRate(0.05, dc));
+        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> qTS =
+                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        org.jquantlib.testsuite.util.Utilities.flatRate(0.0, dc));
+
+        final org.jquantlib.processes.HestonProcess hestonProcess =
+                new org.jquantlib.processes.HestonProcess(
+                        rTS, qTS, s0, 0.04, 2.5, 0.04, 0.66, -0.8);
+
+        new org.jquantlib.Settings().setEvaluationDate(
+                new org.jquantlib.time.Date(28, org.jquantlib.time.Month.March, 2004));
+
+        final org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite hestonOp =
+                new org.jquantlib.methods.finitedifferences.operators.FdmHestonOp(
+                        mesher, hestonProcess);
+
+        final Array rhs = new Array(mesher.layout().size());
+        for (final FdmLinearOpIterator iter : mesher.layout()) {
+            rhs.set(iter.index(),
+                    Math.max(Math.exp(mesher.location(iter, 0)) - 100.0, 0.0));
+        }
+
+        // Upper Dirichlet boundary on dim 0 (knock-out at log(135)).
+        final org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet bcSet =
+                new org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet();
+        bcSet.add(new org.jquantlib.methods.finitedifferences.utilities.FdmTimeDepDirichletBoundary(
+                mesher, t -> 0.0, 0,
+                org.jquantlib.methods.finitedifferences.utilities.BoundaryCondition.Side.Upper));
+
+        final double theta = 0.5 + Math.sqrt(3.0) / 6.0;
+        final org.jquantlib.methods.finitedifferences.schemes.HundsdorferScheme hsEvolver =
+                new org.jquantlib.methods.finitedifferences.schemes.HundsdorferScheme(
+                        theta, 0.5, hestonOp, bcSet);
+
+        // Direct Hundsdorfer rollback (50 steps from t=1.0 to t=0).
+        final int steps = 50;
+        final double dt  = 1.0 / steps;
+        hsEvolver.setStep(dt);
+        double t = 1.0;
+        for (int i = 0; i < steps; ++i, t -= dt) {
+            hsEvolver.step(rhs, t);
+        }
+
+        // Reshape to (log-spot, variance) interpolation grid.
+        // Collect tx (log-spot grid, dim 0, size 200) and ty (variance grid, dim 1, size 100).
+        final List<Double> tx = new ArrayList<Double>();
+        final List<Double> ty = new ArrayList<Double>();
+        for (final FdmLinearOpIterator iter : mesher.layout()) {
+            if (iter.coordinates()[1] == 0) {
+                tx.add(mesher.location(iter, 0));
+            }
+            if (iter.coordinates()[0] == 0) {
+                ty.add(mesher.location(iter, 1));
+            }
+        }
+
+        // C++ uses BilinearInterpolation(ty.begin(), ty.end(), tx.begin(), tx.end(), ret)
+        // and ret[i][j] = rhs[i+j*dim[0]] (i ∈ [0,dim[0]), j ∈ [0,dim[1])).
+        // C++ BilinearInterpolation::operator()(x,y) reads with y = log-spot (tx-axis),
+        // x = variance (ty-axis), and matrix is indexed as ret[i_y][j_x].
+        // In JQuantLib's BilinearInterpolation, vx is the X-axis (first arg to op()),
+        // vy is the Y-axis (second arg), and op(x,y) reads mz.get(j=locateY(y), i=locateX(x)).
+        // So vx=ty (variance) so that locateX(v0) is variance index;
+        //    vy=tx (log-spot) so that locateY(log(s)) is log-spot index;
+        //    matrix rows index vy (log-spot, dim[0]=200),
+        //    matrix cols index vx (variance, dim[1]=100).
+        final Array vx = new Array(ty.size());
+        for (int k = 0; k < ty.size(); ++k) vx.set(k, ty.get(k));
+        final Array vy = new Array(tx.size());
+        for (int k = 0; k < tx.size(); ++k) vy.set(k, tx.get(k));
+        final org.jquantlib.math.matrixutilities.Matrix ret =
+                new org.jquantlib.math.matrixutilities.Matrix(dim[0], dim[1]);
+        for (int i = 0; i < dim[0]; ++i) {       // i = log-spot row index
+            for (int j = 0; j < dim[1]; ++j) {   // j = variance col index
+                ret.set(i, j, rhs.get(i + j * dim[0]));
+            }
+        }
+
+        final org.jquantlib.math.interpolations.BilinearInterpolation interpolate =
+                new org.jquantlib.math.interpolations.BilinearInterpolation(vx, vy, ret);
+
+        final double x  = 100.0;
+        final double v0 = 0.04;
+
+        final double npv   = interpolate.op(v0, Math.log(x));
+        final double delta = 0.5 * (interpolate.op(v0, Math.log(x + 1))
+                                    - interpolate.op(v0, Math.log(x - 1)));
+        final double gamma =  interpolate.op(v0, Math.log(x + 1))
+                            + interpolate.op(v0, Math.log(x - 1)) - 2 * npv;
+
+        final double npvExpected   = 9.049016;
+        final double deltaExpected = 0.511285;
+        final double gammaExpected = -0.034296;
+
+        if (Math.abs(npv - npvExpected) > 1.0e-6) {
+            fail("Error in calculating PV for Heston barrier option"
+                    + "\n  calculated: " + npv
+                    + "\n  expected:   " + npvExpected);
+        }
+        if (Math.abs(delta - deltaExpected) > 1.0e-6) {
+            fail("Error in calculating Delta for Heston barrier option"
+                    + "\n  calculated: " + delta
+                    + "\n  expected:   " + deltaExpected);
+        }
+        if (Math.abs(gamma - gammaExpected) > 1.0e-6) {
+            fail("Error in calculating Gamma for Heston barrier option"
+                    + "\n  calculated: " + gamma
+                    + "\n  expected:   " + gammaExpected);
+        }
     }
 
-    @Ignore("Phase 5j.5: FdmHestonOp + FdHestonVanillaEngine now ported (commit 7dbb9bd2); test body is `fail(\"not implemented\")` — needs full port from C++ test-suite/fdmlinearop.cpp::testFdmHestonAmerican")
+    /** {@code testFdmHestonAmerican} — Java port of v1.42.1
+     * {@code test-suite/fdmlinearop.cpp::testFdmHestonAmerican}.
+     *
+     * <p>Phase 5e.5b-CFC-d-56: body-filled. 200x100 grid, log-spot in
+     * {@code [3.8, log(220)]} x variance in {@code [0, 1]}, American put with
+     * strike 100, Hundsdorfer ADI 50 steps, {@link org.jquantlib.methods.finitedifferences.stepconditions.FdmAmericanStepCondition}
+     * applied each step. No boundary conditions (matches C++ default).
+     *
+     * <p>Tolerance: tier-tight {@code 1e-6} (C++ verbatim).
+     */
     @Test
     public void testFdmHestonAmerican() {
-        fail("not implemented");
+        final int[] dim = { 200, 100 };
+        final double[][] boundaries = { { 3.8, Math.log(220.0) }, { 0.0, 1.0 } };
+        final FdmMesher mesher = uniformMesher(dim, boundaries);
+
+        final org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote> s0 =
+                new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(
+                        new org.jquantlib.quotes.SimpleQuote(100.0));
+
+        final org.jquantlib.daycounters.DayCounter dc =
+                new org.jquantlib.daycounters.Actual365Fixed();
+        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> rTS =
+                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        org.jquantlib.testsuite.util.Utilities.flatRate(0.05, dc));
+        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> qTS =
+                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        org.jquantlib.testsuite.util.Utilities.flatRate(0.0, dc));
+
+        final org.jquantlib.processes.HestonProcess hestonProcess =
+                new org.jquantlib.processes.HestonProcess(
+                        rTS, qTS, s0, 0.04, 2.5, 0.04, 0.66, -0.8);
+
+        new org.jquantlib.Settings().setEvaluationDate(
+                new org.jquantlib.time.Date(28, org.jquantlib.time.Month.March, 2004));
+
+        final org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite linearOp =
+                new org.jquantlib.methods.finitedifferences.operators.FdmHestonOp(
+                        mesher, hestonProcess);
+
+        final org.jquantlib.instruments.Payoff payoff =
+                new org.jquantlib.instruments.PlainVanillaPayoff(
+                        org.jquantlib.instruments.Option.Type.Put, 100.0);
+
+        final Array rhs = new Array(mesher.layout().size());
+        for (final FdmLinearOpIterator iter : mesher.layout()) {
+            rhs.set(iter.index(), payoff.get(Math.exp(mesher.location(iter, 0))));
+        }
+
+        final org.jquantlib.methods.finitedifferences.stepconditions.FdmAmericanStepCondition condition =
+                new org.jquantlib.methods.finitedifferences.stepconditions.FdmAmericanStepCondition(
+                        mesher,
+                        new org.jquantlib.methods.finitedifferences.utilities.FdmLogInnerValue(
+                                payoff, mesher, 0));
+
+        final double theta = 0.5 + Math.sqrt(3.0) / 6.0;
+        final org.jquantlib.methods.finitedifferences.schemes.HundsdorferScheme hsEvolver =
+                new org.jquantlib.methods.finitedifferences.schemes.HundsdorferScheme(
+                        theta, 0.5, linearOp);
+
+        // Direct Hundsdorfer rollback with American step condition each step.
+        final int steps = 50;
+        final double dt  = 1.0 / steps;
+        hsEvolver.setStep(dt);
+        double t = 1.0;
+        for (int i = 0; i < steps; ++i, t -= dt) {
+            hsEvolver.step(rhs, t);
+            condition.applyTo(rhs, t - dt);
+        }
+
+        final List<Double> tx = new ArrayList<Double>();
+        final List<Double> ty = new ArrayList<Double>();
+        for (final FdmLinearOpIterator iter : mesher.layout()) {
+            if (iter.coordinates()[1] == 0) {
+                tx.add(mesher.location(iter, 0));
+            }
+            if (iter.coordinates()[0] == 0) {
+                ty.add(mesher.location(iter, 1));
+            }
+        }
+
+        final Array vx = new Array(ty.size());
+        for (int k = 0; k < ty.size(); ++k) vx.set(k, ty.get(k));
+        final Array vy = new Array(tx.size());
+        for (int k = 0; k < tx.size(); ++k) vy.set(k, tx.get(k));
+        final org.jquantlib.math.matrixutilities.Matrix ret =
+                new org.jquantlib.math.matrixutilities.Matrix(dim[0], dim[1]);
+        for (int i = 0; i < dim[0]; ++i) {
+            for (int j = 0; j < dim[1]; ++j) {
+                ret.set(i, j, rhs.get(i + j * dim[0]));
+            }
+        }
+
+        final org.jquantlib.math.interpolations.BilinearInterpolation interpolate =
+                new org.jquantlib.math.interpolations.BilinearInterpolation(vx, vy, ret);
+
+        final double x  = 100.0;
+        final double v0 = 0.04;
+
+        final double npv         = interpolate.op(v0, Math.log(x));
+        final double npvExpected = 5.641648;
+
+        if (Math.abs(npv - npvExpected) > 1.0e-6) {
+            fail("Error in calculating PV for Heston American Option"
+                    + "\n  calculated: " + npv
+                    + "\n  expected:   " + npvExpected);
+        }
     }
 
-    @Ignore("Phase 5j.5: FdmHestonOp + FdHestonVanillaEngine now ported (commit 7dbb9bd2); test body is `fail(\"not implemented\")` — needs full port from C++ test-suite/fdmlinearop.cpp::testFdmHestonExpress")
+    /** {@code testFdmHestonExpress} — Java port of v1.42.1
+     * {@code test-suite/fdmlinearop.cpp::testFdmHestonExpress}.
+     *
+     * <p>Phase 5e.5b-CFC-d-56: <b>PARTIAL</b>. Requires
+     * {@code FdmHestonExpressCondition}, {@code ExpressPayoff} (local test
+     * helper class in C++), and {@code FdmHestonSolver.meanVarianceDeltaAt}
+     * / {@code meanVarianceGammaAt} — none of which are yet ported.
+     * Body-fill deferred until these production classes land.
+     */
+    @Ignore("PARTIAL: requires FdmHestonExpressCondition + ExpressPayoff + FdmHestonSolver.meanVariance{Delta,Gamma}At — not yet ported")
     @Test
     public void testFdmHestonExpress() {
         fail("not implemented");
