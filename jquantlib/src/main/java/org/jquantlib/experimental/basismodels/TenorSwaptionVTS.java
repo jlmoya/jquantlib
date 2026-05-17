@@ -165,11 +165,19 @@ public class TenorSwaptionVTS extends SwaptionVolatilityStructure {
                     targFloatSchedule, volTS.targIndex_, 0.0,
                     volTS.targIndex_.dayCounter());
 
-            // Set pricing engines
-            final PricingEngine engine = new DiscountingSwapEngine(volTS.discountCurve_);
-            baseSwap.setPricingEngine(engine);
-            targSwap.setPricingEngine(engine);
-            finlSwap.setPricingEngine(engine);
+            // Set pricing engines.
+            // Java port deviation: instantiate a separate DiscountingSwapEngine
+            // per swap. The Java {@link org.jquantlib.instruments.Swap.ResultsImpl#reset()}
+            // {@code Arrays.fill}s the engine-shared {@code legBPS} array, and
+            // {@code Swap.fetchResults} assigns {@code legBPS = r.legBPS} by
+            // reference — so re-using a single engine across multiple swaps
+            // zeros out the previously-cached legBPS on each subsequent
+            // calculate(), making {@code targSwap.fixedLegBPS()} return 0
+            // after {@code finlSwap.fairRate()}. C++ avoids this because each
+            // swap owns its own results buffer through shared_ptr semantics.
+            baseSwap.setPricingEngine(new DiscountingSwapEngine(volTS.discountCurve_));
+            targSwap.setPricingEngine(new DiscountingSwapEngine(volTS.discountCurve_));
+            finlSwap.setPricingEngine(new DiscountingSwapEngine(volTS.discountCurve_));
 
             // Compute swap rates
             swapRateBase_ = baseSwap.fairRate();

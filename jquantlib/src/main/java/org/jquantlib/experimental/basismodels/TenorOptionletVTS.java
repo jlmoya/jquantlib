@@ -286,6 +286,11 @@ public class TenorOptionletVTS extends OptionletVolatilityStructure {
 
     @Override
     protected double volatilityImpl(final double optionTime, final double strike) {
-        return smileSection(optionTime).volatility(strike);
+        // Mirrors C++ {@code volatilityImpl(t, strike) = smileSection(t)->volatility(strike)}.
+        // We call smileSectionImpl directly to bypass an extra range check
+        // (extrapolation is already enforced at the public {@code volatility(...)}
+        // entry point); without this the inner range check rejects the very
+        // boundary date for which the outer call was allowed.
+        return smileSectionImpl(optionTime).volatility(strike);
     }
 }

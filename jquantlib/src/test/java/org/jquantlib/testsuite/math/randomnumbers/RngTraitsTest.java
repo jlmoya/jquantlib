@@ -29,6 +29,7 @@ import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
 import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
+import org.jquantlib.math.randomnumbers.RanluxUniformRng;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -37,8 +38,8 @@ import org.junit.Test;
  *
  * <p>4 BOOST_AUTO_TEST_CASE methods. {@code testGaussian} is portable;
  * {@code testDefaultPoisson} / {@code testCustomPoisson} require
- * {@code PoissonPseudoRandom} (not in JQuantLib); {@code testRanLux}
- * requires Ranlux3/4 RNG (not in JQuantLib).
+ * {@code PoissonPseudoRandom} (not in JQuantLib); {@code testRanLux} was
+ * un-ignored in Phase 5e.5b-CFC-d-77 once {@link RanluxUniformRng} was ported.
  */
 public class RngTraitsTest {
 
@@ -87,9 +88,54 @@ public class RngTraitsTest {
     public void testCustomPoisson() {
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no Ranlux3/4 RNG (C++ "
-            + "ql/math/randomnumbers/ranluxuniformrng.hpp). Port then enable.")
+    /**
+     * Mirrors the C++ {@code testRanLux}: after 10010 discarded samples,
+     * the next 10 outputs of Ranlux3 (seed=2938723) and Ranlux4 (seed=4390109)
+     * must match the reference C++ values bit-for-bit (close_enough check).
+     */
     @Test
     public void testRanLux() {
+        QL.info("Testing known RanLux sequence...");
+
+        final RanluxUniformRng ranlux3 = RanluxUniformRng.ranlux3(2938723L);
+        final RanluxUniformRng ranlux4 = RanluxUniformRng.ranlux4(4390109L);
+
+        final double[] ranlux3Expected = {
+                0.307448851544538826, 0.666313657894363587, 0.698528013702823358,
+                0.0217381272445322793, 0.862964516238161394, 0.909193419106014034,
+                0.674484308686746914, 0.849607570377191479, 0.054626078713596371,
+                0.416474163715683687
+        };
+
+        final double[] ranlux4Expected = {
+                0.222209169374078641, 0.420181950405986271, 0.0302156663005135329,
+                0.0836259809475237148, 0.480549766594993599, 0.723472021829124401,
+                0.905819507194266293, 0.54072519936540786, 0.445908421479817463,
+                0.651084788437518824
+        };
+
+        for (int i = 0; i < 10010; ++i) {
+            ranlux3.next();
+            ranlux4.next();
+        }
+
+        // C++ close_enough uses 42 * ulp(max(|a|,|b|)) by default. With
+        // |a|, |b| < 1, that is ~42 * 2.22e-16 ≈ 9.3e-15.
+        final double tol = 1.0e-14;
+
+        for (int i = 0; i < 10; ++i) {
+            final double v3 = ranlux3.next().value();
+            if (Math.abs(v3 - ranlux3Expected[i]) > tol) {
+                fail("failed to reproduce ranlux3 numbers... idx=" + i
+                        + " expected=" + ranlux3Expected[i]
+                        + " actual=" + v3);
+            }
+            final double v4 = ranlux4.next().value();
+            if (Math.abs(v4 - ranlux4Expected[i]) > tol) {
+                fail("failed to reproduce ranlux4 numbers... idx=" + i
+                        + " expected=" + ranlux4Expected[i]
+                        + " actual=" + v4);
+            }
+        }
     }
 }
