@@ -26,13 +26,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.QL;
-import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.IborCoupon;
+import org.jquantlib.cashflow.IborLeg;
+import org.jquantlib.cashflow.Leg;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
 
 /**
  * Libor-forward-model process
@@ -52,7 +56,11 @@ import org.jquantlib.time.Date;
  *
  * @author Ueli Hofstetter
  */
-// TODO: license, class comments, access modifiers organization, good formatting
+// Phase 5e.5b-CFC-d-135 — port C++ {@code ql/legacy/libormarketmodels/lfmprocess.{hpp,cpp}}
+// v1.42.1 in full. Previous Java port had a broken constructor (null cashFlows,
+// {@code List.set(i, ...)} on an empty {@code ArrayList}, no {@code size()} /
+// {@code factors()} / {@code nextIndexReset()} / {@code discountBond()} / accessor
+// methods, and an {@code evolve()} that unconditionally threw).
 public class LiborForwardModelProcess extends StochasticProcess {
 
     //Exception messages
@@ -77,16 +85,28 @@ public class LiborForwardModelProcess extends StochasticProcess {
         this.size_ = size;
         this.index_ = index;
         this.initialValues_ = new Array(size_);
+        // Phase 5e.5b-CFC-d-135 — pre-populate the parallel arrays so that
+        // the per-coupon loop below can index them with {@code List.set(i, ...)}.
+        // The previous port used {@code new ArrayList<>(size_)} (capacity hint
+        // only) and then {@code set(i, …)} on the empty list, which threw
+        // {@code IndexOutOfBoundsException} on first iteration.
         this.fixingDates_ = new ArrayList<Date>(size_);
         this.fixingTimes_ = new ArrayList<Double>(size_);
         this.accrualStartTimes_ = new ArrayList<Double>(size_);
         this.accrualEndTimes_ = new ArrayList<Double>(size_);
         this.accrualPeriod_ = new ArrayList<Double>(size_);
+        for (int i = 0; i < size_; ++i) {
+            fixingDates_.add(null);
+            fixingTimes_.add(0.0);
+            accrualStartTimes_.add(0.0);
+            accrualEndTimes_.add(0.0);
+            accrualPeriod_.add(0.0);
+        }
         this.m1 = new Array(size_);
         this.m2 = new Array(size_);
 
         final DayCounter dayCounter = index_.dayCounter();
-        final List<CashFlow> flows = null /* cashFlows() */; // FIXME: translate cashFlows();
+        final Leg flows = cashFlows(1.0);
 
         QL.require(this.size_ == flows.size() , wrong_number_of_cashflows); // TODO: message
 
@@ -123,6 +143,71 @@ public class LiborForwardModelProcess extends StochasticProcess {
         return index_;
     }
 
+    /** Mirror of C++ {@code Leg LiborForwardModelProcess::cashFlows(Real amount)
+     *  const} (ql/legacy/libormarketmodels/lfmprocess.cpp v1.42.1).
+     *  Builds an {@link IborLeg} of unit-tenor coupons over the {@code size_}
+     *  rolling forward periods of the index. */
+    public Leg cashFlows(final /*@Real*/ double amount) {
+        final Date refDate = index_.termStructure().currentLink().referenceDate();
+        final Schedule schedule = new Schedule(
+                refDate,
+                refDate.add(new Period(index_.tenor().length() * size_, index_.tenor().units())),
+                index_.tenor(),
+                index_.fixingCalendar(),
+                index_.businessDayConvention(),
+                index_.businessDayConvention(),
+                DateGeneration.Rule.Forward,
+                false);
+        // IborLeg.Leg() installs a default BlackIborCouponPricer with an
+        // empty CapletVolatilityStructure when caps/floors are empty and
+        // inArrears is false, equivalent to the fictitious pricer the C++
+        // ctor sets in ql/legacy/libormarketmodels/lfmprocess.cpp.
+        return new IborLeg(schedule, index_)
+                .withNotionals(amount)
+                .withPaymentDayCounter(index_.dayCounter())
+                .withPaymentAdjustment(index_.businessDayConvention())
+                .withFixingDays(index_.fixingDays())
+                .Leg();
+    }
+
+    public Leg cashFlows() {
+        return cashFlows(1.0);
+    }
+
+    /** Mirror of C++ {@code Size LiborForwardModelProcess::nextIndexReset(Time t)}.
+     *  Returns the index of the first fixing time strictly greater than {@code t}
+     *  (i.e. an upper-bound search). */
+    public /*Size*/ int nextIndexReset(/*Time*/ final double t) {
+        // std::upper_bound equivalent on a sorted ascending list of Doubles.
+        int lo = 0;
+        int hi = fixingTimes_.size();
+        while (lo < hi) {
+            final int mid = (lo + hi) >>> 1;
+            if (t < fixingTimes_.get(mid)) {
+                hi = mid;
+            } else {
+                lo = mid + 1;
+            }
+        }
+        return lo;
+    }
+
+    public List</*@Time*/Double> fixingTimes()       { return fixingTimes_; }
+    public List</*@Time*/Date>   fixingDates()       { return fixingDates_; }
+    public List</*@Time*/Double> accrualStartTimes() { return accrualStartTimes_; }
+    public List</*@Time*/Double> accrualEndTimes()   { return accrualEndTimes_; }
+
+    /** Mirror of C++ {@code std::vector<DiscountFactor>
+     *  LiborForwardModelProcess::discountBond(const std::vector<Rate>& rates)}. */
+    public /*@DiscountFactor*/ double[] discountBond(final /*@Rate*/ double[] rates) {
+        final double[] discountFactors = new double[size_];
+        discountFactors[0] = 1.0 / (1.0 + rates[0] * accrualPeriod_.get(0));
+        for (int i = 1; i < size_; ++i) {
+            discountFactors[i] = discountFactors[i-1] / (1.0 + rates[i] * accrualPeriod_.get(i));
+        }
+        return discountFactors;
+    }
+
 
     //
     // Overrides StochasticProcess
@@ -135,19 +220,24 @@ public class LiborForwardModelProcess extends StochasticProcess {
 
     @Override
     public int size() {
-        // TODO Auto-generated method stub
-        return 0;
+        return size_;
+    }
+
+    @Override
+    public int factors() {
+        return lfmParam_.factors();
     }
 
     @Override
     public Array drift(/* @Time */final double t, final Array x) {
         final Array f = new Array(size_);
         final Matrix covariance = lfmParam_.covariance(t, x);
-        final int m = 0;//NextA
+        final int m = nextIndexReset(t);
         for (int k = m; k < size_; ++k) {
             m1.set(k, accrualPeriod_.get(k) * x.get(k) / (1 + accrualPeriod_.get(k) * x.get(k)));
-            final double value = m1.innerProduct(covariance.constRangeCol(k), m, k+1-m) - 0.5 * covariance.get(k, k);
-            f.set(k, value);
+            // Mirror C++: inner_product(m1[m..k+1), col(k)[m..k+1)).
+            final double ip = m1.range(m, k+1).innerProduct(covariance.constRangeCol(k, m, k+1));
+            f.set(k, ip - 0.5 * covariance.get(k, k));
         }
         return f;
     }
@@ -159,7 +249,11 @@ public class LiborForwardModelProcess extends StochasticProcess {
 
     @Override
     public Matrix covariance(/*@Time*/final double t, final Array x, /*@Time*/ final double dt){
-        return lfmParam_.covariance(dt, x).mul(lfmParam_.covariance(dt, x).mulAssign(dt));
+        // Phase 5e.5b-CFC-d-135 — fix to mirror C++:
+        //   return lfmParam_->covariance(t, x) * dt;
+        // Previous port multiplied two covariance matrices together which is
+        // both wrong and uses mulAssign destructively.
+        return lfmParam_.covariance(t, x).mul(dt);
     }
 
     @Override
@@ -174,8 +268,6 @@ public class LiborForwardModelProcess extends StochasticProcess {
     @Override
     public Array evolve(/*@Time*/ final double t0, final Array x0, /*@Time*/ final double dt, final Array dw)  {
 
-        //FIXME:: code review against QuantLib/C++
-
         /* predictor-corrector step to reduce discretization errors.
 
            Short - but slow - solution would be
@@ -189,111 +281,31 @@ public class LiborForwardModelProcess extends StochasticProcess {
            The following implementation does the same but is faster.
         */
 
-        if (true)
-            throw new UnsupportedOperationException("work in progress");
-        final int m   = 0;//nextIndexReset(t0);
+        final int m   = nextIndexReset(t0);
         final double sdt = Math.sqrt(dt);
 
         final Array f = x0.clone();
         final Matrix diff       = lfmParam_.diffusion(t0, x0);
         final Matrix covariance = lfmParam_.covariance(t0, x0);
 
-        // TODO: review iterators
         for (int k=m; k<size_; ++k) {
             final double y = accrualPeriod_.get(k)*x0.get(k);
-            m1.set(k,y/(1+y));
+            m1.set(k, y/(1+y));
 
-            final double d = (m1.innerProduct(covariance.constRangeCol(k), m, k+1-m)-0.5*covariance.get(k, k)) * dt;
+            // Mirror C++ inner_product(m1[m..k+1), col(k)[m..k+1)).
+            final double m1ip = m1.range(m, k+1).innerProduct(covariance.constRangeCol(k, m, k+1));
+            final double d = (m1ip - 0.5*covariance.get(k, k)) * dt;
             final double r = diff.rangeRow(k).innerProduct(dw)*sdt;
             final double x = y*Math.exp(d + r);
             m2.set(k, x/(1+x));
 
-            final double ip = m2.innerProduct(covariance.constRangeCol(k), m, k+1-m);
-            final double value = x0.get(k) * Math.exp(0.5*(d+ip-0.5*covariance.get(k,k))*dt) + r;
+            final double m2ip = m2.range(m, k+1).innerProduct(covariance.constRangeCol(k, m, k+1));
+            // Mirror C++ literally: f[k] = x0[k] * exp(0.5*(d + (ip - 0.5*cov[k][k])*dt) + r);
+            final double value = x0.get(k)
+                    * Math.exp(0.5*(d + (m2ip - 0.5*covariance.get(k,k))*dt) + r);
             f.set(k, value);
         }
 
         return f;
     }
-//    /*
-//    private /*Size*/ int nextIndexReset(/*Time*/ final double t)  {
-//        return Std.getInstance().
-//                 - fixingTimes_.begin();
-//    }
-
-
 }
-
-
-
-
-
-/*
-    public List<CashFlow> cashFlows{
-
-        final Date refDate = index_.getTermStructure().getLink().referenceDate();
-
-        List<CashFlow> floatingLeg = Leg.FloatingLe, schedule, index, paymentDayCounter, paymentAdj, fixingDays, gearings, spreads, caps, floors, isInArrears)(
-                   std::vector<Real>(1, amount),
-                   Schedule(refDate,
-                            refDate + Period(index_->tenor().length()*size_,
-                                             index_->tenor().units()),
-                            index_->tenor(), index_->fixingCalendar(),
-                            index_->businessDayConvention(),
-                            index_->businessDayConvention(), false, false),
-                   index_,
-                   index_->dayCounter(),
-                   index_->businessDayConvention(),
-                   index_->fixingDays());
-        boost::shared_ptr<IborCouponPricer>
-                        fictitiousPricer(new BlackIborCouponPricer(Handle<CapletVolatilityStructure>()));
-        setCouponPricer(floatingLeg,fictitiousPricer);
-        return floatingLeg;
-
-    }
-
-    Size LiborForwardModelProcess::size() const {
-        return size_;
-    }
-
-    Size LiborForwardModelProcess::factors() const {
-        return lfmParam_->factors();
-    }
-
-    const std::vector<Time> & LiborForwardModelProcess::fixingTimes() const {
-        return fixingTimes_;
-    }
-
-    const std::vector<Date> & LiborForwardModelProcess::fixingDates() const {
-        return fixingDates_;
-    }
-
-    const std::vector<Time> &
-    LiborForwardModelProcess::accrualStartTimes() const {
-        return accrualStartTimes_;
-    }
-
-    const std::vector<Time> &
-    LiborForwardModelProcess::accrualEndTimes() const {
-        return accrualEndTimes_;
-    }
-
-    Size LiborForwardModelProcess::nextIndexReset(Time t) const {
-        return std::upper_bound(fixingTimes_.begin(), fixingTimes_.end(), t)
-                 - fixingTimes_.begin();
-    }
-
-    std::vector<DiscountFactor> LiborForwardModelProcess::discountBond(
-        const std::vector<Rate> & rates) const {
-
-        std::vector<DiscountFactor> discountFactors(size_);
-        discountFactors[0] = 1.0/(1.0 + rates[0]*accrualPeriod_[0]);
-
-        for (Size i = 1; i < size_; ++i) {
-            discountFactors[i] =
-                discountFactors[i-1]/(1.0 + rates[i]*accrualPeriod_[i]);
-        }
-
-        return discountFactors;
-    }*/
-
