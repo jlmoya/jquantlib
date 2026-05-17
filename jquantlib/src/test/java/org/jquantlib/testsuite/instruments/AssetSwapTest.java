@@ -27,14 +27,19 @@ import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.FixedRateLeg;
 import org.jquantlib.cashflow.Leg;
+import org.jquantlib.cashflow.SimpleCashFlow;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.Thirty360;
 import org.jquantlib.indexes.Euribor6M;
 import org.jquantlib.instruments.AssetSwap;
+import org.jquantlib.instruments.Bond;
 import org.jquantlib.instruments.bonds.FixedRateBond;
+import org.jquantlib.pricingengines.bond.BondFunctions;
 import org.jquantlib.pricingengines.bond.DiscountingBondEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.quotes.Handle;
@@ -67,53 +72,20 @@ import org.junit.Test;
  * across many bond types: fixed-rate, floating-rate, CMS, zero-coupon,
  * callable.
  *
- * <h3>Phase 5e.5 carry-forward rationale</h3>
+ * <h3>Phase 5e.5b-CFC-d-64 body-fill</h3>
  *
- * <p>All 9 methods are present as {@code @Ignore}'d skeletons. The blocker
- * is that JQuant has no {@code AssetSwap} production class — the only
- * asset-swap-named code in {@code org.jquantlib} is the experimental
- * {@code RiskyAssetSwap} (credit-risk-adjusted, different semantics). The
- * C++ {@code AssetSwap} (in {@code ql/instruments/assetswap.hpp}) is a
- * distinct vanilla-bond-vs-floating-leg instrument that needs a clean
- * Java port.
+ * <p>Six of the nine testsuite cases are body-filled in this revision,
+ * each porting the first sub-case from the C++ counterpart (the DBR 4
+ * 01/04/37 fixed-rate bond). The remaining sub-cases (floating-rate,
+ * CMS, zero-coupon bonds) are Phase 5e.5b carry-forward — they need
+ * {@code FloatingRateBond} / {@code CmsRateBond} pricer wiring and the
+ * full {@code CommonVars} cms-pricer fixture.
  *
- * <ul>
- *   <li>{@code testConsistency} (564 LOC C++): exercises clean/dirty price
- *       round-trip for fixed bonds, floating bonds, CMS bonds, and ZCB.
- *       Requires {@code AssetSwap} + {@code AssetSwapPricingEngine}. See
- *       WI-5e.5-ASW-1.</li>
- *
- *   <li>{@code testImpliedValue} (366 LOC): asset-swap value computed from
- *       cleanPrice vs marketAssetSwapValue. Requires same as testConsistency
- *       plus the {@code parAssetSwap} flag wiring. See WI-5e.5-ASW-2.</li>
- *
- *   <li>{@code testMarketASWSpread} (438 LOC): market asset-swap spread
- *       computation across bond types. Requires
- *       {@code AssetSwap.fairCleanPrice()} and
- *       {@code AssetSwap.fairSpread()} accessors. See WI-5e.5-ASW-3.</li>
- *
- *   <li>{@code testZSpread} (318 LOC): z-spread vs asset-swap-spread
- *       comparison. Requires {@code BondFunctions.zSpread} and
- *       {@code BondFunctions.cleanPriceFromZSpread}. JQuant has BondFunctions
- *       (Phase 2) but the {@code zSpread} solver overload may need
- *       cross-validation; primary blocker is {@code AssetSwap}. See
- *       WI-5e.5-ASW-4.</li>
- *
- *   <li>{@code testGenericBondImplied}, {@code testMASWWithGenericBond},
- *       {@code testZSpreadWithGenericBond}: parallel of the first three
- *       tests using the generic {@code Bond} class with explicit cashflow
- *       legs (rather than specialized fixed/floating bonds). Same blockers
- *       as their specialized counterparts. See WI-5e.5-ASW-5/6/7.</li>
- *
- *   <li>{@code testSpecializedBondVsGenericBond} (559 LOC): cross-validates
- *       that specialized bond classes (FixedRateBond, FloatingRateBond,
- *       CmsRateBond) produce identical asset-swap values to the generic
- *       {@code Bond} with manually-built legs. See WI-5e.5-ASW-8.</li>
- *
- *   <li>{@code testSpecializedBondVsGenericBondUsingAsw}: as above but
- *       constructed via {@code AssetSwap} convenience constructors taking
- *       par-rate / market-rate / explicit floating leg. See WI-5e.5-ASW-9.</li>
- * </ul>
+ * <p>The two specialized-vs-generic cross-check methods remain
+ * {@code @Ignore}'d (production gap: {@code BlackIborCouponPricer},
+ * {@code AnalyticHaganPricer}, {@code SwapIndex} wiring and an
+ * {@code AssetSwap} convenience constructor taking a market rate are
+ * needed).
  */
 public class AssetSwapTest {
 
@@ -121,9 +93,180 @@ public class AssetSwapTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-ASW-1: AssetSwap now ported (see org.jquantlib.instruments.AssetSwap); empty test body — needs full port from C++ assetswap.cpp::testConsistency")
+    /**
+     * Phase 5e.5b-CFC-d-64 body-fill. Ports the first sub-case of C++
+     * {@code testConsistency} (assetswap.cpp:114-226) for the DBR 4 01/04/37
+     * fixed-rate bond. Verifies that par asset-swap {@code fairCleanPrice}
+     * and {@code fairSpread} round-trip the NPV to zero.
+     *
+     * <p>The C++ test uses a tight {@code 1e-13} tolerance. The Java port
+     * uses indexed (not at-par) ibor coupons, so the round-trip closes to
+     * {@code 1e-8} only (LOOSE smoke tier). The qualitative invariant —
+     * fair spread / fair clean price each zero the NPV when round-tripped
+     * — still holds. Per Phase 5e.5b CFC-d task spec.
+     */
     @Test
     public void testConsistency() {
+        // Replicate C++ CommonVars (assetswap.cpp:65-111).
+        new Settings().setEvaluationDate(
+                new Date(24, Month.April, 2007));
+        final DayCounter act365 = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                new Date(24, Month.April, 2007), 0.05, act365);
+        final Handle<YieldTermStructure> ts =
+                new Handle<YieldTermStructure>(flat);
+        final Euribor6M iborIndex = new Euribor6M(ts);
+        final double spread = 0.0;
+        final double faceAmount = 100.0;
+
+        final Calendar bondCalendar = new Target();
+        final int settlementDays = 3;
+        final boolean payFixedRate = true;
+        final boolean isPar = true;
+
+        // Fixed Underlying bond (Isin: DE0001135275 DBR 4 01/04/37)
+        final Schedule bondSchedule = new Schedule(
+                new Date(4, Month.January, 2005),
+                new Date(4, Month.January, 2037),
+                new Period(Frequency.Annual),
+                bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward,
+                false /* endOfMonth */);
+        final FixedRateBond bond = new FixedRateBond(
+                settlementDays, faceAmount, bondSchedule,
+                new double[] { 0.04 },
+                new ActualActual(ActualActual.Convention.ISDA),
+                BusinessDayConvention.Following,
+                100.0, new Date(4, Month.January, 2005));
+
+        final DiscountingBondEngine bondEngine =
+                new DiscountingBondEngine(ts);
+        final DiscountingSwapEngine swapEngine =
+                new DiscountingSwapEngine(ts);
+        bond.setPricingEngine(bondEngine);
+
+        final double bondPrice = 95.0;
+
+        // Initial par-asset-swap with arbitrary clean price.
+        final AssetSwap parAssetSwap = new AssetSwap(
+                payFixedRate, bond, bondPrice,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                isPar);
+        parAssetSwap.setPricingEngine(swapEngine);
+
+        final double fairCleanPrice = parAssetSwap.fairCleanPrice();
+        final double fairSpread = parAssetSwap.fairSpread();
+
+        // Java's indexed ibor coupons relax the C++ 1e-13 round-trip to
+        // ~1e-8 (Phase 5e.5b CFC-d LOOSE tier). Tightening requires
+        // at-par coupons or a multi-curve setup.
+        final double tolerance = 1.0e-8;
+
+        // Sub-test #1: a fresh swap built with fairCleanPrice should have
+        // NPV ~ 0 and recover the same fair-clean-price + input spread.
+        final AssetSwap assetSwap2 = new AssetSwap(
+                payFixedRate, bond, fairCleanPrice,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                isPar);
+        assetSwap2.setPricingEngine(swapEngine);
+        if (Math.abs(assetSwap2.NPV()) > tolerance) {
+            fail("par asset swap fair clean price doesn't zero the NPV:"
+                    + "\n  clean price:      " + bondPrice
+                    + "\n  fair clean price: " + fairCleanPrice
+                    + "\n  NPV:              " + assetSwap2.NPV()
+                    + "\n  tolerance:        " + tolerance);
+        }
+        if (Math.abs(assetSwap2.fairCleanPrice() - fairCleanPrice) > tolerance) {
+            fail("par asset swap fair clean price doesn't equal input"
+                    + " clean price at zero NPV:"
+                    + "\n  input clean price: " + fairCleanPrice
+                    + "\n  fair clean price:  " + assetSwap2.fairCleanPrice()
+                    + "\n  NPV:               " + assetSwap2.NPV()
+                    + "\n  tolerance:         " + tolerance);
+        }
+        if (Math.abs(assetSwap2.fairSpread() - spread) > tolerance) {
+            fail("par asset swap fair spread doesn't equal input spread"
+                    + " at zero NPV:"
+                    + "\n  input spread: " + spread
+                    + "\n  fair spread:  " + assetSwap2.fairSpread()
+                    + "\n  NPV:          " + assetSwap2.NPV()
+                    + "\n  tolerance:    " + tolerance);
+        }
+
+        // Sub-test #2: a fresh swap built with fairSpread should have
+        // NPV ~ 0 and recover the original bondPrice + the same fair spread.
+        final AssetSwap assetSwap3 = new AssetSwap(
+                payFixedRate, bond, bondPrice,
+                iborIndex, fairSpread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                isPar);
+        assetSwap3.setPricingEngine(swapEngine);
+        if (Math.abs(assetSwap3.NPV()) > tolerance) {
+            fail("par asset swap fair spread doesn't zero the NPV:"
+                    + "\n  spread:      " + spread
+                    + "\n  fair spread: " + fairSpread
+                    + "\n  NPV:         " + assetSwap3.NPV()
+                    + "\n  tolerance:   " + tolerance);
+        }
+        if (Math.abs(assetSwap3.fairCleanPrice() - bondPrice) > tolerance) {
+            fail("par asset swap fair clean price doesn't equal input"
+                    + " clean price at zero NPV:"
+                    + "\n  input clean price: " + bondPrice
+                    + "\n  fair clean price:  " + assetSwap3.fairCleanPrice()
+                    + "\n  NPV:               " + assetSwap3.NPV()
+                    + "\n  tolerance:         " + tolerance);
+        }
+        if (Math.abs(assetSwap3.fairSpread() - fairSpread) > tolerance) {
+            fail("par asset swap fair spread doesn't equal input spread"
+                    + " at zero NPV:"
+                    + "\n  input spread: " + fairSpread
+                    + "\n  fair spread:  " + assetSwap3.fairSpread()
+                    + "\n  NPV:          " + assetSwap3.NPV()
+                    + "\n  tolerance:    " + tolerance);
+        }
+
+        // Sub-test #3: market asset-swap counterpart of sub-tests #1/#2.
+        final boolean isMkt = false;
+        final AssetSwap mktAssetSwap = new AssetSwap(
+                payFixedRate, bond, bondPrice,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                isMkt);
+        mktAssetSwap.setPricingEngine(swapEngine);
+        final double mktFairCleanPrice = mktAssetSwap.fairCleanPrice();
+        final double mktFairSpread = mktAssetSwap.fairSpread();
+
+        final AssetSwap assetSwap4 = new AssetSwap(
+                payFixedRate, bond, mktFairCleanPrice,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                isMkt);
+        assetSwap4.setPricingEngine(swapEngine);
+        if (Math.abs(assetSwap4.NPV()) > tolerance) {
+            fail("market asset swap fair clean price doesn't zero NPV: "
+                    + assetSwap4.NPV() + " > " + tolerance);
+        }
+
+        final AssetSwap assetSwap5 = new AssetSwap(
+                payFixedRate, bond, bondPrice,
+                iborIndex, mktFairSpread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                isMkt);
+        assetSwap5.setPricingEngine(swapEngine);
+        if (Math.abs(assetSwap5.NPV()) > tolerance) {
+            fail("market asset swap fair spread doesn't zero NPV: "
+                    + assetSwap5.NPV() + " > " + tolerance);
+        }
     }
 
     /**
@@ -173,8 +316,7 @@ public class AssetSwapTest {
         final FixedRateBond fixedBond1 = new FixedRateBond(
                 settlementDays, faceAmount, fixedBondSchedule1,
                 new double[] { 0.04 },
-                new org.jquantlib.daycounters.ActualActual(
-                        org.jquantlib.daycounters.ActualActual.Convention.ISDA),
+                new ActualActual(ActualActual.Convention.ISDA),
                 BusinessDayConvention.Following,
                 100.0, new Date(4, Month.January, 2005));
 
@@ -210,29 +352,426 @@ public class AssetSwapTest {
         }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-ASW-3: AssetSwap.fairCleanPrice / fairSpread now exist in production; empty test body — needs full port from C++ assetswap.cpp::testMarketASWSpread")
+    /**
+     * Phase 5e.5b-CFC-d-64 body-fill. Ports the first sub-case of C++
+     * {@code testMarketASWSpread} (assetswap.cpp:1042-1113) for the DBR 4
+     * 01/04/37 fixed-rate bond.
+     *
+     * <p>Verifies the market-vs-par asset-swap-spread relationship:
+     * {@code mktSpread ≈ 100 * parSpread / fullPrice}.
+     *
+     * <p>Tolerance: {@code 1e-4} (loose tier) — matches the C++ branch
+     * for indexed (non-at-par) ibor coupons.
+     */
     @Test
     public void testMarketASWSpread() {
+        // Replicate C++ CommonVars.
+        new Settings().setEvaluationDate(
+                new Date(24, Month.April, 2007));
+        final DayCounter act365 = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                new Date(24, Month.April, 2007), 0.05, act365);
+        final Handle<YieldTermStructure> ts =
+                new Handle<YieldTermStructure>(flat);
+        final Euribor6M iborIndex = new Euribor6M(ts);
+        final double spread = 0.0;
+        final double faceAmount = 100.0;
+
+        final Calendar bondCalendar = new Target();
+        final int settlementDays = 3;
+        final boolean payFixedRate = true;
+        final boolean parAssetSwap = true;
+        final boolean mktAssetSwap = false;
+
+        // Fixed Underlying bond (Isin: DE0001135275 DBR 4 01/04/37)
+        final Schedule fixedBondSchedule1 = new Schedule(
+                new Date(4, Month.January, 2005),
+                new Date(4, Month.January, 2037),
+                new Period(Frequency.Annual),
+                bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward,
+                false /* endOfMonth */);
+        final FixedRateBond fixedBond1 = new FixedRateBond(
+                settlementDays, faceAmount, fixedBondSchedule1,
+                new double[] { 0.04 },
+                new ActualActual(ActualActual.Convention.ISDA),
+                BusinessDayConvention.Following,
+                100.0, new Date(4, Month.January, 2005));
+
+        final DiscountingBondEngine bondEngine =
+                new DiscountingBondEngine(ts);
+        final DiscountingSwapEngine swapEngine =
+                new DiscountingSwapEngine(ts);
+        fixedBond1.setPricingEngine(bondEngine);
+
+        final double fixedBondMktPrice1 = 89.22; // market 7th June 2007
+        final double fixedBondMktFullPrice1 =
+                fixedBondMktPrice1 + fixedBond1.accruedAmount();
+
+        final AssetSwap fixedBondParAssetSwap1 = new AssetSwap(
+                payFixedRate, fixedBond1, fixedBondMktPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedBondParAssetSwap1.setPricingEngine(swapEngine);
+        final double fixedBondParAssetSwapSpread1 =
+                fixedBondParAssetSwap1.fairSpread();
+
+        final AssetSwap fixedBondMktAssetSwap1 = new AssetSwap(
+                payFixedRate, fixedBond1, fixedBondMktPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                mktAssetSwap);
+        fixedBondMktAssetSwap1.setPricingEngine(swapEngine);
+        final double fixedBondMktAssetSwapSpread1 =
+                fixedBondMktAssetSwap1.fairSpread();
+
+        // C++ uses 1e-4 when ibor coupons are indexed (Java's default).
+        final double tolerance2 = 1.0e-4;
+
+        final double error1 = Math.abs(fixedBondMktAssetSwapSpread1
+                - 100.0 * fixedBondParAssetSwapSpread1 / fixedBondMktFullPrice1);
+
+        if (error1 > tolerance2) {
+            fail("wrong asset swap spreads for fixed bond:\n"
+                    + "  market ASW spread: " + fixedBondMktAssetSwapSpread1 + "\n"
+                    + "  par ASW spread:    " + fixedBondParAssetSwapSpread1 + "\n"
+                    + "  full price:        " + fixedBondMktFullPrice1 + "\n"
+                    + "  error:             " + error1 + "\n"
+                    + "  tolerance:         " + tolerance2);
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-ASW-4: AssetSwap now ported; empty test body — also needs BondFunctions.zSpread solver cross-validation against C++ assetswap.cpp::testZSpread")
+    /**
+     * Phase 5e.5b-CFC-d-64 body-fill. Ports the first sub-case of C++
+     * {@code testZSpread} (assetswap.cpp:1480-1529) for the DBR 4 01/04/37
+     * fixed-rate bond.
+     *
+     * <p>Verifies that {@code BondFunctions.cleanPrice(bond, ts, zSpread=0,
+     * Continuous, Annual)} matches the bond's own {@code cleanPrice()} from
+     * its discounting engine (i.e. the z-spread machinery agrees with the
+     * direct discounting calculation at zero spread).
+     *
+     * <p>Tolerance: {@code 1e-13} (tight tier) — pure NPV-vs-NPV comparison,
+     * no coupon-mode divergence.
+     */
     @Test
     public void testZSpread() {
+        new Settings().setEvaluationDate(
+                new Date(24, Month.April, 2007));
+        final DayCounter act365 = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                new Date(24, Month.April, 2007), 0.05, act365);
+        final Handle<YieldTermStructure> ts =
+                new Handle<YieldTermStructure>(flat);
+        final double spread = 0.0;
+        final double faceAmount = 100.0;
+        final Compounding compounding = Compounding.Continuous;
+
+        final Calendar bondCalendar = new Target();
+        final int settlementDays = 3;
+
+        // Fixed bond (Isin: DE0001135275 DBR 4 01/04/37)
+        final Schedule fixedBondSchedule1 = new Schedule(
+                new Date(4, Month.January, 2005),
+                new Date(4, Month.January, 2037),
+                new Period(Frequency.Annual),
+                bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward,
+                false /* endOfMonth */);
+        final FixedRateBond fixedBond1 = new FixedRateBond(
+                settlementDays, faceAmount, fixedBondSchedule1,
+                new double[] { 0.04 },
+                new ActualActual(ActualActual.Convention.ISDA),
+                BusinessDayConvention.Following,
+                100.0, new Date(4, Month.January, 2005));
+
+        final DiscountingBondEngine bondEngine =
+                new DiscountingBondEngine(ts);
+        fixedBond1.setPricingEngine(bondEngine);
+
+        final double fixedBondImpliedValue1 = fixedBond1.cleanPrice();
+        final Date fixedBondSettlementDate1 = fixedBond1.settlementDate();
+        // standard market conventions:
+        // bond's frequency + compounding and daycounter of the YC...
+        final double fixedBondCleanPrice1 = BondFunctions.cleanPrice(
+                fixedBond1, flat, spread,
+                compounding, Frequency.Annual,
+                fixedBondSettlementDate1);
+
+        final double tolerance = 1.0e-13;
+        final double error1 = Math.abs(fixedBondImpliedValue1 - fixedBondCleanPrice1);
+        if (error1 > tolerance) {
+            fail("wrong clean price for fixed bond:\n"
+                    + "  bond cleanPrice():           " + fixedBondImpliedValue1 + "\n"
+                    + "  BondFunctions.cleanPrice():  " + fixedBondCleanPrice1 + "\n"
+                    + "  error:                       " + error1 + "\n"
+                    + "  tolerance:                   " + tolerance);
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-ASW-5: AssetSwap now ported; empty test body — needs full port from C++ assetswap.cpp::testGenericBondImplied")
+    /**
+     * Phase 5e.5b-CFC-d-64 body-fill. Ports the first sub-case of C++
+     * {@code testGenericBondImplied} (assetswap.cpp:1798-1864) for the
+     * DBR 4 01/04/37 fixed-rate bond — built here from an explicit
+     * {@code FixedRateLeg} wrapped in the generic {@code Bond} (rather
+     * than the specialized {@code FixedRateBond}).
+     *
+     * <p>Verifies the same invariant as {@link #testImpliedValue()}: par
+     * asset-swap fair clean price ≈ bond clean price at zero spread. The
+     * generic-vs-specialized parity is asserted by reusing the
+     * {@code 1e-2} tolerance for indexed ibor coupons.
+     */
     @Test
     public void testGenericBondImplied() {
+        new Settings().setEvaluationDate(
+                new Date(24, Month.April, 2007));
+        final DayCounter act365 = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                new Date(24, Month.April, 2007), 0.05, act365);
+        final Handle<YieldTermStructure> ts =
+                new Handle<YieldTermStructure>(flat);
+        final Euribor6M iborIndex = new Euribor6M(ts);
+        final double spread = 0.0;
+        final double faceAmount = 100.0;
+
+        final Calendar bondCalendar = new Target();
+        final int settlementDays = 3;
+        final boolean payFixedRate = true;
+        final boolean parAssetSwap = true;
+
+        // Fixed Underlying bond (Isin: DE0001135275 DBR 4 01/04/37)
+        final Date fixedBondStartDate1 = new Date(4, Month.January, 2005);
+        final Date fixedBondMaturityDate1 = new Date(4, Month.January, 2037);
+        final Schedule fixedBondSchedule1 = new Schedule(
+                fixedBondStartDate1, fixedBondMaturityDate1,
+                new Period(Frequency.Annual), bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false /* endOfMonth */);
+
+        // Java FixedRateLeg ctor takes the DayCounter — equivalent to the
+        // C++ .withCouponRates(rate, dc) overload.
+        final Leg fixedBondLeg1 = new FixedRateLeg(
+                fixedBondSchedule1,
+                new ActualActual(ActualActual.Convention.ISDA))
+                .withNotionals(faceAmount)
+                .withCouponRates(0.04)
+                .withPaymentAdjustment(BusinessDayConvention.Following)
+                .Leg();
+        final Date fixedbondRedemption1 = bondCalendar.adjust(
+                fixedBondMaturityDate1, BusinessDayConvention.Following);
+        fixedBondLeg1.add(new SimpleCashFlow(100.0, fixedbondRedemption1));
+
+        final Bond fixedBond1 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                fixedBondMaturityDate1, fixedBondStartDate1,
+                fixedBondLeg1);
+
+        final DiscountingBondEngine bondEngine =
+                new DiscountingBondEngine(ts);
+        final DiscountingSwapEngine swapEngine =
+                new DiscountingSwapEngine(ts);
+        fixedBond1.setPricingEngine(bondEngine);
+
+        final double fixedBondPrice1 = fixedBond1.cleanPrice();
+        final AssetSwap fixedBondAssetSwap1 = new AssetSwap(
+                payFixedRate, fixedBond1, fixedBondPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedBondAssetSwap1.setPricingEngine(swapEngine);
+        final double fixedBondAssetSwapPrice1 =
+                fixedBondAssetSwap1.fairCleanPrice();
+
+        // C++ tolerance2 = 1e-2 for indexed ibor coupons.
+        final double tolerance2 = 1.0e-2;
+        final double error1 = Math.abs(fixedBondAssetSwapPrice1 - fixedBondPrice1);
+        if (error1 > tolerance2) {
+            fail("wrong zero spread asset swap price for generic fixed bond:\n"
+                    + "  bond's clean price:    " + fixedBondPrice1 + "\n"
+                    + "  asset swap fair price: " + fixedBondAssetSwapPrice1 + "\n"
+                    + "  error:                 " + error1 + "\n"
+                    + "  tolerance:             " + tolerance2);
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-ASW-6: AssetSwap now ported; empty test body — needs full port from C++ assetswap.cpp::testMASWWithGenericBond")
+    /**
+     * Phase 5e.5b-CFC-d-64 body-fill. Ports the first sub-case of C++
+     * {@code testMASWWithGenericBond} (assetswap.cpp:2186-2261) for the
+     * DBR 4 01/04/37 fixed-rate bond built via an explicit
+     * {@code FixedRateLeg}.
+     *
+     * <p>Same {@code mktSpread ≈ 100 * parSpread / fullPrice} relationship
+     * as {@link #testMarketASWSpread()}; tolerance {@code 1e-4} (loose tier
+     * for indexed coupons).
+     */
     @Test
     public void testMASWWithGenericBond() {
+        new Settings().setEvaluationDate(
+                new Date(24, Month.April, 2007));
+        final DayCounter act365 = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                new Date(24, Month.April, 2007), 0.05, act365);
+        final Handle<YieldTermStructure> ts =
+                new Handle<YieldTermStructure>(flat);
+        final Euribor6M iborIndex = new Euribor6M(ts);
+        final double spread = 0.0;
+        final double faceAmount = 100.0;
+
+        final Calendar bondCalendar = new Target();
+        final int settlementDays = 3;
+        final boolean payFixedRate = true;
+        final boolean parAssetSwap = true;
+        final boolean mktAssetSwap = false;
+
+        // Fixed Underlying bond (Isin: DE0001135275 DBR 4 01/04/37)
+        final Date fixedBondStartDate1 = new Date(4, Month.January, 2005);
+        final Date fixedBondMaturityDate1 = new Date(4, Month.January, 2037);
+        final Schedule fixedBondSchedule1 = new Schedule(
+                fixedBondStartDate1, fixedBondMaturityDate1,
+                new Period(Frequency.Annual), bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false /* endOfMonth */);
+        final Leg fixedBondLeg1 = new FixedRateLeg(
+                fixedBondSchedule1,
+                new ActualActual(ActualActual.Convention.ISDA))
+                .withNotionals(faceAmount)
+                .withCouponRates(0.04)
+                .withPaymentAdjustment(BusinessDayConvention.Following)
+                .Leg();
+        final Date fixedbondRedemption1 = bondCalendar.adjust(
+                fixedBondMaturityDate1, BusinessDayConvention.Following);
+        fixedBondLeg1.add(new SimpleCashFlow(100.0, fixedbondRedemption1));
+
+        final Bond fixedBond1 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                fixedBondMaturityDate1, fixedBondStartDate1,
+                fixedBondLeg1);
+
+        final DiscountingBondEngine bondEngine =
+                new DiscountingBondEngine(ts);
+        final DiscountingSwapEngine swapEngine =
+                new DiscountingSwapEngine(ts);
+        fixedBond1.setPricingEngine(bondEngine);
+
+        final double fixedBondMktPrice1 = 89.22; // market 7th June 2007
+        final double fixedBondMktFullPrice1 =
+                fixedBondMktPrice1 + fixedBond1.accruedAmount();
+
+        final AssetSwap fixedBondParAssetSwap1 = new AssetSwap(
+                payFixedRate, fixedBond1, fixedBondMktPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedBondParAssetSwap1.setPricingEngine(swapEngine);
+        final double fixedBondParAssetSwapSpread1 =
+                fixedBondParAssetSwap1.fairSpread();
+
+        final AssetSwap fixedBondMktAssetSwap1 = new AssetSwap(
+                payFixedRate, fixedBond1, fixedBondMktPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                mktAssetSwap);
+        fixedBondMktAssetSwap1.setPricingEngine(swapEngine);
+        final double fixedBondMktAssetSwapSpread1 =
+                fixedBondMktAssetSwap1.fairSpread();
+
+        final double tolerance2 = 1.0e-4;
+        final double error1 = Math.abs(fixedBondMktAssetSwapSpread1
+                - 100.0 * fixedBondParAssetSwapSpread1 / fixedBondMktFullPrice1);
+        if (error1 > tolerance2) {
+            fail("wrong asset swap spreads for generic fixed bond:\n"
+                    + "  market ASW spread: " + fixedBondMktAssetSwapSpread1 + "\n"
+                    + "  par ASW spread:    " + fixedBondParAssetSwapSpread1 + "\n"
+                    + "  full price:        " + fixedBondMktFullPrice1 + "\n"
+                    + "  error:             " + error1 + "\n"
+                    + "  tolerance:         " + tolerance2);
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-ASW-7: AssetSwap now ported; empty test body — needs full port from C++ assetswap.cpp::testZSpreadWithGenericBond")
+    /**
+     * Phase 5e.5b-CFC-d-64 body-fill. Ports the first sub-case of C++
+     * {@code testZSpreadWithGenericBond} (assetswap.cpp:2659-2735) for the
+     * DBR 4 01/04/37 fixed-rate bond built via an explicit
+     * {@code FixedRateLeg}.
+     *
+     * <p>Same invariant as {@link #testZSpread()} — {@code
+     * BondFunctions.cleanPrice(bond, ts, 0, Continuous, Annual)} matches
+     * the bond's own {@code cleanPrice()} from its discounting engine.
+     * Tolerance {@code 1e-13} (tight tier).
+     */
     @Test
     public void testZSpreadWithGenericBond() {
+        new Settings().setEvaluationDate(
+                new Date(24, Month.April, 2007));
+        final DayCounter act365 = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                new Date(24, Month.April, 2007), 0.05, act365);
+        final Handle<YieldTermStructure> ts =
+                new Handle<YieldTermStructure>(flat);
+        final double spread = 0.0;
+        final double faceAmount = 100.0;
+        final Compounding compounding = Compounding.Continuous;
+
+        final Calendar bondCalendar = new Target();
+        final int settlementDays = 3;
+
+        // Fixed bond (Isin: DE0001135275 DBR 4 01/04/37)
+        final Date fixedBondStartDate1 = new Date(4, Month.January, 2005);
+        final Date fixedBondMaturityDate1 = new Date(4, Month.January, 2037);
+        final Schedule fixedBondSchedule1 = new Schedule(
+                fixedBondStartDate1, fixedBondMaturityDate1,
+                new Period(Frequency.Annual), bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false /* endOfMonth */);
+        final Leg fixedBondLeg1 = new FixedRateLeg(
+                fixedBondSchedule1,
+                new ActualActual(ActualActual.Convention.ISDA))
+                .withNotionals(faceAmount)
+                .withCouponRates(0.04)
+                .withPaymentAdjustment(BusinessDayConvention.Following)
+                .Leg();
+        final Date fixedbondRedemption1 = bondCalendar.adjust(
+                fixedBondMaturityDate1, BusinessDayConvention.Following);
+        fixedBondLeg1.add(new SimpleCashFlow(100.0, fixedbondRedemption1));
+
+        final Bond fixedBond1 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                fixedBondMaturityDate1, fixedBondStartDate1,
+                fixedBondLeg1);
+
+        final DiscountingBondEngine bondEngine =
+                new DiscountingBondEngine(ts);
+        fixedBond1.setPricingEngine(bondEngine);
+
+        final double fixedBondImpliedValue1 = fixedBond1.cleanPrice();
+        final Date fixedBondSettlementDate1 = fixedBond1.settlementDate();
+        final double fixedBondCleanPrice1 = BondFunctions.cleanPrice(
+                fixedBond1, flat, spread,
+                compounding, Frequency.Annual,
+                fixedBondSettlementDate1);
+
+        final double tolerance = 1.0e-13;
+        final double error1 = Math.abs(fixedBondImpliedValue1 - fixedBondCleanPrice1);
+        if (error1 > tolerance) {
+            fail("wrong clean price for generic fixed bond:\n"
+                    + "  bond cleanPrice():           " + fixedBondImpliedValue1 + "\n"
+                    + "  BondFunctions.cleanPrice():  " + fixedBondCleanPrice1 + "\n"
+                    + "  error:                       " + error1 + "\n"
+                    + "  tolerance:                   " + tolerance);
+        }
     }
 
     @Ignore("Phase 5e.5 WI-5e.5-ASW-8: AssetSwap now ported; empty test body — also needs specialized bond cross-check infra (CmsRateBond etc.) for testSpecializedBondVsGenericBond")
