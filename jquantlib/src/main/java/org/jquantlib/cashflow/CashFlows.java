@@ -973,12 +973,58 @@ public class CashFlows {
      }
 
     /**
+     * Non-sensitive NPV: the present value of all cash-flows that are not
+     * {@link Coupon}s (typically the redemption leg), i.e. the portion of the
+     * NPV that does not move with a uniform 1-bp shift in the coupon rate.
+     * Mirrors the {@code nonSensNPV_} accumulator inside C++
+     * {@code BPSCalculator::visit(CashFlow&)} (cashflows.cpp:410-413), divided
+     * by {@code discount(npvDate)} to keep parity with {@link #npv(Leg,
+     * Handle, Date, Date, int)} and {@link #bps(Leg, Handle, Date, Date, int)}.
+     *
+     * <p>Phase 5e.5b-CFC-d-118 — extracted so {@link #atmRate} can subtract
+     * the redemption NPV per C++ {@code CashFlows::atmRate} (cashflows.cpp:
+     * 509-551).
+     */
+    public double nonSensNPV(final Leg leg,
+                             final Handle<YieldTermStructure> discountCurve,
+                             final Date settlementDate,
+                             final Date npvDate,
+                             final int exDividendDays) {
+        Date date = settlementDate;
+        if (date.isNull()) {
+            date = discountCurve.currentLink().referenceDate();
+        }
+        double total = 0.0;
+        for (int i = 0; i < leg.size(); ++i) {
+            final CashFlow cf = leg.get(i);
+            if (cf.hasOccurred(date.add(exDividendDays))) {
+                continue;
+            }
+            // C++ BPSCalculator visits CashFlow (non-Coupon) here. Coupons go
+            // through the Coupon-overload (which only fills bps_).
+            if (!(cf instanceof Coupon)) {
+                total += cf.amount() * discountCurve.currentLink().discount(cf.date());
+            }
+        }
+        if (npvDate.isNull()) {
+            return total;
+        }
+        return total / discountCurve.currentLink().discount(npvDate);
+    }
+
+    /**
      * At-the-money rate of the cash flows.
      * <p>
      * The result is the fixed rate for which a fixed rate cash flow vector,
      * equivalent to the input vector, has the required NPV according to the
      * given term structure. If the required NPV is not given, the input cash
      * flow vector's NPV is used instead.
+     *
+     * <p>Phase 5e.5b-CFC-d-118 align: mirrors C++ {@code CashFlows::atmRate}
+     * (cashflows.cpp:509-551) by splitting out the non-sensitive (redemption)
+     * NPV before dividing by BPS. Previously returned {@code basisPoint_ *
+     * npv / bps} which double-counted the redemption leg when the leg
+     * contained a redemption flow.
      */
     public double atmRate(final Leg leg, final Handle<YieldTermStructure> discountCurve, final Date settlementDate,
             final Date npvDate, final int exDividendDays, double npv) {
@@ -986,7 +1032,9 @@ public class CashFlows {
         if (npv == 0) {
             npv = npv(leg, discountCurve, settlementDate, npvDate, exDividendDays);
         }
-        return basisPoint_ * npv / bps;
+        final double nonSens = nonSensNPV(leg, discountCurve, settlementDate, npvDate, exDividendDays);
+        QL.require(bps != 0.0, "null bps: impossible atm rate");
+        return basisPoint_ * (npv - nonSens) / bps;
     }
 
     public double atmRate(final Leg leg, final Handle<YieldTermStructure> discountCurve) {

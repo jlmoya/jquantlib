@@ -69,12 +69,100 @@ import org.junit.Test;
  */
 public class BondAdditionalTest {
 
-    @Ignore("Phase 5d.5 — Java CashFlows.atmRate(leg, handle, settle, "
-          + "npvDate, exDiv, npv) returns basisPoint_*npv/bps without the "
-          + "non-sens NPV (redemption) split C++ CashFlows::atmRate v1.42.1 "
-          + "performs (cashflows.cpp:509-551). Body-fill blocked on "
-          + "CashFlows.java rewrite (owned by another in-flight agent).")
-    @Test public void testAtmRate() { fail("not implemented"); }
+    /**
+     * Faithful Java port of {@code testAtmRate} from
+     * {@code test-suite/bonds.cpp:202-274} (v1.42.1). For each combination
+     * of {@code issueMonths x lengths x coupons x frequencies} (270 cases),
+     * builds a {@link FixedRateBond} on a flat 3% curve and verifies that
+     * {@link BondFunctions#atmRate} recovers the coupon rate from both the
+     * clean and the dirty price (tolerance {@code 1e-7} matches C++).
+     *
+     * <p>Phase 5e.5b-CFC-d-118: un-ignored after the
+     * {@link CashFlows#atmRate} non-sens-NPV split align landed.
+     */
+    @Test
+    public void testAtmRate() {
+        // CommonVars-equivalent setup (bonds.cpp:69-82).
+        final Calendar calendar = new org.jquantlib.time.calendars.Target();
+        final Date today = calendar.adjust(Date.todaysDate());
+        new Settings().setEvaluationDate(today);
+        final double faceAmount = 1000000.0;
+
+        final double tolerance = 1.0e-7;
+
+        final int[] issueMonths = { -24, -18, -12, -6, 0, 6, 12, 18, 24 };
+        final int[] lengths = { 3, 5, 10, 15, 20 };
+        final int settlementDays = 3;
+        final double[] coupons = { 0.02, 0.05, 0.08 };
+        final Frequency[] frequencies = { Frequency.Semiannual, Frequency.Annual };
+        final DayCounter bondDayCount = new Thirty360(Thirty360.Convention.BondBasis);
+        final BusinessDayConvention accrualConvention = BusinessDayConvention.Unadjusted;
+        final BusinessDayConvention paymentConvention = BusinessDayConvention.ModifiedFollowing;
+        final double redemption = 100.0;
+        final Handle<YieldTermStructure> disc =
+                new Handle<YieldTermStructure>(
+                        Utilities.flatRate(today, 0.03, new Actual360()));
+        final PricingEngine bondEngine = new DiscountingBondEngine(disc);
+
+        for (final int issueMonth : issueMonths) {
+            for (final int length : lengths) {
+                for (final double coupon : coupons) {
+                    for (final Frequency frequency : frequencies) {
+                        final Date dated = calendar.advance(today, issueMonth,
+                                org.jquantlib.time.TimeUnit.Months);
+                        final Date issue = dated;
+                        final Date maturity = calendar.advance(issue, length,
+                                org.jquantlib.time.TimeUnit.Years);
+
+                        final Schedule sch = new Schedule(dated, maturity,
+                                new Period(frequency), calendar,
+                                accrualConvention, accrualConvention,
+                                DateGeneration.Rule.Backward, false);
+
+                        final FixedRateBond bond = new FixedRateBond(
+                                settlementDays, faceAmount, sch,
+                                new double[] { coupon }, bondDayCount,
+                                paymentConvention, redemption, issue);
+                        bond.setPricingEngine(bondEngine);
+
+                        // ---- Clean price round-trip ----
+                        BondFunctions.Price price = new BondFunctions.Price(
+                                bond.cleanPrice(), BondFunctions.Price.Type.Clean);
+                        double calculated = BondFunctions.atmRate(bond,
+                                disc.currentLink(), bond.settlementDate(), price);
+                        if (Math.abs(coupon - calculated) > tolerance) {
+                            fail("atm rate recalculation failed (clean):"
+                                    + "\n today:           " + today
+                                    + "\n settlement date: " + bond.settlementDate()
+                                    + "\n issue:           " + issue
+                                    + "\n maturity:        " + maturity
+                                    + "\n coupon:          " + coupon
+                                    + "\n frequency:       " + frequency
+                                    + "\n clean price:     " + price.amount()
+                                    + "\n atm rate:        " + calculated);
+                        }
+
+                        // ---- Dirty price round-trip ----
+                        price = new BondFunctions.Price(
+                                bond.dirtyPrice(), BondFunctions.Price.Type.Dirty);
+                        calculated = BondFunctions.atmRate(bond,
+                                disc.currentLink(), bond.settlementDate(), price);
+                        if (Math.abs(coupon - calculated) > tolerance) {
+                            fail("atm rate recalculation failed (dirty):"
+                                    + "\n today:           " + today
+                                    + "\n settlement date: " + bond.settlementDate()
+                                    + "\n issue:           " + issue
+                                    + "\n maturity:        " + maturity
+                                    + "\n coupon:          " + coupon
+                                    + "\n frequency:       " + frequency
+                                    + "\n dirty price:     " + price.amount()
+                                    + "\n atm rate:        " + calculated);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Faithful Java port of {@code testZspread} from
