@@ -73,14 +73,18 @@ import org.jquantlib.time.calendars.NullCalendar;
  *     back to the constructor-supplied {@code displacement_} otherwise.
  * <li>The C++ engine populates several additional results
  *     ({@code spreadCorrection}, {@code strike}, {@code atmForward},
- *     {@code annuity}, {@code stdDev}, {@code vega}, {@code delta},
- *     {@code timeToExpiry}, {@code impliedVolatility},
- *     {@code forwardPrice}, {@code valuationDate}) on
- *     {@code results_.additionalResults}. This Java port computes the same
- *     intermediate values but only publishes the NPV (via
- *     {@code results_.value}). Additional-results dispatch through Java
- *     {@code Instrument.ResultsImpl#additionalResults()} is straightforward
- *     to wire later if a consumer needs it.
+ *     {@code annuity}, {@code swapLength}, {@code stdDev}, {@code vega},
+ *     {@code delta}, {@code timeToExpiry}, {@code impliedVolatility},
+ *     {@code forwardPrice}) on {@code results_.additionalResults}. Java
+ *     mirrors C++ (Phase 5e.5b-CFC-d-73): every result above is published.
+ *     The C++-only {@code valuationDate} is currently omitted because the
+ *     Java {@link org.jquantlib.instruments.Swap} hierarchy has no
+ *     {@code valuationDate()} accessor yet. {@link VolatilityType#Normal}
+ *     uses {@code BachelierSpec}-style vega via
+ *     {@link BlackFormula#bachelierBlackFormulaStdDevDerivative} when that
+ *     function is available; until then Normal-vol callers will see a
+ *     {@code null} {@code vega} entry — the {@code delta} entry is correct
+ *     in both cases via the dedicated forward-derivative formulae.
  * <li>The C++ engine handles three settlement methods (Physical, Cash with
  *     CollateralizedCashPrice, Cash with ParYieldCurve). The ParYieldCurve
  *     branch requires {@code CashFlows::bps(InterestRate, ...)} and
@@ -226,7 +230,12 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
                     * Math.abs(swap.floatingLegBPS() / swap.fixedLegBPS());
             strike -= correction;
             atmForward -= correction;
+            results.additionalResults().put("spreadCorrection", correction);
+        } else {
+            results.additionalResults().put("spreadCorrection", 0.0);
         }
+        results.additionalResults().put("strike", strike);
+        results.additionalResults().put("atmForward", atmForward);
 
         // Annuity: depends on settlement type / method.
         final double annuity;
@@ -250,18 +259,25 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
                     + args.settlementType + " / " + args.settlementMethod);
         }
 
+        results.additionalResults().put("annuity", annuity);
+
         // Variance / std dev. The C++ swapLength rounds (end-start)/365.25*12
         // to the nearest whole month then divides by 12 — for our 5Y x 5Y
         // ATM probe the swap is exactly 5 years long so the round-trip is a
         // no-op, but mirror the formula here so other fixtures stay aligned.
         final java.util.List<Date> floatDates = swap.floatingSchedule().dates();
-        final double swapLength = computeSwapLength(floatDates.get(0),
+        final double swapLengthRaw = computeSwapLength(floatDates.get(0),
                 floatDates.get(floatDates.size() - 1));
+        // Match C++: floor swapLength at 1/12 so the vol surface can read a
+        // variance/shift for sub-month tenors.
+        final double swapLength = Math.max(swapLengthRaw, 1.0 / 12.0);
+        results.additionalResults().put("swapLength", swapLength);
         final double variance = vol_.currentLink().blackVariance(
                 vol_.currentLink().timeFromReference(exerciseDate),
                 swapLength, strike, true);
 
         final double stdDev = Math.sqrt(variance);
+        results.additionalResults().put("stdDev", stdDev);
 
         // Black76: payer -> Call, receiver -> Put.
         final Option.Type w = (swap.type() == VanillaSwap.Type.Payer)
@@ -273,7 +289,9 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
         //    shift when the surface overrides the default 0.0).
         //  - Normal           -> bachelierBlackFormula (no displacement).
         final VolatilityType volType = vol_.currentLink().volatilityType();
+        final double effectiveDisplacement;
         if (volType == VolatilityType.Normal) {
+            effectiveDisplacement = 0.0;
             results.value = BlackFormula.bachelierBlackFormula(
                     w, strike, atmForward, stdDev, annuity);
         } else {
@@ -282,10 +300,47 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
             // the constructor-supplied displacement_ when vol_ exposes only
             // the legacy default.
             final double volShift = vol_.currentLink().shift();
-            final double effectiveDisplacement =
+            effectiveDisplacement =
                     (volShift != 0.0) ? volShift : displacement_;
             results.value = BlackFormula.blackFormula(
                     w, strike, atmForward, stdDev, annuity, effectiveDisplacement);
+        }
+
+        // Additional results: vega, delta, timeToExpiry, impliedVolatility,
+        // forwardPrice. Mirrors C++ blackswaptionengine.hpp:320-326.
+        final double exerciseTime =
+                vol_.currentLink().timeFromReference(exerciseDate);
+        final double sqrtT = Math.sqrt(exerciseTime);
+        if (volType == VolatilityType.Normal) {
+            // Bachelier vega = sqrt(T) * bachelierBlackFormulaStdDevDerivative.
+            // Not yet ported in BlackFormula; intentionally omit so Normal-vol
+            // callers see a clear "missing key" rather than a wrong number.
+            // delta is via bachelierBlackFormulaForwardDerivative — correct.
+            results.additionalResults().put("delta",
+                    BlackFormula.bachelierBlackFormulaForwardDerivative(
+                            w, strike, atmForward, stdDev, annuity));
+        } else {
+            // Shifted lognormal vega = sqrt(T) * blackFormulaStdDevDerivative.
+            final double vega = sqrtT
+                    * BlackFormula.blackFormulaStdDevDerivative(
+                            strike, atmForward, stdDev, annuity,
+                            effectiveDisplacement);
+            results.additionalResults().put("vega", vega);
+            results.additionalResults().put("delta",
+                    BlackFormula.blackFormulaForwardDerivative(
+                            w, strike, atmForward, stdDev, annuity,
+                            effectiveDisplacement));
+        }
+        results.additionalResults().put("timeToExpiry", exerciseTime);
+        if (exerciseTime > 0.0) {
+            results.additionalResults().put("impliedVolatility",
+                    stdDev / sqrtT);
+        }
+        final double discount =
+                discountCurve_.currentLink().discount(exerciseDate);
+        if (discount > 0.0) {
+            results.additionalResults().put("forwardPrice",
+                    results.value / discount);
         }
     }
 
