@@ -554,15 +554,82 @@ public class BermudanSwaptionTest {
 
     /**
      * Lockout-feature sub-case from C++
-     * {@code testBermudanOISSwaptionPreservesFeatures}: deferred — Java
-     * {@link OvernightIndexedSwap} MVP doesn't yet accept lookback /
-     * lockout / observation-shift parameters. Tracked alongside
-     * {@code OvernightIndexedSwapTest#testMakeOISLookbackLockoutShift}.
+     * {@code testBermudanOISSwaptionPreservesFeatures}
+     * (bermudanswaption.cpp:673-688).
+     *
+     * <p>Prices a Bermudan HW swaption on a 5-day-lockout OIS and asserts
+     * its NPV differs from the plain (lockout=0) compound OIS by more
+     * than 1e-8 relative. C++ asserts the same {@code rel diff >= 1e-8}
+     * floor — lockout freezes the last N overnight fixings, producing a
+     * small but non-zero change.
+     *
+     * <p>Java un-blocked by the lockout production landing
+     * (OvernightIndexedSwap full-signature ctor + OvernightLeg
+     * {@code withLockoutDays}).  The {@link #priceOIS} adapter detects
+     * non-default OIS economics (Simple averaging OR lockout &gt; 0) and
+     * rebiases the VanillaSwap proxy's fixed rate via {@code fairRate()}
+     * so the engine "sees" the lockout's economic shift.
      */
-    @Ignore("Phase 5f.5 — OvernightIndexedSwap lockout MVP gap (cf. OvernightIndexedSwapTest)")
     @Test
     public void testBermudanOISSwaptionLockoutFeature() {
-        fail("not implemented");
+        final CommonVars vars = new CommonVars(
+                new Date(15, Month.February, 2002),
+                new Date(19, Month.February, 2002),
+                0.04875825);
+
+        final Eonia eonia = new Eonia(vars.termStructure);
+
+        final Date start = vars.calendar.advance(vars.settlement,
+                new Period(vars.startYears, TimeUnit.Years));
+        final Date maturity = vars.calendar.advance(start,
+                new Period(vars.length, TimeUnit.Years));
+
+        final Schedule fixedSchedule = new Schedule(
+                start, maturity, new Period(vars.fixedFrequency), vars.calendar,
+                vars.fixedConvention, vars.fixedConvention,
+                DateGeneration.Rule.Forward, false);
+        final Schedule overnightSchedule = new Schedule(
+                start, maturity, new Period(vars.floatingFrequency), vars.calendar,
+                vars.floatingConvention, vars.floatingConvention,
+                DateGeneration.Rule.Forward, false);
+
+        final double atmRate = vars.makeSwap(0.0).fairRate();
+
+        // Reference OIS to read exercise schedule
+        final OvernightIndexedSwap refOIS = makeOIS(vars, eonia,
+                fixedSchedule, overnightSchedule, atmRate,
+                RateAveraging.Type.Compound, 0);
+        final Date[] exDates =
+                exerciseDatesFromFixedLeg(refOIS.fixedLeg());
+        final Exercise berm = new BermudanExercise(exDates);
+
+        final HullWhite hw = new HullWhite(vars.termStructure,
+                0.048696, 0.0058904);
+        final FdHullWhiteSwaptionEngine fdmEng =
+                new FdHullWhiteSwaptionEngine(hw);
+
+        // Price plain compound (lockout=0)
+        final OvernightIndexedSwap plainOIS = makeOIS(vars, eonia,
+                fixedSchedule, overnightSchedule, atmRate,
+                RateAveraging.Type.Compound, 0);
+        final double plainValue = priceOIS(plainOIS, berm, fdmEng);
+
+        // Price compound with 5-day lockout
+        final OvernightIndexedSwap lockoutOIS = makeOIS(vars, eonia,
+                fixedSchedule, overnightSchedule, atmRate,
+                RateAveraging.Type.Compound, 5);
+        final double lockoutValue = priceOIS(lockoutOIS, berm, fdmEng);
+
+        // Lockout freezes the last N fixings, producing a small but
+        // non-zero change. C++ asserts rel diff >= 1e-8.
+        final double lockDiff = Math.abs(lockoutValue - plainValue)
+                / Math.max(plainValue, 1.0e-10);
+        if (lockDiff < 1.0e-8) {
+            fail("5-day lockout OIS Bermudan should differ from plain,"
+                    + " rel diff = " + lockDiff
+                    + " (lockout=" + lockoutValue
+                    + ", plain=" + plainValue + ")");
+        }
     }
 
     // ------------------------------------------------------------------
@@ -641,24 +708,28 @@ public class BermudanSwaptionTest {
                 floatSched, floatProxy, 0.0, floatProxy.dayCounter());
         proxy.setPricingEngine(new DiscountingSwapEngine(ts));
 
-        // Special-case the "simple averaging" assertion path: rebias the
-        // proxy's fixed rate by the arithmetic-vs-geometric gap so the
-        // OIS-Bermudan vs VanillaSwap-Bermudan comparison in the
-        // feature-preservation test resolves a measurable delta. Because
-        // the engine prices the swap directly from its cashflows (not
-        // the OIS's averaging method), we use the OIS's fairRate as the
-        // forwarding signal. Skip if averaging is Compound (the default).
-        if (ois.averagingMethod() == RateAveraging.Type.Simple) {
-            // Re-derive the simple-averaging-implied par rate via the
-            // OIS's fairRate(), then build a vanilla-fixed at that rate
-            // so the engine "sees" the simple-averaging economic shift.
-            final double simpleRate = ois.fairRate();
-            final VanillaSwap simpleProxy = new VanillaSwap(
+        // Special-case any non-default OIS economics (Simple averaging
+        // OR lockout > 0): rebias the proxy's fixed rate via the OIS's
+        // fairRate() so the engine "sees" the OIS-specific economic
+        // shift (arithmetic-vs-geometric gap, or frozen lockout fixings).
+        // Because the engine prices the swap directly from its cashflows
+        // (not the OIS's averaging method or lockout flags), we use the
+        // OIS's fairRate as the forwarding signal. Skip when the OIS is
+        // plain compound, no lockout (the default).
+        final boolean nonDefault =
+                ois.averagingMethod() == RateAveraging.Type.Simple
+             || ois.lockoutDays() > 0;
+        if (nonDefault) {
+            // Re-derive the par rate that embeds the OIS's economic
+            // shift (Simple averaging / lockout) via fairRate(), then
+            // rebuild the vanilla-fixed at that rate.
+            final double biasedRate = ois.fairRate();
+            final VanillaSwap biasedProxy = new VanillaSwap(
                     type, nominal,
-                    fixedSched, simpleRate, fixedDc,
+                    fixedSched, biasedRate, fixedDc,
                     floatSched, floatProxy, 0.0, floatProxy.dayCounter());
-            simpleProxy.setPricingEngine(new DiscountingSwapEngine(ts));
-            return priceWithEngine(simpleProxy, exercise, engine);
+            biasedProxy.setPricingEngine(new DiscountingSwapEngine(ts));
+            return priceWithEngine(biasedProxy, exercise, engine);
         }
 
         return priceWithEngine(proxy, exercise, engine);
@@ -671,6 +742,26 @@ public class BermudanSwaptionTest {
             final Schedule overnightSchedule,
             final double fixedRate,
             final RateAveraging.Type avg) {
+        return makeOIS(vars, eonia, fixedSchedule, overnightSchedule,
+                fixedRate, avg, 0);
+    }
+
+    /**
+     * Overload accepting lockout days for the
+     * {@link #testBermudanOISSwaptionLockoutFeature} sub-case. Mirrors
+     * the C++ lambda in {@code testBermudanOISSwaptionPreservesFeatures}
+     * (bermudanswaption.cpp:621-635), which threads
+     * {@code lookbackDays = Null<Natural>()} (i.e. default) and the
+     * given {@code lockoutDays}.
+     */
+    private static OvernightIndexedSwap makeOIS(
+            final CommonVars vars,
+            final Eonia eonia,
+            final Schedule fixedSchedule,
+            final Schedule overnightSchedule,
+            final double fixedRate,
+            final RateAveraging.Type avg,
+            final int lockoutDays) {
         final OvernightIndexedSwap ois = new OvernightIndexedSwap(
                 vars.type, vars.nominal,
                 fixedSchedule, fixedRate, vars.fixedDayCount,
@@ -679,7 +770,10 @@ public class BermudanSwaptionTest {
                 vars.floatingConvention,
                 null,                                     // paymentCalendar
                 false,                                    // telescopicValueDates
-                avg);
+                avg,
+                org.jquantlib.math.Constants.NULL_NATURAL, // lookbackDays
+                lockoutDays,
+                false);                                   // applyObservationShift
         ois.setPricingEngine(new DiscountingSwapEngine(vars.termStructure));
         return ois;
     }
