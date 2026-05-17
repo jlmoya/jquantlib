@@ -47,25 +47,36 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * Phase Body-Fill-5 partial port of {@code test-suite/overnightindexedswap.cpp}
+ * Phase 5e.5b-CFC-d-89 partial port of {@code test-suite/overnightindexedswap.cpp}
  * v1.42.1 (1,098 LOC, 21 cases).
  *
  * <p>Exercises the {@code OvernightIndexedSwap} (OIS) instrument and the
  * {@code MakeOIS} factory.
  *
- * <p><strong>Body-fills (Phase Body-Fill-5):</strong>
+ * <p><strong>Body-fills (active @Test):</strong>
  * <ul>
  *   <li>{@link #testFairRate()} — fair fixed-rate parity (telescopic vs
  *       non-telescopic) + zero-NPV recalculation.
  *   <li>{@link #testFairSpread()} — fair floating-spread parity + zero-NPV
  *       recalculation.
+ *   <li>{@link #testCachedValue()} — 1Y OIS NPV against C++ cached reference.
+ *   <li>{@link #testBaseBootstrap()} — bootstrap with compound DCON +
+ *       non-telescopic.
+ *   <li>{@link #testBootstrapWithArithmeticAverage()} — bootstrap with Simple
+ *       averaging + non-telescopic.
+ *   <li>{@link #testBootstrapWithTelescopicDates()} — bootstrap with compound
+ *       DCON + telescopic.
+ *   <li>{@link #testBootstrapWithTelescopicDatesAndArithmeticAverage()} —
+ *       bootstrap with Simple averaging + telescopic (loose tolerance per C++).
+ *   <li>{@link #testSeasonedSwaps()} — parity of NPV under telescopic vs
+ *       non-telescopic for a seasoned swap with historical fixings.
  * </ul>
  *
- * <p><strong>Carry-forward to Phase 5d.5</strong>: 19 remaining cases need
- * either an Estr index port (we substitute Eonia for the body-filled cases),
- * lookback / lockout / observation-shift / arithmetic-average MakeOIS
- * variants, OIS bootstrap rate-helper coverage, or Phase 5d.5 testCachedValue
- * (which depends on a regenerated cached NPV from C++ v1.42.1 via a probe).
+ * <p><strong>Deferred (still @Ignore'd):</strong> 9 cases either need
+ * production work (lookback/lockout/observation-shift MakeOIS; multi-nominal
+ * OIS constructors; MakeOIS default-settlement-days table; FedFunds OIS + Pillar
+ * enum hooks in OISRateHelper; OISRateHelper.withCouponPricer for custom
+ * arithmetic pricer; Flag-based observable wiring), out of scope for body-fill.
  *
  * <p>Source: {@code test-suite/overnightindexedswap.cpp} v1.42.1 @
  * {@code 099987f0ca}.
@@ -76,31 +87,34 @@ public class OvernightIndexedSwapTest {
         QL.info("::::: " + getClass().getSimpleName() + " :::::");
     }
 
-    private static final String REASON_PRICING =
-            "Phase 5d.5 — additional pricing cases need probe-cached "
-          + "expected NPV against C++ Estr (Java has Eonia, sub-millisecond "
-          + "calendar diff vs Estr means cachedValue must be regenerated)";
-
     private static final String REASON_BOOTSTRAP =
-            "Phase 5d.5 — requires OISRateHelper bootstrap test framework "
-          + "(present in production but no test-suite port yet)";
+            "Phase 5e.5b-CFC-d-89 — OISRateHelper.withCouponPricer hook + "
+          + "FedFunds OIS + Pillar enum (LastRelevantDate/MaturityDate) + "
+          + "Sofr-with-different-calendars not yet exposed in Java "
+          + "OISRateHelper signature";
 
     private static final String REASON_MAKE_OIS =
-            "Phase 5d.5 — requires MakeOIS additional default-settlement-days "
-          + "+ end-of-month regression #2453 + settlement/effective conflict "
-          + "guard-rail wiring";
+            "Phase 5e.5b-CFC-d-89 — requires MakeOIS additional "
+          + "default-settlement-days (SONIA=0, CORRA=1, others=2) + EOM "
+          + "regression #2453 + settlement/effective conflict guard-rail "
+          + "wiring";
 
     private static final String REASON_NOTIFY =
-            "Phase 5d.5 — requires OIS observable wiring + cached-value "
-          + "regression coverage";
+            "Phase 5e.5b-CFC-d-89 — Flag-based observable wiring API (Flag "
+          + "not yet ported in JQL); the OIS itself observes its coupons but "
+          + "the test harness Flag.registerWith(ois) requires Flag/Observable "
+          + "port";
 
     private static final String REASON_LOOKBACK =
-            "Phase 5d.5 — MakeOIS withLookbackDays / withLockoutDays / "
-          + "withObservationShift not yet implemented in Java MakeOIS MVP";
+            "Phase 5e.5b-CFC-d-89 — MakeOIS withLookbackDays / "
+          + "withLockoutDays / withObservationShift not yet implemented in "
+          + "Java MakeOIS MVP";
 
-    private static final String REASON_ARITHMETIC =
-            "Phase 5d.5 — arithmetic-average bootstrap requires specialized "
-          + "OvernightIndexedCouponPricer adaption";
+    private static final String REASON_CONSTRUCTORS =
+            "Phase 5e.5b-CFC-d-89 — multi-nominal (amortizing) "
+          + "OvernightIndexedSwap constructors + nominals() / fixedNominals() "
+          + "/ overnightNominals() / paymentFrequency() accessors not yet "
+          + "ported";
 
     /**
      * Fixture mirroring C++ {@code CommonVars}.
@@ -417,7 +431,7 @@ public class OvernightIndexedSwapTest {
 
                 swap = vars.makeSwap(length, j, fairSpread1, true);
                 if (Math.abs(swap.NPV()) > 1.0e-10) {
-                    fail("recalculating with implied spread (telescopic value dates):"
+                    fail("recalculating with implied spread (non telescopic value dates):"
                             + "\n    length: " + length
                             + "\n    fixed rate: " + j
                             + "\n    fair spread: " + fairSpread1
@@ -428,7 +442,47 @@ public class OvernightIndexedSwapTest {
         assertTrue("OIS fairSpread parity test passed", true);
     }
 
-    @Ignore(REASON_PRICING) @Test public void testCachedValue() { fail("not implemented"); }
+    /**
+     * Port of C++ {@code overnightindexedswap.cpp::testCachedValue}.
+     *
+     * <p>Verifies that with a flat-rate (Act360) curve linked at
+     * settlement and a fixed rate of {@code exp(0.05) - 1}, the 1Y OIS
+     * NPV reproduces a hard-coded reference value from the C++ test
+     * suite. The cached value is rate/curve/calendar-driven and should
+     * carry over from Estr to Eonia (both EUR overnight, TARGET, Act360,
+     * 0 settlement days for the index itself).
+     */
+    @Test
+    public void testCachedValue() {
+        final CommonVars vars = new CommonVars();
+
+        new Settings().setEvaluationDate(vars.today);
+        final Date sett = vars.calendar.advance(vars.today,
+                new Period(vars.settlementDays, TimeUnit.Days),
+                BusinessDayConvention.Following);
+        final double flat = 0.05;
+        vars.termStructure.linkTo(new FlatForward(sett, flat, new Actual360()));
+        final double fixedRate = Math.exp(flat) - 1.0;
+        final OvernightIndexedSwap swap  = vars.makeSwap(
+                new Period(1, TimeUnit.Years), fixedRate, 0.0, false);
+        final OvernightIndexedSwap swap2 = vars.makeSwap(
+                new Period(1, TimeUnit.Years), fixedRate, 0.0, true);
+        final double cachedNPV = 0.001730450147;
+        final double tolerance = 1.0e-11;
+        if (Math.abs(swap.NPV() - cachedNPV) > tolerance) {
+            fail("failed to reproduce cached swap value (non telescopic value dates):"
+                    + "\ncalculated: " + swap.NPV()
+                    + "\n  expected: " + cachedNPV
+                    + "\n tolerance: " + tolerance);
+        }
+        if (Math.abs(swap2.NPV() - cachedNPV) > tolerance) {
+            fail("failed to reproduce cached swap value (telescopic value dates):"
+                    + "\ncalculated: " + swap2.NPV()
+                    + "\n  expected: " + cachedNPV
+                    + "\n tolerance: " + tolerance);
+        }
+        assertTrue("OIS testCachedValue passed", true);
+    }
 
     /**
      * Port of C++ {@code overnightindexedswap.cpp::testBaseBootstrap}.
@@ -442,7 +496,15 @@ public class OvernightIndexedSwapTest {
         runBootstrap(false, RateAveraging.Type.Compound, 1.0e-8);
     }
 
-    @Ignore(REASON_ARITHMETIC) @Test public void testBootstrapWithArithmeticAverage() { fail("not implemented"); }
+    /**
+     * Port of C++ {@code overnightindexedswap.cpp::testBootstrapWithArithmeticAverage}.
+     * <p>Bootstrap with arithmetic-average (Simple) overnight rates,
+     * non-telescopic value dates.
+     */
+    @Test
+    public void testBootstrapWithArithmeticAverage() {
+        runBootstrap(false, RateAveraging.Type.Simple, 1.0e-8);
+    }
 
     /**
      * Port of C++ {@code overnightindexedswap.cpp::testBootstrapWithTelescopicDates}.
@@ -455,25 +517,82 @@ public class OvernightIndexedSwapTest {
         runBootstrap(true, RateAveraging.Type.Compound, 1.0e-8);
     }
 
-    @Ignore(REASON_ARITHMETIC) @Test public void testBootstrapWithTelescopicDatesAndArithmeticAverage() { fail("not implemented"); }
+    /**
+     * Port of C++ {@code overnightindexedswap.cpp
+     * ::testBootstrapWithTelescopicDatesAndArithmeticAverage}.
+     * <p>Bootstrap with telescopic value dates + arithmetic average.
+     * Looser tolerance (1e-5) per C++ comment: "we are using an
+     * approximation that omits the required convexity correction".
+     */
+    @Test
+    public void testBootstrapWithTelescopicDatesAndArithmeticAverage() {
+        runBootstrap(true, RateAveraging.Type.Simple, 1.0e-5);
+    }
+
     @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapWithCustomPricer() { fail("not implemented"); }
     @Ignore(REASON_LOOKBACK) @Test public void testBootstrapWithLookbackDays() { fail("not implemented"); }
     @Ignore(REASON_LOOKBACK) @Test public void testBootstrapWithLookbackDaysAndShift() { fail("not implemented"); }
     @Ignore(REASON_LOOKBACK) @Test public void testBootstrapWithLockoutDays() { fail("not implemented"); }
     @Ignore(REASON_LOOKBACK) @Test public void testBootstrapWithLockoutDaysAndShift() { fail("not implemented"); }
-    @Ignore(REASON_PRICING) @Test public void testSeasonedSwaps() { fail("not implemented"); }
+
+    /**
+     * Port of C++ {@code overnightindexedswap.cpp::testSeasonedSwaps}.
+     * <p>Tests that for a seasoned OIS (effective date 3 days before
+     * today, with 4 historical fixings), the NPV computed under
+     * telescopic and non-telescopic value-date conventions agree to
+     * 1e-10. Parity-only test — no cached reference NPV.
+     */
+    @Test
+    public void testSeasonedSwaps() {
+        final CommonVars vars = new CommonVars();
+
+        final Period[] lengths = {
+                new Period(1, TimeUnit.Years), new Period(2, TimeUnit.Years),
+                new Period(5, TimeUnit.Years), new Period(10, TimeUnit.Years),
+                new Period(20, TimeUnit.Years)
+        };
+        final double[] spreads = { -0.001, -0.01, 0.0, 0.01, 0.001 };
+
+        final Date effectiveDate = new Date(2, Month.February, 2009);
+
+        // fake fixing values (mirrors C++ overnightindexedswap.cpp:633-637)
+        vars.overnightIndex.addFixing(new Date(2, Month.February, 2009), 0.0010);
+        vars.overnightIndex.addFixing(new Date(3, Month.February, 2009), 0.0011);
+        vars.overnightIndex.addFixing(new Date(4, Month.February, 2009), 0.0012);
+        vars.overnightIndex.addFixing(new Date(5, Month.February, 2009), 0.0013);
+
+        for (final Period length : lengths) {
+            for (final double spread : spreads) {
+                final OvernightIndexedSwap swap  = vars.makeSwap(
+                        length, 0.0, spread, false, effectiveDate, 0,
+                        RateAveraging.Type.Compound);
+                final OvernightIndexedSwap swap2 = vars.makeSwap(
+                        length, 0.0, spread, true, effectiveDate, 0,
+                        RateAveraging.Type.Compound);
+                if (Math.abs(swap.NPV() - swap2.NPV()) > 1.0e-10) {
+                    fail("swap npv is different:"
+                            + "\n    length: " + length
+                            + "\n    floating spread: " + spread
+                            + "\n    swap value (non telescopic value dates): " + swap.NPV()
+                            + "\n    swap value (telescopic value dates    ): " + swap2.NPV());
+                }
+            }
+        }
+        assertTrue("OIS testSeasonedSwaps parity passed", true);
+    }
+
     @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapRegression() { fail("not implemented"); }
     @Ignore(REASON_BOOTSTRAP) @Test public void test131BootstrapRegression() { fail("not implemented"); }
     @Ignore(REASON_BOOTSTRAP) @Test public void testBootstrapWithDifferentCalendars() { fail("not implemented"); }
-    @Ignore(REASON_PRICING) @Test public void testConstructorsAndNominals() { fail("not implemented"); }
+    @Ignore(REASON_CONSTRUCTORS) @Test public void testConstructorsAndNominals() { fail("not implemented"); }
     @Ignore(REASON_NOTIFY) @Test public void testNotifications() { fail("not implemented"); }
     @Ignore(REASON_MAKE_OIS) @Test public void testMakeOISDefaultSettlementDays() { fail("not implemented"); }
     @Ignore(REASON_MAKE_OIS) @Test public void testMakeOisEndOfMonthRegression2453() { fail("not implemented"); }
     @Ignore(REASON_MAKE_OIS) @Test public void testSettlementDaysEffectiveDateConflict() { fail("not implemented"); }
 
     // unused-suppress to keep references to constants (used as labels)
-    private static final String UNUSED1 = REASON_PRICING + REASON_BOOTSTRAP + REASON_MAKE_OIS;
-    private static final String UNUSED2 = REASON_NOTIFY + REASON_LOOKBACK + REASON_ARITHMETIC;
+    private static final String UNUSED1 = REASON_BOOTSTRAP + REASON_MAKE_OIS;
+    private static final String UNUSED2 = REASON_NOTIFY + REASON_LOOKBACK + REASON_CONSTRUCTORS;
     private static final String[] UNUSED = { UNUSED1, UNUSED2 };
 
     static {
