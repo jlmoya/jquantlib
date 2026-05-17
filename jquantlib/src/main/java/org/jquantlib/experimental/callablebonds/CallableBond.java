@@ -33,6 +33,8 @@ import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.InterestRate;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
@@ -54,12 +56,10 @@ import org.jquantlib.time.Frequency;
  * <li>The C++ {@code class CallableBond::engine} is a typedef for
  *     {@code GenericEngine<arguments,results>}; in Java the engine class is
  *     spelled {@link CallableBondEngineImpl} for clarity.
- * <li>{@code OAS}, {@code cleanPriceOAS}, {@code effectiveDuration}, and
- *     {@code effectiveConvexity} require setting a continuously-compounded
- *     spread on the engine and re-pricing. JQuantLib's
- *     {@code OneFactorModel.ShortRateTree} does not yet expose
- *     {@code setSpread}; the OAS family throws {@link UnsupportedOperationException}
- *     until the underlying tree-engine spread machinery is wired up.
+ * <li>{@code OAS} / {@code cleanPriceOAS} / {@code effectiveDuration} /
+ *     {@code effectiveConvexity} are implemented in terms of the engine's
+ *     {@code arguments.spread} hook; tree-engine spread support is wired
+ *     through {@link org.jquantlib.model.shortrate.onefactormodels.OneFactorModel.ShortRateTree#setSpread(double)}.
  * <li>The {@code tradingExCoupon} predicate does not yet exist on
  *     {@link CashFlow}; ex-coupon adjustments to the call price are therefore
  *     skipped (mirrors the C++ branch only when the cash flow does NOT trade
@@ -135,26 +135,60 @@ public class CallableBond extends Bond {
     /**
      * Calculate the Option Adjusted Spread (OAS).
      * <p>
-     * Not yet supported in JQuantLib — see class-level note about the missing
-     * {@code setSpread} on {@code ShortRateTree}.
+     * Mirrors C++ v1.42.1 callablebond.cpp::OAS — solves for the
+     * continuously-compounded spread that, when added to the engine's
+     * short-rate, reproduces the dirty target price; the result is then
+     * converted to the requested compounding/frequency convention.
      */
     public double OAS(final double cleanPrice, final Handle<YieldTermStructure> engineTS,
-            final DayCounter dayCounter, final org.jquantlib.termstructures.Compounding compounding,
+            final DayCounter dayCounter, final Compounding compounding,
             final Frequency frequency, final Date settlementDate, final double accuracy,
             final int maxIterations, final double guess) {
-        throw new UnsupportedOperationException(
-                "CallableBond.OAS requires ShortRateTree.setSpread which is not yet ported to JQuantLib");
+        final Date settle = (settlementDate == null || settlementDate.isNull())
+                ? settlementDate() : settlementDate;
+        double dirtyPrice = cleanPrice + accruedAmount(settle);
+        dirtyPrice /= 100.0 / notional(settle);
+
+        final NPVSpreadHelper f = new NPVSpreadHelper(this);
+        final OASHelper obj = new OASHelper(f, dirtyPrice);
+        final Brent solver = new Brent();
+        solver.setMaxEvaluations(maxIterations);
+        final double step = 0.001;
+        final double oas = solver.solve(obj, accuracy, guess, step);
+
+        return continuousToConv(oas, this, engineTS, dayCounter, compounding, frequency);
+    }
+
+    /** Two-arg convenience overload: defaults match C++ defaults. */
+    public double OAS(final double cleanPrice, final Handle<YieldTermStructure> engineTS,
+            final DayCounter dayCounter, final Compounding compounding,
+            final Frequency frequency) {
+        return OAS(cleanPrice, engineTS, dayCounter, compounding, frequency,
+                new Date(), 1.0e-10, 100, 0.0);
     }
 
     /**
      * Calculate the clean price based on the given option-adjust-spread (oas)
-     * over the given yield term structure (engineTS).
+     * over the given yield term structure (engineTS). Mirrors C++ v1.42.1
+     * callablebond.cpp::cleanPriceOAS.
      */
     public double cleanPriceOAS(final double oas, final Handle<YieldTermStructure> engineTS,
-            final DayCounter dayCounter, final org.jquantlib.termstructures.Compounding compounding,
+            final DayCounter dayCounter, final Compounding compounding,
             final Frequency frequency, final Date settlementDate) {
-        throw new UnsupportedOperationException(
-                "CallableBond.cleanPriceOAS requires ShortRateTree.setSpread which is not yet ported to JQuantLib");
+        final Date settle = (settlementDate == null || settlementDate.isNull())
+                ? settlementDate() : settlementDate;
+        final double oasCont =
+                convToContinuous(oas, this, engineTS, dayCounter, compounding, frequency);
+        final NPVSpreadHelper f = new NPVSpreadHelper(this);
+        final double P = f.op(oasCont) * 100.0 / notional(settle) - accruedAmount(settle);
+        return P;
+    }
+
+    /** Convenience overload: default settlement = bond's settlementDate(). */
+    public double cleanPriceOAS(final double oas, final Handle<YieldTermStructure> engineTS,
+            final DayCounter dayCounter, final Compounding compounding,
+            final Frequency frequency) {
+        return cleanPriceOAS(oas, engineTS, dayCounter, compounding, frequency, new Date());
     }
 
     /**
@@ -163,10 +197,15 @@ public class CallableBond extends Bond {
      */
     public double effectiveDuration(final double oas,
             final Handle<YieldTermStructure> engineTS, final DayCounter dayCounter,
-            final org.jquantlib.termstructures.Compounding compounding, final Frequency frequency,
+            final Compounding compounding, final Frequency frequency,
             final double bump) {
-        throw new UnsupportedOperationException(
-                "CallableBond.effectiveDuration requires ShortRateTree.setSpread which is not yet ported to JQuantLib");
+        final double P = cleanPriceOAS(oas, engineTS, dayCounter, compounding, frequency);
+        final double Ppp = cleanPriceOAS(oas + bump, engineTS, dayCounter, compounding, frequency);
+        final double Pmm = cleanPriceOAS(oas - bump, engineTS, dayCounter, compounding, frequency);
+        if (P == 0.0) {
+            return 0.0;
+        }
+        return (Pmm - Ppp) / (2.0 * P * bump);
     }
 
     /**
@@ -175,10 +214,101 @@ public class CallableBond extends Bond {
      */
     public double effectiveConvexity(final double oas,
             final Handle<YieldTermStructure> engineTS, final DayCounter dayCounter,
-            final org.jquantlib.termstructures.Compounding compounding, final Frequency frequency,
+            final Compounding compounding, final Frequency frequency,
             final double bump) {
-        throw new UnsupportedOperationException(
-                "CallableBond.effectiveConvexity requires ShortRateTree.setSpread which is not yet ported to JQuantLib");
+        final double P = cleanPriceOAS(oas, engineTS, dayCounter, compounding, frequency);
+        final double Ppp = cleanPriceOAS(oas + bump, engineTS, dayCounter, compounding, frequency);
+        final double Pmm = cleanPriceOAS(oas - bump, engineTS, dayCounter, compounding, frequency);
+        if (P == 0.0) {
+            return 0.0;
+        }
+        return (Ppp + Pmm - 2.0 * P) / (P * bump * bump);
+    }
+
+    // -----------------------------------------------------------------------
+    // OAS helper plumbing — mirrors anonymous-namespace helpers in C++
+    // callablebond.cpp (continuousToConv / convToContinuous / NPVSpreadHelper
+    // / OASHelper).
+    // -----------------------------------------------------------------------
+
+    /** Convert a continuous spread to a conventional spread vs. {@code yts}. */
+    private static double continuousToConv(final double oas, final Bond b,
+            final Handle<YieldTermStructure> yts, final DayCounter dayCounter,
+            final Compounding compounding, final Frequency frequency) {
+        final YieldTermStructure ts = yts.currentLink();
+        final double zz = ts.zeroRate(b.maturityDate(), dayCounter,
+                Compounding.Continuous, Frequency.NoFrequency).rate();
+        final InterestRate baseRate = new InterestRate(zz, dayCounter,
+                Compounding.Continuous, Frequency.NoFrequency);
+        final InterestRate spreadedRate = new InterestRate(oas + zz, dayCounter,
+                Compounding.Continuous, Frequency.NoFrequency);
+        final double br = baseRate.equivalentRate(ts.referenceDate(),
+                b.maturityDate(), dayCounter, compounding, frequency).rate();
+        final double sr = spreadedRate.equivalentRate(ts.referenceDate(),
+                b.maturityDate(), dayCounter, compounding, frequency).rate();
+        return sr - br;
+    }
+
+    /** Convert a conventional spread vs. {@code yts} to a continuous spread. */
+    private static double convToContinuous(final double oas, final Bond b,
+            final Handle<YieldTermStructure> yts, final DayCounter dayCounter,
+            final Compounding compounding, final Frequency frequency) {
+        final YieldTermStructure ts = yts.currentLink();
+        final double zz = ts.zeroRate(b.maturityDate(), dayCounter,
+                compounding, frequency).rate();
+        final InterestRate baseRate = new InterestRate(zz, dayCounter,
+                compounding, frequency);
+        final InterestRate spreadedRate = new InterestRate(oas + zz, dayCounter,
+                compounding, frequency);
+        final double br = baseRate.equivalentRate(ts.referenceDate(),
+                b.maturityDate(), dayCounter, Compounding.Continuous,
+                Frequency.NoFrequency).rate();
+        final double sr = spreadedRate.equivalentRate(ts.referenceDate(),
+                b.maturityDate(), dayCounter, Compounding.Continuous,
+                Frequency.NoFrequency).rate();
+        return sr - br;
+    }
+
+    /** Re-prices the bond with the engine's {@code spread} argument set to {@code x}. */
+    private static final class NPVSpreadHelper implements DoubleOp {
+        private final CallableBond bond_;
+        private final CallableBondResultsImpl results_;
+
+        NPVSpreadHelper(final CallableBond bond) {
+            this.bond_ = bond;
+            bond.setupArguments(bond.engine.getArguments());
+            this.results_ = (CallableBondResultsImpl) bond.engine.getResults();
+        }
+
+        @Override
+        public double op(final double x) {
+            final CallableBondArgumentsImpl args =
+                    (CallableBondArgumentsImpl) bond_.engine.getArguments();
+            final double saved = args.spread;
+            try {
+                args.spread = x;
+                bond_.engine.calculate();
+                return results_.value;
+            } finally {
+                args.spread = saved;
+            }
+        }
+    }
+
+    /** Brent-objective: targetValue - NPV(spread). */
+    private static final class OASHelper implements DoubleOp {
+        private final NPVSpreadHelper npv_;
+        private final double targetValue_;
+
+        OASHelper(final NPVSpreadHelper npv, final double targetValue) {
+            this.npv_ = npv;
+            this.targetValue_ = targetValue;
+        }
+
+        @Override
+        public double op(final double x) {
+            return targetValue_ - npv_.op(x);
+        }
     }
 
     /**

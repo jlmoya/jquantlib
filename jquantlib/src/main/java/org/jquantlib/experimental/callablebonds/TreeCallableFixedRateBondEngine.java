@@ -23,6 +23,7 @@ import org.jquantlib.experimental.callablebonds.CallableBond.CallableBondEngineI
 import org.jquantlib.experimental.callablebonds.CallableBond.CallableBondResultsImpl;
 import org.jquantlib.methods.lattices.Lattice;
 import org.jquantlib.model.shortrate.ShortRateModel;
+import org.jquantlib.model.shortrate.onefactormodels.OneFactorModel;
 import org.jquantlib.model.shortrate.onefactormodels.TermStructureConsistentModel;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
@@ -41,14 +42,10 @@ import org.jquantlib.time.TimeGrid;
  *     base; Java has no such generic engine, so this class extends
  *     {@link CallableBondEngineImpl} directly and holds the model + step
  *     configuration as private fields (mirrors {@code TreeSwaptionEngine}).
- * <li>{@code calculateWithSpread(Spread s)} branch that calls
- *     {@code OneFactorModel.ShortRateTree.setSpread(s)} cannot be ported until
- *     {@code ShortRateTree.setSpread} is added to JQuantLib. The engine
- *     therefore ignores any non-zero spread on
- *     {@link CallableBondArgumentsImpl#spread} and prices at the unspread
- *     short-rate model. {@link CallableBond}'s OAS / cleanPriceOAS methods are
- *     unsupported until that infrastructure lands (see CallableBond class
- *     comment).
+ * <li>{@code calculateWithSpread(Spread s)} branch downcasts the model's
+ *     lattice to {@link OneFactorModel.ShortRateTree} and calls
+ *     {@link OneFactorModel.ShortRateTree#setSpread(double)}. Other lattice
+ *     types raise the same "spread not supported" error as in C++.
  * </ul>
  */
 public class TreeCallableFixedRateBondEngine extends CallableBondEngineImpl {
@@ -124,11 +121,14 @@ public class TreeCallableFixedRateBondEngine extends CallableBondEngineImpl {
         }
 
         if (s != 0.0) {
-            // Java port: ShortRateTree.setSpread is not yet ported. The C++
-            // engine errors out for non-OneFactor lattices; here we error
-            // out for ANY non-zero spread until setSpread is wired up.
-            QL.require(false,
-                    "Spread != 0 is not supported in JQuantLib until ShortRateTree.setSpread is ported");
+            // Mirrors C++ v1.42.1 treecallablebondengine.cpp:69-74 —
+            //   auto* sr = dynamic_cast<OneFactorModel::ShortRateTree*>(&(*lattice));
+            //   QL_REQUIRE(sr,
+            //              "Spread is not supported for trees other than OneFactorModel");
+            //   sr->setSpread(s);
+            QL.require(lattice instanceof OneFactorModel.ShortRateTree,
+                    "Spread is not supported for trees other than OneFactorModel");
+            ((OneFactorModel.ShortRateTree) lattice).setSpread(s);
         }
 
         final Date referenceDate = discountCurve.currentLink().referenceDate();

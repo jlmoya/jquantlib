@@ -43,6 +43,7 @@ import org.jquantlib.pricingengines.bond.DiscountingBondEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.time.BusinessDayConvention;
@@ -705,35 +706,123 @@ public class CallableBondTest {
 
     /**
      * testCallableFixedRateBondWithArbitrarySchedule — exercises the tree
-     * engine on an arbitrary (non-tenored) schedule.
-     * <p>
-     * Java port limitation: the {@link Schedule} constructed from explicit
-     * dates (via {@code new Schedule(List<Date>, Calendar, BDC)}) does not
-     * expose the "full interface" (no tenor / rule / endOfMonth), and the
-     * downstream tree-engine path attempts to read those properties,
-     * throwing {@code "full interface (tenor) not available"}.
-     * <p>
-     * C++ probe reference (v1.42.1 SHA 099987f): cleanPrice = 104.23185995529222.
-     * Un-ignore once the Schedule arbitrary-dates branch is plumbed through
-     * the tree engine.
+     * engine on an arbitrary (non-tenored) schedule. Mirrors C++ v1.42.1
+     * {@code testCallableFixedRateBondWithArbitrarySchedule} which only
+     * checks that {@code cleanPrice()} does not throw. Phase 5e.5b-CFC-d-159
+     * additionally pins the cleanPrice against the C++ probe reference
+     * (104.23185995529222) to lock down the value end-to-end.
      */
     @Test
-    @Ignore("Phase 5e.5b: arbitrary-date Schedule misses 'full interface' "
-            + "(tenor); production Schedule plumb-through required before "
-            + "un-ignoring (C++ probe expects 104.23185995529222).")
     public void testCallableFixedRateBondWithArbitrarySchedule() {
-        fail("deferred until arbitrary-dates Schedule supports tree engine");
+        final Vars vars = new Vars();
+        final int settlementDays = 2;
+        vars.setToday(new Date(10, Month.January, 2020));
+        vars.flatCurve = vars.makeFlatCurve(0.03);
+        final Handle<YieldTermStructure> termStructure = new Handle<YieldTermStructure>(vars.flatCurve);
+        vars.model = new HullWhite(termStructure);
+
+        final int timeSteps = 240;
+        final PricingEngine engine = new TreeCallableFixedRateBondEngine(vars.model, timeSteps,
+                termStructure);
+
+        final List<Date> dates = new ArrayList<Date>();
+        dates.add(new Date(20, Month.February, 2020));
+        dates.add(new Date(15, Month.August, 2020));
+        dates.add(new Date(25, Month.September, 2021));
+        dates.add(new Date(27, Month.January, 2022));
+
+        final Schedule schedule = new Schedule(dates, vars.calendar,
+                BusinessDayConvention.Unadjusted);
+
+        final CallabilitySchedule callabilities = new CallabilitySchedule();
+        callabilities.add(new Callability(
+                new Callability.Price(100.0, Callability.Price.Type.Clean),
+                Callability.Type.Call, dates.get(2)));
+
+        final double[] coupons = new double[] { 0.06 };
+
+        final CallableFixedRateBond callableBond = new CallableFixedRateBond(
+                settlementDays, 100.0, schedule, coupons, vars.dayCounter,
+                vars.rollingConvention, 100.0, vars.issueDate(), callabilities);
+        callableBond.setPricingEngine(engine);
+
+        // C++ inline test only checks BOOST_CHECK_NO_THROW; pin C++ probe value
+        // (v1.42.1 SHA 099987f) for extra cross-validation.
+        final double expectedCleanPrice = 104.23185995529222;
+        assertEquals("cleanPrice with arbitrary-date schedule must match C++ probe",
+                expectedCleanPrice, callableBond.cleanPrice(), 1.0e-8);
     }
 
     /**
      * testCallableBondOasWithDifferentNotinals — OAS should be invariant
-     * w.r.t. notional. Requires {@code ShortRateTree.setSpread} which is
-     * not yet ported to JQuantLib.
+     * w.r.t. notional. Exercises {@code OneFactorModel.ShortRateTree.setSpread}
+     * via {@link CallableBond#OAS} / {@link CallableBond#cleanPriceOAS}.
      */
     @Test
-    @Ignore("Phase 5e.5b: requires ShortRateTree.setSpread infrastructure (not ported).")
     public void testCallableBondOasWithDifferentNotinals() {
-        fail("deferred until ShortRateTree.setSpread is ported");
+        final Vars vars = new Vars();
+        final int settlementDays = 2;
+        vars.setToday(new Date(10, Month.January, 2020));
+
+        final double[] coupons = new double[] { 0.055 };
+        final DayCounter dc = vars.dayCounter;
+        final Compounding compounding = Compounding.Compounded;
+        final Frequency frequency = Frequency.Semiannual;
+
+        vars.flatCurve = vars.makeFlatCurve(0.03);
+        final Handle<YieldTermStructure> termStructure = new Handle<YieldTermStructure>(vars.flatCurve);
+        vars.model = new HullWhite(termStructure);
+
+        final int timeSteps = 240;
+        final PricingEngine engine = new TreeCallableFixedRateBondEngine(vars.model, timeSteps,
+                termStructure);
+
+        final Schedule schedule = new Schedule(vars.issueDate(), vars.maturityDate(),
+                new Period(frequency), vars.calendar,
+                vars.rollingConvention, vars.rollingConvention,
+                DateGeneration.Rule.Backward, false);
+
+        // C++ uses schedule.after(firstCallDate).until(lastCallDate); reproduce
+        // the same set by index — the call schedule contains the dates strictly
+        // between index (size-5) and index (size-2), inclusive of (size-4) and
+        // (size-3) (i.e. two interior dates). This matches the C++ semantics of
+        // after(firstCallDate) excluding firstCallDate itself.
+        final int firstIdx = schedule.size() - 5;
+        final int lastIdx  = schedule.size() - 2;
+        final CallabilitySchedule callSchedule = new CallabilitySchedule();
+        for (int k = firstIdx + 1; k <= lastIdx; k++) {
+            callSchedule.add(new Callability(
+                    new Callability.Price(100.0, Callability.Price.Type.Clean),
+                    Callability.Type.Call, schedule.date(k)));
+        }
+
+        final CallableFixedRateBond callableBond100 = new CallableFixedRateBond(
+                settlementDays, 100.0, schedule, coupons, vars.dayCounter,
+                vars.rollingConvention, 100.0, vars.issueDate(), callSchedule);
+        callableBond100.setPricingEngine(engine);
+
+        final CallableFixedRateBond callableBond25 = new CallableFixedRateBond(
+                settlementDays, 25.0, schedule, coupons, vars.dayCounter,
+                vars.rollingConvention, 100.0, vars.issueDate(), callSchedule);
+        callableBond25.setPricingEngine(engine);
+
+        final double cleanPrice = 96.0;
+        final double oas100 = callableBond100.OAS(cleanPrice, termStructure, dc,
+                compounding, frequency);
+        final double oas25  = callableBond25.OAS(cleanPrice, termStructure, dc,
+                compounding, frequency);
+        // C++ uses == (bit-exact); both bonds run through the identical engine
+        // with identical args (notional is divided out in CallableBond.OAS).
+        assertEquals("OAS must be invariant under notional rescaling",
+                oas100, oas25, 1.0e-12);
+
+        final double oas = 0.0300;
+        final double cleanPrice100 = callableBond100.cleanPriceOAS(oas, termStructure, dc,
+                compounding, frequency);
+        final double cleanPrice25  = callableBond25.cleanPriceOAS(oas, termStructure, dc,
+                compounding, frequency);
+        assertEquals("cleanPriceOAS must be invariant under notional rescaling",
+                cleanPrice100, cleanPrice25, 1.0e-10);
     }
 
     /**

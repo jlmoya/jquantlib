@@ -146,8 +146,14 @@ public abstract class OneFactorModel extends ShortRateModel {
 
     /**
      * Recombining trinomial tree discretizing the state variable.
+     * <p>
+     * Visibility-widened to {@code public} so cross-package callers
+     * (callable-bond engines) can downcast a {@code Lattice} returned from
+     * {@link #tree(TimeGrid)} and invoke {@link #setSpread} for OAS pricing.
+     * Mirrors C++ v1.42.1 onefactormodel.hpp line 75 where the class is
+     * declared {@code public} on {@code OneFactorModel}.
      */
-    protected class ShortRateTree extends TreeLattice1D { //TODO: <OneFactorModel.ShortRateTree> {
+    public class ShortRateTree extends TreeLattice1D { //TODO: <OneFactorModel.ShortRateTree> {
 
         //
         // private fields
@@ -155,6 +161,12 @@ public abstract class OneFactorModel extends ShortRateModel {
 
         private final  TrinomialTree tree_;
         private final  ShortRateDynamics dynamics_;
+        /**
+         * Continuously-compounded spread added to the model short-rate when
+         * computing discounts. Mirrors C++ v1.42.1
+         * onefactormodel.hpp:113 {@code Spread spread_;}. Default 0.0.
+         */
+        private double spread_ = 0.0;
 
 
         //
@@ -214,8 +226,20 @@ public abstract class OneFactorModel extends ShortRateModel {
         @Override
         public /* @DiscountFactor */ double discount(final int i, final int index) /* @ReadOnly */ {
             final double x = tree_.underlying(i, index);
-            /*@Rate*/ final double r = dynamics_.shortRate(timeGrid().get(i), x);
+            // Mirrors C++ v1.42.1 onefactormodel.hpp:91-94 —
+            //   Rate r = dynamics_->shortRate(timeGrid()[i], x) + spread_;
+            /*@Rate*/ final double r = dynamics_.shortRate(timeGrid().get(i), x) + spread_;
             return Math.exp(-r*timeGrid().dt(i));
+        }
+
+        /**
+         * Set a continuously-compounded spread to be added to the model
+         * short-rate when computing discount factors. Used by callable-bond
+         * engines to support OAS pricing. Mirrors C++ v1.42.1
+         * onefactormodel.hpp:105-108 {@code setSpread(Spread)}.
+         */
+        public void setSpread(final double spread) {
+            this.spread_ = spread;
         }
 
         @Override

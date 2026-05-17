@@ -48,9 +48,13 @@ public class CallableFixedRateBond extends CallableBond {
         super(settlementDays, schedule.dates().get(schedule.dates().size() - 1),
                 schedule.calendar(), accrualDayCounter, faceAmount, issueDate, putCallSchedule);
 
-        // Java port: Schedule.tenor() is non-null; use Frequency.NoFrequency when
-        // tenor is zero-length (mirrors C++ ternary on hasTenor()).
-        frequency_ = (schedule.tenor() != null && schedule.tenor().length() != 0)
+        // Mirrors C++ ql/experimental/callablebonds/callablebond.cpp:
+        //   frequency_ = schedule.hasTenor() ? schedule.tenor().frequency()
+        //                                    : NoFrequency;
+        // The hasTenor() guard is required for arbitrary-date schedules
+        // (Schedule(List<Date>, Calendar, BDC)) where calling tenor() would
+        // throw "full interface (tenor) not available". Phase 5e.5b-CFC-d-159.
+        frequency_ = (schedule.hasTenor() && schedule.tenor().length() != 0)
                 ? schedule.tenor().frequency()
                 : Frequency.NoFrequency;
 
