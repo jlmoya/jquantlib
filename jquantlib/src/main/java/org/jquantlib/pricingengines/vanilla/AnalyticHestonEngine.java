@@ -25,6 +25,8 @@ import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.math.Complex;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
+import org.jquantlib.math.integrals.DiscreteTrapezoidIntegrator;
+import org.jquantlib.math.integrals.ExponentialIntegral;
 import org.jquantlib.math.integrals.GaussChebyshev2ndPolynomial;
 import org.jquantlib.math.integrals.GaussChebyshevPolynomial;
 import org.jquantlib.math.integrals.GaussKronrodAdaptive;
@@ -602,6 +604,28 @@ public class AnalyticHestonEngine
         return new Complex(re, im);
     }
 
+    /**
+     * Complex sine: {@code sin(a + ib) = sin(a)·cosh(b) + i·cos(a)·sinh(b)}.
+     * Used by {@link AP_Helper#controlVariateValue()} for the AsymptoticChF
+     * branch; not in {@link Complex} core.
+     */
+    static Complex csin(final Complex z) {
+        final double a = z.real();
+        final double b = z.imag();
+        return new Complex(Math.sin(a) * Math.cosh(b),
+                           Math.cos(a) * Math.sinh(b));
+    }
+
+    /**
+     * Complex cosine: {@code cos(a + ib) = cos(a)·cosh(b) - i·sin(a)·sinh(b)}.
+     */
+    static Complex ccos(final Complex z) {
+        final double a = z.real();
+        final double b = z.imag();
+        return new Complex(Math.cos(a) * Math.cosh(b),
+                           -Math.sin(a) * Math.sinh(b));
+    }
+
     // ----------------------------------------------------------------------
     // Phase 5e.5b-CFC-d-124: AndersenPiterbarg / AngledContour control-variate
     // helpers used by ExponentialFittingHestonEngine.
@@ -811,10 +835,36 @@ public class AnalyticHestonEngine
                             Math.sqrt(vAvg_ * term_), 1.0)
                         .value();
             } else if (cpxLog_ == ComplexLogFormula.AsymptoticChF) {
-                // C++ uses ExponentialIntegral::Ci / Si — not yet ported in Java.
-                throw new UnsupportedOperationException(
-                        "AP_Helper.controlVariateValue() for AsymptoticChF requires "
-                        + "ExponentialIntegral.Ci/Si (not yet ported to Java).");
+                // Mirrors C++ analytichestonengine.cpp:557-566.
+                //
+                //   return fwd - sqrt(K*F)/π *
+                //          ( exp(psi) *
+                //              ( -2*Ci(-0.5*phiFreq)*sin(0.5*phiFreq)
+                //                + cos(0.5*phiFreq)*(π + 2*Si(0.5*phiFreq)) )
+                //          ).real()
+                //
+                // where phiFreq = phi_ + (0, freq_); sin/cos and Si/Ci are
+                // all complex-valued. Phase 5e.5b-CFC-d-136 port of
+                // ExponentialIntegral.{Si,Ci}(Complex) makes this branch
+                // computable.
+                QL.require(alpha_ == -0.5, "alpha must be equal to -0.5");
+
+                final Complex phiFreq = new Complex(phi_.real(), phi_.imag() + freq_);
+                final Complex halfPhiFreq = phiFreq.mul(0.5);
+
+                final Complex sinHalf = csin(halfPhiFreq);
+                final Complex cosHalf = ccos(halfPhiFreq);
+
+                final Complex ciArg = ExponentialIntegral.Ci(halfPhiFreq.neg());
+                final Complex siArg = ExponentialIntegral.Si(halfPhiFreq);
+
+                // -2 * Ci(-halfPhiFreq) * sin(halfPhiFreq)
+                final Complex term1 = ciArg.mul(sinHalf).mul(-2.0);
+                // cos(halfPhiFreq) * (π + 2*Si(halfPhiFreq))
+                final Complex term2 = cosHalf.mul(siArg.mul(2.0).add(Math.PI));
+
+                final Complex bracket = psi_.exp().mul(term1.add(term2));
+                return fwd_ - Math.sqrt(strike_ * fwd_) / Math.PI * bracket.real();
             } else if (cpxLog_ == ComplexLogFormula.AngledContourNoCV) {
                 return ((alpha_ <=  0.0) ? fwd_    : 0.0)
                      - ((alpha_ <= -1.0) ? strike_ : 0.0)
@@ -1055,14 +1105,15 @@ public class AnalyticHestonEngine
         }
 
         /**
-         * Discrete Trapezoid rule — not yet ported (requires
-         * {@code DiscreteTrapezoidIntegrator}).
+         * Discrete Trapezoid rule on {@code n} evaluations. Mirrors C++
+         * {@code Integration::discreteTrapezoid(n)} — wires the fixed-grid
+         * {@link DiscreteTrapezoidIntegrator} (Phase 5e.5b-CFC-d-136 port).
          */
         public static Integration discreteTrapezoid(final int evaluations) {
-            throw new UnsupportedOperationException(
-                "AnalyticHestonEngine.Integration.discreteTrapezoid: "
-                + "DiscreteTrapezoidIntegrator not yet ported "
-                + "(Phase 5e.5b-CFC-d-120 carry-forward).");
+            return new Integration(Algorithm.DiscreteTrapezoid,
+                                   null,
+                                   null,
+                                   new DiscreteTrapezoidIntegrator(evaluations));
         }
 
         /**

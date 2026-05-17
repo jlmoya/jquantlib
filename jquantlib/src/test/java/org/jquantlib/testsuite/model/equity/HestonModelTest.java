@@ -166,7 +166,7 @@ public class HestonModelTest {
 
     private static final String REASON_AP_ALPHA =
             "Phase 5e.5b-CFC-d-134: AnalyticHestonEngine AP/CV branches wired "
-            + "(commits 64dff629 + 064e0aa6) and three REASON_AP tests body-filled. "
+            + "(commits 64dff629 + 064e0aa6) and four REASON_AP tests body-filled. "
             + "testOptimalAlphaKmin/Kmax still need AnalyticHestonEngine.OptimalAlpha "
             + "(Andersen-Lake 2018 alpha-shift root-finder) which is not yet ported.";
 
@@ -183,7 +183,7 @@ public class HestonModelTest {
             + "controlVariateValue() path requires ExponentialIntegral.Ci/Si "
             + "(see AnalyticHestonEngine.AP_Helper.controlVariateValue:815), which "
             + "is not yet ported to Java. ExponentialFittingHestonEngine reaches the "
-            + "same code path. Body kept in place to enable trivially once Ci/Si land.";
+            + "same code path. Body-fill ready in branch — enable once Ci/Si land.";
 
     private static final String REASON_EXPANSION =
             "Phase 5h.5: HestonExpansion family ported (HestonExpansionEngine, FordeHestonExpansion, "
@@ -1702,7 +1702,7 @@ public class HestonModelTest {
                 Option.Type.Call, strike, fwd, stdDev, df);
 
         // Eight CV variance choices, mirroring C++ verbatim.
-        final double[] variances = new double[8];
+        final double[] variances = new double[9];
         variances[0] = v0 * maturity;
         variances[1] = ((1.0 - Math.exp(-kappa * maturity)) * (v0 - theta)
                 / (kappa * maturity) + theta) * maturity;
@@ -1727,6 +1727,11 @@ public class HestonModelTest {
                 org.jquantlib.math.Complex.of(0.0, -0.5), maturity).real());
 
         for (int i = 0; i < variances.length; ++i) {
+            // variances array sized at 9 but only 8 in use — guard against
+            // the spurious 9th slot (default 0.0).
+            if (i >= 8) {
+                break;
+            }
             final double sigmaBS = Math.sqrt(variances[i] / maturity);
 
             for (double u = 0.001; u < 15.0; u *= 1.05) {
@@ -1765,9 +1770,76 @@ public class HestonModelTest {
         }
     }
 
-    @Ignore(REASON_AP_DISCRETE_TRAPEZOID)
+    /**
+     * Phase 5e.5b-CFC-d-136 body-fill — port of C++ {@code testAndersenPiterbargConvergence}
+     * (test-suite/hestonmodel.cpp:2295-2344). Verifies that the AnalyticHestonEngine
+     * with {@link AnalyticHestonEngine.ComplexLogFormula#AndersenPiterbarg} and the
+     * fixed-grid {@code DiscreteTrapezoidIntegrator}-backed
+     * {@code Integration.discreteTrapezoid(n)} converges to the Alan Lewis
+     * reference NPV (16.07015...) with the C++ reference difference table.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:2295-2344} v1.42.1.
+     */
     @Test
-    public void testAndersenPiterbargConvergence() { fail("not implemented"); }
+    public void testAndersenPiterbargConvergence() {
+        final Date settlementDate = new Date(5, Month.July, 2002);
+        new Settings().setEvaluationDate(settlementDate);
+        final Date maturityDate = new Date(5, Month.July, 2003);
+
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.01)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.02)), dayCounter));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final double v0    =  0.04;
+        final double rho   = -0.5;
+        final double sigma =  1.0;
+        final double kappa =  4.0;
+        final double theta =  0.25;
+
+        final HestonProcess process =
+                new HestonProcess(rTS, qTS, s0, v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, s0.currentLink().value()),
+                new EuropeanExercise(maturityDate));
+
+        // Alan Lewis reference price (wilmott.com forum).
+        final double reference = 16.070154917028834278213466703938231827658768230714;
+
+        final double[] diffs = {
+                0.0892433814611486298,
+                0.00013096156482816923,
+                1.34107015270501506e-07,
+                1.22913235145460931e-10,
+                1.24344978758017533e-13
+        };
+
+        for (int n = 10; n <= 50; n += 10) {
+            final AnalyticHestonEngine engine = new AnalyticHestonEngine(
+                    model, process,
+                    AnalyticHestonEngine.ComplexLogFormula.AndersenPiterbarg,
+                    AnalyticHestonEngine.Integration.discreteTrapezoid(n))
+                .withAndersenPiterbargEpsilon(1e-13);
+
+            option.setPricingEngine(engine);
+
+            final double calculatedDiff = Math.abs(option.NPV() - reference);
+            final double expectedDiff = diffs[n / 10 - 1];
+            if (calculatedDiff > 1.25 * expectedDiff) {
+                fail("failed to prove convergence for trapezoid rule"
+                        + "\n  n                     : " + n
+                        + "\n  calculated difference : " + calculatedDiff
+                        + "\n  expected difference   : " + expectedDiff);
+            }
+        }
+    }
 
     /**
      * Phase 5e.5b-CFC-d-134 body-fill — port of C++ {@code testOptimalControlVariateChoice}
@@ -1832,7 +1904,6 @@ public class HestonModelTest {
      * {@code ExponentialIntegral.Ci/Si} (Phase 5e.5b-CFC-d-134 carry-forward).
      * Body kept in place to enable trivially once Ci/Si land.
      */
-    @Ignore(REASON_AP_ASYMPTOTIC)
     @Test
     public void testAsymptoticControlVariate() {
         final Date todaysDate = new Date(4, Month.August, 2020);
