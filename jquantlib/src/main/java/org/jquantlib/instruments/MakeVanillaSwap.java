@@ -208,7 +208,15 @@ public class MakeVanillaSwap {
             Period tenor = (swapTenor != null) ? swapTenor : new Period();
             if (isEmptyPeriod(tenor) && endDate.gt(startDate)) {
                 final int months = (int) ((12L * endDate.sub(startDate) + 182L) / 365L);
-                tenor = new Period(months, TimeUnit.Months);
+                // Express as years when cleanly divisible to keep Period
+                // unit-equality with the per-currency thresholds (4Y, 1Y);
+                // Java Period.eq compares units strictly so a 48M-vs-4Y
+                // boundary check would otherwise miss.
+                if (months > 0 && months % 12 == 0) {
+                    tenor = new Period(months / 12, TimeUnit.Years);
+                } else {
+                    tenor = new Period(months, TimeUnit.Months);
+                }
             }
             if (curr.eq(new org.jquantlib.currencies.Europe.EURCurrency()) ||
                 curr.eq(new org.jquantlib.currencies.America.USDCurrency()) ||
