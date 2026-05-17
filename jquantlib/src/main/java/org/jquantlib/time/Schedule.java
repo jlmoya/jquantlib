@@ -277,6 +277,7 @@ public class Schedule {
           case Twentieth:
           case TwentiethIMM:
           case ThirdWednesday:
+          case ThirdWednesdayInclusive:
           case OldCDS:
           case CDS:
           case CDS2015:
@@ -383,6 +384,14 @@ public class Schedule {
         // adjustments
         if (rule_== DateGeneration.Rule.ThirdWednesday) {
             for (int i=1; i<dates_.size()-1; ++i) {
+                dates_.set(i, Date.nthWeekday(3, Weekday.Wednesday,
+                                             dates_.get(i).month(),
+                                             dates_.get(i).year()));
+            }
+        } else if (rule_ == DateGeneration.Rule.ThirdWednesdayInclusive) {
+            // Mirrors C++ schedule.cpp:362-364 — adjust ALL dates (including
+            // first and last) to the third Wednesday of their month.
+            for (int i = 0; i < dates_.size(); ++i) {
                 dates_.set(i, Date.nthWeekday(3, Weekday.Wednesday,
                                              dates_.get(i).month(),
                                              dates_.get(i).year()));
