@@ -12,6 +12,7 @@ import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.exercise.AmericanExercise;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.AssetOrNothingPayoff;
@@ -22,6 +23,8 @@ import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.vanilla.AnalyticDigitalAmericanEngine;
+import org.jquantlib.pricingengines.vanilla.AnalyticDigitalAmericanKOEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -34,78 +37,31 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * Phase 5i skeleton port of {@code test-suite/digitaloption.cpp} v1.42.1
- * (733 LOC, 8 cases).
+ * Phase 5i skeleton port of {@code test-suite/digitaloption.cpp} v1.42.1.
  *
- * <p>Exercises European and American digital option pricing with
- * cash-or-nothing, asset-or-nothing, and gap payoffs, plus the MC
- * cash-at-hit American engine.
- *
- * <p><strong>Phase Body-Fill (2026-05-09)</strong> — the 3 European cases
- * (cash-or-nothing, asset-or-nothing, gap) are now body-filled and
- * un-ignored.  They exercise the {@link AnalyticEuropeanEngine}
- * digital-payoff branch end-to-end against Haug 1998 reference values.
- *
- * <p>The remaining 6 cases stay deferred to Phase 5i.5:
- * <ul>
- *   <li>American at-hit / at-expiry tests need
- *       {@code AnalyticDigitalAmericanEngine} (no Java port yet);
- *   <li>{@code MCDigitalEngine} is not yet ported;
- *   <li>The Greeks numerical-derivative cross-check requires bumping
- *       infrastructure that exists for vanilla but is not wired for the
- *       digital payoff hierarchy.
- * </ul>
- *
- * <p>Source: {@code test-suite/digitaloption.cpp} v1.42.1 @ {@code 099987f0ca}.
+ * <p>Phase 5e.5b-CFC-d-53: 4 American value-validation cases body-filled
+ * and un-ignored (cash/asset, at-hit/at-expiry, knock-in/knock-out).
  */
 public class DigitalOptionTest {
 
-    private static final String REASON_AMERICAN_AT_HIT =
-            "Phase 5i.5 — requires AnalyticDigitalAmericanEngine "
-          + "(at-hit branch) + reference-value cross-validation";
-
-    private static final String REASON_AMERICAN_AT_EXPIRY =
-            "Phase 5i.5 — requires AnalyticDigitalAmericanEngine "
-          + "(at-expiry branch via AmericanPayoffAtExpiry helper) + "
-          + "reference-value cross-validation";
-
     private static final String REASON_GREEKS =
-            "Phase 5i.5 — requires Greeks bumping harness wired for the "
-          + "digital payoff hierarchy (vanilla harness exists; digital not "
-          + "yet adapted)";
+            "Phase 5i.5 — requires Greeks bumping harness for digital payoffs";
 
     private static final String REASON_MC =
-            "Phase 5i.5 — requires MCDigitalEngine port (path-dependent "
-          + "cash-at-hit MC engine; no Java equivalent yet)";
+            "Phase 5i.5 — requires MCDigitalEngine port";
 
     private static final class DigitalOptionData {
         final Option.Type type;
-        final double strike;
-        final double s;        // spot
-        final double q;        // dividend
-        final double r;        // risk-free rate
-        final double t;        // time to maturity
-        final double v;        // volatility
-        final double result;   // expected result
-        final double tol;      // tolerance
-        final boolean knockin; // true if knock-in
+        final double strike, s, q, r, t, v, result, tol;
+        final boolean knockin;
 
-        DigitalOptionData(final Option.Type type,
-                          final double strike, final double s,
-                          final double q, final double r,
-                          final double t, final double v,
-                          final double result, final double tol,
-                          final boolean knockin) {
-            this.type = type;
-            this.strike = strike;
-            this.s = s;
-            this.q = q;
-            this.r = r;
-            this.t = t;
-            this.v = v;
-            this.result = result;
-            this.tol = tol;
-            this.knockin = knockin;
+        DigitalOptionData(final Option.Type type, final double strike,
+                          final double s, final double q, final double r,
+                          final double t, final double v, final double result,
+                          final double tol, final boolean knockin) {
+            this.type = type; this.strike = strike; this.s = s; this.q = q;
+            this.r = r; this.t = t; this.v = v; this.result = result;
+            this.tol = tol; this.knockin = knockin;
         }
     }
 
@@ -116,50 +72,33 @@ public class DigitalOptionTest {
     @Test
     public void testCashOrNothingEuropeanValues() {
         QL.info("Testing European cash-or-nothing digital option...");
-
-        // "Option pricing formulas", E.G. Haug, McGraw-Hill 1998 - pag 88
         final DigitalOptionData[] values = {
-            //          type, strike,  spot,    q,    r,    t,  vol,  value, tol
-            new DigitalOptionData(Option.Type.Put, 80.00, 100.0,
-                                  0.06, 0.06, 0.75, 0.35, 2.6710, 1e-4, true)
+            new DigitalOptionData(Option.Type.Put, 80.00, 100.0, 0.06, 0.06, 0.75, 0.35, 2.6710, 1e-4, true)
         };
-
         runEuropeanCashOrNothing(values, 10.0);
     }
 
     @Test
     public void testAssetOrNothingEuropeanValues() {
         QL.info("Testing European asset-or-nothing digital option...");
-
-        // "Option pricing formulas", E.G. Haug, McGraw-Hill 1998 - pag 90
         final DigitalOptionData[] values = {
-            //          type, strike, spot,    q,    r,    t,  vol,   value, tol
-            new DigitalOptionData(Option.Type.Put, 65.00, 70.0,
-                                  0.05, 0.07, 0.50, 0.27, 20.2069, 1e-4, true)
+            new DigitalOptionData(Option.Type.Put, 65.00, 70.0, 0.05, 0.07, 0.50, 0.27, 20.2069, 1e-4, true)
         };
-
         runEuropeanAssetOrNothing(values);
     }
 
     @Test
     public void testGapEuropeanValues() {
         QL.info("Testing European gap digital option...");
-
-        // "Option pricing formulas", E.G. Haug, McGraw-Hill 1998 - pag 88
         final DigitalOptionData[] values = {
-            //          type, strike, spot,    q,    r,    t,  vol,   value, tol
-            new DigitalOptionData(Option.Type.Call, 50.00, 50.0,
-                                  0.00, 0.09, 0.50, 0.20, -0.0053, 1e-4, true)
+            new DigitalOptionData(Option.Type.Call, 50.00, 50.0, 0.00, 0.09, 0.50, 0.20, -0.0053, 1e-4, true)
         };
-
         runEuropeanGap(values, 57.00);
     }
 
-    private void runEuropeanCashOrNothing(final DigitalOptionData[] values,
-                                          final double cashPayoff) {
+    private void runEuropeanCashOrNothing(final DigitalOptionData[] values, final double cashPayoff) {
         final DayCounter dc = new Actual360();
         final Date today = new Settings().evaluationDate();
-
         final SimpleQuote spot = new SimpleQuote(0.0);
         final SimpleQuote qRate = new SimpleQuote(0.0);
         final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
@@ -167,19 +106,15 @@ public class DigitalOptionTest {
         final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
         final SimpleQuote vol = new SimpleQuote(0.0);
         final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
-
         for (final DigitalOptionData value : values) {
-            final StrikedTypePayoff payoff =
-                    new CashOrNothingPayoff(value.type, value.strike, cashPayoff);
-            checkValue(payoff, value, today, spot, qRate, rRate, vol,
-                       qTS, rTS, volTS);
+            final StrikedTypePayoff payoff = new CashOrNothingPayoff(value.type, value.strike, cashPayoff);
+            checkEuropeanValue(payoff, value, today, spot, qRate, rRate, vol, qTS, rTS, volTS);
         }
     }
 
     private void runEuropeanAssetOrNothing(final DigitalOptionData[] values) {
         final DayCounter dc = new Actual360();
         final Date today = new Settings().evaluationDate();
-
         final SimpleQuote spot = new SimpleQuote(0.0);
         final SimpleQuote qRate = new SimpleQuote(0.0);
         final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
@@ -187,20 +122,15 @@ public class DigitalOptionTest {
         final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
         final SimpleQuote vol = new SimpleQuote(0.0);
         final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
-
         for (final DigitalOptionData value : values) {
-            final StrikedTypePayoff payoff =
-                    new AssetOrNothingPayoff(value.type, value.strike);
-            checkValue(payoff, value, today, spot, qRate, rRate, vol,
-                       qTS, rTS, volTS);
+            final StrikedTypePayoff payoff = new AssetOrNothingPayoff(value.type, value.strike);
+            checkEuropeanValue(payoff, value, today, spot, qRate, rRate, vol, qTS, rTS, volTS);
         }
     }
 
-    private void runEuropeanGap(final DigitalOptionData[] values,
-                                final double secondStrike) {
+    private void runEuropeanGap(final DigitalOptionData[] values, final double secondStrike) {
         final DayCounter dc = new Actual360();
         final Date today = new Settings().evaluationDate();
-
         final SimpleQuote spot = new SimpleQuote(0.0);
         final SimpleQuote qRate = new SimpleQuote(0.0);
         final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
@@ -208,23 +138,17 @@ public class DigitalOptionTest {
         final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
         final SimpleQuote vol = new SimpleQuote(0.0);
         final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
-
         for (final DigitalOptionData value : values) {
-            final StrikedTypePayoff payoff =
-                    new GapPayoff(value.type, value.strike, secondStrike);
-            checkValue(payoff, value, today, spot, qRate, rRate, vol,
-                       qTS, rTS, volTS);
+            final StrikedTypePayoff payoff = new GapPayoff(value.type, value.strike, secondStrike);
+            checkEuropeanValue(payoff, value, today, spot, qRate, rRate, vol, qTS, rTS, volTS);
         }
     }
 
-    private void checkValue(final StrikedTypePayoff payoff,
-                            final DigitalOptionData value,
-                            final Date today,
-                            final SimpleQuote spot, final SimpleQuote qRate,
-                            final SimpleQuote rRate, final SimpleQuote vol,
-                            final YieldTermStructure qTS,
-                            final YieldTermStructure rTS,
-                            final BlackVolTermStructure volTS) {
+    private void checkEuropeanValue(final StrikedTypePayoff payoff, final DigitalOptionData value,
+            final Date today, final SimpleQuote spot, final SimpleQuote qRate,
+            final SimpleQuote rRate, final SimpleQuote vol,
+            final YieldTermStructure qTS, final YieldTermStructure rTS,
+            final BlackVolTermStructure volTS) {
 
         final Date exDate = today.add(timeToDays(value.t));
         final Exercise exercise = new EuropeanExercise(exDate);
@@ -241,44 +165,133 @@ public class DigitalOptionTest {
                 new Handle<BlackVolTermStructure>(volTS));
 
         final PricingEngine engine = new AnalyticEuropeanEngine(stochProcess);
-
         final VanillaOption opt = new VanillaOption(payoff, exercise);
         opt.setPricingEngine(engine);
 
         final double calculated = opt.NPV();
         final double error = Math.abs(calculated - value.result);
         if (error > value.tol) {
-            fail(exercise + " " + payoff.optionType() + " option with " + payoff + " payoff:\n"
-                    + "    spot value:       " + value.s + "\n"
-                    + "    strike:           " + payoff.strike() + "\n"
-                    + "    dividend yield:   " + value.q + "\n"
-                    + "    risk-free rate:   " + value.r + "\n"
-                    + "    reference date:   " + today + "\n"
-                    + "    maturity:         " + value.t + "\n"
-                    + "    volatility:       " + value.v + "\n\n"
-                    + "    expected:         " + value.result + "\n"
-                    + "    calculated:       " + calculated + "\n"
-                    + "    error:            " + error + "\n"
-                    + "    tolerance:        " + value.tol + "\n"
-                    + "    knock_in:         " + value.knockin);
+            fail(exercise + " " + payoff.optionType() + " expected=" + value.result
+                    + " calculated=" + calculated + " error=" + error + " tol=" + value.tol);
         }
     }
 
-    @Ignore(REASON_AMERICAN_AT_HIT + " — cash-at-hit")
     @Test
-    public void testCashAtHitOrNothingAmericanValues() { fail("not implemented"); }
+    public void testCashAtHitOrNothingAmericanValues() {
+        QL.info("Testing American cash-(at-hit)-or-nothing digital option...");
+        final DigitalOptionData[] values = {
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.00, 0.10, 0.5, 0.20,  9.7264, 1e-4,  true),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.00, 0.10, 0.5, 0.20, 11.6553, 1e-4,  true),
+            new DigitalOptionData(Option.Type.Call, 100.00, 105.00, 0.00, 0.10, 0.5, 0.20, 15.0000, 1e-16, true),
+            new DigitalOptionData(Option.Type.Put,  100.00,  95.00, 0.00, 0.10, 0.5, 0.20, 15.0000, 1e-16, true),
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.20, 0.10, 0.5, 0.20, 12.2715, 1e-4,  true),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.20, 0.10, 0.5, 0.20,  8.9109, 1e-4,  true),
+            new DigitalOptionData(Option.Type.Call, 100.00, 105.00, 0.20, 0.10, 0.5, 0.20, 15.0000, 1e-16, true),
+            new DigitalOptionData(Option.Type.Put,  100.00,  95.00, 0.20, 0.10, 0.5, 0.20, 15.0000, 1e-16, true)
+        };
+        runAmerican(values, 15.00, true, false);
+    }
 
-    @Ignore(REASON_AMERICAN_AT_HIT + " — asset-at-hit")
     @Test
-    public void testAssetAtHitOrNothingAmericanValues() { fail("not implemented"); }
+    public void testAssetAtHitOrNothingAmericanValues() {
+        QL.info("Testing American asset-(at-hit)-or-nothing digital option...");
+        final DigitalOptionData[] values = {
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.00, 0.10, 0.5, 0.20, 64.8426, 1e-04, true),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.00, 0.10, 0.5, 0.20, 77.7017, 1e-04, true),
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.01, 0.10, 0.5, 0.20, 65.7811, 1e-04, true),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.01, 0.10, 0.5, 0.20, 76.8858, 1e-04, true),
+            new DigitalOptionData(Option.Type.Call, 100.00, 105.00, 0.00, 0.10, 0.5, 0.20, 105.0000, 1e-16, true),
+            new DigitalOptionData(Option.Type.Put,  100.00,  95.00, 0.00, 0.10, 0.5, 0.20,  95.0000, 1e-16, true),
+            new DigitalOptionData(Option.Type.Call, 100.00, 105.00, 0.01, 0.10, 0.5, 0.20, 105.0000, 1e-16, true),
+            new DigitalOptionData(Option.Type.Put,  100.00,  95.00, 0.01, 0.10, 0.5, 0.20,  95.0000, 1e-16, true)
+        };
+        runAmerican(values, 0.0, false, false);
+    }
 
-    @Ignore(REASON_AMERICAN_AT_EXPIRY + " — cash-at-expiry")
     @Test
-    public void testCashAtExpiryOrNothingAmericanValues() { fail("not implemented"); }
+    public void testCashAtExpiryOrNothingAmericanValues() {
+        QL.info("Testing American cash-(at-expiry)-or-nothing digital option...");
+        final DigitalOptionData[] values = {
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.00, 0.10, 0.5, 0.20,  9.3604, 1e-4, true),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.00, 0.10, 0.5, 0.20, 11.2223, 1e-4, true),
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.00, 0.10, 0.5, 0.20,  4.9081, 1e-4, false),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.00, 0.10, 0.5, 0.20,  3.0461, 1e-4, false),
+            new DigitalOptionData(Option.Type.Call, 100.00, 105.00, 0.00, 0.10, 0.5, 0.20, 15.0000 * Math.exp(-0.05), 1e-12, true),
+            new DigitalOptionData(Option.Type.Put,  100.00,  95.00, 0.00, 0.10, 0.5, 0.20, 15.0000 * Math.exp(-0.05), 1e-12, true),
+            new DigitalOptionData(Option.Type.Call,   2.37,   2.33, 0.07, 0.43, 0.19, 0.005,  0.0000, 1e-4, false)
+        };
+        runAmerican(values, 15.0, true, true);
+    }
 
-    @Ignore(REASON_AMERICAN_AT_EXPIRY + " — asset-at-expiry")
     @Test
-    public void testAssetAtExpiryOrNothingAmericanValues() { fail("not implemented"); }
+    public void testAssetAtExpiryOrNothingAmericanValues() {
+        QL.info("Testing American asset-(at-expiry)-or-nothing digital option...");
+        final DigitalOptionData[] values = {
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.00, 0.10, 0.5, 0.20, 64.8426, 1e-04, true),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.00, 0.10, 0.5, 0.20, 77.7017, 1e-04, true),
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.00, 0.10, 0.5, 0.20, 40.1574, 1e-04, false),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.00, 0.10, 0.5, 0.20, 17.2983, 1e-04, false),
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.01, 0.10, 0.5, 0.20, 65.5291, 1e-04, true),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.01, 0.10, 0.5, 0.20, 76.5951, 1e-04, true),
+            new DigitalOptionData(Option.Type.Call, 100.00, 105.00, 0.00, 0.10, 0.5, 0.20, 105.0000, 1e-12, true),
+            new DigitalOptionData(Option.Type.Put,  100.00,  95.00, 0.00, 0.10, 0.5, 0.20,  95.0000, 1e-12, true),
+            new DigitalOptionData(Option.Type.Call, 100.00, 105.00, 0.01, 0.10, 0.5, 0.20, 105.0000 * Math.exp(-0.005), 1e-12, true),
+            new DigitalOptionData(Option.Type.Put,  100.00,  95.00, 0.01, 0.10, 0.5, 0.20,  95.0000 * Math.exp(-0.005), 1e-12, true)
+        };
+        runAmerican(values, 0.0, false, true);
+    }
+
+    private void runAmerican(final DigitalOptionData[] values, final double cashPayoff,
+                             final boolean useCashOrNothing, final boolean payoffAtExpiry) {
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        final SimpleQuote spot = new SimpleQuote(100.0);
+        final SimpleQuote qRate = new SimpleQuote(0.04);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.01);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final SimpleQuote vol = new SimpleQuote(0.25);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+
+        for (final DigitalOptionData value : values) {
+            final StrikedTypePayoff payoff = useCashOrNothing
+                ? new CashOrNothingPayoff(value.type, value.strike, cashPayoff)
+                : new AssetOrNothingPayoff(value.type, value.strike);
+
+            final Date exDate = today.add(timeToDays(value.t));
+            final Exercise amExercise = new AmericanExercise(today, exDate, payoffAtExpiry);
+
+            spot.setValue(value.s);
+            qRate.setValue(value.q);
+            rRate.setValue(value.r);
+            vol.setValue(value.v);
+
+            final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                    new Handle<Quote>(spot),
+                    new Handle<YieldTermStructure>(qTS),
+                    new Handle<YieldTermStructure>(rTS),
+                    new Handle<BlackVolTermStructure>(volTS));
+
+            final PricingEngine engine = value.knockin
+                ? new AnalyticDigitalAmericanEngine(stochProcess)
+                : new AnalyticDigitalAmericanKOEngine(stochProcess);
+
+            final VanillaOption opt = new VanillaOption(payoff, amExercise);
+            opt.setPricingEngine(engine);
+
+            final double calculated = opt.NPV();
+            final double error = Math.abs(calculated - value.result);
+            if (error > value.tol) {
+                fail(amExercise + " " + payoff.optionType() + " " + payoff
+                        + " spot=" + value.s + " strike=" + payoff.strike()
+                        + " q=" + value.q + " r=" + value.r + " t=" + value.t
+                        + " v=" + value.v + " expected=" + value.result
+                        + " calculated=" + calculated + " error=" + error
+                        + " tol=" + value.tol + " knock_in=" + value.knockin);
+            }
+        }
+    }
 
     @Ignore(REASON_GREEKS + " — cash-at-hit American")
     @Test
