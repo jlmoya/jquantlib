@@ -160,11 +160,89 @@ public class CapFloorTest {
         }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
-            + "needs analytical 'vega' result-map entry on BlackCapFloorEngine "
-            + "+ numerical-bump cross-check.")
+    /**
+     * Mirrors C++ capfloor.cpp testVega (lines 147-194). For each
+     * (length, vol, strike, type), build a cap/floor priced with
+     * {@link BlackCapFloorEngine}, then compare the analytic
+     * {@code vega} additional result against a central finite-difference
+     * estimate from two engines at {@code vol +/- 1e-8}. Java reads the
+     * vega via the engine's {@link CapFloor.ResultsImpl#additionalResults()}
+     * map directly (see {@link BlackCapFloorEngine#calculate()} which
+     * populates the C++-equivalent named results — Phase 5e.5b-CFC-d-49).
+     */
     @Test
     public void testVega() {
+        QL.info("Testing cap/floor vega...");
+
+        final CommonVars vars = new CommonVars();
+
+        final int[] lengths = { 1, 2, 3, 4, 5, 6, 7, 10, 15, 20, 30 };
+        final double[] vols = { 0.01, 0.05, 0.10, 0.15, 0.20 };
+        final double[] strikes = { 0.01, 0.02, 0.03, 0.04, 0.05,
+                                   0.06, 0.07, 0.08, 0.09 };
+        final CapFloor.Type[] types = { CapFloor.Type.Cap, CapFloor.Type.Floor };
+
+        // See testStrikeDependency for the reference-date shift rationale.
+        final Date startDate = vars.termStructure.currentLink()
+                .referenceDate().add(new Period(vars.frequency));
+        final double shift = 1.0e-8;
+        final double tolerance = 0.005;
+
+        for (final int length : lengths) {
+            for (final double vol : vols) {
+                for (final double strike : strikes) {
+                    for (final CapFloor.Type type : types) {
+                        final Leg leg = vars.makeLeg(startDate, length);
+
+                        // Build the reference cap/floor with its own engine
+                        // so we can read the analytic vega via the engine's
+                        // results map (C++ uses Instrument::result<T>; Java's
+                        // CapFloor.result(key) accessor is deferred to a
+                        // follow-up — see Phase 5e.5b-CFC-d-49 commit).
+                        final List<Double> strikeList = new ArrayList<Double>(
+                                Arrays.asList(Double.valueOf(strike)));
+                        final CapFloor capFloor = new CapFloor(type, leg,
+                                strikeList, vars.termStructure, null);
+                        final BlackCapFloorEngine engine = vars.makeEngine(vol);
+                        capFloor.setPricingEngine(engine);
+
+                        // Two bumped cap/floors for FD vega.
+                        final CapFloor shifted2 = vars.makeCapFloor(
+                                type, leg, strike, vol + shift);
+                        final CapFloor shifted1 = vars.makeCapFloor(
+                                type, leg, strike, vol - shift);
+                        final double value1 = shifted1.NPV();
+                        final double value2 = shifted2.NPV();
+                        final double numericalVega = (value2 - value1) / (2.0 * shift);
+
+                        if (numericalVega > 1.0e-4) {
+                            // Trigger NPV() so the engine populates results.
+                            capFloor.NPV();
+                            final CapFloor.ResultsImpl results =
+                                    (CapFloor.ResultsImpl) engine.getResults();
+                            final Object vegaObj = results.additionalResults().get("vega");
+                            if (vegaObj == null) {
+                                fail("BlackCapFloorEngine did not populate "
+                                        + "the 'vega' additional result");
+                            }
+                            final double analyticalVega = ((Double) vegaObj).doubleValue();
+                            double discrepancy = Math.abs(numericalVega - analyticalVega);
+                            discrepancy /= numericalVega;
+                            if (discrepancy > tolerance) {
+                                fail("failed to compute cap/floor vega:"
+                                        + "\n   length:      " + length + "Y"
+                                        + "\n   strike:      " + strike
+                                        + "\n   type:        " + type
+                                        + "\n   calculated:  " + analyticalVega
+                                        + "\n   expected:    " + numericalVega
+                                        + "\n   discrepancy: " + discrepancy
+                                        + "\n   tolerance:   " + tolerance);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Test
