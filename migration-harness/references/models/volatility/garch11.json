@@ -1,0 +1,116 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "keys": [
+          22835,
+          22836,
+          22837,
+          22838,
+          22839,
+          22840,
+          22841,
+          22842,
+          22843,
+          22844
+        ],
+        "sigmas": [
+          0.45276925690687087,
+          0.5133225107084239,
+          0.5301414905475708,
+          0.5350841055385592,
+          0.5365580117750549,
+          0.5369993947855063,
+          0.5371317389616815,
+          0.5371714358563754,
+          0.5371833443527452,
+          0.5371869168501779
+        ]
+      },
+      "inputs": {
+        "alpha": 0.2,
+        "beta": 0.3,
+        "const_r": 0.1,
+        "first_input_serial": 22835,
+        "n_input": 10,
+        "vl": 0.4
+      },
+      "name": "testCalculation_output"
+    },
+    {
+      "expected": {
+        "alpha": 0.20759167495853836,
+        "beta": 0.2819789406442973,
+        "logLikelihood": -0.021741348447339697,
+        "omega": 0.20464706953993117
+      },
+      "inputs": {},
+      "name": "default_calibration"
+    },
+    {
+      "expected": {
+        "alpha": 0.2657487564460479,
+        "beta": 0.15695594350164016,
+        "logLikelihood": -0.02271793423102483,
+        "omega": 0.23096412661631344
+      },
+      "inputs": {},
+      "name": "m1_dummy"
+    },
+    {
+      "expected": {
+        "alpha": 0.20759167495853836,
+        "beta": 0.2819789406442973,
+        "logLikelihood": -0.021741348447339697,
+        "omega": 0.20464706953993117
+      },
+      "inputs": {},
+      "name": "m1_simplex"
+    },
+    {
+      "expected": {
+        "alpha": 0.2698964898945476,
+        "beta": 0.21137308210756378,
+        "logLikelihood": -0.02279804994527554,
+        "omega": 0.2075335105638004
+      },
+      "inputs": {},
+      "name": "m2_dummy"
+    },
+    {
+      "expected": {
+        "alpha": 0.2075916563974826,
+        "beta": 0.2819789817157413,
+        "logLikelihood": -0.021741348447339586,
+        "omega": 0.2046470573052137
+      },
+      "inputs": {},
+      "name": "m2_simplex"
+    },
+    {
+      "expected": {
+        "alpha": 0.2075916563974826,
+        "beta": 0.2819789817157413,
+        "logLikelihood": -0.021741348447339586,
+        "omega": 0.2046470573052137
+      },
+      "inputs": {},
+      "name": "double_optimization"
+    },
+    {
+      "expected": {
+        "alpha": 0.2651955177114717,
+        "beta": 0.27736439701549215,
+        "logLikelihood": -0.21631328461436286,
+        "omega": 0.6788122742065085
+      },
+      "inputs": {},
+      "name": "levenberg_marquardt"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-17T07:37:55Z",
+  "generated_by": "garch11_probe",
+  "test_group": "models/volatility/garch11"
+}
