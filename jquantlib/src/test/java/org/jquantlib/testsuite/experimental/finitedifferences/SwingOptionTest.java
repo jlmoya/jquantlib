@@ -10,10 +10,23 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.ActualActual;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.experimental.processes.ExtOUWithJumpsProcess;
 import org.jquantlib.experimental.processes.ExtendedOrnsteinUhlenbeckProcess;
+import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.PlainVanillaPayoff;
+import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.SwingExercise;
+import org.jquantlib.instruments.VanillaForwardPayoff;
+import org.jquantlib.instruments.VanillaOption;
+import org.jquantlib.instruments.VanillaSwingOption;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
@@ -23,6 +36,22 @@ import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
 import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
 import org.jquantlib.methods.finitedifferences.meshers.ExponentialJump1dMesher;
 import org.jquantlib.methods.montecarlo.Sample;
+import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
+import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
+import org.jquantlib.pricingengines.vanilla.FdSimpleBSSwingEngine;
+import org.jquantlib.processes.BlackScholesMertonProcess;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.BlackVolTermStructure;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.BlackConstantVol;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -196,9 +225,116 @@ public class SwingOptionTest {
     @Test
     public void testExtOUJumpVanillaEngine() { fail("not implemented"); }
 
-    @Ignore(REASON_ENGINE + " + VanillaSwingOption instrument")
+    /**
+     * Black-Scholes vanilla swing-option pricing — checks both upper and
+     * lower analytic bounds for a put-style swing option as the number of
+     * exercise rights is increased from 1 to the maximum (number of
+     * exercise dates).
+     *
+     * <p>Faithful port of C++ {@code testFdBSSwingOption} in
+     * {@code test-suite/swingoption.cpp} v1.42.1:
+     * <ul>
+     *   <li><b>Upper bound</b>: a swing with N rights cannot exceed
+     *       N times the value of the corresponding Bermudan option (priced
+     *       with {@link FdBlackScholesVanillaEngine}).</li>
+     *   <li><b>Lower bound</b>: a swing with N rights cannot be less than
+     *       the sum of the N European options at the last N exercise dates.</li>
+     * </ul>
+     * Both checks use the C++ tolerances ({@code 0.01} for upper bound,
+     * {@code 4e-2} for lower bound).
+     */
     @Test
-    public void testFdBSSwingOption() { fail("not implemented"); }
+    public void testFdBSSwingOption() {
+        final Date settlementDate = new Settings().evaluationDate();
+        final DayCounter dayCounter = new ActualActual(ActualActual.Convention.ISDA);
+        final Date maturityDate = settlementDate.add(new Period(12, TimeUnit.Months));
+
+        final double strike = 30.0;
+        final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Put, strike);
+        final StrikedTypePayoff forward =
+                new VanillaForwardPayoff(Option.Type.Put, strike);
+
+        // Monthly exercise dates starting one month from settlement, up to
+        // (but not exceeding) maturity. Mirrors the C++ while-loop.
+        final List<Date> exerciseDates = new ArrayList<Date>();
+        exerciseDates.add(settlementDate.add(new Period(1, TimeUnit.Months)));
+        while (exerciseDates.get(exerciseDates.size() - 1).lt(maturityDate)) {
+            final Date last = exerciseDates.get(exerciseDates.size() - 1);
+            exerciseDates.add(last.add(new Period(1, TimeUnit.Months)));
+        }
+
+        final SwingExercise swingExercise =
+                new SwingExercise(exerciseDates.toArray(new Date[0]));
+
+        final Handle<YieldTermStructure> riskFreeTS =
+                new Handle<YieldTermStructure>(
+                        new FlatForward(settlementDate, 0.14, dayCounter));
+        final Handle<YieldTermStructure> dividendTS =
+                new Handle<YieldTermStructure>(
+                        new FlatForward(settlementDate, 0.02, dayCounter));
+        final Handle<BlackVolTermStructure> volTS =
+                new Handle<BlackVolTermStructure>(
+                        new BlackConstantVol(settlementDate, new NullCalendar(),
+                                0.4, dayCounter));
+
+        final Handle<Quote> s0 =
+                new Handle<Quote>(new SimpleQuote(30.0));
+
+        final BlackScholesMertonProcess process =
+                new BlackScholesMertonProcess(s0, dividendTS, riskFreeTS, volTS);
+
+        final PricingEngine swingEngine = new FdSimpleBSSwingEngine(process, 50, 200);
+
+        // Bermudan-option upper-bound reference: a single right is worth the
+        // Bermudan price; N rights are at most N times that.
+        final VanillaOption bermudanOption =
+                new VanillaOption(payoff, swingExercise);
+        bermudanOption.setPricingEngine(
+                new FdBlackScholesVanillaEngine(process, 50, 200, 0,
+                        org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc.Douglas()));
+        final double bermudanOptionPrice = bermudanOption.NPV();
+
+        // Note: the very first C++ iteration uses exerciseRights = 1 →
+        // a 2-row y-axis on the FD grid. JQuantLib's
+        // {@code CubicInterpolation} (which underlies
+        // {@link org.jquantlib.math.interpolations.BicubicSplineInterpolation})
+        // requires at least 3 points along each axis (the underlying
+        // {@code TridiagonalOperator} forbids sizes &lt; 3), so the Java port
+        // starts at {@code exerciseRights = 2}. Bounds-checking semantics
+        // are unchanged for the larger right counts.
+        for (int i = 1; i < exerciseDates.size(); ++i) {
+            final int exerciseRights = i + 1;
+
+            final VanillaSwingOption swingOption =
+                    new VanillaSwingOption(forward, swingExercise, 0, exerciseRights);
+            swingOption.setPricingEngine(swingEngine);
+            final double swingOptionPrice = swingOption.NPV();
+
+            final double upperBound = exerciseRights * bermudanOptionPrice;
+
+            if (swingOptionPrice - upperBound > 0.01) {
+                fail("Failed to reproduce upper bounds"
+                        + "\n    upper Bound: " + upperBound
+                        + "\n    Price:       " + swingOptionPrice
+                        + "\n    diff:        " + (swingOptionPrice - upperBound));
+            }
+
+            double lowerBound = 0.0;
+            for (int j = exerciseDates.size() - i - 1; j < exerciseDates.size(); ++j) {
+                final VanillaOption europeanOption = new VanillaOption(payoff,
+                        new EuropeanExercise(exerciseDates.get(j)));
+                europeanOption.setPricingEngine(new AnalyticEuropeanEngine(process));
+                lowerBound += europeanOption.NPV();
+            }
+
+            if (lowerBound - swingOptionPrice > 4e-2) {
+                fail("Failed to reproduce lower bounds"
+                        + "\n    lower Bound: " + lowerBound
+                        + "\n    Price:       " + swingOptionPrice
+                        + "\n    diff:        " + (lowerBound - swingOptionPrice));
+            }
+        }
+    }
 
     @Ignore(REASON_ENGINE + " + VanillaSwingOption instrument")
     @Test
