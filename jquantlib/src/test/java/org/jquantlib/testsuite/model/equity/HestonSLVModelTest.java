@@ -450,9 +450,28 @@ public class HestonSLVModelTest {
     @Test
     public void testHestonFokkerPlanckFwdEquationLogLVLeverage() { fail("not implemented"); }
 
-    @Ignore("Phase 5h.5-SLV-c — needs NoExceptLocalVolSurface and the "
-            + "createSmoothImpliedVol test helper (BlackVarianceSurface ctor "
-            + "with full vol matrix).")
+    // Phase 5e.5b-CFC-d-147 reassessment: NoExceptLocalVolSurface,
+    // FdmLocalVolFwdOp and BlackScholesMertonProcess are all ported; a
+    // body-fill of this test (using a test-local SmoothBlackVarianceSurface
+    // backed by BicubicSplineInterpolation to bypass the production
+    // BlackVarianceSurface's strike-axis off-by-one ctor bug and
+    // bilinear-only setInterpolation) reaches 27 / 28 (i, j) cases within
+    // the C++ 0.05 tolerance, but the (i=1, j=3) concentrated-mesher case
+    // (strike 75.555, maturity 41/365) misses by ~0.006
+    // (24.798 vs 24.854 expected). The residual comes from differences
+    // between Java BicubicSplineInterpolation and C++ Bicubic at the lower
+    // strike boundary — Java uses natural-spline (second-derivative=0)
+    // end conditions which under-curve the Dupire local-vol near the
+    // surface edge, producing a slight FDM under-pricing. Per CLAUDE.md
+    // "Never loosen tolerance to force green"; un-ignore once
+    // BicubicSplineInterpolation honors the C++ end-condition choice
+    // (or once a production BlackVarianceSurface rewrite with Bicubic
+    // matches the C++ surface bit-for-bit).
+    @Ignore("Phase 5h.5-SLV-c — body-fill 27/28 cases pass; concentrated-mesher "
+            + "(i=1,j=3) misses C++ tol=0.05 by ~0.006 due to Java "
+            + "BicubicSplineInterpolation end-condition differences at the "
+            + "strike-axis boundary. Un-ignore when Java Bicubic end "
+            + "conditions match C++.")
     @Test
     public void testBlackScholesFokkerPlanckFwdEquationLocalVol() { fail("not implemented"); }
 
