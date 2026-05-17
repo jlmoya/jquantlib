@@ -715,7 +715,6 @@ public class OvernightIndexedCouponTest {
     // ---------------------------------------------------------------------
 
     /** Mirror of C++ {@code testPastCouponRateWithLookback} (cpp:515-530). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testPastCouponRateWithLookback() {
         QL.info("Testing rate for past overnight-indexed coupon with lookback period...");
@@ -730,7 +729,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testPastCouponRateWithLookbackAndObservationShift} (cpp:532-549). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testPastCouponRateWithLookbackAndObservationShift() {
         QL.info("Testing rate for past overnight-indexed coupon with lookback period and "
@@ -746,7 +744,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testPastCouponRateWithLockout} (cpp:558-573). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testPastCouponRateWithLockout() {
         QL.info("Testing rate for past overnight-indexed coupon with lockout...");
@@ -767,7 +764,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testPastCouponRateWithLookbackObservationShiftAndLockout} (cpp:575-591). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testPastCouponRateWithLookbackObservationShiftAndLockout() {
         QL.info("Testing rate for past overnight-indexed coupon with lookback period, "
@@ -821,7 +817,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testFutureCouponRateWithLookback} (cpp:611-627). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testFutureCouponRateWithLookback() {
         QL.info("Testing rate for future overnight-indexed coupon with lookback period...");
@@ -842,7 +837,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testFutureCouponRateWithLookbackAndObservationShift} (cpp:629-646). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testFutureCouponRateWithLookbackAndObservationShift() {
         QL.info("Testing rate for future overnight-indexed coupon with lookback period and "
@@ -859,7 +853,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testFutureCouponRateWithLookout} (cpp:648-668). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testFutureCouponRateWithLookout() {
         QL.info("Testing rate for future overnight-indexed coupon with lockout...");
@@ -883,7 +876,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testPartiallyAccruedAmountOfFutureCouponWithLookout} (cpp:670-695). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testPartiallyAccruedAmountOfFutureCouponWithLookout() {
         QL.info("Testing partially accrued amount for future overnight-indexed coupon with lockout...");
@@ -916,7 +908,6 @@ public class OvernightIndexedCouponTest {
      * Mirror of C++ {@code testTelescopicFormulaWhenLookbackWithObservationShiftAndNoIndexFixingDelay}
      * (cpp:697-739).
      */
-    @Ignore(REASON_TELESCOPIC)
     @Test
     public void testTelescopicFormulaWhenLookbackWithObservationShiftAndNoIndexFixingDelay() {
         QL.info("Testing telescopic formula when lookback with observation shift is applied "
@@ -1298,7 +1289,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testOvernightLegWithLookback} (cpp:939-957). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testOvernightLegWithLookback() {
         QL.info("Testing overnight leg construction with lookback days...");
@@ -1323,7 +1313,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testOvernightLegWithLockout} (cpp:959-975). */
-    @Ignore(REASON_LOOKBACK)
     @Test
     public void testOvernightLegWithLockout() {
         QL.info("Testing overnight leg construction with lockout days...");

@@ -42,9 +42,9 @@ import org.jquantlib.time.TimeUnit;
  * Port of C++ QuantLib v1.42.1
  * {@code ql/instruments/makeois.hpp/cpp} {@code MakeOIS}.
  * <p>
- * <b>Phase 5d.5 MVP:</b> exposes the most-used builder methods. Lookback,
- * lockout, observation-shift, separate fixed/overnight schedule rules and
- * end-of-month flags deferred to follow-up.
+ * <b>Phase 5e.5b-CFC-d-107:</b> lookback / lockout / observation-shift
+ * builder knobs added (matched to C++ MakeOIS). Separate fixed/overnight
+ * schedule rules deferred.
  *
  * @category instruments
  *
@@ -74,6 +74,12 @@ public class MakeOIS {
     private double overnightSpread_ = 0.0;
     private RateAveraging.Type averagingMethod_ = RateAveraging.Type.Compound;
     private boolean telescopicValueDates_ = false;
+    @SuppressWarnings("unused")
+    private int lookbackDays_ = Constants.NULL_NATURAL;
+    @SuppressWarnings("unused")
+    private int lockoutDays_ = 0;
+    @SuppressWarnings("unused")
+    private boolean applyObservationShift_ = false;
 
     private DateGeneration.Rule rule_ = DateGeneration.Rule.Backward;
     private boolean endOfMonth_;
@@ -189,6 +195,29 @@ public class MakeOIS {
 
     public MakeOIS withAveragingMethod(final RateAveraging.Type avg) {
         this.averagingMethod_ = avg;
+        return this;
+    }
+
+    /**
+     * Mirror of C++ {@code MakeOIS::withLookbackDays}.
+     * <p>Stored on the builder; the {@code OvernightIndexedSwap} ctor
+     * pass-through awaits a follow-up extension (OIS itself owns the
+     * leg-building; un-touched in Phase 5e.5b-CFC-d-107).
+     */
+    public MakeOIS withLookbackDays(final int lookbackDays) {
+        this.lookbackDays_ = lookbackDays;
+        return this;
+    }
+
+    /** Mirror of C++ {@code MakeOIS::withLockoutDays}. See {@link #withLookbackDays}. */
+    public MakeOIS withLockoutDays(final int lockoutDays) {
+        this.lockoutDays_ = lockoutDays;
+        return this;
+    }
+
+    /** Mirror of C++ {@code MakeOIS::withObservationShift}. See {@link #withLookbackDays}. */
+    public MakeOIS withObservationShift(final boolean applyObservationShift) {
+        this.applyObservationShift_ = applyObservationShift;
         return this;
     }
 
