@@ -14,11 +14,15 @@ import static org.junit.Assert.fail;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.matrixutilities.SparseMatrix;
+import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
+import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
 import org.jquantlib.methods.finitedifferences.meshers.Predefined1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpIterator;
+import org.jquantlib.methods.finitedifferences.operators.FirstDerivativeOp;
 import org.jquantlib.methods.finitedifferences.operators.NthOrderDerivativeOp;
+import org.jquantlib.methods.finitedifferences.operators.SecondOrderMixedDerivativeOp;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -369,10 +373,128 @@ public class NthOrderDerivativeOpTest {
     }
 
     // ----------------------------------------------------------------------
-    // Deferred — require FdHestonVanillaEngine + Richardson extrapolation.
+    // Body-filled in Phase 5e.5b-CFC-d-122 — compare ops + 9-point mixed.
+
+    /**
+     * Java port of C++ {@code testCompareFirstDerivativeOpNonUniformGrid}.
+     * <p>Verifies that the 3-point {@link NthOrderDerivativeOp} agrees with
+     * {@link FirstDerivativeOp} entry-for-entry on interior rows of a
+     * non-uniform predefined grid (boundary rows use different one-sided
+     * stencils, so they are excluded — mirrors C++).
+     */
+    @Test
+    public void testCompareFirstDerivativeOpNonUniformGrid() {
+        // xValues = exp(0, 0.1, 0.2, ..., 0.6) — C++ {@code Exp(Array(7, 0, 0.1))}.
+        final double[] xValues = new double[7];
+        for (int i = 0; i < 7; ++i) {
+            xValues[i] = Math.exp(i * 0.1);
+        }
+
+        final Fdm1dMesher m = new Predefined1dMesher(xValues);
+        final FdmMesher m1d = new FdmMesherComposite(m);
+
+        final FirstDerivativeOp fx = new FirstDerivativeOp(0, m1d);
+        final NthOrderDerivativeOp dx = new NthOrderDerivativeOp(0, 1, 3, m1d);
+
+        final SparseMatrix fm = fx.toSparseMatrix();
+        final SparseMatrix dm = dx.toSparseMatrix();
+
+        // Interior rows only (boundaries differ — upwind vs Fornberg).
+        for (int i = 1; i < m.size() - 1; ++i) {
+            for (int j = 0; j < m.size(); ++j) {
+                assertEquals("(" + i + "," + j + ")",
+                        fm.get(i, j), dm.get(i, j), TOL);
+            }
+        }
+    }
+
+    /**
+     * Java port of C++ {@code testCompareFirstDerivativeOp2dUniformGrid}.
+     * <p>Same equivalence check on a 2D uniform grid for both axis
+     * directions (direction = 0 then direction = 1).
+     */
+    @Test
+    public void testCompareFirstDerivativeOp2dUniformGrid() {
+        final Fdm1dMesher m1 = new Uniform1dMesher(0.0, 0.6, 5);
+        final Fdm1dMesher m2 = new Uniform1dMesher(0.0, 1.6, 6);
+
+        final FdmMesher mc = new FdmMesherComposite(m1, m2);
+
+        final int n = mc.layout().dim()[0];
+        final int mDim = mc.layout().dim()[1];
+
+        // Direction 0
+        SparseMatrix fm = new FirstDerivativeOp(0, mc).toSparseMatrix();
+        SparseMatrix dm = new NthOrderDerivativeOp(0, 1, 3, mc).toSparseMatrix();
+
+        for (int k = 0; k < mDim; ++k) {
+            final int idx = k * n;
+            for (int i = 1; i < n - 1; ++i) {
+                for (int j = 0; j < n * mDim; ++j) {
+                    assertEquals("dir0 (" + (idx + i) + "," + j + ")",
+                            fm.get(idx + i, j), dm.get(idx + i, j), TOL);
+                }
+            }
+        }
+
+        // Direction 1
+        fm = new FirstDerivativeOp(1, mc).toSparseMatrix();
+        dm = new NthOrderDerivativeOp(1, 1, 3, mc).toSparseMatrix();
+
+        for (int i = n; i < n * (mDim - 1); ++i) {
+            for (int j = 0; j < n * mDim; ++j) {
+                assertEquals("dir1 (" + i + "," + j + ")",
+                        fm.get(i, j), dm.get(i, j), TOL);
+            }
+        }
+    }
+
+    /**
+     * Java port of C++ {@code testMixedSecondOrder9PointsOnUniformGrid}.
+     * <p>Verifies that the dedicated {@link SecondOrderMixedDerivativeOp}
+     * (9-point stencil) agrees with the matrix product of two 3-point
+     * {@link NthOrderDerivativeOp} first-derivative operators on the
+     * interior block (boundaries differ).
+     */
+    @Test
+    public void testMixedSecondOrder9PointsOnUniformGrid() {
+        final Fdm1dMesher m = new Uniform1dMesher(0.0, 0.6, 5);
+        final FdmMesher mc = new FdmMesherComposite(m, m);
+
+        // cc = dx_0 * dx_1 — composed first-derivative ops (dense product).
+        final Matrix dx0 = new NthOrderDerivativeOp(0, 1, 3, mc).toMatrix();
+        final Matrix dx1 = new NthOrderDerivativeOp(1, 1, 3, mc).toMatrix();
+        final Matrix cc  = dx0.mul(dx1);
+
+        // mm = direct 9-point mixed-derivative operator.
+        final SparseMatrix mm = new SecondOrderMixedDerivativeOp(0, 1, mc).toSparseMatrix();
+
+        final int n = m.size();
+        for (int i = 1; i < n - 1; ++i) {
+            for (int j = 1; j < n - 1; ++j) {
+                final int idx = i * n + j;
+                for (int k = 1; k < n - 1; ++k) {
+                    for (int l = 1; l < n - 1; ++l) {
+                        final int kdx = k * n + l;
+                        assertEquals("idx=" + idx + " kdx=" + kdx,
+                                cc.get(idx, kdx), mm.get(idx, kdx), TOL);
+                    }
+                }
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------------
+    // Deferred — require a non-trivial inline FdmHestonNthOrderOp composite
+    // operator + FdmBackwardSolver + AnalyticHestonEngine wiring + Levenberg-
+    // Marquardt convergence assessment.  AnalyticHestonEngine is in-flight
+    // (Phase 5e.5b-CFC-d agent), and FdHestonVanillaEngine is read-only in
+    // this work item — these two tests stay {@code @Ignore}'d for a later
+    // dedicated sub-task.
 
     private static final String FDH_REASON =
-            "Phase 5j.5+ — needs FdHestonVanillaEngine (Richardson extrapolation)";
+            "Phase 5j.5+ — needs FdmHestonNthOrderOp composite + FdmBackwardSolver + "
+            + "AnalyticHestonEngine + LevenbergMarquardt wiring (heavy harness)";
 
     @Ignore(FDH_REASON)
     @Test
@@ -381,16 +503,4 @@ public class NthOrderDerivativeOpTest {
     @Ignore(FDH_REASON)
     @Test
     public void testHigherOrderAndRichardsonExtrapolation() { fail("not implemented"); }
-
-    @Ignore(FDH_REASON)
-    @Test
-    public void testCompareFirstDerivativeOpNonUniformGrid() { fail("not implemented"); }
-
-    @Ignore(FDH_REASON)
-    @Test
-    public void testCompareFirstDerivativeOp2dUniformGrid() { fail("not implemented"); }
-
-    @Ignore("Phase 5j.5+ — needs SecondOrderMixedDerivativeOp 9-point comparison wiring")
-    @Test
-    public void testMixedSecondOrder9PointsOnUniformGrid() { fail("not implemented"); }
 }
