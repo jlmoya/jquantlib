@@ -25,6 +25,7 @@ package org.jquantlib.methods.finitedifferences.operators;
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.matrixutilities.SparseMatrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 
 /**
@@ -244,6 +245,30 @@ public class TripleBandLinearOp implements FdmLinearOp {
             ret.set(i, i2[i], ret.get(i, i2[i]) + upper[i]);
         }
         return ret;
+    }
+
+    /**
+     * Native sparse view of the triple-band operator: at most 3 entries per
+     * row ({@code i0[i]}, {@code i}, {@code i2[i]}). Overrides
+     * {@link FdmLinearOp#toSparseMatrix()} so callers do not materialize a
+     * dense {@code n*n} matrix first — important for large 3-D layouts
+     * (e.g. 50x25x31 = 38750 rows ⇒ dense ~1.5e9 cells / ~12 GB).
+     *
+     * <p>Boundary nodes can have {@code i0[i] == i} or {@code i2[i] == i};
+     * we accumulate via {@link SparseMatrix#addAt} so that the three writes
+     * collapse onto the same column when needed (matches the
+     * {@link #toMatrix()} += semantics verbatim).
+     */
+    @Override
+    public SparseMatrix toSparseMatrix() {
+        final int n = mesher.layout().size();
+        final SparseMatrix out = new SparseMatrix(n, n);
+        for (int i = 0; i < n; ++i) {
+            out.addAt(i, i0[i], lower[i]);
+            out.addAt(i, i,     diag[i]);
+            out.addAt(i, i2[i], upper[i]);
+        }
+        return out;
     }
 
     /**
