@@ -34,11 +34,27 @@ import org.jquantlib.cashflow.IborCoupon;
 import org.jquantlib.cashflow.Replication;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.exercise.EuropeanExercise;
+import org.jquantlib.exercise.Exercise;
 import org.jquantlib.indexes.Euribor6M;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.instruments.AssetOrNothingPayoff;
+import org.jquantlib.instruments.CashOrNothingPayoff;
+import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.Position;
+import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
+import org.jquantlib.pricingengines.BlackFormula;
+import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.processes.BlackScholesMertonProcess;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
@@ -48,7 +64,6 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -62,25 +77,25 @@ import org.junit.Test;
  *
  * <h3>Phase 5e.5b-CFC-d-25 (2026-05-16)</h3>
  *
- * <p>Two structural-identity tests are body-filled and un-ignored:
- * <ul>
- *   <li>{@code testCallPutParity} — verifies that for each (vol, strike,
- *       k) triple, {@code price(longCallDigital) - price(shortPutDigital)}
- *       equals {@code nominal * accrual * discount * cashRate} (cash) and
- *       {@code nominal * accrual * discount * forward} (asset). Pure
- *       parity identity, no probe-generated reference values needed.</li>
- *   <li>{@code testReplicationType} — verifies the monotone ordering
- *       Sub &le; Central &le; Super across replication strategies. Pure
- *       inequality, no probe-generated reference values needed.</li>
- * </ul>
+ * <p>Two structural-identity tests were body-filled:
+ * {@code testCallPutParity} and {@code testReplicationType}.
  *
- * <p>Remaining 6 tests stay deferred: they cross-check
- * {@link DigitalCoupon} prices against Cox-Rubinstein N(d1)/N(d2)
- * closed-form formulas via {@code CumulativeNormalDistribution}, the
- * Black {@code AssetOrNothing}/{@code CashOrNothing} payoffs through
- * {@code AnalyticEuropeanEngine}, and {@code BlackScholesMertonProcess}.
- * That path requires verifying the Java analytic-european digital engines
- * are wired in the same way as v1.42.1.
+ * <h3>Phase 5e.5b-CFC-d-60 (2026-05-16)</h3>
+ *
+ * <p>The remaining 6 tests are body-filled using the already-ported
+ * {@link AnalyticEuropeanEngine} (which delegates to
+ * {@code BlackCalculator}, which handles
+ * {@link AssetOrNothingPayoff}/{@link CashOrNothingPayoff} payoffs natively)
+ * and {@link BlackFormula#blackFormulaCashItmProbability}. The deep ITM/OTM
+ * cases are pure deterministic checks against {@code underlying.price()} and
+ * 0; the standard {@code testAssetOrNothing}/{@code testCashOrNothing} cases
+ * cross-validate against Cox-Rubinstein {@code N(d1)}/{@code N(d2)}
+ * closed-form formulas and the {@code AnalyticEuropeanEngine}-backed Vanilla
+ * Option NPV with {@link AssetOrNothingPayoff}/{@link CashOrNothingPayoff}.
+ *
+ * <p>Mirror of {@code test-suite/digitalcoupon.cpp} BOOST_AUTO_TEST_CASE
+ * bodies; same tolerances (1e-4 optionTolerance, 1e-10 blackTolerance, ...)
+ * as v1.42.1.
  */
 public class DigitalCouponTest {
 
@@ -97,6 +112,8 @@ public class DigitalCouponTest {
         final IborIndex index;
         final int fixingDays;
         final RelinkableHandle<YieldTermStructure> termStructure;
+        final double optionTolerance;
+        final double blackTolerance;
 
         CommonVars() {
             this.fixingDays = 2;
@@ -109,37 +126,830 @@ public class DigitalCouponTest {
             this.settlement = calendar.advance(today, fixingDays, TimeUnit.Days);
             termStructure.linkTo(Utilities.flatRate(settlement, 0.05,
                     new Actual365Fixed()));
+            this.optionTolerance = 1.0e-04;
+            this.blackTolerance = 1.0e-10;
         }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
     @Test
     public void testAssetOrNothing() {
+        QL.info("Testing European asset-or-nothing digital coupon...");
+
+        /*  Call Payoff = (aL+b)Heaviside(aL+b-X) =  a Max[L-X'] + (b+aX')Heaviside(L-X')
+            Value Call = aF N(d1') + bN(d2')
+            Put Payoff =  (aL+b)Heaviside(X-aL-b) = -a Max[X-L'] + (b+aX')Heaviside(X'-L)
+            Value Put = aF N(-d1') + bN(-d2')
+            where:
+            d1' = ln(F/X')/stdDev + 0.5*stdDev;
+        */
+
+        final CommonVars vars = new CommonVars();
+
+        final double[] vols = { 0.05, 0.15, 0.30 };
+        final double[] strikes = { 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
+        final double[] gearings = { 1.0, 2.8 };
+        final double[] spreads = { 0.0, 0.005 };
+
+        final double gap = 1.0e-7; /* low, in order to compare digital option value
+                                      with black formula result */
+        final DigitalReplication replication =
+                new DigitalReplication(Replication.Type.Central, gap);
+
+        for (final double capletVol : vols) {
+            final RelinkableHandle<OptionletVolatilityStructure> vol =
+                    new RelinkableHandle<OptionletVolatilityStructure>();
+            vol.linkTo(new ConstantOptionletVolatility(vars.today,
+                    vars.calendar, BusinessDayConvention.Following,
+                    capletVol, new Actual360()));
+            for (final double strike : strikes) {
+                for (int k = 9; k < 10; k++) {
+                    final Date startDate = vars.calendar.advance(vars.settlement,
+                            new Period(k + 1, TimeUnit.Years));
+                    final Date endDate = vars.calendar.advance(vars.settlement,
+                            new Period(k + 2, TimeUnit.Years));
+                    final double nullstrike = Constants.NULL_REAL;
+                    final Date paymentDate = endDate;
+                    for (int h = 0; h < gearings.length; h++) {
+                        final double gearing = gearings[h];
+                        final double spread = spreads[h];
+
+                        final FloatingRateCoupon underlying = new IborCoupon(
+                                paymentDate, vars.nominal,
+                                startDate, endDate,
+                                vars.fixingDays, vars.index,
+                                gearing, spread);
+                        // Floating Rate Coupon - Call Digital option
+                        final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
+                                underlying,
+                                strike, Position.Short, false, nullstrike,
+                                nullstrike, Position.Short, false, nullstrike,
+                                replication, false);
+                        final BlackIborCouponPricer pricer =
+                                new BlackIborCouponPricer(vol);
+                        digitalCappedCoupon.setPricer(pricer);
+
+                        // Check digital option price vs N(d1) price
+                        final double accrualPeriod = underlying.accrualPeriod();
+                        final double discount = vars.termStructure.currentLink()
+                                .discount(endDate);
+                        final Date exerciseDate = underlying.fixingDate();
+                        final double forward = underlying.rate();
+                        final double effFwd = (forward - spread) / gearing;
+                        final double effStrike = (strike - spread) / gearing;
+                        final double stdDev = Math.sqrt(
+                                vol.currentLink().blackVariance(exerciseDate, effStrike));
+                        final CumulativeNormalDistribution phi =
+                                new CumulativeNormalDistribution();
+                        final double d1 = Math.log(effFwd / effStrike) / stdDev + 0.5 * stdDev;
+                        final double d2 = d1 - stdDev;
+                        double nD1 = phi.op(d1);
+                        double nD2 = phi.op(d2);
+                        double nd1Price = (gearing * effFwd * nD1 + spread * nD2)
+                                * vars.nominal * accrualPeriod * discount;
+                        double optionPrice = digitalCappedCoupon.callOptionRate()
+                                * vars.nominal * accrualPeriod * discount;
+                        double error = Math.abs(nd1Price - optionPrice);
+                        if (error > vars.optionTolerance) {
+                            fail("\nDigital Call Option:"
+                                    + "\nVolatility = " + capletVol
+                                    + "\nStrike = " + strike
+                                    + "\nExercise = " + (k + 1) + " years"
+                                    + "\nOption price by replication = " + optionPrice
+                                    + "\nOption price by Cox-Rubinstein formula = " + nd1Price
+                                    + "\nError " + error);
+                        }
+
+                        // Check digital option price vs N(d1) price using Vanilla Option class
+                        if (spread == 0.0) {
+                            final Exercise exercise = new EuropeanExercise(exerciseDate);
+                            final double discountAtFixing = vars.termStructure
+                                    .currentLink().discount(exerciseDate);
+                            final SimpleQuote fwd = new SimpleQuote(effFwd * discountAtFixing);
+                            final SimpleQuote qRate = new SimpleQuote(0.0);
+                            final YieldTermStructure qTS = Utilities.flatRate(
+                                    vars.today, qRate, new Actual360());
+                            final BlackVolTermStructure volTS = Utilities.flatVol(
+                                    vars.today, capletVol, new Actual360());
+                            final StrikedTypePayoff callPayoff = new AssetOrNothingPayoff(
+                                    Option.Type.Call, effStrike);
+                            final BlackScholesMertonProcess stochProcess =
+                                    new BlackScholesMertonProcess(
+                                            new Handle<Quote>(fwd),
+                                            new Handle<YieldTermStructure>(qTS),
+                                            new Handle<YieldTermStructure>(
+                                                    vars.termStructure.currentLink()),
+                                            new Handle<BlackVolTermStructure>(volTS));
+                            final PricingEngine engine =
+                                    new AnalyticEuropeanEngine(stochProcess);
+                            final VanillaOption callOpt = new VanillaOption(callPayoff, exercise);
+                            callOpt.setPricingEngine(engine);
+                            final double callVO = vars.nominal * gearing
+                                    * accrualPeriod * callOpt.NPV()
+                                    * discount / discountAtFixing
+                                    * forward / effFwd;
+                            error = Math.abs(nd1Price - callVO);
+                            if (error > vars.blackTolerance) {
+                                fail("\nDigital Call Option:"
+                                        + "\nVolatility = " + capletVol
+                                        + "\nStrike = " + strike
+                                        + "\nExercise = " + (k + 1) + " years"
+                                        + "\nOption price by Black asset-ot-nothing payoff = " + callVO
+                                        + "\nOption price by Cox-Rubinstein = " + nd1Price
+                                        + "\nError " + error);
+                            }
+                        }
+
+                        // Floating Rate Coupon + Put Digital option
+                        final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
+                                underlying,
+                                nullstrike, Position.Long, false, nullstrike,
+                                strike, Position.Long, false, nullstrike,
+                                replication, false);
+                        digitalFlooredCoupon.setPricer(pricer);
+
+                        // Check digital option price vs N(d1) price
+                        nD1 = phi.op(-d1);
+                        nD2 = phi.op(-d2);
+                        nd1Price = (gearing * effFwd * nD1 + spread * nD2)
+                                * vars.nominal * accrualPeriod * discount;
+                        optionPrice = digitalFlooredCoupon.putOptionRate()
+                                * vars.nominal * accrualPeriod * discount;
+                        error = Math.abs(nd1Price - optionPrice);
+                        if (error > vars.optionTolerance) {
+                            fail("\nDigital Put Option:"
+                                    + "\nVolatility = " + capletVol
+                                    + "\nStrike = " + strike
+                                    + "\nExercise = " + (k + 1) + " years"
+                                    + "\nOption price by replication = " + optionPrice
+                                    + "\nOption price by Cox-Rubinstein = " + nd1Price
+                                    + "\nError " + error);
+                        }
+
+                        // Check digital option price vs N(d1) price using Vanilla Option class
+                        if (spread == 0.0) {
+                            final Exercise exercise = new EuropeanExercise(exerciseDate);
+                            final double discountAtFixing = vars.termStructure
+                                    .currentLink().discount(exerciseDate);
+                            final SimpleQuote fwd = new SimpleQuote(effFwd * discountAtFixing);
+                            final SimpleQuote qRate = new SimpleQuote(0.0);
+                            final YieldTermStructure qTS = Utilities.flatRate(
+                                    vars.today, qRate, new Actual360());
+                            final BlackVolTermStructure volTS = Utilities.flatVol(
+                                    vars.today, capletVol, new Actual360());
+                            final BlackScholesMertonProcess stochProcess =
+                                    new BlackScholesMertonProcess(
+                                            new Handle<Quote>(fwd),
+                                            new Handle<YieldTermStructure>(qTS),
+                                            new Handle<YieldTermStructure>(
+                                                    vars.termStructure.currentLink()),
+                                            new Handle<BlackVolTermStructure>(volTS));
+                            final StrikedTypePayoff putPayoff = new AssetOrNothingPayoff(
+                                    Option.Type.Put, effStrike);
+                            final PricingEngine engine =
+                                    new AnalyticEuropeanEngine(stochProcess);
+                            final VanillaOption putOpt = new VanillaOption(putPayoff, exercise);
+                            putOpt.setPricingEngine(engine);
+                            final double putVO = vars.nominal * gearing
+                                    * accrualPeriod * putOpt.NPV()
+                                    * discount / discountAtFixing
+                                    * forward / effFwd;
+                            error = Math.abs(nd1Price - putVO);
+                            if (error > vars.blackTolerance) {
+                                fail("\nDigital Put Option:"
+                                        + "\nVolatility = " + capletVol
+                                        + "\nStrike = " + strike
+                                        + "\nExercise = " + (k + 1) + " years"
+                                        + "\nOption price by Black asset-ot-nothing payoff = " + putVO
+                                        + "\nOption price by Cox-Rubinstein = " + nd1Price
+                                        + "\nError " + error);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
     @Test
     public void testAssetOrNothingDeepInTheMoney() {
+        QL.info("Testing European deep in-the-money asset-or-nothing digital coupon...");
+
+        final CommonVars vars = new CommonVars();
+
+        final double gearing = 1.0;
+        final double spread = 0.0;
+
+        final double capletVolatility = 0.0001;
+        final RelinkableHandle<OptionletVolatilityStructure> volatility =
+                new RelinkableHandle<OptionletVolatilityStructure>();
+        volatility.linkTo(new ConstantOptionletVolatility(vars.today,
+                vars.calendar, BusinessDayConvention.Following,
+                capletVolatility, new Actual360()));
+
+        for (int k = 0; k < 10; k++) {   // Loop on start and end dates
+            final Date startDate = vars.calendar.advance(vars.settlement,
+                    new Period(k + 1, TimeUnit.Years));
+            final Date endDate = vars.calendar.advance(vars.settlement,
+                    new Period(k + 2, TimeUnit.Years));
+            final double nullstrike = Constants.NULL_REAL;
+            final Date paymentDate = endDate;
+
+            final FloatingRateCoupon underlying = new IborCoupon(
+                    paymentDate, vars.nominal,
+                    startDate, endDate,
+                    vars.fixingDays, vars.index,
+                    gearing, spread);
+
+            // Floating Rate Coupon - Deep-in-the-money Call Digital option
+            double strike = 0.001;
+            final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
+                    underlying,
+                    strike, Position.Short, false, nullstrike,
+                    nullstrike, Position.Short, false, nullstrike,
+                    null, false);
+            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volatility);
+            digitalCappedCoupon.setPricer(pricer);
+
+            // Check price vs its target price
+            final double accrualPeriod = underlying.accrualPeriod();
+            final double discount = vars.termStructure.currentLink().discount(endDate);
+
+            double targetOptionPrice = underlying.price(vars.termStructure);
+            double targetPrice = 0.0;
+            double digitalPrice = digitalCappedCoupon.price(vars.termStructure);
+            double error = Math.abs(targetPrice - digitalPrice);
+            double tolerance = 1.0e-08;
+            if (error > tolerance) {
+                fail("\nFloating Coupon - Digital Call Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nCoupon Price = " + digitalPrice
+                        + "\nTarget price = " + targetPrice
+                        + "\nError = " + error);
+            }
+
+            // Check digital option price
+            double replicationOptionPrice = digitalCappedCoupon.callOptionRate()
+                    * vars.nominal * accrualPeriod * discount;
+            error = Math.abs(targetOptionPrice - replicationOptionPrice);
+            double optionTolerance = 1.0e-08;
+            if (error > optionTolerance) {
+                fail("\nDigital Call Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nPrice by replication = " + replicationOptionPrice
+                        + "\nTarget price = " + targetOptionPrice
+                        + "\nError = " + error);
+            }
+
+            // Floating Rate Coupon + Deep-in-the-money Put Digital option
+            strike = 0.99;
+            final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
+                    underlying,
+                    nullstrike, Position.Long, false, nullstrike,
+                    strike, Position.Long, false, nullstrike,
+                    null, false);
+            digitalFlooredCoupon.setPricer(pricer);
+
+            // Check price vs its target price
+            targetOptionPrice = underlying.price(vars.termStructure);
+            targetPrice = underlying.price(vars.termStructure) + targetOptionPrice;
+            digitalPrice = digitalFlooredCoupon.price(vars.termStructure);
+            error = Math.abs(targetPrice - digitalPrice);
+            tolerance = 2.5e-06;
+            if (error > tolerance) {
+                fail("\nFloating Coupon + Digital Put Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nDigital coupon price = " + digitalPrice
+                        + "\nTarget price = " + targetPrice
+                        + "\nError " + error);
+            }
+
+            // Check digital option
+            replicationOptionPrice = digitalFlooredCoupon.putOptionRate()
+                    * vars.nominal * accrualPeriod * discount;
+            error = Math.abs(targetOptionPrice - replicationOptionPrice);
+            optionTolerance = 2.5e-06;
+            if (error > optionTolerance) {
+                fail("\nDigital Put Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nPrice by replication = " + replicationOptionPrice
+                        + "\nTarget price = " + targetOptionPrice
+                        + "\nError " + error);
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
     @Test
     public void testAssetOrNothingDeepOutTheMoney() {
+        QL.info("Testing European deep out-the-money asset-or-nothing digital coupon...");
+
+        final CommonVars vars = new CommonVars();
+
+        final double gearing = 1.0;
+        final double spread = 0.0;
+
+        final double capletVolatility = 0.0001;
+        final RelinkableHandle<OptionletVolatilityStructure> volatility =
+                new RelinkableHandle<OptionletVolatilityStructure>();
+        volatility.linkTo(new ConstantOptionletVolatility(vars.today,
+                vars.calendar, BusinessDayConvention.Following,
+                capletVolatility, new Actual360()));
+
+        for (int k = 0; k < 10; k++) { // loop on start and end dates
+            final Date startDate = vars.calendar.advance(vars.settlement,
+                    new Period(k + 1, TimeUnit.Years));
+            final Date endDate = vars.calendar.advance(vars.settlement,
+                    new Period(k + 2, TimeUnit.Years));
+            final double nullstrike = Constants.NULL_REAL;
+            final Date paymentDate = endDate;
+
+            final FloatingRateCoupon underlying = new IborCoupon(
+                    paymentDate, vars.nominal,
+                    startDate, endDate,
+                    vars.fixingDays, vars.index,
+                    gearing, spread);
+
+            // Floating Rate Coupon - Deep-out-of-the-money Call Digital option
+            double strike = 0.99;
+            final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
+                    underlying,
+                    strike, Position.Short, false, nullstrike,
+                    nullstrike, Position.Long, false, nullstrike,
+                    null, false);
+            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volatility);
+            digitalCappedCoupon.setPricer(pricer);
+
+            // Check price vs its target
+            final double accrualPeriod = underlying.accrualPeriod();
+            final double discount = vars.termStructure.currentLink().discount(endDate);
+
+            double targetPrice = underlying.price(vars.termStructure);
+            double digitalPrice = digitalCappedCoupon.price(vars.termStructure);
+            double error = Math.abs(targetPrice - digitalPrice);
+            double tolerance = 1.0e-10;
+            if (error > tolerance) {
+                fail("\nFloating Coupon - Digital Call Option :"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nCoupon price = " + digitalPrice
+                        + "\nTarget price = " + targetPrice
+                        + "\nError = " + error);
+            }
+
+            // Check digital option price
+            double targetOptionPrice = 0.0;
+            double replicationOptionPrice = digitalCappedCoupon.callOptionRate()
+                    * vars.nominal * accrualPeriod * discount;
+            error = Math.abs(targetOptionPrice - replicationOptionPrice);
+            double optionTolerance = 1.0e-08;
+            if (error > optionTolerance) {
+                fail("\nDigital Call Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nPrice by replication = " + replicationOptionPrice
+                        + "\nTarget price = " + targetOptionPrice
+                        + "\nError = " + error);
+            }
+
+            // Floating Rate Coupon - Deep-out-of-the-money Put Digital option
+            strike = 0.01;
+            final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
+                    underlying,
+                    nullstrike, Position.Long, false, nullstrike,
+                    strike, Position.Long, false, nullstrike,
+                    null, false);
+            digitalFlooredCoupon.setPricer(pricer);
+
+            // Check price vs its target
+            targetPrice = underlying.price(vars.termStructure);
+            digitalPrice = digitalFlooredCoupon.price(vars.termStructure);
+            tolerance = 1.0e-08;
+            error = Math.abs(targetPrice - digitalPrice);
+            if (error > tolerance) {
+                fail("\nFloating Coupon + Digital Put Coupon:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nCoupon price = " + digitalPrice
+                        + "\nTarget price = " + targetPrice
+                        + "\nError = " + error);
+            }
+
+            // Check digital option
+            targetOptionPrice = 0.0;
+            replicationOptionPrice = digitalFlooredCoupon.putOptionRate()
+                    * vars.nominal * accrualPeriod * discount;
+            error = Math.abs(targetOptionPrice - replicationOptionPrice);
+            if (error > optionTolerance) {
+                fail("\nDigital Put Coupon:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nPrice by replication = " + replicationOptionPrice
+                        + "\nTarget price = " + targetOptionPrice
+                        + "\nError = " + error);
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
     @Test
     public void testCashOrNothing() {
+        QL.info("Testing European cash-or-nothing digital coupon...");
+
+        /*  Call Payoff = R Heaviside(aL+b-X)
+            Value Call = R N(d2')
+            Put Payoff =  R Heaviside(X-aL-b)
+            Value Put = R N(-d2')
+            where:
+            d2' = ln(F/X')/stdDev - 0.5*stdDev;
+        */
+
+        final CommonVars vars = new CommonVars();
+
+        final double[] vols = { 0.05, 0.15, 0.30 };
+        final double[] strikes = { 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
+
+        final double gearing = 3.0;
+        final double spread = -0.0002;
+
+        final double gap = 1.0e-08; /* very low, in order to compare digital option value
+                                       with black formula result */
+        final DigitalReplication replication =
+                new DigitalReplication(Replication.Type.Central, gap);
+
+        for (final double capletVol : vols) {
+            final RelinkableHandle<OptionletVolatilityStructure> vol =
+                    new RelinkableHandle<OptionletVolatilityStructure>();
+            vol.linkTo(new ConstantOptionletVolatility(vars.today,
+                    vars.calendar, BusinessDayConvention.Following,
+                    capletVol, new Actual360()));
+            for (final double strike : strikes) {
+                for (int k = 0; k < 10; k++) {
+                    final Date startDate = vars.calendar.advance(vars.settlement,
+                            new Period(k + 1, TimeUnit.Years));
+                    final Date endDate = vars.calendar.advance(vars.settlement,
+                            new Period(k + 2, TimeUnit.Years));
+                    final double nullstrike = Constants.NULL_REAL;
+                    final double cashRate = 0.01;
+                    final Date paymentDate = endDate;
+
+                    final FloatingRateCoupon underlying = new IborCoupon(
+                            paymentDate, vars.nominal,
+                            startDate, endDate,
+                            vars.fixingDays, vars.index,
+                            gearing, spread);
+                    // Floating Rate Coupon - Call Digital option
+                    final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
+                            underlying,
+                            strike, Position.Short, false, cashRate,
+                            nullstrike, Position.Short, false, nullstrike,
+                            replication, false);
+                    final BlackIborCouponPricer pricer = new BlackIborCouponPricer(vol);
+                    digitalCappedCoupon.setPricer(pricer);
+
+                    // Check digital option price vs N(d2) price
+                    final Date exerciseDate = underlying.fixingDate();
+                    final double forward = underlying.rate();
+                    final double effFwd = (forward - spread) / gearing;
+                    final double effStrike = (strike - spread) / gearing;
+                    final double accrualPeriod = underlying.accrualPeriod();
+                    final double discount = vars.termStructure.currentLink().discount(endDate);
+                    final double stdDev = Math.sqrt(
+                            vol.currentLink().blackVariance(exerciseDate, effStrike));
+                    double itm = BlackFormula.blackFormulaCashItmProbability(
+                            Option.Type.Call, effStrike, effFwd, stdDev);
+                    double nd2Price = itm * vars.nominal * accrualPeriod * discount * cashRate;
+                    double optionPrice = digitalCappedCoupon.callOptionRate()
+                            * vars.nominal * accrualPeriod * discount;
+                    double error = Math.abs(nd2Price - optionPrice);
+                    if (error > vars.optionTolerance) {
+                        fail("\nDigital Call Option:"
+                                + "\nVolatility = " + capletVol
+                                + "\nStrike = " + strike
+                                + "\nExercise = " + (k + 1) + " years"
+                                + "\nPrice by replication = " + optionPrice
+                                + "\nPrice by Reiner-Rubinstein = " + nd2Price
+                                + "\nError = " + error);
+                    }
+
+                    // Check digital option price vs N(d2) price using Vanilla Option class
+                    final Exercise exercise = new EuropeanExercise(exerciseDate);
+                    final double discountAtFixing = vars.termStructure
+                            .currentLink().discount(exerciseDate);
+                    final SimpleQuote fwd = new SimpleQuote(effFwd * discountAtFixing);
+                    final SimpleQuote qRate = new SimpleQuote(0.0);
+                    final YieldTermStructure qTS = Utilities.flatRate(
+                            vars.today, qRate, new Actual360());
+                    final BlackVolTermStructure volTS = Utilities.flatVol(
+                            vars.today, capletVol, new Actual360());
+                    final StrikedTypePayoff callPayoff = new CashOrNothingPayoff(
+                            Option.Type.Call, effStrike, cashRate);
+                    final BlackScholesMertonProcess stochProcess =
+                            new BlackScholesMertonProcess(
+                                    new Handle<Quote>(fwd),
+                                    new Handle<YieldTermStructure>(qTS),
+                                    new Handle<YieldTermStructure>(
+                                            vars.termStructure.currentLink()),
+                                    new Handle<BlackVolTermStructure>(volTS));
+                    final PricingEngine engine = new AnalyticEuropeanEngine(stochProcess);
+                    final VanillaOption callOpt = new VanillaOption(callPayoff, exercise);
+                    callOpt.setPricingEngine(engine);
+                    final double callVO = vars.nominal * accrualPeriod * callOpt.NPV()
+                            * discount / discountAtFixing;
+                    error = Math.abs(nd2Price - callVO);
+                    if (error > vars.blackTolerance) {
+                        fail("\nDigital Call Option:"
+                                + "\nVolatility = " + capletVol
+                                + "\nStrike = " + strike
+                                + "\nExercise = " + (k + 1) + " years"
+                                + "\nOption price by Black asset-ot-nothing payoff = " + callVO
+                                + "\nOption price by Reiner-Rubinstein = " + nd2Price
+                                + "\nError " + error);
+                    }
+
+                    // Floating Rate Coupon + Put Digital option
+                    final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
+                            underlying,
+                            nullstrike, Position.Long, false, nullstrike,
+                            strike, Position.Long, false, cashRate,
+                            replication, false);
+                    digitalFlooredCoupon.setPricer(pricer);
+
+                    // Check digital option price vs N(d2) price
+                    itm = BlackFormula.blackFormulaCashItmProbability(
+                            Option.Type.Put, effStrike, effFwd, stdDev);
+                    nd2Price = itm * vars.nominal * accrualPeriod * discount * cashRate;
+                    optionPrice = digitalFlooredCoupon.putOptionRate()
+                            * vars.nominal * accrualPeriod * discount;
+                    error = Math.abs(nd2Price - optionPrice);
+                    if (error > vars.optionTolerance) {
+                        fail("\nPut Digital Option:"
+                                + "\nVolatility = " + capletVol
+                                + "\nStrike = " + strike
+                                + "\nExercise = " + (k + 1) + " years"
+                                + "\nPrice by replication = " + optionPrice
+                                + "\nPrice by Reiner-Rubinstein = " + nd2Price
+                                + "\nError = " + error);
+                    }
+
+                    // Check digital option price vs N(d2) price using Vanilla Option class
+                    final StrikedTypePayoff putPayoff = new CashOrNothingPayoff(
+                            Option.Type.Put, effStrike, cashRate);
+                    final VanillaOption putOpt = new VanillaOption(putPayoff, exercise);
+                    putOpt.setPricingEngine(engine);
+                    final double putVO = vars.nominal * accrualPeriod * putOpt.NPV()
+                            * discount / discountAtFixing;
+                    error = Math.abs(nd2Price - putVO);
+                    if (error > vars.blackTolerance) {
+                        fail("\nDigital Put Option:"
+                                + "\nVolatility = " + capletVol
+                                + "\nStrike = " + strike
+                                + "\nExercise = " + (k + 1) + " years"
+                                + "\nOption price by Black asset-ot-nothing payoff = " + putVO
+                                + "\nOption price by Reiner-Rubinstein = " + nd2Price
+                                + "\nError " + error);
+                    }
+                }
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
     @Test
     public void testCashOrNothingDeepInTheMoney() {
+        QL.info("Testing European deep in-the-money cash-or-nothing digital coupon...");
+
+        final CommonVars vars = new CommonVars();
+
+        final double gearing = 1.0;
+        final double spread = 0.0;
+
+        final double capletVolatility = 0.0001;
+        final RelinkableHandle<OptionletVolatilityStructure> volatility =
+                new RelinkableHandle<OptionletVolatilityStructure>();
+        volatility.linkTo(new ConstantOptionletVolatility(vars.today,
+                vars.calendar, BusinessDayConvention.Following,
+                capletVolatility, new Actual360()));
+
+        for (int k = 0; k < 10; k++) {   // Loop on start and end dates
+            final Date startDate = vars.calendar.advance(vars.settlement,
+                    new Period(k + 1, TimeUnit.Years));
+            final Date endDate = vars.calendar.advance(vars.settlement,
+                    new Period(k + 2, TimeUnit.Years));
+            final double nullstrike = Constants.NULL_REAL;
+            final double cashRate = 0.01;
+            final Date paymentDate = endDate;
+
+            final FloatingRateCoupon underlying = new IborCoupon(
+                    paymentDate, vars.nominal,
+                    startDate, endDate,
+                    vars.fixingDays, vars.index,
+                    gearing, spread);
+            // Floating Rate Coupon - Deep-in-the-money Call Digital option
+            double strike = 0.001;
+            final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
+                    underlying,
+                    strike, Position.Short, false, cashRate,
+                    nullstrike, Position.Short, false, nullstrike,
+                    null, false);
+            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volatility);
+            digitalCappedCoupon.setPricer(pricer);
+
+            // Check price vs its target
+            final double accrualPeriod = underlying.accrualPeriod();
+            final double discount = vars.termStructure.currentLink().discount(endDate);
+
+            final double targetOptionPrice = cashRate * vars.nominal * accrualPeriod * discount;
+            double targetPrice = underlying.price(vars.termStructure) - targetOptionPrice;
+            double digitalPrice = digitalCappedCoupon.price(vars.termStructure);
+
+            double error = Math.abs(targetPrice - digitalPrice);
+            final double tolerance = 1.0e-07;
+            if (error > tolerance) {
+                fail("\nFloating Coupon - Digital Call Coupon:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nCoupon price = " + digitalPrice
+                        + "\nTarget price = " + targetPrice
+                        + "\nError " + error);
+            }
+
+            // Check digital option price
+            double replicationOptionPrice = digitalCappedCoupon.callOptionRate()
+                    * vars.nominal * accrualPeriod * discount;
+            error = Math.abs(targetOptionPrice - replicationOptionPrice);
+            final double optionTolerance = 1.0e-07;
+            if (error > optionTolerance) {
+                fail("\nDigital Call Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nPrice by replication = " + replicationOptionPrice
+                        + "\nTarget price = " + targetOptionPrice
+                        + "\nError = " + error);
+            }
+
+            // Floating Rate Coupon + Deep-in-the-money Put Digital option
+            strike = 0.99;
+            final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
+                    underlying,
+                    nullstrike, Position.Long, false, nullstrike,
+                    strike, Position.Long, false, cashRate,
+                    null, false);
+            digitalFlooredCoupon.setPricer(pricer);
+
+            // Check price vs its target
+            targetPrice = underlying.price(vars.termStructure) + targetOptionPrice;
+            digitalPrice = digitalFlooredCoupon.price(vars.termStructure);
+            error = Math.abs(targetPrice - digitalPrice);
+            if (error > tolerance) {
+                fail("\nFloating Coupon + Digital Put Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nCoupon price = " + digitalPrice
+                        + "\nTarget price  = " + targetPrice
+                        + "\nError = " + error);
+            }
+
+            // Check digital option
+            replicationOptionPrice = digitalFlooredCoupon.putOptionRate()
+                    * vars.nominal * accrualPeriod * discount;
+            error = Math.abs(targetOptionPrice - replicationOptionPrice);
+            if (error > optionTolerance) {
+                fail("\nDigital Put Coupon:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nPrice by replication = " + replicationOptionPrice
+                        + "\nTarget price = " + targetOptionPrice
+                        + "\nError = " + error);
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-DC-1: deferred — needs analytic-european digital engine cross-validation.")
     @Test
     public void testCashOrNothingDeepOutTheMoney() {
+        QL.info("Testing European deep out-the-money cash-or-nothing digital coupon...");
+
+        final CommonVars vars = new CommonVars();
+
+        final double gearing = 1.0;
+        final double spread = 0.0;
+
+        final double capletVolatility = 0.0001;
+        final RelinkableHandle<OptionletVolatilityStructure> volatility =
+                new RelinkableHandle<OptionletVolatilityStructure>();
+        volatility.linkTo(new ConstantOptionletVolatility(vars.today,
+                vars.calendar, BusinessDayConvention.Following,
+                capletVolatility, new Actual360()));
+
+        for (int k = 0; k < 10; k++) { // loop on start and end dates
+            final Date startDate = vars.calendar.advance(vars.settlement,
+                    new Period(k + 1, TimeUnit.Years));
+            final Date endDate = vars.calendar.advance(vars.settlement,
+                    new Period(k + 2, TimeUnit.Years));
+            final double nullstrike = Constants.NULL_REAL;
+            final double cashRate = 0.01;
+            final Date paymentDate = endDate;
+
+            final FloatingRateCoupon underlying = new IborCoupon(
+                    paymentDate, vars.nominal,
+                    startDate, endDate,
+                    vars.fixingDays, vars.index,
+                    gearing, spread);
+            // Deep out-of-the-money Capped Digital Coupon
+            double strike = 0.99;
+            final DigitalCoupon digitalCappedCoupon = new DigitalCoupon(
+                    underlying,
+                    strike, Position.Short, false, cashRate,
+                    nullstrike, Position.Short, false, nullstrike,
+                    null, false);
+            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(volatility);
+            digitalCappedCoupon.setPricer(pricer);
+
+            // Check price vs its target
+            final double accrualPeriod = underlying.accrualPeriod();
+            final double discount = vars.termStructure.currentLink().discount(endDate);
+
+            double targetPrice = underlying.price(vars.termStructure);
+            double digitalPrice = digitalCappedCoupon.price(vars.termStructure);
+            double error = Math.abs(targetPrice - digitalPrice);
+            double tolerance = 1.0e-10;
+            if (error > tolerance) {
+                fail("\nFloating Coupon + Digital Call Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nCoupon price = " + digitalPrice
+                        + "\nTarget price  = " + targetPrice
+                        + "\nError = " + error);
+            }
+
+            // Check digital option price
+            double targetOptionPrice = 0.0;
+            double replicationOptionPrice = digitalCappedCoupon.callOptionRate()
+                    * vars.nominal * accrualPeriod * discount;
+            error = Math.abs(targetOptionPrice - replicationOptionPrice);
+            final double optionTolerance = 1.0e-10;
+            if (error > optionTolerance) {
+                fail("\nDigital Call Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nPrice by replication = " + replicationOptionPrice
+                        + "\nTarget price = " + targetOptionPrice
+                        + "\nError = " + error);
+            }
+
+            // Deep out-of-the-money Floored Digital Coupon
+            strike = 0.01;
+            final DigitalCoupon digitalFlooredCoupon = new DigitalCoupon(
+                    underlying,
+                    nullstrike, Position.Long, false, nullstrike,
+                    strike, Position.Long, false, cashRate,
+                    null, false);
+            digitalFlooredCoupon.setPricer(pricer);
+
+            // Check price vs its target
+            targetPrice = underlying.price(vars.termStructure);
+            digitalPrice = digitalFlooredCoupon.price(vars.termStructure);
+            tolerance = 1.0e-09;
+            error = Math.abs(targetPrice - digitalPrice);
+            if (error > tolerance) {
+                fail("\nDigital Floored Coupon:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nCoupon price = " + digitalPrice
+                        + "\nTarget price  = " + targetPrice
+                        + "\nError = " + error);
+            }
+
+            // Check digital option
+            targetOptionPrice = 0.0;
+            replicationOptionPrice = digitalFlooredCoupon.putOptionRate()
+                    * vars.nominal * accrualPeriod * discount;
+            error = Math.abs(targetOptionPrice - replicationOptionPrice);
+            if (error > optionTolerance) {
+                fail("\nDigital Put Option:"
+                        + "\nVolatility = " + capletVolatility
+                        + "\nStrike = " + strike
+                        + "\nExercise = " + (k + 1) + " years"
+                        + "\nPrice by replication " + replicationOptionPrice
+                        + "\nTarget price " + targetOptionPrice
+                        + "\nError " + error);
+            }
+        }
     }
 
     @Test
