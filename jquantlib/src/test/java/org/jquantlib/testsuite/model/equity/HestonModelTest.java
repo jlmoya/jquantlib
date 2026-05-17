@@ -27,6 +27,7 @@ import org.jquantlib.math.optimization.BoundaryConstraint;
 import org.jquantlib.math.optimization.PositiveConstraint;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.model.ConstantParameter;
+import org.jquantlib.model.PiecewiseConstantParameter;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.model.equity.PiecewiseTimeDependentHestonModel;
 import org.jquantlib.pricingengines.PricingEngine;
@@ -193,13 +194,10 @@ public class HestonModelTest {
 
     private static final String REASON_PTD =
             "Phase 5h.5: PiecewiseTimeDependentHestonModel + AnalyticPTDHestonEngine "
-            + "(Gatheral) ported (commits 6f5a5a33 / 8797ec49). Remaining PTD tests "
-            + "(testPiecewiseTimeDependentComparison + ChFAsymtotic) require "
-            + "AnalyticPTDHestonEngine::AndersenPiterbarg complex-log dispatch + "
-            + "discreteTrapezoid(n) Fourier integration, both of which throw "
-            + "UnsupportedOperationException in the Java AnalyticPTDHestonEngine port "
-            + "(see AnalyticPTDHestonEngine.calculate() AndersenPiterbarg case + "
-            + "AnalyticHestonEngine.Integration.discreteTrapezoid carry-forward). "
+            + "(Gatheral) ported (commits 6f5a5a33 / 8797ec49). "
+            + "testPiecewiseTimeDependentComparison + ChFAsymtotic body-filled "
+            + "in Phase 5e.5b-CFC-d-174 after AnalyticPTDHestonEngine AP/AngledContour "
+            + "dispatch landed. "
             + "testMultipleStrikesEngine requires FdHestonVanillaEngine."
             + "enableMultipleStrikesCaching(strikes) — the cachedArgs2results_ "
             + "multi-strike caching is not yet ported (Phase 2m FD-Heston scope).";
@@ -3023,13 +3021,272 @@ public class HestonModelTest {
         }
     }
 
-    @Ignore(REASON_PTD)
+    /**
+     * Phase 5e.5b-CFC-d-174 body-fill — port of C++
+     * {@code testPiecewiseTimeDependentComparison}
+     * (hestonmodel.cpp:2404-2536) phase 1.
+     *
+     * <p>Cross-validates the Gatheral and Andersen-Piterbarg complex-log
+     * formulations of {@link AnalyticPTDHestonEngine}: both must produce
+     * the same European-call NPV on a 3-step PTD-Heston model where only
+     * {@code sigma} is piecewise-time-dependent.
+     *
+     * <p>The C++ test also has a 10000-path Monte-Carlo cross-check
+     * (lines 2467-2535). That MC leg is out of scope here — we focus on
+     * the AP/Gatheral agreement that the AP dispatch in this commit
+     * actually enables; the AnalyticHestonEngine-AP cross-check in
+     * {@code testPiecewiseTimeDependentChFAsymtotic} already exercises the
+     * AP truncation-bound + lnChF infrastructure.
+     *
+     * <p>C++ tolerance: 1e-10 (TIGHT-ish — AP and Gatheral are
+     * analytically equivalent so the only source of disagreement is
+     * truncation error in the AP integrator).
+     */
     @Test
-    public void testPiecewiseTimeDependentComparison() { fail("not implemented"); }
+    public void testPiecewiseTimeDependentComparison() {
+        final Date settlementDate = new Date(5, Month.July, 2017);
+        new Settings().setEvaluationDate(settlementDate);
 
-    @Ignore(REASON_PTD)
+        final DayCounter dc = new Actual365Fixed();
+        final Date maturityDate = new Date(5, Month.July, 2018);
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.05)), dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.08)), dc));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        // modelGrid = {0.25, 0.75, 10.0} — C++ TimeGrid prepends 0.0 in
+        // its iterator-pair constructor (timegrid.hpp:68-69), matching
+        // Java TimeGrid(List<Double>). Resulting grid: {0, 0.25, 0.75, 10.0}.
+        final java.util.List<Double> modelTimes = new java.util.ArrayList<Double>();
+        modelTimes.add(0.25);
+        modelTimes.add(0.75);
+        modelTimes.add(10.0);
+        final TimeGrid modelGrid = new TimeGrid(modelTimes);
+
+        final double v0 = 0.1;
+        final ConstantParameter theta =
+                new ConstantParameter(0.1, new PositiveConstraint());
+        final ConstantParameter kappa =
+                new ConstantParameter(1.0, new PositiveConstraint());
+        final ConstantParameter rho =
+                new ConstantParameter(-0.75, new BoundaryConstraint(-1.0, 1.0));
+
+        final PiecewiseConstantParameter sigma =
+                new PiecewiseConstantParameter(new double[] { 0.25, 0.75 });
+        sigma.setParam(0, 0.30);
+        sigma.setParam(1, 0.15);
+        sigma.setParam(2, 1.25);
+
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, 100.0),
+                new EuropeanExercise(maturityDate));
+
+        final PiecewiseTimeDependentHestonModel ptdModel =
+                new PiecewiseTimeDependentHestonModel(
+                        rTS, qTS, s0, v0,
+                        theta, kappa, sigma, rho, modelGrid);
+
+        // Gatheral price (default Gauss-Laguerre 144).
+        option.setPricingEngine(new AnalyticPTDHestonEngine(ptdModel));
+        final double calculatedGatheral = option.NPV();
+
+        // Andersen-Piterbarg price (discreteTrapezoid 128, eps = 1e-12).
+        option.setPricingEngine(new AnalyticPTDHestonEngine(
+                ptdModel,
+                AnalyticPTDHestonEngine.ComplexLogFormula.AndersenPiterbarg,
+                AnalyticHestonEngine.Integration.discreteTrapezoid(128),
+                1e-12));
+        final double calculatedAndersenPiterbarg = option.NPV();
+
+        // C++ tolerance is 1e-10 — keep that exactly; do not loosen.
+        assertEquals(
+                "AnalyticPTDHestonEngine: Gatheral and AndersenPiterbarg "
+                + "complex-log formulas must agree",
+                calculatedGatheral, calculatedAndersenPiterbarg, 1.0e-10);
+    }
+
+    /**
+     * Phase 5e.5b-CFC-d-174 body-fill — port of C++
+     * {@code testPiecewiseTimeDependentChFAsymtotic}
+     * (hestonmodel.cpp:2538-2667).
+     *
+     * <p>Three independent cross-checks all running on the same
+     * piecewise-constant 3-step PTD-Heston seed:
+     * <ol>
+     *   <li><b>AP truncation bound</b> — verifies that
+     *       {@code Integration.andersenPiterbargIntegrationLimit} returns
+     *       {@code uM ≈ 18.6918883427} (C++ tolerance 1e-5) when seeded
+     *       with the analytical {@code C_u_inf + D_u_inf*v0} of the PTD
+     *       model.</li>
+     *   <li><b>lnChF asymptotic</b> — at {@code u = 1e8} the engine's
+     *       {@code lnChF(u, T)} must match the closed-form asymptotic
+     *       {@code (D_u_inf*u + dd)*v0 + C_u_inf*u + cc + clog}
+     *       to {@code |diff| < 0.01} (loose because we're comparing
+     *       characteristic-function evaluations near machine infinity).</li>
+     *   <li><b>AP NPV high-precision</b> — at-the-money call NPV must
+     *       reproduce the C++ {@code expectedNPV = 17.43851162589377}
+     *       to {@code 1e-9}.</li>
+     * </ol>
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:2538-2667} v1.42.1.
+     */
     @Test
-    public void testPiecewiseTimeDependentChFAsymtotic() { fail("not implemented"); }
+    public void testPiecewiseTimeDependentChFAsymtotic() {
+        final Date settlementDate = new Date(5, Month.July, 2017);
+        new Settings().setEvaluationDate(settlementDate);
+        // settlementDate + 13 months = 5-Aug-2018.
+        final Date maturityDate = new Date(5, Month.August, 2018);
+
+        final DayCounter dc = new Actual365Fixed();
+        final double maturity = dc.yearFraction(settlementDate, maturityDate);
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.0)), dc));
+
+        // modelTimes = {0.01, 0.5, 2.0} — TimeGrid prepends 0.
+        final java.util.List<Double> modelTimes = new java.util.ArrayList<Double>();
+        modelTimes.add(0.01);
+        modelTimes.add(0.5);
+        modelTimes.add(2.0);
+        final TimeGrid modelGrid = new TimeGrid(modelTimes);
+
+        final double v0 = 0.1;
+        // pTimes = modelTimes[0..size-2] = {0.01, 0.5} — two cuts → 3 params.
+        final double[] pTimes = { 0.01, 0.5 };
+
+        final PiecewiseConstantParameter sigma = new PiecewiseConstantParameter(pTimes);
+        final PiecewiseConstantParameter theta = new PiecewiseConstantParameter(pTimes);
+        final PiecewiseConstantParameter kappa = new PiecewiseConstantParameter(pTimes);
+        final PiecewiseConstantParameter rho   = new PiecewiseConstantParameter(pTimes);
+
+        final double[] sigmas = { 0.01, 0.2, 0.6 };
+        final double[] thetas = { 0.16, 0.06, 0.36 };
+        final double[] kappas = { 1.0, 0.3, 4.0 };
+        final double[] rhos   = { 0.5, -0.75, -0.25 };
+
+        for (int i = 0; i < 3; ++i) {
+            sigma.setParam(i, sigmas[i]);
+            theta.setParam(i, thetas[i]);
+            kappa.setParam(i, kappas[i]);
+            rho.setParam(i,   rhos[i]);
+        }
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+        final PiecewiseTimeDependentHestonModel ptdModel =
+                new PiecewiseTimeDependentHestonModel(
+                        rTS, rTS, s0, v0,
+                        theta, kappa, sigma, rho, modelGrid);
+
+        final double eps = 1e-8;
+
+        final AnalyticPTDHestonEngine ptdHestonEngine = new AnalyticPTDHestonEngine(
+                ptdModel,
+                AnalyticPTDHestonEngine.ComplexLogFormula.AndersenPiterbarg,
+                AnalyticHestonEngine.Integration.discreteTrapezoid(128),
+                eps);
+
+        // ------------------------------------------------------------------
+        // (1) AP truncation bound:  uM ≈ 18.6918883427
+        // ------------------------------------------------------------------
+        // D_u_inf = -(sqrt(1-rho0^2), rho0) / sigma0
+        final Complex D_u_inf = new Complex(
+                Math.sqrt(1.0 - rhos[0] * rhos[0]), rhos[0])
+                .div(sigmas[0]).neg();
+
+        // dd = (kappa0, (2*kappa0*rho0 - sigma0)/(2*sqrt(1-rho0^2)))/(sigma0^2)
+        final Complex dd = new Complex(
+                kappas[0],
+                (2.0 * kappas[0] * rhos[0] - sigmas[0])
+                        / (2.0 * Math.sqrt(1.0 - rhos[0] * rhos[0])))
+                .div(sigmas[0] * sigmas[0]);
+
+        Complex C_u_inf = Complex.ZERO;
+        Complex cc      = Complex.ZERO;
+        Complex clog    = Complex.ZERO;
+
+        for (int i = 0; i < 3; ++i) {
+            final double kappaI = kappas[i];
+            final double thetaI = thetas[i];
+            final double sigmaI = sigmas[i];
+            final double rhoI   = rhos[i];
+            // tau = min(maturity, modelGrid[i+1]) - modelGrid[i]
+            final double tau = Math.min(maturity, modelGrid.at(i + 1)) - modelGrid.at(i);
+
+            C_u_inf = C_u_inf.add(
+                    new Complex(Math.sqrt(1.0 - rhoI * rhoI), rhoI)
+                            .mul(-kappaI * thetaI * tau / sigmaI));
+
+            cc = cc.add(
+                    new Complex(2.0 * kappaI,
+                                (2.0 * kappaI * rhoI - sigmaI)
+                                        / Math.sqrt(1.0 - rhoI * rhoI))
+                            .mul(kappaI * tau * thetaI
+                                    / (2.0 * sigmaI * sigmaI)));
+
+            final Complex Di;
+            if (i < 2) {
+                Di = new Complex(Math.sqrt(1.0 - rhos[i + 1] * rhos[i + 1]),
+                                 rhos[i + 1])
+                        .mul(sigmaI / sigmas[i + 1]);
+            } else {
+                Di = Complex.ZERO;
+            }
+
+            final Complex num = Di.sub(new Complex(Math.sqrt(1.0 - rhoI * rhoI),  rhoI));
+            final Complex den = Di.add(new Complex(Math.sqrt(1.0 - rhoI * rhoI), -rhoI));
+            clog = clog.add(
+                    Complex.ONE.sub(num.div(den)).log()
+                            .mul(2.0 * kappaI * thetaI / (sigmaI * sigmaI)));
+        }
+
+        final double epsilon = eps * Math.PI / s0.currentLink().value();
+
+        final double uM = AnalyticHestonEngine.Integration
+                .andersenPiterbargIntegrationLimit(
+                        -(C_u_inf.add(D_u_inf.mul(v0))).real(),
+                        epsilon, v0, maturity);
+
+        final double expectedUM = 18.6918883427;
+        assertEquals(
+                "AnalyticHestonEngine.Integration."
+                + "andersenPiterbargIntegrationLimit (PTD seed)",
+                expectedUM, uM, 1.0e-5);
+
+        // ------------------------------------------------------------------
+        // (2) lnChF asymptotic at u = 1e8
+        // ------------------------------------------------------------------
+        final double u = 1e8;
+        final Complex expectedLnChF = ptdHestonEngine.lnChF(
+                new Complex(u, 0.0), maturity);
+        final Complex calculatedAsymptotic =
+                D_u_inf.mul(u).add(dd).mul(v0)
+                        .add(C_u_inf.mul(u)).add(cc).add(clog);
+        final double diffLnChF = expectedLnChF.sub(calculatedAsymptotic).abs();
+        assertTrue(
+                "PTD lnChF must match closed-form asymptotic at u=1e8: "
+                + "lnChF=" + expectedLnChF + " asymptotic="
+                + calculatedAsymptotic + " diff=" + diffLnChF,
+                diffLnChF < 0.01);
+
+        // ------------------------------------------------------------------
+        // (3) AP NPV high precision
+        // ------------------------------------------------------------------
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, s0.currentLink().value()),
+                new EuropeanExercise(maturityDate));
+        option.setPricingEngine(ptdHestonEngine);
+
+        final double expectedNPV = 17.43851162589377;
+        final double calculatedNPV = option.NPV();
+        assertEquals(
+                "AnalyticPTDHestonEngine(AP) high-precision NPV",
+                expectedNPV, calculatedNPV, 1.0e-9);
+    }
 
     @Ignore(REASON_PTD)
     @Test

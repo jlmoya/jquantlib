@@ -26,6 +26,7 @@ import org.jquantlib.math.Complex;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Ops;
 import org.jquantlib.model.equity.PiecewiseTimeDependentHestonModel;
+import org.jquantlib.pricingengines.BlackCalculator;
 import org.jquantlib.pricingengines.GenericModelEngine;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.InterestRate;
@@ -47,17 +48,16 @@ import org.jquantlib.time.TimeGrid;
  * {@code D} coefficients exactly as the C++ implementation does — see
  * Elices (2007) for the recursive piecewise-constant derivation.
  *
- * <p><b>Scope of this Java port (Gatheral subset).</b> Mirrors the C++
- * surface but only implements the {@link ComplexLogFormula#Gatheral}
- * complex-log formulation; the {@link ComplexLogFormula#AndersenPiterbarg}
- * branch is left unsupported pending the {@code AP_Helper} /
- * {@code andersenPiterbargIntegrationLimit} ports tracked as Phase
- * 5e.5b-CFC-d-AP carry-forward. The constructors that take an
- * {@link AnalyticHestonEngine.Integration} configurator + Andersen-Piterbarg
- * epsilon are accepted at construction time (so existing test patterns and
- * downstream callers continue to compile) but {@link #calculate()} will
- * throw {@link UnsupportedOperationException} if asked to use
- * Andersen-Piterbarg.
+ * <p><b>Scope of this Java port.</b> Mirrors the C++ surface and implements
+ * both the {@link ComplexLogFormula#Gatheral} complex-log formulation and
+ * the {@link ComplexLogFormula#AndersenPiterbarg} control-variate scheme
+ * (Phase 5e.5b-CFC-d-174 — wired against the
+ * {@link AnalyticHestonEngine.Integration#andersenPiterbargIntegrationLimit}
+ * routine and the local {@link AP_Helper} integrand that subtracts a
+ * Black-Scholes characteristic function from the PTD-Heston one). The
+ * constructors taking an {@link AnalyticHestonEngine.Integration}
+ * configurator + Andersen-Piterbarg epsilon now route to the AP branch
+ * verbatim.
  *
  * <p>References:
  * <ul>
@@ -150,10 +150,11 @@ public class AnalyticPTDHestonEngine
      * and the Fourier-integration configurator. Mirrors C++
      * {@code AnalyticPTDHestonEngine(model, cpxLog, itg, andersenPiterbargEpsilon)}.
      *
-     * <p>In this Java port, only {@link ComplexLogFormula#Gatheral} is
-     * actually implemented; passing {@link ComplexLogFormula#AndersenPiterbarg}
-     * is accepted but the corresponding pricing path in {@link #calculate()}
-     * throws {@link UnsupportedOperationException}.
+     * <p>Both {@link ComplexLogFormula#Gatheral} and
+     * {@link ComplexLogFormula#AndersenPiterbarg} are implemented; the AP
+     * branch routes through {@link AP_Helper} + the
+     * {@link AnalyticHestonEngine.Integration#andersenPiterbargIntegrationLimit}
+     * truncation bound (Phase 5e.5b-CFC-d-174).
      *
      * @param model                      piecewise time-dependent Heston model
      * @param cpxLog                     complex-log formula choice
@@ -285,12 +286,98 @@ public class AnalyticPTDHestonEngine
                 res.value = value;
                 break;
             }
-            case AndersenPiterbarg:
-                throw new UnsupportedOperationException(
-                    "AnalyticPTDHestonEngine: Andersen-Piterbarg complex-log "
-                    + "formula is not yet ported (Phase 5e.5b-CFC-d-AP "
-                    + "carry-forward — requires AP_Helper and "
-                    + "andersenPiterbargIntegrationLimit).");
+            case AndersenPiterbarg: {
+                // Mirrors C++ AnalyticPTDHestonEngine::calculate() AP branch
+                // (analyticptdhestonengine.cpp:329-400). Uses the local
+                // {@link AP_Helper} which subtracts a Black-Scholes characteristic
+                // function (with vAvg as the BS variance proxy) from the PTD-Heston
+                // characteristic function — a control-variate scheme that bypasses
+                // Gatheral's two Fj integrals.
+                final double t05 = 0.5 * timeGrid.at(1);
+
+                // D_u_inf = -(sqrt(1-rho^2), rho) / sigma   evaluated at t05
+                final double rho05   = model.rho(t05);
+                final double sigma05 = model.sigma(t05);
+                final Complex D_u_inf = new Complex(
+                        Math.sqrt(1.0 - rho05 * rho05), rho05)
+                        .div(sigma05).neg();
+
+                // lastI = lower_bound(timeGrid, term) — index of first grid point >= term.
+                int lastI = 0;
+                for (int i = 0; i < timeGrid.size(); ++i) {
+                    if (timeGrid.at(i) >= term) {
+                        lastI = i;
+                        break;
+                    }
+                    lastI = i + 1;
+                }
+
+                Complex C_u_inf = Complex.ZERO;
+                for (int i = 0; i < lastI; ++i) {
+                    final double begin = timeGrid.at(i);
+                    final double end   = Math.min(term, timeGrid.at(i + 1));
+                    final double tau   = end - begin;
+                    final double t     = 0.5 * (end + begin);
+
+                    final double kappa = model.kappa(t);
+                    final double theta = model.theta(t);
+                    final double sigma = model.sigma(t);
+                    final double rho   = model.rho(t);
+
+                    C_u_inf = C_u_inf.add(
+                            new Complex(Math.sqrt(1.0 - rho * rho), rho)
+                                    .mul(-kappa * theta * tau / sigma));
+                }
+
+                final double ratio    = riskFreeDiscount / dividendDiscount;
+                final double fwdPrice = spotPrice / ratio;
+
+                final double epsilon = andersenPiterbargEpsilon_
+                        * Math.PI / (Math.sqrt(strike * fwdPrice) * riskFreeDiscount);
+
+                final double c_inf = -(C_u_inf.add(D_u_inf.mul(v0))).real();
+
+                // Lazy AP integration-limit supplier — mirrors C++
+                // std::function<Real()> uM = [=](){...}.
+                final double v0_      = v0;
+                final double term_    = term;
+                final double c_inf_   = c_inf;
+                final double epsilon_ = epsilon;
+                final java.util.function.DoubleSupplier uM = () ->
+                        AnalyticHestonEngine.Integration
+                                .andersenPiterbargIntegrationLimit(
+                                        c_inf_, epsilon_, v0_, term_);
+
+                final double vAvg = (1.0 - Math.exp(-kappaAvg * term))
+                        * (v0 - thetaAvg) / (kappaAvg * term) + thetaAvg;
+
+                final double bsPrice = new BlackCalculator(
+                        Option.Type.Call, strike, fwdPrice,
+                        Math.sqrt(vAvg * term), riskFreeDiscount).value();
+
+                final AP_Helper apHelper = new AP_Helper(
+                        term, spotPrice, strike, ratio, Math.sqrt(vAvg), this);
+
+                // C++ passes scaling=1 implicitly via the 3-arg overload.
+                final double h_cv = integration_.calculate(c_inf, apHelper, uM, 1.0)
+                        * Math.sqrt(strike * fwdPrice) * riskFreeDiscount / Math.PI;
+                evaluations_ += integration_.numberOfEvaluations();
+
+                final double value;
+                switch (payoff.optionType()) {
+                    case Call:
+                        value = bsPrice + h_cv;
+                        break;
+                    case Put:
+                        value = bsPrice + h_cv
+                                - riskFreeDiscount * (fwdPrice - strike);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("unknown option type");
+                }
+                res.value = value;
+                break;
+            }
             default:
                 throw new IllegalStateException(
                     "unknown complex log formula: " + cpxLog_);
@@ -376,6 +463,61 @@ public class AnalyticPTDHestonEngine
         }
 
         return D.mul(v0).add(C);
+    }
+
+    // -----------------------------------------------------------------
+    // Andersen-Piterbarg control-variate integrand. Mirrors C++
+    // {@code AnalyticPTDHestonEngine::AP_Helper}
+    // (analyticptdhestonengine.cpp:122-152).
+    //
+    // The integrand subtracts a Black-Scholes characteristic function
+    // (parameterized by the variance proxy {@code sigmaBS^2}) from the
+    // PTD-Heston characteristic function. The shift {@code z = (u, -0.5)}
+    // realises the Carr-Madan / Andersen-Piterbarg representation.
+    // -----------------------------------------------------------------
+
+    static final class AP_Helper implements Ops.DoubleOp {
+        private final double term_;
+        private final double sigmaBS_;
+        private final double x_;
+        private final double sx_;
+        private final double dd_;
+        private final AnalyticPTDHestonEngine enginePtr_;
+
+        AP_Helper(final double term,
+                  final double s0,
+                  final double strike,
+                  final double ratio,
+                  final double sigmaBS,
+                  final AnalyticPTDHestonEngine enginePtr) {
+            QL.require(enginePtr != null, "pricing engine required");
+            this.term_      = term;
+            this.sigmaBS_   = sigmaBS;
+            this.x_         = Math.log(s0);
+            this.sx_        = Math.log(strike);
+            this.dd_        = x_ - Math.log(ratio);
+            this.enginePtr_ = enginePtr;
+        }
+
+        @Override
+        public double op(final double u) {
+            // z = (u, -0.5)
+            final Complex z = new Complex(u, -0.5);
+
+            // phiBS = exp(-0.5 * sigmaBS^2 * T * (z*z + i*z))
+            // where i*z corresponds to (-z.imag(), z.real()).
+            final Complex iz = new Complex(-z.imag(), z.real());
+            final Complex phiBS = z.mul(z).add(iz)
+                    .mul(-0.5 * sigmaBS_ * sigmaBS_ * term_)
+                    .exp();
+
+            // numerator factor: exp(i*u*(dd - sx)) — pure rotation.
+            final Complex shift = new Complex(0.0, u * (dd_ - sx_)).exp();
+
+            final Complex diff = phiBS.sub(enginePtr_.chF(z, term_));
+
+            return shift.mul(diff).div(u * u + 0.25).real();
+        }
     }
 
     // -----------------------------------------------------------------
