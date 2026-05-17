@@ -35,6 +35,7 @@ import org.jquantlib.math.integrals.GaussianQuadrature;
 import org.jquantlib.math.integrals.Integrator;
 import org.jquantlib.math.integrals.SimpsonIntegral;
 import org.jquantlib.math.integrals.TrapezoidIntegral;
+import org.jquantlib.math.solvers1D.Brent;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.GenericModelEngine;
 import org.jquantlib.processes.HestonProcess;
@@ -122,6 +123,10 @@ public class AnalyticHestonEngine
     private final HestonProcess process_;
     private final ComplexLogFormula cpxLog_;
     private final Integration integration_;
+    /** Andersen-Piterbarg integration-limit epsilon. C++ default {@code 1e-8}. */
+    private double andersenPiterbargEpsilon_;
+    /** AP_Helper shift parameter. C++ default {@code -0.5}. */
+    private double alpha_;
     private int evaluations_;
 
     /**
@@ -153,6 +158,8 @@ public class AnalyticHestonEngine
         this.process_     = process;
         this.cpxLog_      = ComplexLogFormula.Gatheral;
         this.integration_ = Integration.gaussLaguerre(integrationOrder);
+        this.andersenPiterbargEpsilon_ = 1e-8;
+        this.alpha_       = -0.5;
         this.evaluations_ = 0;
     }
 
@@ -189,7 +196,34 @@ public class AnalyticHestonEngine
         this.process_     = process;
         this.cpxLog_      = cpxLog;
         this.integration_ = integration;
+        this.andersenPiterbargEpsilon_ = 1e-8;
+        this.alpha_       = -0.5;
         this.evaluations_ = 0;
+    }
+
+    /**
+     * Configure the Andersen-Piterbarg integration-limit epsilon used to
+     * size the truncation upper bound when {@code cpxLog ∈ {AndersenPiterbarg,
+     * AndersenPiterbargOptCV, AngledContour, AngledContourNoCV, AsymptoticChF,
+     * OptimalCV}}. Mirrors C++ {@code AnalyticHestonEngine(..., Real
+     * andersenPiterbargEpsilon, Real alpha)} constructor argument.
+     *
+     * @param epsilon  truncation tolerance (C++ default {@code 1e-8}); the
+     *                 AP scaled epsilon is {@code epsilon*π/(sqrt(K·F)·dr)}.
+     * @return {@code this} for fluent chaining
+     */
+    public AnalyticHestonEngine withAndersenPiterbargEpsilon(final double epsilon) {
+        this.andersenPiterbargEpsilon_ = epsilon;
+        return this;
+    }
+
+    /**
+     * Configure the AP_Helper {@code alpha} shift parameter. Mirrors C++
+     * {@code AnalyticHestonEngine(..., Real alpha=−0.5)} constructor argument.
+     */
+    public AnalyticHestonEngine withAlpha(final double alpha) {
+        this.alpha_ = alpha;
+        return this;
     }
 
     /**
@@ -255,8 +289,13 @@ public class AnalyticHestonEngine
     }
 
     /**
-     * Internal: price under the Gatheral integration scheme (the only
-     * complex-log formula implemented in this port).
+     * Internal: price under the configured complex-log formula. Mirrors
+     * C++ {@code AnalyticHestonEngine::priceVanillaPayoff(payoff, Time, Real fwd)}
+     * (v1.42.1 analytichestonengine.cpp:748-859).
+     *
+     * <p>Phase 5e.5b-CFC-d-129 wired the AndersenPiterbarg / AngledContour
+     * / AsymptoticChF / OptimalCV branches into the dispatch using the
+     * existing {@link AP_Helper} (added in CFC-d-124).
      */
     private double priceVanillaPayoff(final PlainVanillaPayoff payoff,
                                       final double maturity,
@@ -278,33 +317,103 @@ public class AnalyticHestonEngine
 
         evaluations_ = 0;
 
-        // Gatheral: integrate Fj_Helper(j=1, 2). c_inf is the change-of-variable
-        // bound used by all non-Gauss-Laguerre integrators in integrand1/2/3 to
-        // map (0, ∞) → (0, 1); Gauss-Laguerre integrates the bare integrand
-        // directly via its e^{-x} weight and ignores c_inf. Mirrors C++.
-        final double c_inf = Math.min(0.2, Math.max(0.0001,
-                Math.sqrt(1.0 - rho * rho) / sigma)) * (v0 + kappa * theta * maturity);
-
-        final Fj_Helper f1 = new Fj_Helper(kappa, theta, sigma, v0, spot, rho,
-                this, cpxLog_, maturity, strike, df, 1);
-        final Fj_Helper f2 = new Fj_Helper(kappa, theta, sigma, v0, spot, rho,
-                this, cpxLog_, maturity, strike, df, 2);
-
-        final double p1 = integration_.calculate(c_inf, f1) / Math.PI;
-        evaluations_ += integration_.numberOfEvaluations();
-        final double p2 = integration_.calculate(c_inf, f2) / Math.PI;
-        evaluations_ += integration_.numberOfEvaluations();
-
         final double value;
-        switch (payoff.optionType()) {
-            case Call:
-                value = spot * dd * (p1 + 0.5) - strike * dr * (p2 + 0.5);
+        switch (cpxLog_) {
+            case Gatheral:
+            case BranchCorrection: {
+                // Integrate Fj_Helper(j=1, 2). c_inf is the change-of-variable
+                // bound used by all non-Gauss-Laguerre integrators in
+                // integrand1/2/3 to map (0, ∞) → (0, 1); Gauss-Laguerre
+                // integrates the bare integrand directly via its e^{-x} weight
+                // and ignores c_inf. Mirrors C++.
+                final double c_inf = Math.min(0.2, Math.max(0.0001,
+                        Math.sqrt(1.0 - rho * rho) / sigma)) * (v0 + kappa * theta * maturity);
+
+                final Fj_Helper f1 = new Fj_Helper(kappa, theta, sigma, v0, spot, rho,
+                        this, cpxLog_, maturity, strike, df, 1);
+                final Fj_Helper f2 = new Fj_Helper(kappa, theta, sigma, v0, spot, rho,
+                        this, cpxLog_, maturity, strike, df, 2);
+
+                final double p1 = integration_.calculate(c_inf, f1) / Math.PI;
+                evaluations_ += integration_.numberOfEvaluations();
+                final double p2 = integration_.calculate(c_inf, f2) / Math.PI;
+                evaluations_ += integration_.numberOfEvaluations();
+
+                switch (payoff.optionType()) {
+                    case Call:
+                        value = spot * dd * (p1 + 0.5) - strike * dr * (p2 + 0.5);
+                        break;
+                    case Put:
+                        value = spot * dd * (p1 - 0.5) - strike * dr * (p2 - 0.5);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("unknown option type");
+                }
                 break;
-            case Put:
-                value = spot * dd * (p1 - 0.5) - strike * dr * (p2 - 0.5);
+            }
+
+            case AndersenPiterbarg:
+            case AndersenPiterbargOptCV:
+            case AsymptoticChF:
+            case AngledContour:
+            case AngledContourNoCV:
+            case OptimalCV: {
+                // Andersen-Piterbarg style control-variate path. Mirrors C++
+                // priceVanillaPayoff() AP branch (analytichestonengine.cpp:803-852).
+                final double c_inf =
+                        Math.sqrt(1.0 - rho * rho) * (v0 + kappa * theta * maturity) / sigma;
+
+                final double epsilon = andersenPiterbargEpsilon_
+                        * Math.PI / (Math.sqrt(strike * fwd) * dr);
+
+                final double v0_ = v0;
+                final double maturity_ = maturity;
+                final double c_inf_ = c_inf;
+                final double epsilon_ = epsilon;
+                // Lazy AP integration-limit supplier — exactly matches
+                // C++ std::function<Real()> uM = [&](){ return ...; }.
+                final java.util.function.DoubleSupplier uM = () ->
+                        Integration.andersenPiterbargIntegrationLimit(
+                                c_inf_, epsilon_, v0_, maturity_);
+
+                final ComplexLogFormula finalLog = (cpxLog_ == ComplexLogFormula.OptimalCV)
+                        ? optimalControlVariate(maturity, v0, kappa, theta, sigma, rho)
+                        : cpxLog_;
+
+                final AP_Helper cvHelper = new AP_Helper(
+                        maturity, fwd, strike, finalLog, this, alpha_);
+
+                final double cvValue = cvHelper.controlVariateValue();
+
+                final double vAvg = (1.0 - Math.exp(-kappa * maturity))
+                        * (v0 - theta) / (kappa * maturity) + theta;
+
+                final double scalingFactor =
+                        (cpxLog_ != ComplexLogFormula.OptimalCV
+                            && cpxLog_ != ComplexLogFormula.AsymptoticChF)
+                        ? Math.max(0.25, Math.min(1000.0,
+                                0.25 / Math.sqrt(0.5 * vAvg * maturity)))
+                        : 1.0;
+
+                final double h_cv = fwd / Math.PI
+                        * integration_.calculate(c_inf, cvHelper, uM, scalingFactor);
+                evaluations_ += integration_.numberOfEvaluations();
+
+                switch (payoff.optionType()) {
+                    case Call:
+                        value = (cvValue + h_cv) * dr;
+                        break;
+                    case Put:
+                        value = (cvValue + h_cv - (fwd - strike)) * dr;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("unknown option type");
+                }
                 break;
+            }
+
             default:
-                throw new IllegalArgumentException("unknown option type");
+                throw new IllegalStateException("unknown complex log formula: " + cpxLog_);
         }
         return value;
     }
@@ -1061,6 +1170,110 @@ public class AnalyticHestonEngine
               default:
                 throw new IllegalStateException(
                     "unknown integration algorithm: " + algo_);
+            }
+        }
+
+        /**
+         * Mirrors C++ {@code Integration::calculate(c_inf, f, maxBound,
+         * scaling)} (4-argument overload). Used by the AndersenPiterbarg /
+         * AngledContour pricing path on {@link AnalyticHestonEngine}.
+         *
+         * <p>The {@code maxBound} supplier is queried lazily: for non-adaptive
+         * Gaussian quadrature it is ignored; for adaptive integrators it
+         * defines the truncation upper bound. The {@code scaling} factor is
+         * only relevant for {@link Algorithm#ExpSinh}, which is not yet ported
+         * in Java — it is accepted for API parity.
+         */
+        public double calculate(final double c_inf,
+                                final Ops.DoubleOp f,
+                                final java.util.function.DoubleSupplier maxBound,
+                                final double scaling) {
+            switch (algo_) {
+              case GaussLaguerre:
+                return gaussLaguerre_.op(f);
+              case GaussLegendre:
+              case GaussChebyshev:
+              case GaussChebyshev2nd:
+                return gaussianQuadrature_.op(new Integrand1(c_inf, f));
+              case Simpson:
+              case Trapezoid:
+              case GaussLobatto:
+              case GaussKronrod: {
+                final double uM = (maxBound != null) ? maxBound.getAsDouble()
+                                                     : Constants.NULL_REAL;
+                if (uM != Constants.NULL_REAL) {
+                    return integrator_.op(f, 0.0, uM);
+                }
+                return integrator_.op(new Integrand2(c_inf, f), 0.0, 1.0);
+              }
+              case DiscreteSimpson:
+              case DiscreteTrapezoid: {
+                final double uM = (maxBound != null) ? maxBound.getAsDouble()
+                                                     : Constants.NULL_REAL;
+                if (uM != Constants.NULL_REAL) {
+                    return integrator_.op(f, 0.0, uM);
+                }
+                return integrator_.op(new Integrand3(c_inf, f), 0.0, 1.0);
+              }
+              case ExpSinh:
+                throw new UnsupportedOperationException(
+                    "AnalyticHestonEngine.Integration.calculate(4-arg): "
+                    + "ExpSinh integration not yet ported.");
+              default:
+                throw new IllegalStateException(
+                    "unknown integration algorithm: " + algo_);
+            }
+        }
+
+        /**
+         * Andersen-Piterbarg truncation upper bound. Mirrors C++
+         * {@code Integration::andersenPiterbargIntegrationLimit(c_inf,
+         * epsilon, v0, t)} (analytichestonengine.cpp:1046-1065).
+         *
+         * <p>Solves both {@code c_inf*u + log(u) + log(eps) = 0} and (when
+         * solvable) {@code 0.5*v0*t*u² + log(u) + log(eps) = 0} via Brent;
+         * returns the larger of the two roots, falling back to the first
+         * root if the second solve fails.
+         */
+        public static double andersenPiterbargIntegrationLimit(
+                final double c_inf, final double epsilon,
+                final double v0, final double t) {
+            final double logEpsilon = Math.log(epsilon);
+
+            final double uMaxGuess = -logEpsilon / c_inf;
+            final double uMaxStep  = 0.1 * uMaxGuess;
+
+            final Brent brent1 = new Brent();
+            brent1.setMaxEvaluations(1000);
+            final double uMax = brent1.solve(
+                    new Ops.DoubleOp() {
+                        @Override
+                        public double op(final double u) {
+                            return c_inf * u + Math.log(u) + logEpsilon;
+                        }
+                    },
+                    Constants.QL_EPSILON * uMaxGuess,
+                    uMaxGuess,
+                    uMaxStep);
+
+            try {
+                final double v0T2 = 0.5 * v0 * t;
+                final double uHatMaxGuess = Math.sqrt(-logEpsilon / v0T2);
+                final Brent brent2 = new Brent();
+                brent2.setMaxEvaluations(1000);
+                final double uHatMax = brent2.solve(
+                        new Ops.DoubleOp() {
+                            @Override
+                            public double op(final double u) {
+                                return v0T2 * u * u + Math.log(u) + logEpsilon;
+                            }
+                        },
+                        Constants.QL_EPSILON * uHatMaxGuess,
+                        uHatMaxGuess,
+                        0.001 * uHatMaxGuess);
+                return Math.max(uMax, uHatMax);
+            } catch (final ArithmeticException e) {
+                return uMax;
             }
         }
 
