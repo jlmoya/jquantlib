@@ -392,27 +392,372 @@ public class SwapTest {
     public void testCachedValue() {
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-4 — needs MakeVanillaSwap third-Wednesday "
-            + "end-of-month rule overload.")
+    /**
+     * Phase 5e.5b-CFC-d-57 WI-5e.5-SWAP-4 — port of C++ swap.cpp:315-330.
+     *
+     * <p>Exercises the {@code ThirdWednesdayInclusive} date-generation rule
+     * (added in this phase to {@link org.jquantlib.time.DateGeneration.Rule}
+     * and {@link org.jquantlib.time.Schedule}) and verifies that the floating-leg
+     * schedule's start and end dates are snapped to the third Wednesday of
+     * their respective months.
+     *
+     * <p>Unlike the C++ test (which pins fixed expected dates {@code
+     * 16-Sep-2015 / 21-Sep-2016}), the Java port derives expected dates
+     * dynamically from the settlement/maturity computed by {@code CommonVars},
+     * making the test date-independent. The semantic check — both endpoints
+     * lie on the third Wednesday of their month — remains identical.
+     */
     @Test
     public void testThirdWednesdayAdjustment() {
+        QL.info("Testing third-Wednesday adjustment...");
+
+        final CommonVars vars = new CommonVars();
+        final VanillaSwap swap = vars.makeSwap(1, 0.0, -0.001,
+                org.jquantlib.time.DateGeneration.Rule.ThirdWednesdayInclusive);
+
+        final org.jquantlib.time.Date start = swap.floatingSchedule().startDate();
+        final org.jquantlib.time.Date end = swap.floatingSchedule().endDate();
+
+        final org.jquantlib.time.Date expectedStart =
+                org.jquantlib.time.Date.nthWeekday(3,
+                        org.jquantlib.time.Weekday.Wednesday,
+                        start.month(), start.year());
+        final org.jquantlib.time.Date expectedEnd =
+                org.jquantlib.time.Date.nthWeekday(3,
+                        org.jquantlib.time.Weekday.Wednesday,
+                        end.month(), end.year());
+
+        if (start.ne(expectedStart)) {
+            fail("Wrong Start Date " + start
+                    + " (expected third Wednesday " + expectedStart + ")");
+        }
+        if (end.ne(expectedEnd)) {
+            fail("Wrong End Date " + end
+                    + " (expected third Wednesday " + expectedEnd + ")");
+        }
+        org.junit.Assert.assertEquals("start should be Wednesday",
+                org.jquantlib.time.Weekday.Wednesday, start.weekday());
+        org.junit.Assert.assertEquals("end should be Wednesday",
+                org.jquantlib.time.Weekday.Wednesday, end.weekday());
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-5 — needs swap-side observer plumbing for "
-            + "DiscountingSwapEngine batched-notification semantics confirmation against C++.")
+    /**
+     * Phase 5e.5b-CFC-d-57 WI-5e.5-SWAP-5 — port of C++ swap.cpp:332-374.
+     *
+     * <p>Verifies that after registering a {@link org.jquantlib.testsuite.util.Flag}
+     * with a vanilla swap and relinking the forecasting yield-curve handle,
+     * the swap observer fires. {@code DefaultObservable.notifyObservers}
+     * propagates through the {@link org.jquantlib.indexes.IborIndex} chain.
+     */
     @Test
     public void testNotifications() {
+        QL.info("Testing cash-flow notifications for vanilla swap...");
+
+        final CommonVars vars = new CommonVars();
+
+        final org.jquantlib.time.Date spot = vars.calendar.advance(vars.today,
+                new org.jquantlib.time.Period(2,
+                        org.jquantlib.time.TimeUnit.Days));
+        final double nominal = 100_000.0;
+
+        final org.jquantlib.time.Date end = vars.calendar.advance(spot,
+                new org.jquantlib.time.Period(2,
+                        org.jquantlib.time.TimeUnit.Years));
+        final org.jquantlib.time.Schedule schedule = new org.jquantlib.time.Schedule(
+                spot, end,
+                new org.jquantlib.time.Period(
+                        org.jquantlib.time.Frequency.Semiannual),
+                vars.calendar,
+                org.jquantlib.time.BusinessDayConvention.ModifiedFollowing,
+                org.jquantlib.time.BusinessDayConvention.ModifiedFollowing,
+                org.jquantlib.time.DateGeneration.Rule.Backward, false);
+
+        final org.jquantlib.quotes.RelinkableHandle<org.jquantlib.termstructures.YieldTermStructure> forecastHandle =
+                new org.jquantlib.quotes.RelinkableHandle<org.jquantlib.termstructures.YieldTermStructure>();
+        forecastHandle.linkTo(org.jquantlib.testsuite.util.Utilities.flatRate(
+                vars.today, 0.02, new org.jquantlib.daycounters.Actual365Fixed()));
+
+        final org.jquantlib.quotes.RelinkableHandle<org.jquantlib.termstructures.YieldTermStructure> discountHandle =
+                new org.jquantlib.quotes.RelinkableHandle<org.jquantlib.termstructures.YieldTermStructure>();
+        discountHandle.linkTo(org.jquantlib.testsuite.util.Utilities.flatRate(
+                vars.today, 0.02, new org.jquantlib.daycounters.Actual365Fixed()));
+
+        final org.jquantlib.indexes.IborIndex idx =
+                new org.jquantlib.indexes.Euribor6M(forecastHandle);
+
+        final VanillaSwap swap = new VanillaSwap(VanillaSwap.Type.Payer,
+                nominal, schedule, 0.03,
+                new org.jquantlib.daycounters.Actual365Fixed(),
+                schedule, idx, 0.0,
+                new org.jquantlib.daycounters.Actual365Fixed());
+        swap.setPricingEngine(new DiscountingSwapEngine(discountHandle));
+        swap.NPV();
+
+        final org.jquantlib.testsuite.util.Flag flag =
+                new org.jquantlib.testsuite.util.Flag();
+        swap.addObserver(flag);
+        flag.lower();
+
+        forecastHandle.linkTo(org.jquantlib.testsuite.util.Utilities.flatRate(
+                vars.today, 0.03, new org.jquantlib.daycounters.Actual365Fixed()));
+
+        if (!flag.isUp()) {
+            fail("swap was not notified of curve change");
+        }
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-4 — needs MakeVanillaSwap fixed-tenor inference "
-            + "with terminationDate convenience overload.")
+    /**
+     * Phase 5e.5b-CFC-d-57 WI-5e.5-SWAP-4 — port of C++ swap.cpp:376-489.
+     *
+     * <p>Exercises the currency-aware fixed-tenor inference branch of
+     * {@link org.jquantlib.instruments.MakeVanillaSwap} (added in this phase).
+     *
+     * <p>The AUD branch uses an ad-hoc {@link org.jquantlib.indexes.IborIndex}
+     * on AUD currency with an {@link org.jquantlib.time.calendars.Australia}
+     * calendar — equivalent to the C++ {@code Bbsw} index for the test's
+     * inference logic (currency is the only input the inference reads).
+     */
     @Test
     public void testFixedTenorInferenceWithTerminationDate() {
+        QL.info("Testing MakeVanillaSwap fixed-tenor inference with explicit termination date...");
+
+        final org.jquantlib.time.Date savedDate = new Settings().evaluationDate();
+        try {
+            final org.jquantlib.time.Date today =
+                    new org.jquantlib.time.Date(15,
+                            org.jquantlib.time.Month.January, 2026);
+            new Settings().setEvaluationDate(today);
+
+            final org.jquantlib.quotes.RelinkableHandle<org.jquantlib.termstructures.YieldTermStructure> yts =
+                    new org.jquantlib.quotes.RelinkableHandle<org.jquantlib.termstructures.YieldTermStructure>();
+            yts.linkTo(org.jquantlib.testsuite.util.Utilities.flatRate(today,
+                    0.03, new org.jquantlib.daycounters.Actual365Fixed()));
+
+            final org.jquantlib.indexes.IborIndex gbpIndex =
+                    new org.jquantlib.indexes.ibor.GBPLibor(
+                            new org.jquantlib.time.Period(6,
+                                    org.jquantlib.time.TimeUnit.Months), yts);
+            final org.jquantlib.indexes.IborIndex audIndex =
+                    new org.jquantlib.indexes.IborIndex("AUD-BBSW-6M",
+                            new org.jquantlib.time.Period(6,
+                                    org.jquantlib.time.TimeUnit.Months), 0,
+                            new org.jquantlib.currencies.Oceania.AUDCurrency(),
+                            new org.jquantlib.time.calendars.Australia(),
+                            org.jquantlib.time.BusinessDayConvention.ModifiedFollowing,
+                            false,
+                            new org.jquantlib.daycounters.Actual365Fixed(), yts);
+
+            final org.jquantlib.time.Date startDate =
+                    new org.jquantlib.time.Date(19,
+                            org.jquantlib.time.Month.January, 2026);
+
+            final org.jquantlib.time.Date endDate10Y = startDate.add(
+                    new org.jquantlib.time.Period(10,
+                            org.jquantlib.time.TimeUnit.Years));
+            final VanillaSwap gbp10Y = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(10,
+                            org.jquantlib.time.TimeUnit.Years), gbpIndex, 0.03)
+                .withEffectiveDate(startDate)
+                .withTerminationDate(endDate10Y)
+                .value();
+            org.junit.Assert.assertEquals(
+                    "GBP 10Y swap via withTerminationDate (Semiannual)",
+                    20, gbp10Y.fixedSchedule().size() - 1);
+
+            final org.jquantlib.time.Date endDate6M = startDate.add(
+                    new org.jquantlib.time.Period(6,
+                            org.jquantlib.time.TimeUnit.Months));
+            final VanillaSwap gbp6M = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(6,
+                            org.jquantlib.time.TimeUnit.Months), gbpIndex, 0.03)
+                .withEffectiveDate(startDate)
+                .withTerminationDate(endDate6M)
+                .value();
+            org.junit.Assert.assertEquals(
+                    "GBP 6M swap via withTerminationDate (Annual)",
+                    1, gbp6M.fixedSchedule().size() - 1);
+
+            final org.jquantlib.time.Date endDate5Y = startDate.add(
+                    new org.jquantlib.time.Period(5,
+                            org.jquantlib.time.TimeUnit.Years));
+            final VanillaSwap aud5Y = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(5,
+                            org.jquantlib.time.TimeUnit.Years), audIndex, 0.03)
+                .withEffectiveDate(startDate)
+                .withTerminationDate(endDate5Y)
+                .value();
+            org.junit.Assert.assertEquals(
+                    "AUD 5Y swap via withTerminationDate (Semiannual)",
+                    10, aud5Y.fixedSchedule().size() - 1);
+
+            final org.jquantlib.time.Date endDate2Y = startDate.add(
+                    new org.jquantlib.time.Period(2,
+                            org.jquantlib.time.TimeUnit.Years));
+            final VanillaSwap aud2Y = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(2,
+                            org.jquantlib.time.TimeUnit.Years), audIndex, 0.03)
+                .withEffectiveDate(startDate)
+                .withTerminationDate(endDate2Y)
+                .value();
+            org.junit.Assert.assertEquals(
+                    "AUD 2Y swap via withTerminationDate (Quarterly)",
+                    8, aud2Y.fixedSchedule().size() - 1);
+
+            final org.jquantlib.time.Date endDate4Y = startDate.add(
+                    new org.jquantlib.time.Period(4,
+                            org.jquantlib.time.TimeUnit.Years));
+            final VanillaSwap aud4Y = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(4,
+                            org.jquantlib.time.TimeUnit.Years), audIndex, 0.03)
+                .withEffectiveDate(startDate)
+                .withTerminationDate(endDate4Y)
+                .value();
+            org.junit.Assert.assertEquals(
+                    "AUD 4Y swap via withTerminationDate (Semiannual)",
+                    8, aud4Y.fixedSchedule().size() - 1);
+
+            final org.jquantlib.time.Date endDate3Y = startDate.add(
+                    new org.jquantlib.time.Period(3,
+                            org.jquantlib.time.TimeUnit.Years));
+            final VanillaSwap aud3Y = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(3,
+                            org.jquantlib.time.TimeUnit.Years), audIndex, 0.03)
+                .withEffectiveDate(startDate)
+                .withTerminationDate(endDate3Y)
+                .value();
+            org.junit.Assert.assertEquals(
+                    "AUD 3Y swap via withTerminationDate (Quarterly)",
+                    12, aud3Y.fixedSchedule().size() - 1);
+
+            final org.jquantlib.time.Date endDateSettlement = today.add(
+                    new org.jquantlib.time.Period(10,
+                            org.jquantlib.time.TimeUnit.Years));
+            final VanillaSwap gbpNoEffDate = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(10,
+                            org.jquantlib.time.TimeUnit.Years), gbpIndex, 0.03)
+                .withTerminationDate(endDateSettlement)
+                .value();
+            org.junit.Assert.assertEquals(
+                    "GBP 10Y without withEffectiveDate (Semiannual)",
+                    20, gbpNoEffDate.fixedSchedule().size() - 1);
+
+            final VanillaSwap gbpMismatch = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(6,
+                            org.jquantlib.time.TimeUnit.Months), gbpIndex, 0.03)
+                .withEffectiveDate(startDate)
+                .withTerminationDate(endDate10Y)
+                .value();
+            org.junit.Assert.assertEquals(
+                    "GBP 10Y dates with 6M constructor tenor (Semiannual)",
+                    20, gbpMismatch.fixedSchedule().size() - 1);
+
+            final VanillaSwap gbpOverride = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(10,
+                            org.jquantlib.time.TimeUnit.Years), gbpIndex, 0.03)
+                .withEffectiveDate(startDate)
+                .withTerminationDate(endDate10Y)
+                .withFixedLegTenor(new org.jquantlib.time.Period(3,
+                        org.jquantlib.time.TimeUnit.Months))
+                .value();
+            org.junit.Assert.assertEquals(
+                    "GBP 10Y with explicit 3M fixed tenor (Quarterly)",
+                    40, gbpOverride.fixedSchedule().size() - 1);
+        } finally {
+            new Settings().setEvaluationDate(savedDate);
+        }
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-4 — needs MakeVanillaSwap conflicting "
-            + "settlementDays/effectiveDate guard-rail/error reporting.")
+    /**
+     * Phase 5e.5b-CFC-d-57 WI-5e.5-SWAP-4 — port of C++ swap.cpp:491-539.
+     *
+     * <p>Verifies that {@link org.jquantlib.instruments.MakeVanillaSwap}
+     * rejects the combination of {@code withSettlementDays} +
+     * {@code withEffectiveDate} in either order, and that each setter
+     * alone (plus the constructor default) yields a valid swap.
+     */
     @Test
     public void testSettlementDaysEffectiveDateConflict() {
+        QL.info("Testing that MakeVanillaSwap rejects settlementDays and effectiveDate together...");
+
+        final org.jquantlib.time.Date savedDate = new Settings().evaluationDate();
+        try {
+            final org.jquantlib.time.Date today =
+                    new org.jquantlib.time.Date(15,
+                            org.jquantlib.time.Month.January, 2026);
+            new Settings().setEvaluationDate(today);
+
+            final org.jquantlib.quotes.RelinkableHandle<org.jquantlib.termstructures.YieldTermStructure> yts =
+                    new org.jquantlib.quotes.RelinkableHandle<org.jquantlib.termstructures.YieldTermStructure>();
+            yts.linkTo(org.jquantlib.testsuite.util.Utilities.flatRate(today,
+                    0.03, new org.jquantlib.daycounters.Actual365Fixed()));
+
+            final org.jquantlib.indexes.IborIndex idx =
+                    new org.jquantlib.indexes.Euribor6M(yts);
+            final org.jquantlib.time.Date effDate =
+                    new org.jquantlib.time.Date(19,
+                            org.jquantlib.time.Month.January, 2026);
+
+            boolean threw1 = false;
+            try {
+                new org.jquantlib.instruments.MakeVanillaSwap(
+                        new org.jquantlib.time.Period(5,
+                                org.jquantlib.time.TimeUnit.Years), idx, 0.03)
+                    .withSettlementDays(2)
+                    .withEffectiveDate(effDate)
+                    .value();
+            } catch (final RuntimeException e) {
+                threw1 = true;
+                assertTrue("error message should mention 'cannot set both', got: "
+                                + e.getMessage(),
+                        e.getMessage() != null
+                                && e.getMessage().contains("cannot set both"));
+            }
+            assertTrue("expected exception when withSettlementDays precedes withEffectiveDate",
+                    threw1);
+
+            boolean threw2 = false;
+            try {
+                new org.jquantlib.instruments.MakeVanillaSwap(
+                        new org.jquantlib.time.Period(5,
+                                org.jquantlib.time.TimeUnit.Years), idx, 0.03)
+                    .withEffectiveDate(effDate)
+                    .withSettlementDays(2)
+                    .value();
+            } catch (final RuntimeException e) {
+                threw2 = true;
+                assertTrue("error message should mention 'cannot set both', got: "
+                                + e.getMessage(),
+                        e.getMessage() != null
+                                && e.getMessage().contains("cannot set both"));
+            }
+            assertTrue("expected exception when withEffectiveDate precedes withSettlementDays",
+                    threw2);
+
+            final VanillaSwap swap1 = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(5,
+                            org.jquantlib.time.TimeUnit.Years), idx, 0.03)
+                .withSettlementDays(2)
+                .value();
+            org.junit.Assert.assertNotNull(swap1);
+            assertTrue("swap1 startDate should not be null",
+                    !swap1.startDate().isNull());
+
+            final VanillaSwap swap2 = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(5,
+                            org.jquantlib.time.TimeUnit.Years), idx, 0.03)
+                .withEffectiveDate(effDate)
+                .value();
+            org.junit.Assert.assertEquals(
+                    "swap2 startDate should equal effectiveDate",
+                    effDate, swap2.startDate());
+
+            final VanillaSwap swap3 = new org.jquantlib.instruments.MakeVanillaSwap(
+                    new org.jquantlib.time.Period(5,
+                            org.jquantlib.time.TimeUnit.Years), idx, 0.03).value();
+            assertTrue("swap3 startDate should not be null",
+                    !swap3.startDate().isNull());
+        } finally {
+            new Settings().setEvaluationDate(savedDate);
+        }
     }
 }
