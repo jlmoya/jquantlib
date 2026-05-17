@@ -244,6 +244,112 @@ public class CapFloor extends Instrument {
     }
 
     //
+    // additional-result accessors for the per-optionlet vectors populated
+    // by BlackCapFloorEngine (and, when wired, BachelierCapFloorEngine).
+    //
+    // <p>C++ QuantLib v1.42.1 does NOT declare named accessors on
+    // {@code CapFloor}; callers read the named entries directly via the
+    // templated {@code Instrument::result<T>("optionletsPrice")} on the
+    // base class (e.g. test-suite/capfloor.cpp:615-616, 697-714). Java's
+    // {@link Instrument#fetchResults} does not copy the engine's
+    // {@code additionalResults} map up to the instrument level, so these
+    // accessors are the Java-idiomatic way to expose the per-optionlet
+    // vectors that the engine populates. Each accessor triggers
+    // {@link #NPV()} so the engine has run, then reads the result from
+    // {@code engine.getResults()}.
+    //
+    // <p>{@code optionletsBPS} is included for API symmetry with the
+    // higher-level QuantLib conventions; the in-tree engines do not yet
+    // populate it, so it returns {@code null} until a future engine adds it.
+    //
+
+    /** Returns the cached engine results, casting to Instrument.ResultsImpl. */
+    private Instrument.ResultsImpl engineResults() {
+        NPV();
+        return (Instrument.ResultsImpl) engine.getResults();
+    }
+
+    /** Returns the named additional-result entry as a {@code double[]} or
+     *  {@code null} when the engine has not populated the key. Mirrors the
+     *  C++ {@code cap->result<std::vector<Real>>(key)} idiom. */
+    private double[] optionletsArray(final String key) {
+        final Object o = engineResults().additionalResults().get(key);
+        if (o == null) {
+            return null;
+        }
+        if (o instanceof double[]) {
+            return (double[]) o;
+        }
+        // Defensive: some engines may store the per-optionlet vector as an
+        // Array/Number[]; convert. (Current Black/Bachelier engines store
+        // raw double[].)
+        if (o instanceof org.jquantlib.math.matrixutilities.Array) {
+            final org.jquantlib.math.matrixutilities.Array a =
+                    (org.jquantlib.math.matrixutilities.Array) o;
+            final double[] dst = new double[a.size()];
+            for (int i = 0; i < dst.length; ++i) {
+                dst[i] = a.get(i);
+            }
+            return dst;
+        }
+        if (o instanceof Number[]) {
+            final Number[] src = (Number[]) o;
+            final double[] dst = new double[src.length];
+            for (int i = 0; i < src.length; ++i) {
+                dst[i] = src[i].doubleValue();
+            }
+            return dst;
+        }
+        throw new LibraryException("unexpected type for additionalResults[\""
+                + key + "\"]: " + o.getClass().getName());
+    }
+
+    /** Per-optionlet NPVs (caplet/floorlet prices). Mirrors the C++
+     *  {@code cap->result<std::vector<Real>>("optionletsPrice")} call site
+     *  (test-suite/capfloor.cpp:615-616). */
+    public double[] optionletsPrice() {
+        return optionletsArray("optionletsPrice");
+    }
+
+    /** Per-optionlet BPS. Not currently populated by the in-tree engines;
+     *  returns {@code null}. Reserved for API symmetry. */
+    public double[] optionletsBPS() {
+        return optionletsArray("optionletsBPS");
+    }
+
+    /** Per-optionlet analytic delta. Mirrors the C++
+     *  {@code cap->result<std::vector<Real>>("optionletsDelta")} call site
+     *  (test-suite/capfloor.cpp:697-698). */
+    public double[] optionletsDelta() {
+        return optionletsArray("optionletsDelta");
+    }
+
+    /** Per-optionlet vega. Mirrors C++ {@code "optionletsVega"} additional
+     *  result populated by {@link BlackCapFloorEngine#calculate()}. */
+    public double[] optionletsVega() {
+        return optionletsArray("optionletsVega");
+    }
+
+    /** Per-optionlet ATM forward (the forward rate used for each caplet
+     *  pricing). Mirrors C++ {@code "optionletsAtmForward"}. */
+    public double[] optionletsAtmForward() {
+        return optionletsArray("optionletsAtmForward");
+    }
+
+    /** Per-optionlet Black standard deviation. Mirrors C++
+     *  {@code "optionletsStdDev"}; only populated when the cap/floor is
+     *  not a collar (BlackCapFloorEngine.cpp:164-165). */
+    public double[] optionletsStdDev() {
+        return optionletsArray("optionletsStdDev");
+    }
+
+    /** Per-optionlet discount factor at the payment date. Mirrors C++
+     *  {@code "optionletsDiscountFactor"}. */
+    public double[] optionletsDiscountFactor() {
+        return optionletsArray("optionletsDiscountFactor");
+    }
+
+    //
     // implied volatility — mirrors C++ v1.42.1 capfloor.cpp lines 323-340
     // plus the anonymous-namespace ImpliedCapVolHelper (capfloor.cpp:37-108).
     //
