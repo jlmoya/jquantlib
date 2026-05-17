@@ -178,11 +178,14 @@ public class AnalyticHestonEngine
         super(model,
               new OneAssetOption.ArgumentsImpl(),
               new OneAssetOption.ResultsImpl());
-        QL.require(cpxLog == ComplexLogFormula.Gatheral,
-                   "AnalyticHestonEngine: Java port currently only implements "
-                   + "the Gatheral complex-log formula; got: " + cpxLog);
         QL.require(integration != null,
                    "AnalyticHestonEngine: integration must not be null");
+        // Phase 5e.5b-CFC-d-124: relaxed Gatheral-only guard. The Java
+        // calculate() path still drives Gatheral, but ExponentialFittingHestonEngine
+        // (and any future Andersen-Piterbarg engines) call into chF/lnChF and the
+        // AP_Helper nested class directly without going through calculate(); the
+        // constructor must therefore accept the full enum so those engines can
+        // hold a non-Gatheral instance for AP_Helper construction.
         this.process_     = process;
         this.cpxLog_      = cpxLog;
         this.integration_ = integration;
@@ -416,21 +419,22 @@ public class AnalyticHestonEngine
             r = z.mul(-sigma2).mul(zPlusI).div(g.add(D));
         }
 
-        // y = (exp(-D*t) - 1) / (2 D), or -t/2 if D == 0
+        // y = expm1(-D*t) / (2 D), or -t/2 if D == 0.
+        // Use precise complex expm1 to preserve precision when |D*t| is
+        // small — critical for the ExponentialFittingHestonEngine
+        // (Andersen-Piterbarg / AngledContour CV) at small sigma where the
+        // naive exp(-D*t)-1 catastrophically cancels.
         final Complex y;
         if (D.real() != 0.0 || D.imag() != 0.0) {
-            // expm1(-D*t) ≈ exp(-D*t) - 1; for complex D we just compute it directly.
-            // No special expm1 is needed here in practice for AnalyticHestonEngine
-            // calculate() inputs (D never numerically vanishes for real Heston params).
-            final Complex em = D.mul(-t).exp().sub(1.0);
-            y = em.div(D.mul(2.0));
+            y = complexExpm1(D.mul(-t)).div(D.mul(2.0));
         } else {
             y = Complex.real(-0.5 * t);
         }
 
-        // A = kappa*theta/sigma2 * ( r*t - 2*log1p(-r*y) )
-        // log1p(-r*y) = log(1 - r*y) since 1 - r*y is well-clear of 0.
-        final Complex log1p_neg_ry = Complex.ONE.sub(r.mul(y)).log();
+        // A = kappa*theta/sigma2 * ( r*t - 2*log1p(-r*y) ). Use precise
+        // complex log1p for stability when |r*y| is small (same regime
+        // motivation as the expm1 above).
+        final Complex log1p_neg_ry = complexLog1p(r.mul(y).neg());
         final Complex A = r.mul(t).sub(log1p_neg_ry.mul(2.0)).mul(kappa * theta / sigma2);
 
         // B = z*(z.real(), z.imag()+1)*y/(1 - r*y)
@@ -450,6 +454,268 @@ public class AnalyticHestonEngine
 
     /** Helper: complex squared. */
     private static Complex squared(final Complex x) { return x.mul(x); }
+
+    /**
+     * Precise complex {@code expm1(z) = exp(z) - 1}. Uses
+     * {@code Math.expm1} on the real part and the half-angle identity
+     * {@code cos(b) - 1 = -2 sin²(b/2)} on the imaginary part to preserve
+     * precision when {@code |z|} is small. Mirrors C++ {@code std::expm1}
+     * on {@code std::complex<Real>} (libstdc++/libc++ both use this form).
+     */
+    static Complex complexExpm1(final Complex z) {
+        final double a = z.real();
+        final double b = z.imag();
+        final double ea  = Math.exp(a);
+        final double em1 = Math.expm1(a);
+        final double sinHalfB = Math.sin(0.5 * b);
+        // cos(b) - 1 = -2 sin²(b/2); avoids catastrophic cancellation
+        // when |b| is small.
+        final double cosBm1 = -2.0 * sinHalfB * sinHalfB;
+        // Re: e^a*cos(b) - 1 = (e^a - 1) + e^a*(cos(b) - 1) = em1 + ea*cosBm1.
+        final double re = em1 + ea * cosBm1;
+        final double im = ea * Math.sin(b);
+        return new Complex(re, im);
+    }
+
+    /**
+     * Precise complex {@code log1p(z) = log(1 + z)}. Uses
+     * {@code Math.log1p} on the squared-modulus expansion to preserve
+     * precision when {@code |z|} is small.
+     */
+    static Complex complexLog1p(final Complex z) {
+        final double a = z.real();
+        final double b = z.imag();
+        // |1 + z|² = (1+a)² + b² = 1 + 2a + a² + b²
+        // log|1+z| = 0.5 * log1p(2a + a² + b²)
+        final double x = 2.0 * a + a * a + b * b;
+        final double re = 0.5 * Math.log1p(x);
+        final double im = Math.atan2(b, 1.0 + a);
+        return new Complex(re, im);
+    }
+
+    // ----------------------------------------------------------------------
+    // Phase 5e.5b-CFC-d-124: AndersenPiterbarg / AngledContour control-variate
+    // helpers used by ExponentialFittingHestonEngine.
+    //
+    // Mirrors C++ AnalyticHestonEngine::optimalControlVariate +
+    // AnalyticHestonEngine::AP_Helper (v1.42.1
+    // ql/pricingengines/vanilla/analytichestonengine.cpp).
+    //
+    // Note: the AsymptoticChF branches of AP_Helper.controlVariateValue()
+    // require the exponential-integral functions Ci/Si which are not yet
+    // ported to Java. For the Heston parameter regimes exercised by
+    // testSmallSigmaExpansion4ExpFitting / testExponentialFitting4StrikesAndMaturities,
+    // optimalControlVariate() selects AngledContour for every (t, v0, kappa,
+    // theta, sigma, rho) tuple, so the AsymptoticChF controlVariateValue()
+    // path is not reached. We still implement AsymptoticChF's operator()
+    // branch (which only needs chF and the precomputed phi_/psi_), so an
+    // explicit cv=AsymptoticChF caller would work for the integrand; only
+    // the controlVariateValue() at AsymptoticChF throws.
+    // ----------------------------------------------------------------------
+
+    /**
+     * Selects the optimal {@link ComplexLogFormula} control variate for the
+     * given Heston parameter tuple, mirroring C++
+     * {@code AnalyticHestonEngine::optimalControlVariate(t, v0, kappa, theta, sigma, rho)}.
+     *
+     * <p>Returns {@link ComplexLogFormula#AsymptoticChF} when the
+     * asymptotic-characteristic-function expansion is expected to dominate
+     * the angled-contour shift (small {@code sigma}, large {@code t});
+     * otherwise returns {@link ComplexLogFormula#AngledContour}.
+     */
+    public static ComplexLogFormula optimalControlVariate(
+            final double t, final double v0, final double kappa,
+            final double theta, final double sigma, final double rho) {
+        if (t > 0.15
+                && (v0 + t * kappa * theta) / sigma * Math.sqrt(1.0 - rho * rho) < 0.15
+                && ((kappa - 0.5 * rho * sigma) * (v0 + t * kappa * theta)
+                    + kappa * theta * Math.log(4.0 * (1.0 - rho * rho))) / (sigma * sigma) < 0.1) {
+            return ComplexLogFormula.AsymptoticChF;
+        }
+        return ComplexLogFormula.AngledContour;
+    }
+
+    /**
+     * Andersen-Piterbarg / Angled-Contour integrand helper used by
+     * Andersen-Piterbarg-style Fourier engines (in particular
+     * {@code ExponentialFittingHestonEngine}). Mirrors C++
+     * {@code AnalyticHestonEngine::AP_Helper}.
+     *
+     * <p>Constructed with the forward, strike, maturity, control-variate
+     * choice, owning {@link AnalyticHestonEngine} (used for its
+     * {@link #chF(Complex, double)}), and the {@code alpha} shift parameter
+     * (C++ default {@code -0.5}). The {@link #op(double)} method returns the
+     * real part of the integrand at frequency {@code u}, and
+     * {@link #controlVariateValue()} returns the closed-form correction
+     * added back at the end of integration.
+     */
+    public static final class AP_Helper implements Ops.DoubleOp {
+        private final double term_;
+        private final double fwd_;
+        private final double strike_;
+        private final double freq_;
+        private final ComplexLogFormula cpxLog_;
+        private final AnalyticHestonEngine engine_;
+        private final double alpha_;
+        private final double s_alpha_;
+
+        private double vAvg_;
+        private double tanPhi_;
+        private Complex phi_;
+        private Complex psi_;
+
+        public AP_Helper(final double term,
+                         final double fwd,
+                         final double strike,
+                         final ComplexLogFormula cpxLog,
+                         final AnalyticHestonEngine engine,
+                         final double alpha) {
+            QL.require(engine != null, "pricing engine required");
+            this.term_   = term;
+            this.fwd_    = fwd;
+            this.strike_ = strike;
+            this.freq_   = Math.log(fwd / strike);
+            this.cpxLog_ = cpxLog;
+            this.engine_ = engine;
+            this.alpha_  = alpha;
+            this.s_alpha_ = Math.exp(alpha * freq_);
+
+            final double v0    = engine.model.v0();
+            final double kappa = engine.model.kappa();
+            final double theta = engine.model.theta();
+            final double sigma = engine.model.sigma();
+            final double rho   = engine.model.rho();
+
+            switch (cpxLog) {
+              case AndersenPiterbarg:
+                vAvg_ = (1.0 - Math.exp(-kappa * term)) * (v0 - theta)
+                            / (kappa * term) + theta;
+                break;
+              case AndersenPiterbargOptCV:
+                vAvg_ = -8.0 * Math.log(engine.chF(
+                            new Complex(0.0, alpha_), term).real()) / term;
+                break;
+              case AsymptoticChF: {
+                final double sqrt1mrho2 = Math.sqrt(1.0 - rho * rho);
+                phi_ = new Complex(sqrt1mrho2, rho)
+                        .mul(-(v0 + term * kappa * theta) / sigma);
+                final double psiRe =
+                        (kappa - 0.5 * rho * sigma) * (v0 + term * kappa * theta)
+                            + kappa * theta * Math.log(4.0 * (1.0 - rho * rho));
+                final double psiIm = -(
+                        (0.5 * rho * rho * sigma - kappa * rho) / sqrt1mrho2
+                            * (v0 + kappa * theta * term)
+                        - 2.0 * kappa * theta * Math.atan(rho / sqrt1mrho2));
+                psi_ = new Complex(psiRe / (sigma * sigma), psiIm / (sigma * sigma));
+                // fallthrough to AngledContour to also set vAvg_ + tanPhi_
+              }
+              // fallthrough
+              case AngledContour: {
+                vAvg_ = (1.0 - Math.exp(-kappa * term)) * (v0 - theta)
+                            / (kappa * term) + theta;
+                // fallthrough to AngledContourNoCV to set tanPhi_
+              }
+              // fallthrough
+              case AngledContourNoCV: {
+                final double r = rho - sigma * freq_ / (v0 + kappa * theta * term);
+                final double angle = (r * freq_ < 0.0)
+                        ? Math.PI / 12.0 * Math.signum(freq_)
+                        : 0.0;
+                tanPhi_ = Math.tan(angle);
+                break;
+              }
+              default:
+                throw new IllegalArgumentException(
+                        "AP_Helper: unknown control variate " + cpxLog);
+            }
+        }
+
+        public AP_Helper(final double term, final double fwd, final double strike,
+                         final ComplexLogFormula cpxLog,
+                         final AnalyticHestonEngine engine) {
+            this(term, fwd, strike, cpxLog, engine, -0.5);
+        }
+
+        /**
+         * Integrand value at frequency {@code u}. Mirrors C++
+         * {@code AP_Helper::operator()(Real u)}.
+         */
+        @Override
+        public double op(final double u) {
+            QL.require(engine_.addOnTerm(u, term_, 1).equals(Complex.ZERO)
+                       && engine_.addOnTerm(u, term_, 2).equals(Complex.ZERO),
+                       "only Heston model is supported");
+
+            if (cpxLog_ == ComplexLogFormula.AngledContour
+                    || cpxLog_ == ComplexLogFormula.AngledContourNoCV
+                    || cpxLog_ == ComplexLogFormula.AsymptoticChF) {
+
+                final Complex h_u    = new Complex(u, u * tanPhi_ - alpha_);
+                final Complex hPrime = h_u.sub(Complex.I);
+
+                Complex phiBS = Complex.ZERO;
+                if (cpxLog_ == ComplexLogFormula.AngledContour) {
+                    final Complex hpHp = hPrime.mul(hPrime);
+                    final Complex iHp  = new Complex(-hPrime.imag(), hPrime.real());
+                    phiBS = hpHp.add(iHp).mul(-0.5 * vAvg_ * term_).exp();
+                } else if (cpxLog_ == ComplexLogFormula.AsymptoticChF) {
+                    final Complex arg = new Complex(1.0, tanPhi_).mul(u).mul(phi_).add(psi_);
+                    phiBS = arg.exp();
+                }
+
+                // factor = exp(i*u*freq) * (1, tanPhi) * (phiBS - chF(hPrime, t)) / (h_u * hPrime)
+                final Complex expI = new Complex(0.0, u * freq_).exp();
+                final Complex onePlusITan = new Complex(1.0, tanPhi_);
+                final Complex chfDiff = phiBS.sub(engine_.chF(hPrime, term_));
+                final Complex denom   = h_u.mul(hPrime);
+                final Complex inner = expI.mul(onePlusITan).mul(chfDiff).div(denom);
+
+                return Math.exp(-u * tanPhi_ * freq_) * inner.real() * s_alpha_;
+            } else if (cpxLog_ == ComplexLogFormula.AndersenPiterbarg
+                       || cpxLog_ == ComplexLogFormula.AndersenPiterbargOptCV) {
+                final Complex z      = new Complex(u, -alpha_);
+                final Complex zPrime = new Complex(u, -alpha_ - 1.0);
+
+                // phiBS = exp(-0.5*vAvg*t*(zPrime*zPrime + i*zPrime))
+                final Complex zpzp = zPrime.mul(zPrime);
+                final Complex izp  = new Complex(-zPrime.imag(), zPrime.real());
+                final Complex phiBS = zpzp.add(izp).mul(-0.5 * vAvg_ * term_).exp();
+
+                final Complex expI = new Complex(0.0, u * freq_).exp();
+                final Complex inner = expI.mul(phiBS.sub(engine_.chF(zPrime, term_)))
+                                          .div(z.mul(zPrime));
+                return inner.real() * s_alpha_;
+            }
+            throw new IllegalStateException("AP_Helper: unknown control variate " + cpxLog_);
+        }
+
+        /**
+         * Closed-form control-variate correction added back to the integral
+         * result. Mirrors C++ {@code AP_Helper::controlVariateValue()}.
+         */
+        public double controlVariateValue() {
+            if (cpxLog_ == ComplexLogFormula.AngledContour
+                    || cpxLog_ == ComplexLogFormula.AndersenPiterbarg
+                    || cpxLog_ == ComplexLogFormula.AndersenPiterbargOptCV) {
+                return new org.jquantlib.pricingengines.BlackCalculator(
+                            Option.Type.Call, strike_, fwd_,
+                            Math.sqrt(vAvg_ * term_), 1.0)
+                        .value();
+            } else if (cpxLog_ == ComplexLogFormula.AsymptoticChF) {
+                // C++ uses ExponentialIntegral::Ci / Si — not yet ported in Java.
+                throw new UnsupportedOperationException(
+                        "AP_Helper.controlVariateValue() for AsymptoticChF requires "
+                        + "ExponentialIntegral.Ci/Si (not yet ported to Java).");
+            } else if (cpxLog_ == ComplexLogFormula.AngledContourNoCV) {
+                return ((alpha_ <=  0.0) ? fwd_    : 0.0)
+                     - ((alpha_ <= -1.0) ? strike_ : 0.0)
+                     - 0.5 * ((alpha_ ==  0.0) ? fwd_    : 0.0)
+                     + 0.5 * ((alpha_ == -1.0) ? strike_ : 0.0);
+            }
+            throw new IllegalStateException(
+                    "AP_Helper.controlVariateValue: unknown control variate " + cpxLog_);
+        }
+    }
 
     // ----------------------------------------------------------------------
     // Integration nested class — Phase 5e.5b-CFC-d-120 port

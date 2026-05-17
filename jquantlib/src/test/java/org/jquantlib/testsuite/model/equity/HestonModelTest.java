@@ -7,6 +7,7 @@
 package org.jquantlib.testsuite.model.equity;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.jquantlib.Settings;
@@ -19,10 +20,18 @@ import org.jquantlib.instruments.EuropeanOption;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.VanillaOption;
+import org.jquantlib.math.Complex;
+import org.jquantlib.math.interpolations.factories.Linear;
+import org.jquantlib.math.optimization.BoundaryConstraint;
+import org.jquantlib.math.optimization.PositiveConstraint;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
+import org.jquantlib.model.ConstantParameter;
 import org.jquantlib.model.equity.HestonModel;
+import org.jquantlib.model.equity.PiecewiseTimeDependentHestonModel;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
+import org.jquantlib.pricingengines.vanilla.AnalyticPTDHestonEngine;
 import org.jquantlib.testsuite.pricingengines.vanilla.AnalyticHestonEngineTest;
 import org.jquantlib.pricingengines.vanilla.AnalyticPDFHestonEngine;
 import org.jquantlib.pricingengines.vanilla.COSHestonEngine;
@@ -44,8 +53,10 @@ import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.BlackConstantVol;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
+import org.jquantlib.time.TimeGrid;
 import org.jquantlib.time.calendars.NullCalendar;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -1371,13 +1382,180 @@ public class HestonModelTest {
 
     /* ---- 7. Piecewise time-dependent Heston -------------------------- */
 
-    @Ignore(REASON_PTD)
+    /**
+     * Phase 5e.5b-CFC-d-125 body-fill — port of C++
+     * {@code testAnalyticPiecewiseTimeDependent} (hestonmodel.cpp:1144-1215).
+     *
+     * <p>Cross-validates {@link AnalyticPTDHestonEngine} (with constant
+     * piecewise parameters and a 2-step time grid spanning [0, 20]) against
+     * the canonical {@link AnalyticHestonEngine}: both must reproduce the
+     * same European-call NPV when the piecewise model degenerates to the
+     * scalar Heston model. Uses Gauss-Laguerre order 192 + Gatheral
+     * complex-log formula.
+     *
+     * <p>C++ tolerance: 1e-7 (LOOSE tier — appropriate for Heston Fourier
+     * integration). The Andersen-Piterbarg half of the C++ test is deferred
+     * (Java port doesn't ship the AP complex-log branch yet — tracked as
+     * Phase 5e.5b-CFC-d-AP).
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:1144-1215} v1.42.1.
+     */
     @Test
-    public void testAnalyticPiecewiseTimeDependent() { fail("not implemented"); }
+    public void testAnalyticPiecewiseTimeDependent() {
+        final Date settlementDate = new Date(27, Month.December, 2004);
+        new Settings().setEvaluationDate(settlementDate);
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final Date exerciseDate = new Date(28, Month.March, 2005);
 
-    @Ignore(REASON_PTD)
+        final PlainVanillaPayoff payoff =
+                new PlainVanillaPayoff(Option.Type.Call, 1.0);
+        final Exercise exercise = new EuropeanExercise(exerciseDate);
+
+        // C++ ZeroCurve(dates, irates, dayCounter) -> InterpolatedZeroCurve
+        // with linear interpolation (default in C++ ZeroCurve.hpp).
+        final Date[] dates = { settlementDate, new Date(1, Month.January, 2007) };
+        final double[] irates = { 0.0, 0.2 };
+        final Handle<YieldTermStructure> riskFreeTS =
+                new Handle<YieldTermStructure>(
+                        new InterpolatedZeroCurve<Linear>(
+                                Linear.class, dates, irates, dc));
+
+        final double[] qrates = { 0.0, 0.3 };
+        final Handle<YieldTermStructure> dividendTS =
+                new Handle<YieldTermStructure>(
+                        new InterpolatedZeroCurve<Linear>(
+                                Linear.class, dates, qrates, dc));
+
+        final double v0 = 0.1;
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(1.0));
+
+        final ConstantParameter theta =
+                new ConstantParameter(0.09, new PositiveConstraint());
+        final ConstantParameter kappa =
+                new ConstantParameter(3.16, new PositiveConstraint());
+        final ConstantParameter sigma =
+                new ConstantParameter(4.40, new PositiveConstraint());
+        final ConstantParameter rho =
+                new ConstantParameter(-0.8, new BoundaryConstraint(-1.0, 1.0));
+
+        final PiecewiseTimeDependentHestonModel ptdModel =
+                new PiecewiseTimeDependentHestonModel(
+                        riskFreeTS, dividendTS, s0, v0,
+                        theta, kappa, sigma, rho, new TimeGrid(20.0, 2));
+
+        final VanillaOption option = new VanillaOption(payoff, exercise);
+
+        // Build a scalar Heston model with the parameters at t=0 (which,
+        // for ConstantParameter, equal the constant values themselves).
+        // This mirrors the C++ HestonProcess(rTS, qTS, s0, v0, kappa(0),
+        // theta(0), sigma(0), rho(0)) construction.
+        final HestonProcess hestonProcess = new HestonProcess(
+                riskFreeTS, dividendTS, s0, v0,
+                kappa.get(0.0), theta.get(0.0),
+                sigma.get(0.0), rho.get(0.0));
+        final HestonModel hestonModel = new HestonModel(hestonProcess);
+        option.setPricingEngine(new AnalyticHestonEngine(hestonModel, hestonProcess));
+
+        final double expected = option.NPV();
+
+        // Switch to the PTD engine with Gauss-Laguerre order 192 (the
+        // C++ test's setting); the prices must match within 1e-7.
+        option.setPricingEngine(new AnalyticPTDHestonEngine(ptdModel, 192));
+        final double calculatedGatheral = option.NPV();
+
+        assertEquals(
+                "AnalyticPTDHestonEngine(Gatheral) must reproduce "
+                + "AnalyticHestonEngine NPV when parameters are constant",
+                expected, calculatedGatheral, 1.0e-7);
+    }
+
+    /**
+     * Phase 5e.5b-CFC-d-125 body-fill — port of C++
+     * {@code testPiecewiseTimeDependentChFvsHestonChF}
+     * (hestonmodel.cpp:2346-2402).
+     *
+     * <p>Cross-validates the characteristic function {@code phi(z, t)}:
+     * {@link AnalyticPTDHestonEngine#chF} (built up over a 10-step
+     * piecewise time grid) must match {@link AnalyticHestonEngine#chF}
+     * (single-step) for all sampled points in the complex {@code z}-plane.
+     * The piecewise model degenerates to the scalar model when all four
+     * parameters are constants, so the characteristic functions must agree
+     * to floating-point precision.
+     *
+     * <p>C++ tolerance: {@code 100 * QL_EPSILON} ≈ 2.22e-14 (TIGHT tier).
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:2346-2402} v1.42.1.
+     */
     @Test
-    public void testPiecewiseTimeDependentChFvsHestonChF() { fail("not implemented"); }
+    public void testPiecewiseTimeDependentChFvsHestonChF() {
+        final Date settlementDate = new Date(5, Month.July, 2017);
+        new Settings().setEvaluationDate(settlementDate);
+        final Date maturityDate = new Date(5, Month.July, 2018);
+
+        final DayCounter dc = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.01)), dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.02)), dc));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final double v0    =  0.04;
+        final double rho   = -0.5;
+        final double sigma =  1.0;
+        final double kappa =  4.0;
+        final double theta =  0.25;
+
+        final ConstantParameter thetaP =
+                new ConstantParameter(theta, new PositiveConstraint());
+        final ConstantParameter kappaP =
+                new ConstantParameter(kappa, new PositiveConstraint());
+        final ConstantParameter sigmaP =
+                new ConstantParameter(sigma, new PositiveConstraint());
+        final ConstantParameter rhoP =
+                new ConstantParameter(rho, new BoundaryConstraint(-1.0, 1.0));
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, s0, v0, kappa, theta, sigma, rho);
+        final HestonModel hestonModel = new HestonModel(hestonProcess);
+        final AnalyticHestonEngine analyticEngine =
+                new AnalyticHestonEngine(hestonModel, hestonProcess);
+
+        final double T = dc.yearFraction(settlementDate, maturityDate);
+        final PiecewiseTimeDependentHestonModel ptdModel =
+                new PiecewiseTimeDependentHestonModel(
+                        rTS, qTS, s0, v0,
+                        thetaP, kappaP, sigmaP, rhoP,
+                        new TimeGrid(T, 10));
+        final AnalyticPTDHestonEngine ptdHestonEngine =
+                new AnalyticPTDHestonEngine(ptdModel);
+
+        // C++ tolerance: 100 * QL_EPSILON ≈ 2.22e-14. Java's Math.exp /
+        // Math.log differ from libc++ by a few ULPs (see Complex.java
+        // doc); we keep the C++ tolerance — this remains comfortable in
+        // practice because the Gatheral lnChF and PTD lnChF use the same
+        // closed-form recursion, so cancellation cleans up the ULP drift.
+        final double tol = 100.0 * 2.220446049250313e-16;
+        for (double r = 0.1; r < 4.0; r += 0.25) {
+            for (double phi = 0.0; phi < 360.0; phi += 60.0) {
+                for (double t = 0.1; t <= 1.0 + 1e-12; t += 0.3) {
+                    // z = r * exp(i*phi) per the C++ test (note: phi is in
+                    // radians as written — C++ multiplies phi by 0 in the
+                    // imaginary axis convention std::complex<Real>(0, phi)).
+                    final Complex zArg = new Complex(0.0, phi).exp().mul(r);
+                    final Complex a = analyticEngine.chF(zArg, t);
+                    final Complex b = ptdHestonEngine.chF(zArg, t);
+                    final double diff = a.sub(b).abs();
+                    assertTrue("ChF mismatch at r=" + r + " phi=" + phi
+                            + " t=" + t + " : Heston=" + a + " PTD=" + b
+                            + " diff=" + diff,
+                            diff <= tol);
+                }
+            }
+        }
+    }
 
     @Ignore(REASON_PTD)
     @Test
