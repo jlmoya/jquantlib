@@ -728,28 +728,158 @@ public class LowDiscrepancySequencesTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-145: Java MT(seed) != C++ MT(seed) at large dim×draw counts (1023 draws x dim 100); needs MT cross-platform alignment")
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 886-900
+     * ({@code testMersenneTwisterDiscrepancy}). Pivot table is the
+     * j=10 (1023-samples) column of the C++ {@code dim*DiscrMersenneTwis}
+     * constants (lines 559-716). Java MT bit-exact alignment for the
+     * scalar seed 123456 was confirmed against C++ via a standalone probe
+     * (the {@code init_genrand} path through {@link
+     * MersenneTwisterUniformRng#setSeed(long)} already mirrors C++
+     * {@code seedInitialization} per the Phase 5e.5b-CFC-d-23 fix).
+     *
+     * <p>Phase 5e.5b-CFC-d-165: enabled.
+     */
     @Test
     public void testMersenneTwisterDiscrepancy() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:885
+        QL.info("Testing Mersenne-twister discrepancy...");
+        final double[] expected = {
+                8.84e-3, 7.02e-3, 4.28e-3, 8.83e-4,
+                1.63e-4, 4.38e-7, 3.27e-10, 5.30e-19
+        };
+        for (int idx = 0; idx < DIMENSIONALITY.length; idx++) {
+            final int dim = DIMENSIONALITY[idx];
+            final RandomSequenceGenerator<MersenneTwisterUniformRng> rsg =
+                    new RandomSequenceGenerator<MersenneTwisterUniformRng>(
+                            MersenneTwisterUniformRng.class, dim, DISCREPANCY_SEED);
+            final DiscrepancyStatistics stat = new DiscrepancyStatistics(dim);
+
+            final int jMin = 10;
+            int k = 0;
+            for (int j = jMin; j < jMin + DISCREPANCY_MEASURES_NUMBER; j++) {
+                final int points = (int) Math.pow(2.0, j) - 1;
+                for (; k < points; k++) {
+                    final double[] sample = rsg.nextSequence().value();
+                    stat.add(sample);
+                }
+                final double discr = stat.discrepancy();
+                final double pivot = expected[idx];
+                final double error = Math.abs(discr - pivot);
+                if (error > DISCREPANCY_REL_TOL * Math.abs(discr)) {
+                    fail("MT discrepancy dimension " + dim + " at " + points
+                            + " samples is " + discr + " instead of " + pivot
+                            + " (|diff|=" + error
+                            + " > tol=" + (DISCREPANCY_REL_TOL * Math.abs(discr)) + ")");
+                }
+            }
+        }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-145: HaltonRsg(randomStart=true) uses MT-seeded RSG; Java MT(123456) != C++ MT(123456)")
+    // ---------------------------------------------------------------
+    // Randomized-Halton discrepancy pivot tables (cross-validated
+    // against the C++ halton_discrepancy_probe under
+    // migration-harness/cpp/probes/math/randomnumbers/, reference JSON
+    // at migration-harness/references/math/randomnumbers/
+    // halton_discrepancy.json).
+    //
+    // Phase 5e.5b-CFC-d-165: enabled after empirically verifying that
+    // Java MT(123456) and C++ MT(123456) match bit-exactly (via standalone
+    // probe). The Phase 5e.5b-CFC-d-23 fix to MersenneTwisterUniformRng's
+    // setSeed(long) (route long-seed through init_genrand instead of
+    // init_by_array) had already aligned scalar-seed MT output across
+    // platforms — the @Ignore stubs predated that fix.
+    // ---------------------------------------------------------------
+
+    /** Random-start Halton discrepancy @ 1023 samples, dim {2,3,5,10,15,30,50,100}. */
+    private static final double[] RANDOMSTART_HALTON_DISCR = {
+            1.0770619011062994e-3, 1.4759114916498455e-3, 1.7379280039108783e-3,
+            7.891475175889063e-4,  2.0948811602991018e-4, 4.4208190597851965e-7,
+            1.9277079453218397e-10, 9.847558179150334e-20
+    };
+
+    /** Random-shift Halton discrepancy @ 1023 samples, same dim grid. */
+    private static final double[] RANDOMSHIFT_HALTON_DISCR = {
+            1.3202031316405093e-3, 1.957856269912325e-3,  2.0154425117469006e-3,
+            9.246343234685174e-4,  1.7504508329837623e-4, 8.111669355732367e-7,
+            1.1372984107501054e-10, 3.364890773725758e-19
+    };
+
+    /** Random-start+shift Halton discrepancy @ 1023 samples, same dim grid. */
+    private static final double[] RANDOMSTART_RANDOMSHIFT_HALTON_DISCR = {
+            1.3453257970209075e-3, 2.16531972538882e-3,   2.1134035431640175e-3,
+            8.41454965714289e-4,   1.6588138209481224e-4, 1.853865006490129e-6,
+            2.917153985051073e-10, 4.442468971274416e-19
+    };
+
+    /**
+     * Common Halton discrepancy runner for the three random variants.
+     * Mirrors {@code testGeneratorDiscrepancy} (C++
+     * test-suite/lowdiscrepancysequences.cpp lines 811-883).
+     */
+    private static void runHaltonDiscrepancy(final boolean randomStart,
+                                             final boolean randomShift,
+                                             final double[] expected,
+                                             final String label) {
+        for (int idx = 0; idx < DIMENSIONALITY.length; idx++) {
+            final int dim = DIMENSIONALITY[idx];
+            final HaltonRsg rsg = new HaltonRsg(dim, DISCREPANCY_SEED,
+                                                randomStart, randomShift);
+            final DiscrepancyStatistics stat = new DiscrepancyStatistics(dim);
+
+            final int jMin = 10;
+            int k = 0;
+            for (int j = jMin; j < jMin + DISCREPANCY_MEASURES_NUMBER; j++) {
+                final int points = (int) Math.pow(2.0, j) - 1;
+                for (; k < points; k++) {
+                    final HaltonRsg.Sample sample = rsg.nextSequence();
+                    stat.add(sample.value);
+                }
+                final double discr = stat.discrepancy();
+                final double pivot = expected[idx];
+                final double error = Math.abs(discr - pivot);
+                if (error > DISCREPANCY_REL_TOL * Math.abs(discr)) {
+                    fail(label + " Halton discrepancy dimension " + dim
+                            + " at " + points + " samples is "
+                            + discr + " instead of " + pivot
+                            + " (|diff|=" + error
+                            + " > tol=" + (DISCREPANCY_REL_TOL * Math.abs(discr)) + ")");
+                }
+            }
+        }
+    }
+
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 918-932
+     * (testRandomStartHaltonDiscrepancy).
+     */
     @Test
     public void testRandomStartHaltonDiscrepancy() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:918
+        QL.info("Testing random-start Halton discrepancy...");
+        runHaltonDiscrepancy(true, false, RANDOMSTART_HALTON_DISCR,
+                             "Random-start");
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-145: HaltonRsg(randomShift=true) uses MT-seeded RSG; Java MT(123456) != C++ MT(123456)")
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 934-948
+     * (testRandomShiftHaltonDiscrepancy).
+     */
     @Test
     public void testRandomShiftHaltonDiscrepancy() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:934
+        QL.info("Testing random-shift Halton discrepancy...");
+        runHaltonDiscrepancy(false, true, RANDOMSHIFT_HALTON_DISCR,
+                             "Random-shift");
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-145: HaltonRsg(randomStart+randomShift) uses MT-seeded RSG; Java MT(123456) != C++ MT(123456)")
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 950-964
+     * (testRandomStartRandomShiftHaltonDiscrepancy).
+     */
     @Test
     public void testRandomStartRandomShiftHaltonDiscrepancy() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:950
+        QL.info("Testing random-start + random-shift Halton discrepancy...");
+        runHaltonDiscrepancy(true, true,
+                             RANDOMSTART_RANDOMSHIFT_HALTON_DISCR,
+                             "Random-start+shift");
     }
 
     // ---------------------------------------------------------------

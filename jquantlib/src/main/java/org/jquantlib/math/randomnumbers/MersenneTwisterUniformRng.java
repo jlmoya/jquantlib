@@ -232,6 +232,27 @@ public class MersenneTwisterUniformRng implements RandomNumberGenerator {
      * {@code MersenneTwisterUniformRng::seedInitialization}.
      * </p>
      *
+     * <p>
+     * <b>Cross-validation (Phase 5e.5b-CFC-d-165):</b> bit-exact alignment
+     * with the reference C++ {@code MersenneTwisterUniformRng(unsigned long)}
+     * was reconfirmed via a standalone C++ probe for seeds
+     * {@code 42}, {@code 123456}, and the Matsumoto/Nishimura canonical
+     * {@code 5489}. For {@code seed = 123456} the first 10 {@code uint32}
+     * draws are
+     * {@code 545331265, 2211535594, 4152021490, 3857419313, 1118735928,
+     *  3031474347, 3853601519, 3345048107, 1618127707, 4001288224}
+     * — identical on both Java and C++. The four Halton-discrepancy tests
+     * previously {@code @Ignore}'d in
+     * {@code LowDiscrepancySequencesTest} ({@code testMersenneTwisterDiscrepancy},
+     * {@code testRandomStartHaltonDiscrepancy},
+     * {@code testRandomShiftHaltonDiscrepancy},
+     * {@code testRandomStartRandomShiftHaltonDiscrepancy}) were enabled in
+     * this phase against pivot tables from
+     * {@code migration-harness/references/math/randomnumbers/halton_discrepancy.json}
+     * and the C++ {@code dim*DiscrMersenneTwis} table in
+     * {@code test-suite/lowdiscrepancysequences.cpp}.
+     * </p>
+     *
      * @param seed the initial seed (low 32 bits used, matching C++
      *             {@code unsigned long} semantics)
      */
