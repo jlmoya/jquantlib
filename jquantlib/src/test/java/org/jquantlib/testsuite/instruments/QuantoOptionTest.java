@@ -13,12 +13,16 @@ import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
+import org.jquantlib.instruments.BarrierType;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
+import org.jquantlib.instruments.QuantoBarrierOption;
 import org.jquantlib.instruments.QuantoForwardVanillaOption;
 import org.jquantlib.instruments.QuantoVanillaOption;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.methods.finitedifferences.utilities.FdmQuantoHelper;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.quanto.QuantoBarrierEngine;
 import org.jquantlib.pricingengines.quanto.QuantoForwardPerformanceVanillaEngine;
 import org.jquantlib.pricingengines.quanto.QuantoForwardVanillaEngine;
 import org.jquantlib.pricingengines.quanto.QuantoVanillaEngine;
@@ -753,13 +757,159 @@ public class QuantoOptionTest {
         }
     }
 
-    @Ignore(REASON_BARRIER)
-    @Test
-    public void testBarrierValues() { fail("not implemented"); }
+    /** Single C++ {@code QuantoBarrierOptionData} row. */
+    private static final class QuantoBarrierOptionData {
+        final BarrierType barrierType;
+        final double barrier;
+        final double rebate;
+        final Option.Type type;
+        final double s;
+        final double strike;
+        final double q;
+        final double r;
+        final double t;
+        final double v;
+        final double fxr;
+        final double fxv;
+        final double corr;
+        final double result;
+        final double tol;
+        QuantoBarrierOptionData(final BarrierType barrierType,
+                                final double barrier, final double rebate,
+                                final Option.Type type, final double s,
+                                final double strike, final double q,
+                                final double r, final double t, final double v,
+                                final double fxr, final double fxv,
+                                final double corr, final double result,
+                                final double tol) {
+            this.barrierType = barrierType; this.barrier = barrier;
+            this.rebate = rebate; this.type = type;
+            this.s = s; this.strike = strike;
+            this.q = q; this.r = r; this.t = t; this.v = v;
+            this.fxr = fxr; this.fxv = fxv;
+            this.corr = corr; this.result = result; this.tol = tol;
+        }
+    }
 
-    @Ignore(REASON_FDM_HELPER)
     @Test
-    public void testFDMQuantoHelper() { fail("not implemented"); }
+    public void testBarrierValues() {
+        QL.info("Testing quanto-barrier option values...");
+        // Java port of v1.42.1 test-suite/quantooption.cpp::testBarrierValues.
+
+        final QuantoBarrierOptionData[] values = {
+            // barrierType,           bar, rebate, type,         s,   strike, q,    r,      t,    v,    fxr,  fxv, corr, result, tol
+            new QuantoBarrierOptionData(BarrierType.DownOut, 95.0, 3.0, Option.Type.Call,
+                    100, 90, 0.04, 0.0212, 0.50, 0.25, 0.05, 0.2, 0.3, 8.247, 0.5),
+            new QuantoBarrierOptionData(BarrierType.DownOut, 95.0, 3.0, Option.Type.Put,
+                    100, 90, 0.04, 0.0212, 0.50, 0.25, 0.05, 0.2, 0.3, 2.274, 0.5),
+            new QuantoBarrierOptionData(BarrierType.DownIn, 95.0, 0.0, Option.Type.Put,
+                    100, 90, 0.04, 0.0212, 0.50, 0.25, 0.05, 0.2, 0.3, 2.85,  0.5)
+        };
+
+        final DayCounter dc = new Actual360();
+        final Date today = Date.todaysDate();
+
+        final SimpleQuote spot = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(today, qRate, dc));
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(today, rRate, dc));
+        final SimpleQuote vol = new SimpleQuote(0.0);
+        final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                Utilities.flatVol(today, vol, dc));
+
+        final SimpleQuote fxRate = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> fxrTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(today, fxRate, dc));
+        final SimpleQuote fxVol = new SimpleQuote(0.0);
+        final Handle<BlackVolTermStructure> fxVolTS = new Handle<BlackVolTermStructure>(
+                Utilities.flatVol(today, fxVol, dc));
+        final SimpleQuote correlation = new SimpleQuote(0.0);
+
+        final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot), qTS, rTS, volTS);
+        final PricingEngine engine = new QuantoBarrierEngine(
+                stochProcess, fxrTS, fxVolTS, new Handle<Quote>(correlation));
+
+        for (final QuantoBarrierOptionData v : values) {
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(v.type, v.strike);
+            final Date exDate = today.add(timeToDays(v.t));
+            final Exercise exercise = new EuropeanExercise(exDate);
+
+            spot.setValue(v.s);
+            qRate.setValue(v.q);
+            rRate.setValue(v.r);
+            vol.setValue(v.v);
+            fxRate.setValue(v.fxr);
+            fxVol.setValue(v.fxv);
+            correlation.setValue(v.corr);
+
+            final QuantoBarrierOption option = new QuantoBarrierOption(
+                    v.barrierType, v.barrier, v.rebate, payoff, exercise);
+            option.setPricingEngine(engine);
+
+            final double calculated = option.NPV();
+            final double error = Math.abs(calculated - v.result);
+            if (error > v.tol) {
+                fail("failed to reproduce quanto-barrier option value:"
+                        + "\n    expected:   " + v.result
+                        + "\n    calculated: " + calculated
+                        + "\n    error:      " + error
+                        + "\n    tolerance:  " + v.tol
+                        + "\n    barrierType=" + v.barrierType + " barrier=" + v.barrier
+                        + " rebate=" + v.rebate + " type=" + v.type
+                        + " strike=" + v.strike + " corr=" + v.corr);
+            }
+        }
+    }
+
+    @Test
+    public void testFDMQuantoHelper() {
+        QL.info("Testing FDM quanto helper...");
+        // Java port of v1.42.1 test-suite/quantooption.cpp::testFDMQuantoHelper.
+        // Only the first half (quantoAdjustment arithmetic) is exercised here;
+        // the second half requires FdmBlackScholesMesher with FdmQuantoHelper
+        // hook, which is not yet ported (Phase 2m FD framework prereq).
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Date(22, org.jquantlib.time.Month.April, 2019);
+
+        final double domesticR = 0.1;
+        final double foreignR = 0.2;
+        final double q = 0.3;
+        final double vol = 0.3;
+        final double fxVol = 0.2;
+
+        final double exchRateATMlevel = 1.0;
+        final double equityFxCorrelation = -0.75;
+
+        final YieldTermStructure domesticTS = Utilities.flatRate(today, domesticR, dc);
+        final YieldTermStructure foreignTS  = Utilities.flatRate(today, foreignR, dc);
+        // Dividend term structure unused for the scalar quantoAdjustment check.
+        @SuppressWarnings("unused") final YieldTermStructure divTS =
+                Utilities.flatRate(today, q, dc);
+        // Equity vol term structure unused for the scalar quantoAdjustment check.
+        @SuppressWarnings("unused") final BlackVolTermStructure volTS =
+                Utilities.flatVol(today, vol, dc);
+        final BlackVolTermStructure fxVolTS = Utilities.flatVol(today, fxVol, dc);
+
+        final FdmQuantoHelper fdmQuantoHelper = new FdmQuantoHelper(
+                domesticTS, foreignTS, fxVolTS,
+                equityFxCorrelation, exchRateATMlevel);
+
+        final double calculatedQuantoAdj = fdmQuantoHelper.quantoAdjustment(vol, 0.0, 1.0);
+        final double expectedQuantoAdj =
+                domesticR - foreignR + equityFxCorrelation * vol * fxVol;
+
+        final double tol = 1.0e-10;
+        if (Math.abs(calculatedQuantoAdj - expectedQuantoAdj) > tol) {
+            fail("failed to reproduce quanto drift rate:"
+                    + "\n    calculated: " + calculatedQuantoAdj
+                    + "\n    expected:   " + expectedQuantoAdj);
+        }
+    }
 
     @Ignore(REASON_FDM_HELPER + " — European PDE quanto FD vs analytic")
     @Test
