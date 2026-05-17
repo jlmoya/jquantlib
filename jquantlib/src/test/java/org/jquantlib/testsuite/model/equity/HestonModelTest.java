@@ -1569,9 +1569,131 @@ public class HestonModelTest {
     @Test
     public void testMultipleStrikesEngine() { fail("not implemented"); }
 
-    @Ignore(REASON_LOCALVOL)
+    /**
+     * Body-fill port of C++ {@code testLocalVolFromHestonModel}
+     * (test-suite/hestonmodel.cpp:3151-3236).
+     *
+     * <p><strong>Java port deviation.</strong> The C++ test cross-validates
+     * a 1Y 120-strike Heston call against an
+     * {@code FdBlackScholesVanillaEngine(localVol=true)} pricing on a
+     * {@link org.jquantlib.termstructures.volatilities.equityfx.HestonBlackVolSurface}.
+     * The Java {@code FdBlackScholesVanillaEngine} port (Phase 2m) does
+     * not yet expose the {@code localVol} mode, so the local-vol round-trip
+     * cannot be reproduced verbatim. Instead this test asserts the
+     * defining round-trip invariant of the surface itself:
+     * <pre>
+     *   BlackFormula(t, K, fwd, sigma_BS(t,K) * sqrt(t), df) ==
+     *       AnalyticHestonEngine.priceVanillaPayoff(payoff, t)
+     * </pre>
+     * across a representative ({@code t}, {@code K}) grid covering the
+     * same parameter point as the C++ test (Heston {@code v0=0.1,
+     * kappa=1.0, theta=0.16, sigma=0.8, rho=-0.75}, 1Y horizon, strikes
+     * in {80, 100, 120, 140}). The surface is correct iff this invariant
+     * holds to numeric_limits&lt;double&gt;::epsilon (the Brent accuracy
+     * the surface itself uses internally).
+     */
     @Test
-    public void testLocalVolFromHestonModel() { fail("not implemented"); }
+    public void testLocalVolFromHestonModel() {
+        final Date todaysDate = new Date(28, Month.June, 2021);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final DayCounter dc = new Actual365Fixed();
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate, 0.075, dc));
+
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate, 0.04, dc));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final double v0    =  0.1;
+        final double rho   = -0.75;
+        final double sigma =  0.8;
+        final double kappa =  1.0;
+        final double theta =  0.16;
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                v0, kappa, theta, sigma, rho);
+        final HestonModel hestonModel = new HestonModel(process);
+
+        // C++ uses gaussLaguerre(24); the Java AnalyticHestonEngine only
+        // exposes the Gatheral integrand from priceVanillaPayoff() and
+        // benefits from a slightly larger order at the wings — 160 matches
+        // the C++ default in HestonBlackVolSurface(model).
+        final org.jquantlib.termstructures.volatilities.equityfx.HestonBlackVolSurface surface =
+                new org.jquantlib.termstructures.volatilities.equityfx.HestonBlackVolSurface(
+                        hestonModel,
+                        AnalyticHestonEngine.ComplexLogFormula.Gatheral,
+                        AnalyticHestonEngine.Integration.gaussLaguerre(160));
+
+        // Sanity guards: the surface's range / day-counter must match
+        // the underlying Heston model's risk-free curve.
+        assertEquals("dayCounter must match underlying riskFreeRate",
+                dc.name(), surface.dayCounter().name());
+        assertEquals("minStrike must be 0",
+                0.0, surface.minStrike(), 0.0);
+        assertEquals("maxStrike must be Double.MAX_VALUE",
+                Double.MAX_VALUE, surface.maxStrike(), 0.0);
+
+        // Round-trip invariant — the surface must invert the Heston
+        // price to the BS implied vol such that re-pricing under BS
+        // returns the original Heston NPV. Reproduce across the same
+        // strike grid the C++ test prices (anchor strike 120 + bracket).
+        final AnalyticHestonEngine engine = new AnalyticHestonEngine(
+                hestonModel, process,
+                AnalyticHestonEngine.ComplexLogFormula.Gatheral,
+                AnalyticHestonEngine.Integration.gaussLaguerre(160));
+
+        // Wider strike grid than the C++ point estimate (which only
+        // checks a single 120 strike) so we exercise both OTM-call and
+        // OTM-put branches of the surface's auto-side selection.
+        final double[] strikes  = { 80.0, 100.0, 120.0, 140.0 };
+        final double[] maturities = { 0.25, 0.5, 1.0, 2.0 };
+
+        // Default round-trip tol matches Brent's
+        // numeric_limits<double>::epsilon (= Math.ulp(1.0))*price.
+        // We allow a small absolute margin (1e-10) to absorb
+        // accumulator FP error in BlackFormula re-evaluation.
+        final double tol = 1e-10;
+
+        for (final double T : maturities) {
+            final double df  = rTS.currentLink().discount(T, true);
+            final double fwd = s0.currentLink().value()
+                    * qTS.currentLink().discount(T, true) / df;
+            for (final double K : strikes) {
+                final double sigmaBS = surface.blackVol(T, K);
+                final Option.Type otype =
+                        fwd > K ? Option.Type.Put : Option.Type.Call;
+                final PlainVanillaPayoff payoff =
+                        new PlainVanillaPayoff(otype, K);
+                final double npvBS = org.jquantlib.pricingengines.BlackFormula.blackFormula(
+                        otype, K, fwd, sigmaBS * Math.sqrt(T), df);
+                final double npvHeston = engine.priceVanillaPayoff(payoff, T);
+                final double diff = Math.abs(npvBS - npvHeston);
+                if (diff > tol) {
+                    fail("HestonBlackVolSurface round-trip failed"
+                            + "\n    T              : " + T
+                            + "\n    K              : " + K
+                            + "\n    side           : " + otype
+                            + "\n    fwd            : " + fwd
+                            + "\n    df             : " + df
+                            + "\n    sigma_BS       : " + sigmaBS
+                            + "\n    npv (Heston)   : " + npvHeston
+                            + "\n    npv (Black/BS) : " + npvBS
+                            + "\n    diff           : " + diff
+                            + "\n    tol            : " + tol);
+                }
+
+                // Variance accessor must equal sigma^2 * t (defining
+                // relation in BlackVolatilityTermStructure terms).
+                final double varExpected = sigmaBS * sigmaBS * T;
+                final double varActual   = surface.blackVariance(T, K);
+                assertEquals("blackVariance must equal sigma^2 * t",
+                        varExpected, varActual, 1e-14);
+            }
+        }
+    }
 
     /**
      * Phase Body-Fill-4 port of C++ {@code testAnalyticPDFHestonEngine}
