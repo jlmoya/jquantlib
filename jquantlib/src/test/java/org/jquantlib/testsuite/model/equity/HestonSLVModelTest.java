@@ -1065,17 +1065,20 @@ public class HestonSLVModelTest {
     @Test
     public void testMonteCarloVsFdmPricing() { fail("not implemented"); }
 
-    @Ignore("Phase 5h.5-SLV-c — needs SobolBrownianGeneratorFactory + "
-            + "FdHestonDoubleBarrierEngine + AnalyticDoubleBarrierBinaryEngine + "
-            + "HestonSLVMCModel.leverageFunction() accessor.")
+    @Ignore("Phase 5h.5-SLV-c — SobolBrownianGeneratorFactory now landed "
+            + "(Phase 3i Commit 5); still needs FdHestonDoubleBarrierEngine + "
+            + "AnalyticDoubleBarrierBinaryEngine + HestonSLVMCModel.leverageFunction() "
+            + "accessor.")
     @Test
     public void testMoustacheGraph() { fail("not implemented"); }
 
     /* ---- 5. Process discretization ------------------------------------ */
 
-    @Ignore("Phase 5h.5-SLV-c — needs SobolBrownianBridgeRsg (Sobol QMC + Brownian "
-            + "bridge) and FdHestonVanillaEngine ctor that accepts a localVol "
-            + "term-structure argument; getFixedLocalVolFromHeston test helper.")
+    @Ignore("Phase 5h.5-SLV-c — SobolBrownianBridgeRsg now landed "
+            + "(Phase 5e.5b-CFC-d-163, cross-validated against C++ v1.42.1); still "
+            + "needs HestonSLVProcess + FdHestonVanillaEngine ctor that accepts a "
+            + "localVol term-structure argument + getFixedLocalVolFromHeston test "
+            + "helper.")
     @Test
     public void testDiffusionAndDriftSlvProcess() { fail("not implemented"); }
 }
