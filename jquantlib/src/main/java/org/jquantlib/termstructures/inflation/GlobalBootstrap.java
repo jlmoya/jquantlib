@@ -155,20 +155,24 @@ public final class GlobalBootstrap {
         // Sort instruments by pillar date — mirrors C++ assumption that
         // instruments are monotonically arranged along the time axis.
         final List<ZeroCouponInflationSwapHelper> sorted = new ArrayList<>(instruments);
-        sorted.sort((a, b) -> a.latestDate().compareTo(b.latestDate()));
+        sorted.sort((a, b) -> a.pillarDate().compareTo(b.pillarDate()));
 
         // Validate quotes.
         for (final ZeroCouponInflationSwapHelper h : sorted) {
             QL.require(h.quoteIsValid(),
-                    "instrument has an invalid quote (pillar: " + h.latestDate() + ")");
+                    "instrument has an invalid quote (pillar: " + h.pillarDate() + ")");
         }
 
-        // Build dates: [baseDate, pillar[0], ..., pillar[n-1]] dedup.
+        // Build dates: [baseDate, pillar[0], ..., pillar[n-1]] dedup. Use
+        // pillarDate() (not latestDate()) — matches C++ IterativeBootstrap and
+        // is required for CPI::Linear with sub-annual helpers, where two
+        // consecutive helpers may share a right-node latestDate but resolve to
+        // different left/right pillars via the issue-#2454 weight calculation.
         final Date baseDate = traits.initialDate(curve);
         final List<Date> dateList = new ArrayList<>();
         dateList.add(baseDate);
         for (int i = 0; i < sorted.size(); ++i) {
-            final Date d = sorted.get(i).latestDate();
+            final Date d = sorted.get(i).pillarDate();
             QL.require(d.gt(baseDate) || d.eq(baseDate) || d.le(baseDate) == false,
                     "instrument pillar must be on or after baseDate: " + d);
             // Deduplicate consecutive equal pillar dates (rare but possible
@@ -191,7 +195,16 @@ public final class GlobalBootstrap {
         final double[] newData = new double[nDates];
         Arrays.fill(newData, traits.initialValue(curve));
 
-        curve.installGlobalBootstrapState(newDates, newTimes, newData);
+        // Compute the rightmost latestDate across all helpers — the GlobalBootstrap
+        // pillar grid uses pillarDate (may be a left node for CPI::Linear); the
+        // curve's maxDate must still cover the right interpolation node so that
+        // impliedQuote() can forecast at fixingPeriod.second+1.
+        Date maxLatest = sorted.get(0).latestDate();
+        for (int i = 1; i < sorted.size(); ++i) {
+            final Date d = sorted.get(i).latestDate();
+            if (d.gt(maxLatest)) maxLatest = d;
+        }
+        curve.installGlobalBootstrapState(newDates, newTimes, newData, maxLatest);
 
         // Wire helpers to the curve being built so their impliedQuote()
         // reads from the curve.

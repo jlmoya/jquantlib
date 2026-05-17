@@ -1820,14 +1820,6 @@ public class InflationTest {
     // testUsCpiLinearBootstrapAtMonthStart — inflation.cpp:1887-1964
     // ===================================================================
     @Test
-    @Ignore("Phase 5e.5b-CFC-d follow-up: ZeroCouponInflationSwapHelper"
-            + " does not yet implement the CPI::Linear pillar-choice logic"
-            + " (C++ inflationhelpers.cpp:114-153 — Pillar::LastRelevantDate"
-            + " with startDate_-based weight, fixing issue #2454). Java helper"
-            + " unconditionally sets latestDate = fixingPeriod.first(); with"
-            + " CPI::Linear the curve's max date ends up one period short of"
-            + " what the swap actually needs, producing 'date past max curve"
-            + " date' bootstrap failures. Production-port required.")
     public void testUsCpiLinearBootstrapAtMonthStart() {
         // Faithful port of C++ inflation.cpp:1887-1964 — regression test for
         // QuantLib issue #2454 (US CPI Linear bootstrap stability across
@@ -2111,13 +2103,6 @@ public class InflationTest {
     // testUsCpiLinearGlobalBootstrapAtMonthStart — inflation.cpp:2153-2229
     // ===================================================================
     @Test
-    @Ignore("Phase 5e.5b-CFC-d follow-up: same blocker as"
-            + " testUsCpiLinearBootstrapAtMonthStart —"
-            + " ZeroCouponInflationSwapHelper does not yet implement the"
-            + " CPI::Linear Pillar::LastRelevantDate logic (C++"
-            + " inflationhelpers.cpp:114-153). The GlobalBootstrap path"
-            + " also depends on helper.latestDate() being the correct"
-            + " (Linear-interpolation-aware) right node.")
     public void testUsCpiLinearGlobalBootstrapAtMonthStart() {
         // Faithful port of C++ inflation.cpp:2153-2229 — GlobalBootstrap
         // variant of testUsCpiLinearBootstrapAtMonthStart. GlobalBootstrap
@@ -2200,13 +2185,6 @@ public class InflationTest {
     // testPillarCollisionWithDifferentMonthLengths — inflation.cpp:2231-2319
     // ===================================================================
     @Test
-    @Ignore("Phase 5e.5b-CFC-d follow-up: this test directly exercises the"
-            + " startDate_-based pillar-weight fix from C++ issue #2454"
-            + " (inflationhelpers.cpp:131-138). ZeroCouponInflationSwapHelper"
-            + " currently lacks any CPI::Linear pillar logic at all — must"
-            + " port the Pillar::Choice {LastRelevantDate, MaturityDate,"
-            + " CustomDate} machinery and the startDate_ weight calculation"
-            + " before this test can run.")
     public void testPillarCollisionWithDifferentMonthLengths() {
         // Faithful port of C++ inflation.cpp:2231-2319 — regression test for
         // QuantLib issue #2454. Verifies that CPI::Linear pillar assignment

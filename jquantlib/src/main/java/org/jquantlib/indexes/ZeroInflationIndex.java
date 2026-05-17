@@ -112,33 +112,41 @@ public class ZeroInflationIndex extends InflationIndex {
         //   latestNeededDate = inflationPeriod(fixingDate, freq).first    (non-interpolated)
         //   if latestNeededDate < latestPossibleHistoricalFixingPeriod.first → past (not forecast)
         //   if latestNeededDate > latestPossibleHistoricalFixingPeriod.second → future (forecast)
-        //   else → check timeSeries (if missing → forecast; if present → past)
+        //   else → check timeSeries: present → past, absent → forecast
         //
-        // The Java port simplifies: fixingDate < lim.second().inc() means
-        // latestNeededDate = period(fixingDate).first <= period(todayMinusLag).second
-        // i.e. it's at most at the boundary of the historical period → treat as past
-        // (timeSeries lookup; throws if missing just like C++ would forecast+throw).
-        // fixingDate >= lim.second().inc() → strictly future → forecast.
-        // NOTE: the old code also included the eq() case as "past"; C++ treats
-        // latestNeededDate > latestPossibleHistoricalFixingPeriod.second as future,
-        // which means lim.second().inc() is the first *future* fixing date.
-    	Date today = new Settings().evaluationDate();
-    	Date todayMinusLag = today.sub(availabilityLag);
+        // The earlier Java port collapsed the boundary branch into "always
+        // past, throw if missing", which is wrong for sub-annual CPI::Linear
+        // bootstraps where a freshly-published month may not yet be in the
+        // user-supplied fixings — C++ falls back to the forecast curve in
+        // that case (fixing the QuantLib #2454 family of failures).
+        final Date today = new Settings().evaluationDate();
+        final Date todayMinusLag = today.sub(availabilityLag);
 
-    	Pair<Date,Date> lim = InflationTermStructure.inflationPeriod(todayMinusLag, frequency);
-    	// lim.second().inc() is the first date that is strictly beyond the
-    	// latest possible historical period — mirrors C++ (latestNeededDate >
-    	// latestPossibleHistoricalFixingPeriod.second).
-    	todayMinusLag = lim.second().inc();
+        final Pair<Date,Date> latestPossible =
+                InflationTermStructure.inflationPeriod(todayMinusLag, frequency);
+        // Zero-index fixings are always non-interpolated; latestNeededDate is
+        // the start of the fixing-date's inflation period.
+        final Date latestNeededDate =
+                InflationTermStructure.inflationPeriod(fixingDate, frequency).first();
 
-    	if (fixingDate.lt(todayMinusLag)) {
-    		// strictly before the boundary: read from stored fixings
-    		@Real double pastFixing = IndexManager.getInstance().getHistory(name()).get(fixingDate);
-    		QL.require(!(Double.isNaN(pastFixing)) , "Missing " + name() + " fixing for " + fixingDate);
-    		return pastFixing;
-    	} else {
-    		return forecastFixing(fixingDate);
-    	}
+        if (latestNeededDate.lt(latestPossible.first())) {
+            // strictly historical: must be in stored fixings
+            @Real double pastFixing = IndexManager.getInstance().getHistory(name()).get(fixingDate);
+            QL.require(!(Double.isNaN(pastFixing)),
+                    "Missing " + name() + " fixing for " + fixingDate);
+            return pastFixing;
+        }
+        if (latestNeededDate.gt(latestPossible.second())) {
+            // strictly future: forecast through the curve
+            return forecastFixing(fixingDate);
+        }
+        // Boundary range — try stored fixings first; fall back to forecast
+        // when missing (mirrors C++ inflationindex.cpp:197-220).
+        final Double f = IndexManager.getInstance().getHistory(name()).get(fixingDate);
+        if (f != null && !Double.isNaN(f)) {
+            return f;
+        }
+        return forecastFixing(fixingDate);
     }
     
     /**

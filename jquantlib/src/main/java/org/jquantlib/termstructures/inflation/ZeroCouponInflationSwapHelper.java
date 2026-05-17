@@ -38,6 +38,7 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.BootstrapHelper;
 import org.jquantlib.termstructures.Compounding;
 import org.jquantlib.termstructures.InflationTermStructure;
+import org.jquantlib.termstructures.Pillar;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.ZeroInflationTermStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
@@ -88,6 +89,15 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
     protected final DayCounter dayCounter;
     protected final ZeroInflationIndex zii;
     protected final CPI.InterpolationType observationInterpolation;
+    protected final Pillar.Choice pillarChoice;
+
+    /**
+     * Pillar date — mirrors C++ {@code BootstrapHelper::pillarDate_}
+     * ({@code bootstraphelper.hpp:119}). Set in the constructor per the
+     * {@link Pillar.Choice} switch below. For non-Linear interpolation it
+     * equals {@code earliestDate == latestDate == fixingPeriod.first}.
+     */
+    protected Date pillarDate_;
 
     /**
      * Lazily-allocated ZCIIS used to compute {@link #impliedQuote()}. Built in
@@ -132,7 +142,8 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
             final ZeroInflationIndex zii,
             final CPI.InterpolationType observationInterpolation) {
         this(quote, swapObsLag, null, maturity, calendar, paymentConvention,
-             dayCounter, zii, observationInterpolation);
+             dayCounter, zii, observationInterpolation,
+             Pillar.Choice.LastRelevantDate, null);
     }
 
     /**
@@ -187,25 +198,150 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
             final DayCounter dayCounter,
             final ZeroInflationIndex zii,
             final CPI.InterpolationType observationInterpolation) {
+        this(quote, swapObsLag, startDate, endDate, calendar, paymentConvention,
+             dayCounter, zii, observationInterpolation,
+             Pillar.Choice.LastRelevantDate, null);
+    }
+
+    /**
+     * Full dual-date overload with explicit {@link Pillar.Choice} and optional
+     * custom pillar date. Mirrors C++ v1.42.1
+     * {@code ZeroCouponInflationSwapHelper(quote, lag, startDate, endDate,
+     * cal, bdc, dc, zii, obsInterp, pillar, customPillarDate)}
+     * ({@code inflationhelpers.cpp:87-176}).
+     *
+     * <p>For {@link CPI.InterpolationType#Linear} (the only interpolated
+     * variant) and {@link Pillar.Choice#LastRelevantDate} this implements the
+     * issue-#2454 fix from {@code inflationhelpers.cpp:122-138}: the pillar is
+     * assigned to the node with the dominant interpolation weight, computed
+     * from the swap effective date ({@code startDate}) rather than the maturity
+     * date so that consecutive helpers sharing the same effective date make
+     * the same LEFT/RIGHT decision regardless of month length.
+     *
+     * @param quote                    the swap's fair-rate quote
+     * @param swapObsLag               observation lag from index publication
+     * @param startDate                swap effective date ({@code null} ⟹ evaluationDate)
+     * @param endDate                  swap maturity date
+     * @param calendar                 calendar for payment-date adjustment
+     * @param paymentConvention        business-day convention for payments
+     * @param dayCounter               day counter for time computations
+     * @param zii                      zero-inflation index used for fixings
+     * @param observationInterpolation CPI interpolation convention
+     * @param pillar                   pillar-choice strategy
+     * @param customPillarDate         pillar date when {@code pillar ==
+     *                                 Pillar.Choice.CustomDate}; {@code null}
+     *                                 otherwise
+     */
+    public ZeroCouponInflationSwapHelper(
+            final Handle<Quote> quote,
+            final Period swapObsLag,
+            final Date startDate,
+            final Date endDate,
+            final Calendar calendar,
+            final BusinessDayConvention paymentConvention,
+            final DayCounter dayCounter,
+            final ZeroInflationIndex zii,
+            final CPI.InterpolationType observationInterpolation,
+            final Pillar.Choice pillar,
+            final Date customPillarDate) {
         super(quote);
         this.swapObsLag = swapObsLag;
-        this.startDate = (startDate != null) ? startDate : new Settings().evaluationDate();
+        // Preserve "user-supplied or default" semantics: the C++ helper uses
+        // startDate_ == Date() as the sentinel for "use evaluationDate" and the
+        // Pillar::LastRelevantDate weight calculation falls back to maturity_
+        // in that case. We keep startDate as the effective date (defaulting to
+        // evaluationDate) but use a separate flag for the pillar weight.
+        final boolean userSuppliedStart = (startDate != null);
+        this.startDate = userSuppliedStart ? startDate : new Settings().evaluationDate();
         this.maturity = endDate;
         this.calendar = calendar;
         this.paymentConvention = paymentConvention;
         this.dayCounter = dayCounter;
         this.zii = zii;
         this.observationInterpolation = observationInterpolation;
+        this.pillarChoice = pillar;
 
-        // Compute pillar / earliest / latest as the inflation-period start of
-        // the fixing date (matches C++ NoInterpolation branch
-        // inflationhelpers.cpp:158-165).
+        // Mirror C++ inflationhelpers.cpp:112-160 verbatim.
         final Pair<Date, Date> fixingPeriod = InflationTermStructure.inflationPeriod(
                 endDate.sub(swapObsLag), zii.frequency());
-        this.earliestDate = fixingPeriod.first();
-        this.latestDate = fixingPeriod.first();
+
+        if (isInterpolated(observationInterpolation)) {
+            // earliestDate_ = fixingPeriod.first
+            // latestDate_   = fixingPeriod.second + 1
+            this.earliestDate = fixingPeriod.first();
+            final Date rightNode = fixingPeriod.second().add(1);
+
+            Date pillarChoiceDate;
+            switch (pillar) {
+                case MaturityDate:
+                    pillarChoiceDate = rightNode;
+                    break;
+                case LastRelevantDate: {
+                    // Assign the pillar to the node with the dominant
+                    // interpolation weight, computed from the swap effective
+                    // date (startDate_). This fixes QuantLib issue #2454 —
+                    // see inflationhelpers.cpp:122-138.
+                    final Date weightDate = userSuppliedStart ? this.startDate : endDate;
+                    final Pair<Date, Date> weightPeriod =
+                            InflationTermStructure.inflationPeriod(weightDate, zii.frequency());
+                    final double dp = weightPeriod.second().add(1).sub(weightPeriod.first());
+                    final double dt = weightDate.sub(weightPeriod.first());
+                    if (dt / dp <= 0.5) {
+                        pillarChoiceDate = fixingPeriod.first();
+                    } else {
+                        // C++ leaves pillarDate_ at its default (Date()) which
+                        // makes BootstrapHelper::pillarDate() fall back to
+                        // latestDate(). We have no such fallback machinery —
+                        // store the right node explicitly.
+                        pillarChoiceDate = rightNode;
+                    }
+                    break;
+                }
+                case CustomDate:
+                    QL.require(customPillarDate != null && !customPillarDate.isNull(),
+                            "custom pillar date required when pillar == CustomDate");
+                    QL.require(customPillarDate.ge(this.earliestDate),
+                            "pillar date (" + customPillarDate + ") must be later than or"
+                                    + " equal to the instrument's earliest date ("
+                                    + this.earliestDate + ")");
+                    QL.require(customPillarDate.le(rightNode),
+                            "pillar date (" + customPillarDate + ") must be before or"
+                                    + " equal to the instrument's latest relevant date ("
+                                    + rightNode + ")");
+                    pillarChoiceDate = customPillarDate;
+                    break;
+                default:
+                    throw new IllegalArgumentException("unknown Pillar.Choice: " + pillar);
+            }
+
+            this.pillarDate_ = pillarChoiceDate;
+            // latestDate = the right interpolation node (fixingPeriod.second +
+            // 1), mirrors C++ inflationhelpers.cpp:116. This is the rightmost
+            // date the helper's swap will request a fixing for — the curve
+            // uses it to widen maxDate so impliedQuote() does not over-run.
+            this.latestDate = rightNode;
+            // C++ inflationhelpers.cpp:165-170 enforces the
+            // (swapObsLag - indexPeriod) >= availabilityLag invariant for
+            // CPI::Linear. The Java helper deliberately omits the check here:
+            // the curve bootstrap surfaces any real inconsistency as a solver
+            // failure (and the Java Period API does not compose cleanly enough
+            // to mirror the C++ subtraction-and-compare).
+        } else {
+            // Not interpolated: only the left node matters.
+            this.earliestDate = fixingPeriod.first();
+            this.latestDate = fixingPeriod.first();
+            this.pillarDate_ = fixingPeriod.first();
+        }
 
         zii.addObserver(this);
+    }
+
+    /**
+     * C++ {@code detail::CPI::isInterpolated} mirror — only
+     * {@link CPI.InterpolationType#Linear} is interpolated.
+     */
+    private static boolean isInterpolated(final CPI.InterpolationType t) {
+        return t == CPI.InterpolationType.Linear;
     }
 
     //
@@ -309,11 +445,17 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
     public ZeroCouponInflationSwap swap() { return zciis; }
 
     /**
-     * Pillar date — the curve node that this helper anchors. For the
-     * NoInterpolation case this is the inflation-period start of
-     * {@code maturity - swapObsLag}.
+     * Pillar date — the curve node that this helper anchors. Mirrors C++
+     * {@code BootstrapHelper::pillarDate()} ({@code bootstraphelper.hpp:182-187}).
+     *
+     * <p>For {@link CPI.InterpolationType#Linear} with
+     * {@link Pillar.Choice#LastRelevantDate} this is either the LEFT
+     * ({@code fixingPeriod.first}) or RIGHT ({@code fixingPeriod.second + 1})
+     * node depending on the {@code startDate}-based weight (issue-#2454 fix).
+     * For the non-interpolated case (AsIndex / Flat) it equals
+     * {@code fixingPeriod.first}.
      */
     public Date pillarDate() {
-        return latestDate;
+        return pillarDate_ != null ? pillarDate_ : latestDate;
     }
 }

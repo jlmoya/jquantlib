@@ -325,13 +325,15 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
 
         final int n = instruments.size();
 
-        // Sort helpers by latestDate — required so curve nodes are monotonic.
-        instruments.sort((a, b) -> a.latestDate().compareTo(b.latestDate()));
+        // Sort helpers by pillarDate — required so curve nodes are monotonic.
+        // Mirrors C++ IterativeBootstrap, which uses helper->pillarDate() for
+        // both sort and node placement (iterativebootstrap.hpp:187).
+        instruments.sort((a, b) -> a.pillarDate().compareTo(b.pillarDate()));
 
-        // Check no two helpers share a maturity.
+        // Check no two helpers share a pillar date.
         for (int i = 1; i < n; ++i) {
-            QL.require(!instruments.get(i - 1).latestDate().eq(instruments.get(i).latestDate()),
-                    "two instruments have the same maturity");
+            QL.require(!instruments.get(i - 1).pillarDate().eq(instruments.get(i).pillarDate()),
+                    "two instruments have the same pillar date");
         }
 
         // Check all quotes are valid.
@@ -341,7 +343,8 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         }
 
         // Setup pre-bootstrap dates / times / data: dates[0] = baseDate,
-        // dates[i+1] = helper[i].latestDate.
+        // dates[i+1] = helper[i].pillarDate. Mirrors C++
+        // iterativebootstrap.hpp:185-188.
         final Date[] newDates = new Date[n + 1];
         final double[] newTimes = new double[n + 1];
         final double[] newData = new double[n + 1];
@@ -351,7 +354,7 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
         newData[0] = traits.initialValue(this);
 
         for (int i = 0; i < n; ++i) {
-            newDates[i + 1] = instruments.get(i).latestDate();
+            newDates[i + 1] = instruments.get(i).pillarDate();
             newTimes[i + 1] = timeFromReference(newDates[i + 1]);
             newData[i + 1] = traits.guess(i + 1, newData, false);
         }
@@ -365,9 +368,17 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
             instruments.get(i).setTermStructure(this);
         }
 
-        // Use a maxDate override that covers the last node — needed for
-        // helper.impliedQuote() which may evaluate slightly past dates[n].
-        setMaxDate(newDates[n]);
+        // maxDate must cover the rightmost latestDate across all helpers (not
+        // just the last pillar) so that impliedQuote() can evaluate fixings
+        // up to the helper's right interpolation node — needed for CPI::Linear
+        // where the swap's inflation cashflow forecasts at fixingPeriod.second+1.
+        Date maxLatest = instruments.get(0).latestDate();
+        for (int i = 1; i < n; ++i) {
+            final Date d = instruments.get(i).latestDate();
+            if (d.gt(maxLatest)) maxLatest = d;
+        }
+        if (newDates[n].gt(maxLatest)) maxLatest = newDates[n];
+        setMaxDate(maxLatest);
 
         // C++ IterativeBootstrap uses two solvers:
         //   firstSolver_ (Brent)               when validData == false (first pass)
@@ -528,10 +539,25 @@ public class PiecewiseZeroInflationCurve<I extends Interpolator>
     void installGlobalBootstrapState(final Date[] newDates,
                                       final double[] newTimes,
                                       final double[] newData) {
+        installGlobalBootstrapState(newDates, newTimes, newData,
+                newDates[newDates.length - 1]);
+    }
+
+    /**
+     * Variant that takes an explicit {@code maxDateOverride} — used by
+     * {@link GlobalBootstrap} to widen the curve max to the rightmost
+     * helper.latestDate() (right interpolation node) when the curve pillars
+     * are pillar dates (which may be smaller, e.g. left nodes for CPI::Linear).
+     */
+    void installGlobalBootstrapState(final Date[] newDates,
+                                      final double[] newTimes,
+                                      final double[] newData,
+                                      final Date maxDateOverride) {
         setDates(newDates);
         setTimes(newTimes);
         setData(newData);
-        setMaxDate(newDates[newDates.length - 1]);
+        final Date lastPillar = newDates[newDates.length - 1];
+        setMaxDate(maxDateOverride.gt(lastPillar) ? maxDateOverride : lastPillar);
         setInterpolation(interpolator().interpolate(
                 new Array(newTimes), new Array(newData)));
     }
