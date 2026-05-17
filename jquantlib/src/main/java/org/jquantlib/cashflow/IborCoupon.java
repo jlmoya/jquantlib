@@ -45,7 +45,6 @@ import org.jquantlib.QL;
 // with the nested IborCoupon.Settings class (Phase 2x A.3).
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
-import org.jquantlib.indexes.IndexManager;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
@@ -145,8 +144,47 @@ public class IborCoupon extends FloatingRateCoupon {
                 dayCounter, isInArrears);
     }
 
+    /**
+     * Mirror of C++ {@code IborCoupon::hasFixed() const}
+     * (ql/cashflows/iborcoupon.cpp:93-108, v1.42.1).
+     *
+     * <p>Returns {@code true} iff the coupon's fixing date is strictly
+     * before today, OR is equal to today AND either
+     * {@link org.jquantlib.Settings#isEnforcesTodaysHistoricFixings()} is
+     * set, OR a historical fixing has already been stored for today.
+     *
+     * <p>Phase 5e.5b-CFC-d-111.
+     */
+    public boolean hasFixed() {
+        final Date today = new org.jquantlib.Settings().evaluationDate();
+        final Date fixingDate = fixingDate();
+        if (fixingDate.gt(today)) {
+            return false;
+        }
+        if (fixingDate.lt(today)) {
+            return true;
+        }
+        // fixingDate == today
+        if (new org.jquantlib.Settings().isEnforcesTodaysHistoricFixings()) {
+            return true;
+        }
+        return index_.hasHistoricalFixing(fixingDate);
+    }
+
     @Override
     public double indexFixing() {
+        // Phase 5e.5b-CFC-d-111: short-circuit on stored fixing before
+        // consulting the (possibly null) forecast term structure. Mirrors
+        // C++ ql/cashflows/iborcoupon.cpp:110-128, v1.42.1: when
+        // hasFixed() is true the past fixing is returned without ever
+        // touching the index's term structure.
+        if (hasFixed()) {
+            final double pastFixing = index_.pastFixing(fixingDate());
+            QL.require(pastFixing != org.jquantlib.math.Constants.NULL_REAL,
+                       "Missing " + index_.name() + " fixing for " + fixingDate());
+            return pastFixing;
+        }
+
         final org.jquantlib.Settings settings = new org.jquantlib.Settings();
         if (settings.isUseIndexedCoupon())
             return index_.fixing(fixingDate());
@@ -155,23 +193,7 @@ public class IborCoupon extends FloatingRateCoupon {
         else {
             final Handle<YieldTermStructure> termStructure = index_.termStructure();
             QL.require(termStructure != null , NULL_TERM_STRUCTURE);  // QA:[RG]::verified
-            final Date today = settings.evaluationDate();
             final Date fixing_date = fixingDate();
-            final IndexManager indexManager = IndexManager.getInstance();
-            if (fixing_date.lt(today)) {
-                final double pastFixing = indexManager.getHistory(index_.name()).get(fixing_date);
-                QL.require(!Double.isNaN(pastFixing), "Missing fixing"); // TODO: message
-                return pastFixing;
-            }
-            if (fixing_date.equals(today)) {
-                try {
-                    final double pastFixing = indexManager.getHistory(index_.name()).get(fixing_date);
-                    if (! Double.isNaN (pastFixing))
-                        return pastFixing;
-                } catch (final Exception e) {
-                    ; // fall through and forecast
-                }
-            }
 
             // start discount
             final Date fixingValueDate = index_.fixingCalendar()

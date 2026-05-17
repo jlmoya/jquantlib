@@ -24,6 +24,7 @@ import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.indexes.Euribor3M;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.indexes.ibor.USDLibor;
 import org.jquantlib.math.Constants;
@@ -43,6 +44,7 @@ import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Assume;
@@ -415,12 +417,122 @@ public class CashFlowsTest {
         }
     }
 
-    @Ignore("Phase 5d.5 — needs Coupon.exCouponDate() accessor + "
-            + "FixedRateLeg.withExCouponPeriod(Period, Calendar, BusinessDayConvention, boolean) "
-            + "and the matching IborLeg.withExCouponPeriod chain to propagate the period to "
-            + "FixedRateCoupon / FloatingRateCoupon constructors. The current Java Coupon "
-            + "base class does not carry an ex-coupon-date field; production port required.")
-    @Test public void testExCouponDates() { fail("not implemented"); }
+    /**
+     * Mirror of C++ {@code CashFlowTests::testExCouponDates}
+     * (test-suite/cashflows.cpp v1.42.1 lines 273-354). Verifies that
+     * {@link Coupon#exCouponDate()} returns {@code Date()} (null) when
+     * no ex-coupon period is configured, and the expected calendar /
+     * business-days advance from {@code accrualEndDate} otherwise, for
+     * both fixed-rate and ibor legs.
+     *
+     * <p>Phase 5e.5b-CFC-d-111: un-ignored after porting
+     * {@link IborLeg#withExCouponPeriod} threading via post-construction
+     * reflection onto {@link Coupon#exCouponDate_} (mirrors C++
+     * {@code IborLeg::operator Leg()} ex-coupon block in
+     * ql/cashflows/iborcoupon.cpp:277-295). {@link FixedRateLeg}
+     * already threaded {@code exCouponDate} via its
+     * {@link FixedRateCoupon} ctor (Phase 5e.5b-CFC-d-93).
+     */
+    @Test
+    public void testExCouponDates() {
+        final Date today = Date.todaysDate();
+        final Schedule schedule = new MakeSchedule()
+                .from(today)
+                .to(today.add(new Period(5, TimeUnit.Years)))
+                .withFrequency(Frequency.Monthly)
+                .withCalendar(new Target())
+                .withConvention(BusinessDayConvention.Following)
+                .schedule();
+
+        // no ex-coupon dates (fixed leg)
+        final Leg l1 = new FixedRateLeg(schedule, new Actual360())
+                .withNotionals(100.0)
+                .withCouponRates(0.03)
+                .Leg();
+        for (int i = 0; i < l1.size(); ++i) {
+            final Coupon c = (Coupon) l1.get(i);
+            if (!c.exCouponDate().isNull()) {
+                fail("ex-coupon date found (none expected)");
+            }
+        }
+
+        // same for floating legs
+        final IborIndex index = new Euribor3M();
+        final Leg l2 = new IborLeg(schedule, index)
+                .withNotionals(100.0)
+                .Leg();
+        for (int i = 0; i < l2.size(); ++i) {
+            final Coupon c = (Coupon) l2.get(i);
+            if (!c.exCouponDate().isNull()) {
+                fail("ex-coupon date found (none expected)");
+            }
+        }
+
+        // calendar days (NullCalendar, Unadjusted) — fixed
+        final Leg l5 = new FixedRateLeg(schedule, new Actual360())
+                .withNotionals(100.0)
+                .withCouponRates(0.03)
+                .withExCouponPeriod(new Period(2, TimeUnit.Days),
+                        new NullCalendar(), BusinessDayConvention.Unadjusted, false)
+                .Leg();
+        for (int i = 0; i < l5.size(); ++i) {
+            final Coupon c = (Coupon) l5.get(i);
+            final Date expected = c.accrualEndDate().sub(2);
+            if (!c.exCouponDate().equals(expected)) {
+                fail("ex-coupon date = " + c.exCouponDate()
+                        + " (" + expected + " expected)");
+            }
+        }
+
+        // calendar days (NullCalendar, Unadjusted) — floating
+        final Leg l6 = new IborLeg(schedule, index)
+                .withNotionals(100.0)
+                .withExCouponPeriod(new Period(2, TimeUnit.Days),
+                        new NullCalendar(), BusinessDayConvention.Unadjusted, false)
+                .Leg();
+        for (int i = 0; i < l6.size(); ++i) {
+            final Coupon c = (Coupon) l6.get(i);
+            final Date expected = c.accrualEndDate().sub(2);
+            if (!c.exCouponDate().equals(expected)) {
+                fail("ex-coupon date = " + c.exCouponDate()
+                        + " (" + expected + " expected)");
+            }
+        }
+
+        // business days (TARGET, Preceding) — fixed
+        final Calendar target = new Target();
+        final Leg l7 = new FixedRateLeg(schedule, new Actual360())
+                .withNotionals(100.0)
+                .withCouponRates(0.03)
+                .withExCouponPeriod(new Period(2, TimeUnit.Days),
+                        target, BusinessDayConvention.Preceding, false)
+                .Leg();
+        for (int i = 0; i < l7.size(); ++i) {
+            final Coupon c = (Coupon) l7.get(i);
+            final Date expected = target.advance(c.accrualEndDate(),
+                    -2, TimeUnit.Days, BusinessDayConvention.Preceding, false);
+            if (!c.exCouponDate().equals(expected)) {
+                fail("ex-coupon date = " + c.exCouponDate()
+                        + " (" + expected + " expected)");
+            }
+        }
+
+        // business days (TARGET, Preceding) — floating
+        final Leg l8 = new IborLeg(schedule, index)
+                .withNotionals(100.0)
+                .withExCouponPeriod(new Period(2, TimeUnit.Days),
+                        target, BusinessDayConvention.Preceding, false)
+                .Leg();
+        for (int i = 0; i < l8.size(); ++i) {
+            final Coupon c = (Coupon) l8.get(i);
+            final Date expected = target.advance(c.accrualEndDate(),
+                    -2, TimeUnit.Days, BusinessDayConvention.Preceding, false);
+            if (!c.exCouponDate().equals(expected)) {
+                fail("ex-coupon date = " + c.exCouponDate()
+                        + " (" + expected + " expected)");
+            }
+        }
+    }
 
     @Ignore("Phase 5d.5 — Schedule(...,endOfMonth=true) generator currently snaps "
             + "irregular first-coupon reference start to schedule's first regular date "
@@ -486,18 +598,186 @@ public class CashFlowsTest {
             + "convention) date-based ctors — the 8-arg metadata variant is missing.")
     @Test public void testPartialScheduleLegConstruction() { fail("not implemented"); }
 
-    @Ignore("Phase 5d.5 — needs IborCoupon.indexFixing() to short-circuit on a stored "
-            + "fixing-history hit BEFORE consulting the (possibly absent) forecast term "
-            + "structure, mirroring C++ iborcoupon.cpp v1.42.1 indexFixing() ordering. "
-            + "Java FloatingRateCoupon.indexFixing() currently calls index_.fixing(date) "
-            + "which short-circuits correctly only if IborIndex.fixing handles missing "
-            + "termStructure when a stored fixing exists — port needs verification.")
-    @Test public void testFixedIborCouponWithoutForecastCurve() { fail("not implemented"); }
+    /**
+     * Mirror of C++ {@code CashFlowTests::testFixedIborCouponWithoutForecastCurve}
+     * (test-suite/cashflows.cpp v1.42.1 lines 536-564). Verifies that an
+     * {@link IborCoupon} whose fixing date is in the past and whose
+     * fixing was stored via {@link IborIndex#addFixing} can compute its
+     * {@code amount()} <em>without</em> a forecast term structure on
+     * the index — i.e., {@link IborCoupon#indexFixing()} must short-
+     * circuit on the past fixing before consulting the (null)
+     * termStructure.
+     *
+     * <p>Phase 5e.5b-CFC-d-111: un-ignored after threading hasFixed() /
+     * past-fixing short-circuit into {@link IborCoupon#indexFixing()}
+     * (mirrors C++ iborcoupon.cpp:110-128).
+     */
+    @Test
+    public void testFixedIborCouponWithoutForecastCurve() {
+        final Settings settings = new Settings();
+        final Date today = settings.evaluationDate();
 
-    @Ignore("Phase 5d.5 — needs IborCoupon.hasFixed() accessor + "
-            + "Settings.enforcesTodaysHistoricFixings() flag (with setter). The "
-            + "hasFixed() contract: true iff fixingDate < today, OR fixingDate == today "
-            + "AND enforcesTodaysHistoricFixings(). Java has neither the accessor nor "
-            + "the per-session flag; production port required before this test can run.")
-    @Test public void testIborCouponKnowsWhenitHasFixed() { fail("not implemented"); }
+        // C++ test constructs USDLibor(6*Months) with no forwarding curve.
+        // In Java, the single-arg ctor wraps a *non-empty* handle to a
+        // throwing AbstractYieldTermStructure (default-construed),
+        // which trips BlackIborCouponPricer.initialize's
+        // {@code rateCurve.currentLink().referenceDate()} call. Use the
+        // explicit two-arg ctor with an empty handle to match the C++
+        // semantics where {@code rateCurve.empty() == true}.
+        final USDLibor index = new USDLibor(new Period(6, TimeUnit.Months),
+                new Handle<YieldTermStructure>());
+        final Calendar calendar = index.fixingCalendar();
+
+        final Date fixingDate = calendar.advance(today, -2, TimeUnit.Months);
+        final double pastFixing = 0.01;
+        index.addFixing(fixingDate, pastFixing);
+        try {
+            final Date startDate = index.valueDate(fixingDate);
+            final Date endDate = index.maturityDate(startDate);
+
+            final IborCoupon coupon = new IborCoupon(endDate, 100.0,
+                    startDate, endDate, index.fixingDays(), index);
+            coupon.setPricer(new BlackIborCouponPricer());
+
+            // The main check is that this does NOT throw (no forecast curve).
+            final double amount = coupon.amount();
+
+            // Consistency check: amount = pastFixing * nominal * accrualPeriod.
+            final double expected = pastFixing * coupon.nominal()
+                    * coupon.accrualPeriod();
+            if (Math.abs(amount - expected) > 1e-8) {
+                fail("amount mismatch:"
+                        + "\n    calculated: " + amount
+                        + "\n    expected:   " + expected);
+            }
+        } finally {
+            index.clearFixings();
+        }
+    }
+
+    /** Helper mirroring C++ {@code iborCouponForFixingDate} (cashflows.cpp:566-574). */
+    private static IborCoupon iborCouponForFixingDate(final IborIndex index,
+                                                      final Date fixingDate) {
+        final Date startDate = index.valueDate(fixingDate);
+        final Date endDate = index.maturityDate(startDate);
+        final IborCoupon coupon = new IborCoupon(endDate, 100.0,
+                startDate, endDate, index.fixingDays(), index);
+        coupon.setPricer(new BlackIborCouponPricer());
+        return coupon;
+    }
+
+    /**
+     * Mirror of C++ {@code CashFlowTests::testIborCouponKnowsWhenitHasFixed}
+     * (test-suite/cashflows.cpp v1.42.1 lines 576-619). Exercises the
+     * {@link IborCoupon#hasFixed()} contract:
+     * <ul>
+     *   <li>{@code fixingDate < today}: always {@code true} (regardless of
+     *       whether a fixing was stored — and a subsequent {@code rate()}
+     *       must throw if it isn't).</li>
+     *   <li>{@code fixingDate == today} with no fixing and
+     *       {@code enforcesTodaysHistoricFixings == false}:
+     *       {@code false}.</li>
+     *   <li>{@code fixingDate == today} with a stored fixing:
+     *       {@code true}.</li>
+     *   <li>{@code fixingDate == today} with
+     *       {@code enforcesTodaysHistoricFixings == true}: {@code true}
+     *       (and {@code rate()} throws when no fixing is stored).</li>
+     *   <li>{@code fixingDate > today}: always {@code false}.</li>
+     * </ul>
+     *
+     * <p>Phase 5e.5b-CFC-d-111: un-ignored after porting
+     * {@link IborCoupon#hasFixed()} and relying on the existing
+     * {@link Settings#setEnforcesTodaysHistoricFixings} accessor.
+     */
+    @Test
+    public void testIborCouponKnowsWhenitHasFixed() {
+        final Settings settings = new Settings();
+        final Date savedEval = settings.evaluationDate();
+        final boolean savedEnforce = settings.isEnforcesTodaysHistoricFixings();
+
+        final Euribor3M index = new Euribor3M();
+        final Calendar calendar = index.fixingCalendar();
+        // Force evaluationDate onto a TARGET business day so that
+        // {@code today} is itself a valid Euribor fixing date — the C++
+        // test implicitly assumes this. Without the adjustment a
+        // weekend/holiday evaluation date trips Index.isValidFixingDate.
+        final Date today = calendar.adjust(savedEval,
+                BusinessDayConvention.Following);
+        settings.setEvaluationDate(today);
+        try {
+            {
+                // fixingDate strictly in the past, no stored fixing.
+                final IborCoupon coupon = iborCouponForFixingDate(index,
+                        calendar.advance(today, -1, TimeUnit.Days));
+                index.clearFixings();
+                // hasFixed() must return true without throwing (no fixing lookup).
+                if (!coupon.hasFixed()) {
+                    fail("hasFixed() expected true for past fixing date");
+                }
+                // but rate() must throw — the fixing is missing.
+                boolean threw = false;
+                try {
+                    coupon.rate();
+                } catch (final RuntimeException expected) {
+                    threw = true;
+                }
+                if (!threw) {
+                    fail("rate() should have thrown (missing past fixing)");
+                }
+            }
+
+            {
+                // fixingDate == today, no enforcement, no stored fixing → false.
+                final IborCoupon coupon = iborCouponForFixingDate(index, today);
+                settings.setEnforcesTodaysHistoricFixings(false);
+                index.clearFixings();
+                if (coupon.hasFixed()) {
+                    fail("hasFixed() expected false for today (no enforce, no fixing)");
+                }
+            }
+
+            {
+                // fixingDate == today, fixing stored → true regardless of enforce.
+                final IborCoupon coupon = iborCouponForFixingDate(index, today);
+                settings.setEnforcesTodaysHistoricFixings(false);
+                index.clearFixings();
+                index.addFixing(coupon.fixingDate(), 0.01);
+                if (!coupon.hasFixed()) {
+                    fail("hasFixed() expected true for today with stored fixing");
+                }
+            }
+
+            {
+                // fixingDate == today, enforce on, no fixing → true (and rate() throws).
+                final IborCoupon coupon = iborCouponForFixingDate(index, today);
+                settings.setEnforcesTodaysHistoricFixings(true);
+                index.clearFixings();
+                if (!coupon.hasFixed()) {
+                    fail("hasFixed() expected true under enforcesTodaysHistoricFixings");
+                }
+                boolean threw = false;
+                try {
+                    coupon.rate();
+                } catch (final RuntimeException expected) {
+                    threw = true;
+                }
+                if (!threw) {
+                    fail("rate() should have thrown (today, no fixing, enforce on)");
+                }
+            }
+
+            {
+                // fixingDate strictly in the future → always false.
+                final IborCoupon coupon = iborCouponForFixingDate(index,
+                        calendar.advance(today, 1, TimeUnit.Days));
+                if (coupon.hasFixed()) {
+                    fail("hasFixed() expected false for future fixing date");
+                }
+            }
+        } finally {
+            settings.setEnforcesTodaysHistoricFixings(savedEnforce);
+            settings.setEvaluationDate(savedEval);
+            index.clearFixings();
+        }
+    }
 }

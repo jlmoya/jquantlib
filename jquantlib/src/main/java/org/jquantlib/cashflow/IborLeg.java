@@ -42,6 +42,9 @@ When applicable, the original copyright notice follows this notice.
 */
 package org.jquantlib.cashflow;
 
+import java.lang.reflect.Field;
+
+import org.jquantlib.QL;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.math.matrixutilities.Array;
@@ -49,8 +52,10 @@ import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
+import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
 
 /**
  * Helper class building a sequence of capped/floored ibor-rate coupons
@@ -266,10 +271,78 @@ public class IborLeg {
                 gearings_, spreads_, caps_, floors_, inArrears_, zeroPayments_,
                 paymentCalendar_, paymentLag_);
 
+        // Phase 5e.5b-CFC-d-111 — thread exCouponDate_ onto each Coupon
+        // post-construction. FloatingLeg's reflective constructor does not
+        // yet accept ex-coupon parameters (mirrors a gap noted on
+        // FloatingRateCoupon vs C++ v1.42.1); writing the protected
+        // {@code Coupon.exCouponDate_} field here matches the C++
+        // IborLeg::operator Leg() ex-coupon block in
+        // ql/cashflows/iborcoupon.cpp:277-295 (v1.42.1) without altering
+        // the shared FloatingLeg / FloatingRateCoupon classes (which are
+        // owned by parallel-running agents this commit cycle).
+        applyExCouponDates(cashflows);
+
         if (caps_.empty() && floors_.empty() && !inArrears_) {
             PricerSetter.setCouponPricer(cashflows, new BlackIborCouponPricer(new Handle <OptionletVolatilityStructure>()));
         }
         return cashflows;
+    }
+
+    /** Phase 5e.5b-CFC-d-111 — compute the payment date for each
+     *  generated coupon (mirroring {@code FloatingLeg}'s own
+     *  {@code payCal.advance(end, paymentLag, Days, paymentAdj)}
+     *  formula) and, when an ex-coupon period was configured, set
+     *  the corresponding {@code Coupon.exCouponDate_} via reflection.
+     *
+     *  <p>The reflective write is justified because (i) the field is
+     *  already present on the Java {@link Coupon} base class (mirror of
+     *  the C++ {@code Coupon::exCouponDate_} field) and (ii) extending
+     *  {@code FloatingLeg}'s reflective coupon-construction signature
+     *  to thread an extra {@code Date} argument is out of scope for
+     *  this commit (FloatingLeg / FloatingRateCoupon are owned by
+     *  another in-flight agent). */
+    private void applyExCouponDates(final Leg cashflows) {
+        final boolean hasExCoupon =
+                exCouponPeriod_ != null && exCouponPeriod_.length() != 0;
+        if (!hasExCoupon) {
+            return;
+        }
+        final Calendar payCal = (paymentCalendar_ == null)
+                ? schedule_.calendar() : paymentCalendar_;
+        final Field exCouponDateField;
+        try {
+            exCouponDateField = Coupon.class.getDeclaredField("exCouponDate_");
+            exCouponDateField.setAccessible(true);
+        } catch (final NoSuchFieldException nsfe) {
+            // Coupon.exCouponDate_ should always exist in this branch;
+            // surface a clear error if a future refactor renames it.
+            throw new IllegalStateException(
+                    "Coupon.exCouponDate_ not found — IborLeg "
+                  + "ex-coupon threading is broken", nsfe);
+        }
+        for (int i = 0; i < cashflows.size(); ++i) {
+            final CashFlow cf = (CashFlow) cashflows.get(i);
+            if (!(cf instanceof Coupon)) {
+                continue;
+            }
+            final Coupon coupon = (Coupon) cf;
+            // Recompute the payment date the same way FloatingLeg does.
+            // Schedule indices for coupon i correspond to schedule.date(i)
+            // and schedule.date(i+1).
+            final Date end = schedule_.date(i + 1);
+            final Date paymentDate = payCal.advance(
+                    end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
+            final Date exCouponDate = exCouponCalendar_.advance(
+                    paymentDate,
+                    exCouponPeriod_.negative(),
+                    exCouponAdjustment_,
+                    exCouponEndOfMonth_);
+            try {
+                exCouponDateField.set(coupon, exCouponDate);
+            } catch (final IllegalAccessException iae) {
+                QL.error("failed to set exCouponDate_ on " + coupon);
+            }
+        }
     }
 
 }
