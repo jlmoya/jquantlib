@@ -50,12 +50,20 @@ import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.CashFlows;
 import org.jquantlib.cashflow.FloatingRateCoupon;
 import org.jquantlib.cashflow.Leg;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.indexes.InterestRateIndex;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Constants;
+import org.jquantlib.math.distributions.Derivative;
+import org.jquantlib.math.solvers1D.NewtonSafe;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.capfloor.BachelierCapFloorEngine;
+import org.jquantlib.pricingengines.capfloor.BlackCapFloorEngine;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.Date;
 
@@ -75,6 +83,9 @@ import org.jquantlib.time.Date;
  * {@link #performCalculations()} verbatim from caphelper.cpp lines 210-269,
  * plus the inner {@link Arguments}/{@link Results}/{@link Engine} types,
  * so that {@link Instrument#NPV()} dispatches through the engine.
+ *
+ * <p>Phase 5e.5b-CFC-d-48 ports {@link #impliedVolatility} +
+ * {@link ImpliedCapVolHelper} from capfloor.cpp lines 37-108 and 323-340.
  *
  * @category instruments
  *
@@ -230,6 +241,160 @@ public class CapFloor extends Instrument {
         final CashFlow lastCoupon = floatingLeg_.get(floatingLeg_.size() - 1); // no linkedlist :-(
         final FloatingRateCoupon lastFloatingCoupon = (FloatingRateCoupon) lastCoupon;
         return lastFloatingCoupon.fixingDate();
+    }
+
+    //
+    // implied volatility — mirrors C++ v1.42.1 capfloor.cpp lines 323-340
+    // plus the anonymous-namespace ImpliedCapVolHelper (capfloor.cpp:37-108).
+    //
+
+    /**
+     * Implied term volatility (full-arity overload).
+     *
+     * <p>Mirrors C++ {@code CapFloor::impliedVolatility(targetValue, disc,
+     * guess, accuracy, maxEvaluations, minVol, maxVol, type, displacement)}
+     * — capfloor.cpp:323-340. Constructs an internal pricing engine that
+     * shares a {@link SimpleQuote} for the volatility, then runs
+     * {@link NewtonSafe} on the price-target residual until the engine NPV
+     * matches {@code targetValue} to within {@code accuracy}.
+     *
+     * <p>The {@link VolatilityType} parameter selects the formula: under
+     * {@link VolatilityType#ShiftedLognormal} the helper uses
+     * {@link BlackCapFloorEngine} with the supplied displacement; under
+     * {@link VolatilityType#Normal} it uses {@link BachelierCapFloorEngine}
+     * and ignores {@code displacement}.
+     */
+    public /*@Volatility*/ double impliedVolatility(
+            final /*@Real*/ double targetValue,
+            final Handle<YieldTermStructure> d,
+            final /*@Volatility*/ double guess,
+            final /*@Real*/ double accuracy,
+            final /*@NonNegative*/ int maxEvaluations,
+            final /*@Volatility*/ double minVol,
+            final /*@Volatility*/ double maxVol,
+            final VolatilityType type,
+            final /*@Real*/ double displacement) {
+        QL.require(!isExpired(), "instrument expired");
+        final ImpliedCapVolHelper f =
+                new ImpliedCapVolHelper(this, d, targetValue, displacement, type);
+        final NewtonSafe solver = new NewtonSafe();
+        solver.setMaxEvaluations(maxEvaluations);
+        return solver.solve(f, accuracy, guess, minVol, maxVol);
+    }
+
+    /** Convenience overload: defaults type = ShiftedLognormal, displacement = 0. */
+    public /*@Volatility*/ double impliedVolatility(
+            final /*@Real*/ double targetValue,
+            final Handle<YieldTermStructure> d,
+            final /*@Volatility*/ double guess,
+            final /*@Real*/ double accuracy,
+            final /*@NonNegative*/ int maxEvaluations,
+            final /*@Volatility*/ double minVol,
+            final /*@Volatility*/ double maxVol) {
+        return impliedVolatility(targetValue, d, guess, accuracy, maxEvaluations,
+                minVol, maxVol, VolatilityType.ShiftedLognormal, 0.0);
+    }
+
+    /** Convenience overload mirroring the C++ default arguments
+     *  (accuracy=1e-4, maxEvaluations=100, minVol=1e-7, maxVol=4.0,
+     *  type=ShiftedLognormal, displacement=0). */
+    public /*@Volatility*/ double impliedVolatility(
+            final /*@Real*/ double targetValue,
+            final Handle<YieldTermStructure> d,
+            final /*@Volatility*/ double guess) {
+        return impliedVolatility(targetValue, d, guess, 1.0e-4, 100,
+                1.0e-7, 4.0, VolatilityType.ShiftedLognormal, 0.0);
+    }
+
+    /**
+     * Functor passed to the 1D solver inside {@link #impliedVolatility}.
+     *
+     * <p>Mirrors the C++ anonymous-namespace {@code ImpliedCapVolHelper}
+     * (capfloor.cpp:37-108). The helper owns a {@link SimpleQuote} shared
+     * with an internal {@link BlackCapFloorEngine} (ShiftedLognormal) or
+     * {@link BachelierCapFloorEngine} (Normal); each call to
+     * {@link #op(double)} sets the quote to the trial volatility, triggers
+     * the engine, and returns {@code engineNPV - targetValue}.
+     *
+     * <h3>Derivative</h3>
+     * <p>C++ reads the analytical {@code vega} from
+     * {@code results.additionalResults["vega"]}. The Java
+     * {@link BlackCapFloorEngine} populates the same key (Phase
+     * 5e.5b-CFC-d-49), so we read it directly to mirror C++ verbatim.
+     * The Java {@link BachelierCapFloorEngine} does not yet populate
+     * {@code additionalResults}; when the cap is priced under
+     * {@link VolatilityType#Normal} we fall back to a central finite
+     * difference with a relative bump of {@code 1e-5}. Both branches feed
+     * {@link NewtonSafe}.
+     */
+    private static final class ImpliedCapVolHelper implements Derivative {
+        private final PricingEngine engine_;
+        private final SimpleQuote vol_;
+        private final /*@Real*/ double targetValue_;
+        private final Instrument.ResultsImpl results_;
+
+        ImpliedCapVolHelper(final CapFloor cap,
+                            final Handle<YieldTermStructure> discountCurve,
+                            final /*@Real*/ double targetValue,
+                            final /*@Real*/ double displacement,
+                            final VolatilityType type) {
+            this.targetValue_ = targetValue;
+            // Implausible starting value forces a recalculate on the first
+            // op(x) call (mirrors C++ SimpleQuote(-1.0) sentinel).
+            this.vol_ = new SimpleQuote(-1.0);
+            final Handle<Quote> h = new Handle<Quote>(vol_);
+
+            switch (type) {
+                case ShiftedLognormal:
+                    this.engine_ = new BlackCapFloorEngine(
+                            discountCurve, h, new Actual365Fixed(), displacement);
+                    break;
+                case Normal:
+                    this.engine_ = new BachelierCapFloorEngine(
+                            discountCurve, h, new Actual365Fixed());
+                    break;
+                default:
+                    throw new LibraryException("unknown VolatilityType (" + type + ")");
+            }
+
+            // Mirrors C++ cap.setupArguments(engine_->getArguments()).
+            // CapFloor.setupArguments is protected on Instrument; this is
+            // a nested class of CapFloor so the call is permitted.
+            cap.setupArguments(engine_.getArguments());
+            engine_.getArguments().validate();
+            this.results_ = (Instrument.ResultsImpl) engine_.getResults();
+        }
+
+        @Override
+        public double op(final double x) {
+            if (x != vol_.value()) {
+                vol_.setValue(x);
+                engine_.calculate();
+            }
+            return results_.value - targetValue_;
+        }
+
+        @Override
+        public double derivative(final double x) {
+            if (x != vol_.value()) {
+                vol_.setValue(x);
+                engine_.calculate();
+            }
+            // Prefer the analytical vega populated by the engine (mirrors
+            // C++ capfloor.cpp:98-107). Fall back to a central finite
+            // difference when the engine has not populated the entry yet
+            // (e.g. BachelierCapFloorEngine pre-Phase-5g vega wiring).
+            final Object vega = results_.additionalResults().get("vega");
+            if (vega instanceof Number) {
+                return ((Number) vega).doubleValue();
+            }
+            final double bump = Math.max(1.0e-7, 1.0e-5 * Math.abs(x));
+            final double fPlus = op(x + bump);
+            final double fMinus = op(x - bump);
+            // Restore engine state at x so subsequent op(x) is consistent.
+            op(x);
+            return (fPlus - fMinus) / (2.0 * bump);
+        }
     }
 
     //

@@ -307,11 +307,14 @@ public class QRDecomposition {
 
         final double[] xArr = new double[n];
 
-        // Build R in column-major layout for Minpack.qrsolv.
+        // Build R in column-major layout for Minpack.qrsolv. The Minpack
+        // convention is r[i + ldr*j] = r(i, j); C++ passes rT.begin()
+        // (row-major rT) which Minpack reinterprets as column-major R via
+        // the i,j swap. We construct rFlat in column-major directly from R.
         final double[] rFlat = new double[n * n];
-        for (int col = 0; col < n; ++col) {
-            for (int row = 0; row < n; ++row) {
-                rFlat[row + n * col] = rT.get(row, col);
+        for (int j = 0; j < n; ++j) {
+            for (int i = 0; i < n; ++i) {
+                rFlat[i + n * j] = R.get(i, j);
             }
         }
 
