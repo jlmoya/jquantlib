@@ -1,0 +1,1093 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "curve_points": [
+          {
+            "discount": 0.9944228216031359,
+            "i": 0,
+            "maturity_serial": 41892,
+            "zero_continuous": 0.0055321624869434085
+          },
+          {
+            "discount": 0.9923010832547599,
+            "i": 1,
+            "maturity_serial": 42073,
+            "zero_continuous": 0.00512905061223035
+          },
+          {
+            "discount": 0.9901420276980403,
+            "i": 2,
+            "maturity_serial": 42257,
+            "zero_continuous": 0.004926447677144322
+          },
+          {
+            "discount": 0.9862182685365616,
+            "i": 3,
+            "maturity_serial": 42625,
+            "zero_continuous": 0.004596476529631574
+          },
+          {
+            "discount": 0.9824103982978376,
+            "i": 4,
+            "maturity_serial": 42989,
+            "zero_continuous": 0.004418376552817699
+          },
+          {
+            "discount": 0.9785910056321185,
+            "i": 5,
+            "maturity_serial": 43353,
+            "zero_continuous": 0.004316472293678898
+          },
+          {
+            "discount": 0.9703406228335112,
+            "i": 6,
+            "maturity_serial": 44084,
+            "zero_continuous": 0.004291081890475354
+          },
+          {
+            "discount": 0.9574236475450106,
+            "i": 7,
+            "maturity_serial": 45180,
+            "zero_continuous": 0.004342601979651568
+          },
+          {
+            "discount": 0.9346553659635322,
+            "i": 8,
+            "maturity_serial": 47007,
+            "zero_continuous": 0.004497767089780301
+          },
+          {
+            "discount": 0.9109885774030123,
+            "i": 9,
+            "maturity_serial": 48834,
+            "zero_continuous": 0.004654232788838423
+          },
+          {
+            "discount": 0.8620112591360489,
+            "i": 10,
+            "maturity_serial": 52484,
+            "zero_continuous": 0.004944597716245266
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": true,
+        "isFxBaseCurrencyCollateralCurrency": false,
+        "today_serial": 41523
+      },
+      "name": "constNotional_collat_quote_basis_base"
+    },
+    {
+      "expected": {
+        "curve_points": [
+          {
+            "discount": 0.9864097667951156,
+            "i": 0,
+            "maturity_serial": 41892,
+            "zero_continuous": 0.01353509590794998
+          },
+          {
+            "discount": 0.9804077926641448,
+            "i": 1,
+            "maturity_serial": 42073,
+            "zero_continuous": 0.013131159637570548
+          },
+          {
+            "discount": 0.9743370313572943,
+            "i": 2,
+            "maturity_serial": 42257,
+            "zero_continuous": 0.012928164296551737
+          },
+          {
+            "discount": 0.962681503080369,
+            "i": 3,
+            "maturity_serial": 42625,
+            "zero_continuous": 0.012597023075099129
+          },
+          {
+            "discount": 0.9513466099210551,
+            "i": 4,
+            "maturity_serial": 42989,
+            "zero_continuous": 0.012418169910622995
+          },
+          {
+            "discount": 0.9401196708265952,
+            "i": 5,
+            "maturity_serial": 43353,
+            "zero_continuous": 0.012315878353772972
+          },
+          {
+            "discount": 0.9173702791371544,
+            "i": 6,
+            "maturity_serial": 44084,
+            "zero_continuous": 0.012291719788299403
+          },
+          {
+            "discount": 0.8836472762095322,
+            "i": 7,
+            "maturity_serial": 45180,
+            "zero_continuous": 0.01234605311610331
+          },
+          {
+            "discount": 0.8286734304065801,
+            "i": 8,
+            "maturity_serial": 47007,
+            "zero_continuous": 0.012508047720112641
+          },
+          {
+            "discount": 0.7758146054179282,
+            "i": 9,
+            "maturity_serial": 48834,
+            "zero_continuous": 0.012672988610117756
+          },
+          {
+            "discount": 0.6771144091555136,
+            "i": 10,
+            "maturity_serial": 52484,
+            "zero_continuous": 0.012984124121856925
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": false,
+        "isFxBaseCurrencyCollateralCurrency": true,
+        "today_serial": 41523
+      },
+      "name": "constNotional_collat_base_basis_quote"
+    },
+    {
+      "expected": {
+        "curve_points": [
+          {
+            "discount": 0.9834841762499871,
+            "i": 0,
+            "maturity_serial": 41892,
+            "zero_continuous": 0.016473202260682385
+          },
+          {
+            "discount": 0.9748782514509172,
+            "i": 1,
+            "maturity_serial": 42073,
+            "zero_continuous": 0.016884691676573336
+          },
+          {
+            "discount": 0.9662064176018481,
+            "i": 2,
+            "maturity_serial": 42257,
+            "zero_continuous": 0.017095219951356593
+          },
+          {
+            "discount": 0.9486956242182082,
+            "i": 3,
+            "maturity_serial": 42625,
+            "zero_continuous": 0.01744423931214682
+          },
+          {
+            "discount": 0.9315970412412637,
+            "i": 4,
+            "maturity_serial": 42989,
+            "zero_continuous": 0.017641231033752404
+          },
+          {
+            "discount": 0.9147990683564877,
+            "i": 5,
+            "maturity_serial": 43353,
+            "zero_continuous": 0.017761505390648347
+          },
+          {
+            "discount": 0.8824879787410809,
+            "i": 6,
+            "maturity_serial": 44084,
+            "zero_continuous": 0.017816747720839264
+          },
+          {
+            "discount": 0.836618993826056,
+            "i": 7,
+            "maturity_serial": 45180,
+            "zero_continuous": 0.017804506035844037
+          },
+          {
+            "discount": 0.7664662167046327,
+            "i": 8,
+            "maturity_serial": 47007,
+            "zero_continuous": 0.017701878115005117
+          },
+          {
+            "discount": 0.703084402024996,
+            "i": 9,
+            "maturity_serial": 48834,
+            "zero_continuous": 0.017587415145462238
+          },
+          {
+            "discount": 0.5938393406590778,
+            "i": 10,
+            "maturity_serial": 52484,
+            "zero_continuous": 0.01735411552440846
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": true,
+        "isFxBaseCurrencyCollateralCurrency": true,
+        "today_serial": 41523
+      },
+      "name": "constNotional_collat_base_basis_base"
+    },
+    {
+      "expected": {
+        "curve_points": [
+          {
+            "discount": 0.9914825352780975,
+            "i": 0,
+            "maturity_serial": 41892,
+            "zero_continuous": 0.008461219924304285
+          },
+          {
+            "discount": 0.9867374953310545,
+            "i": 1,
+            "maturity_serial": 42073,
+            "zero_continuous": 0.008860366439168774
+          },
+          {
+            "discount": 0.9819472337013725,
+            "i": 2,
+            "maturity_serial": 42257,
+            "zero_continuous": 0.009059213261790263
+          },
+          {
+            "discount": 0.9720732221900247,
+            "i": 3,
+            "maturity_serial": 42625,
+            "zero_continuous": 0.009381409481877908
+          },
+          {
+            "discount": 0.9623618101169286,
+            "i": 4,
+            "maturity_serial": 42989,
+            "zero_continuous": 0.009551944690879019
+          },
+          {
+            "discount": 0.9527870551202113,
+            "i": 5,
+            "maturity_serial": 43353,
+            "zero_continuous": 0.00964634110405072
+          },
+          {
+            "discount": 0.9344869986087914,
+            "i": 6,
+            "maturity_serial": 44084,
+            "zero_continuous": 0.009656974295932149
+          },
+          {
+            "discount": 0.908441614727552,
+            "i": 7,
+            "maturity_serial": 45180,
+            "zero_continuous": 0.009584085440503522
+          },
+          {
+            "discount": 0.8683447716369906,
+            "i": 8,
+            "maturity_serial": 47007,
+            "zero_continuous": 0.009395651149932982
+          },
+          {
+            "discount": 0.831558380390687,
+            "i": 9,
+            "maturity_serial": 48834,
+            "zero_continuous": 0.009208812301538341
+          },
+          {
+            "discount": 0.7662220364602547,
+            "i": 10,
+            "maturity_serial": 52484,
+            "zero_continuous": 0.0088672018557587
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": false,
+        "isFxBaseCurrencyCollateralCurrency": false,
+        "today_serial": 41523
+      },
+      "name": "constNotional_collat_quote_basis_quote"
+    },
+    {
+      "expected": {
+        "zero_pairs": [
+          {
+            "diff": 0.0,
+            "i": 0,
+            "maturity_constNotional_serial": 41892,
+            "maturity_resetting_serial": 41892,
+            "zero_constNotional": 0.0055321624869434085,
+            "zero_resetting": 0.0055321624869434085
+          },
+          {
+            "diff": 0.0,
+            "i": 1,
+            "maturity_constNotional_serial": 42073,
+            "maturity_resetting_serial": 42073,
+            "zero_constNotional": 0.00512905061223035,
+            "zero_resetting": 0.00512905061223035
+          },
+          {
+            "diff": -1.0928757898653885e-16,
+            "i": 2,
+            "maturity_constNotional_serial": 42257,
+            "maturity_resetting_serial": 42257,
+            "zero_constNotional": 0.004926447677144322,
+            "zero_resetting": 0.004926447677144213
+          },
+          {
+            "diff": -1.448494102440634e-16,
+            "i": 3,
+            "maturity_constNotional_serial": 42625,
+            "maturity_resetting_serial": 42625,
+            "zero_constNotional": 0.004596476529631574,
+            "zero_resetting": 0.004596476529631429
+          },
+          {
+            "diff": 0.0,
+            "i": 4,
+            "maturity_constNotional_serial": 42989,
+            "maturity_resetting_serial": 42989,
+            "zero_constNotional": 0.004418376552817699,
+            "zero_resetting": 0.004418376552817699
+          },
+          {
+            "diff": 0.0,
+            "i": 5,
+            "maturity_constNotional_serial": 43353,
+            "maturity_resetting_serial": 43353,
+            "zero_constNotional": 0.004316472293678898,
+            "zero_resetting": 0.004316472293678898
+          },
+          {
+            "diff": 0.0,
+            "i": 6,
+            "maturity_constNotional_serial": 44084,
+            "maturity_resetting_serial": 44084,
+            "zero_constNotional": 0.004291081890475354,
+            "zero_resetting": 0.004291081890475354
+          },
+          {
+            "diff": 2.168404344971009e-17,
+            "i": 7,
+            "maturity_constNotional_serial": 45180,
+            "maturity_resetting_serial": 45180,
+            "zero_constNotional": 0.004342601979651568,
+            "zero_resetting": 0.00434260197965159
+          },
+          {
+            "diff": 0.0,
+            "i": 8,
+            "maturity_constNotional_serial": 47007,
+            "maturity_resetting_serial": 47007,
+            "zero_constNotional": 0.004497767089780301,
+            "zero_resetting": 0.004497767089780301
+          },
+          {
+            "diff": 0.0,
+            "i": 9,
+            "maturity_constNotional_serial": 48834,
+            "maturity_resetting_serial": 48834,
+            "zero_constNotional": 0.004654232788838423,
+            "zero_resetting": 0.004654232788838423
+          },
+          {
+            "diff": -3.8163916471489756e-17,
+            "i": 10,
+            "maturity_constNotional_serial": 52484,
+            "maturity_resetting_serial": 52484,
+            "zero_constNotional": 0.004944597716245266,
+            "zero_resetting": 0.004944597716245227
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": true,
+        "isFxBaseCurrencyCollateralCurrency": false,
+        "isFxBaseCurrencyLegResettable": false,
+        "paymentFrequency": -1,
+        "paymentLag": 0,
+        "today_serial": 41523,
+        "useOvernightIndex": false
+      },
+      "name": "resetting_collat_quote_basis_base"
+    },
+    {
+      "expected": {
+        "zero_pairs": [
+          {
+            "diff": -2.185751579730777e-16,
+            "i": 0,
+            "maturity_constNotional_serial": 41892,
+            "maturity_resetting_serial": 41892,
+            "zero_constNotional": 0.01353509590794998,
+            "zero_resetting": 0.013535095907949761
+          },
+          {
+            "diff": 0.0,
+            "i": 1,
+            "maturity_constNotional_serial": 42073,
+            "maturity_resetting_serial": 42073,
+            "zero_constNotional": 0.013131159637570548,
+            "zero_resetting": 0.013131159637570548
+          },
+          {
+            "diff": 0.0,
+            "i": 2,
+            "maturity_constNotional_serial": 42257,
+            "maturity_resetting_serial": 42257,
+            "zero_constNotional": 0.012928164296551737,
+            "zero_resetting": 0.012928164296551737
+          },
+          {
+            "diff": -7.112366251504909e-17,
+            "i": 3,
+            "maturity_constNotional_serial": 42625,
+            "maturity_resetting_serial": 42625,
+            "zero_constNotional": 0.012597023075099129,
+            "zero_resetting": 0.012597023075099058
+          },
+          {
+            "diff": -5.377642775528102e-17,
+            "i": 4,
+            "maturity_constNotional_serial": 42989,
+            "maturity_resetting_serial": 42989,
+            "zero_constNotional": 0.012418169910622995,
+            "zero_resetting": 0.012418169910622941
+          },
+          {
+            "diff": -4.163336342344337e-17,
+            "i": 5,
+            "maturity_constNotional_serial": 43353,
+            "maturity_resetting_serial": 43353,
+            "zero_constNotional": 0.012315878353772972,
+            "zero_resetting": 0.01231587835377293
+          },
+          {
+            "diff": -5.898059818321144e-17,
+            "i": 6,
+            "maturity_constNotional_serial": 44084,
+            "maturity_resetting_serial": 44084,
+            "zero_constNotional": 0.012291719788299403,
+            "zero_resetting": 0.012291719788299344
+          },
+          {
+            "diff": -3.9898639947466563e-17,
+            "i": 7,
+            "maturity_constNotional_serial": 45180,
+            "maturity_resetting_serial": 45180,
+            "zero_constNotional": 0.01234605311610331,
+            "zero_resetting": 0.01234605311610327
+          },
+          {
+            "diff": -4.85722573273506e-17,
+            "i": 8,
+            "maturity_constNotional_serial": 47007,
+            "maturity_resetting_serial": 47007,
+            "zero_constNotional": 0.012508047720112641,
+            "zero_resetting": 0.012508047720112592
+          },
+          {
+            "diff": -8.673617379884035e-18,
+            "i": 9,
+            "maturity_constNotional_serial": 48834,
+            "maturity_resetting_serial": 48834,
+            "zero_constNotional": 0.012672988610117756,
+            "zero_resetting": 0.012672988610117748
+          },
+          {
+            "diff": 0.0,
+            "i": 10,
+            "maturity_constNotional_serial": 52484,
+            "maturity_resetting_serial": 52484,
+            "zero_constNotional": 0.012984124121856925,
+            "zero_resetting": 0.012984124121856925
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": false,
+        "isFxBaseCurrencyCollateralCurrency": true,
+        "isFxBaseCurrencyLegResettable": true,
+        "paymentFrequency": -1,
+        "paymentLag": 0,
+        "today_serial": 41523,
+        "useOvernightIndex": false
+      },
+      "name": "resetting_collat_base_basis_quote"
+    },
+    {
+      "expected": {
+        "zero_pairs": [
+          {
+            "diff": -5.364704751938121e-06,
+            "i": 0,
+            "maturity_constNotional_serial": 41892,
+            "maturity_resetting_serial": 41892,
+            "zero_constNotional": 0.016473202260682385,
+            "zero_resetting": 0.016467837555930447
+          },
+          {
+            "diff": -1.1356341818636456e-05,
+            "i": 1,
+            "maturity_constNotional_serial": 42073,
+            "maturity_resetting_serial": 42073,
+            "zero_constNotional": 0.016884691676573336,
+            "zero_resetting": 0.0168733353347547
+          },
+          {
+            "diff": -1.796444667918201e-05,
+            "i": 2,
+            "maturity_constNotional_serial": 42257,
+            "maturity_resetting_serial": 42257,
+            "zero_constNotional": 0.017095219951356593,
+            "zero_resetting": 0.01707725550467741
+          },
+          {
+            "diff": -3.3834469997228583e-05,
+            "i": 3,
+            "maturity_constNotional_serial": 42625,
+            "maturity_resetting_serial": 42625,
+            "zero_constNotional": 0.01744423931214682,
+            "zero_resetting": 0.01741040484214959
+          },
+          {
+            "diff": -5.069449996914638e-05,
+            "i": 4,
+            "maturity_constNotional_serial": 42989,
+            "maturity_resetting_serial": 42989,
+            "zero_constNotional": 0.017641231033752404,
+            "zero_resetting": 0.017590536533783258
+          },
+          {
+            "diff": -6.792579957724462e-05,
+            "i": 5,
+            "maturity_constNotional_serial": 43353,
+            "maturity_resetting_serial": 43353,
+            "zero_constNotional": 0.017761505390648347,
+            "zero_resetting": 0.017693579591071103
+          },
+          {
+            "diff": -9.973128284937807e-05,
+            "i": 6,
+            "maturity_constNotional_serial": 44084,
+            "maturity_resetting_serial": 44084,
+            "zero_constNotional": 0.017816747720839264,
+            "zero_resetting": 0.017717016437989886
+          },
+          {
+            "diff": -0.00014399486046149518,
+            "i": 7,
+            "maturity_constNotional_serial": 45180,
+            "maturity_resetting_serial": 45180,
+            "zero_constNotional": 0.017804506035844037,
+            "zero_resetting": 0.017660511175382542
+          },
+          {
+            "diff": -0.00020845678721106986,
+            "i": 8,
+            "maturity_constNotional_serial": 47007,
+            "maturity_resetting_serial": 47007,
+            "zero_constNotional": 0.017701878115005117,
+            "zero_resetting": 0.017493421327794047
+          },
+          {
+            "diff": -0.0002645535459622553,
+            "i": 9,
+            "maturity_constNotional_serial": 48834,
+            "maturity_resetting_serial": 48834,
+            "zero_constNotional": 0.017587415145462238,
+            "zero_resetting": 0.017322861599499983
+          },
+          {
+            "diff": -0.0003537912957812944,
+            "i": 10,
+            "maturity_constNotional_serial": 52484,
+            "maturity_resetting_serial": 52484,
+            "zero_constNotional": 0.01735411552440846,
+            "zero_resetting": 0.017000324228627166
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": true,
+        "isFxBaseCurrencyCollateralCurrency": true,
+        "isFxBaseCurrencyLegResettable": true,
+        "paymentFrequency": -1,
+        "paymentLag": 0,
+        "today_serial": 41523,
+        "useOvernightIndex": false
+      },
+      "name": "resetting_collat_base_basis_base"
+    },
+    {
+      "expected": {
+        "zero_pairs": [
+          {
+            "diff": 3.6841228059237424e-06,
+            "i": 0,
+            "maturity_constNotional_serial": 41892,
+            "maturity_resetting_serial": 41892,
+            "zero_constNotional": 0.008461219924304285,
+            "zero_resetting": 0.008464904047110209
+          },
+          {
+            "diff": 7.6093859427018434e-06,
+            "i": 1,
+            "maturity_constNotional_serial": 42073,
+            "maturity_resetting_serial": 42073,
+            "zero_constNotional": 0.008860366439168774,
+            "zero_resetting": 0.008867975825111476
+          },
+          {
+            "diff": 1.1451408543564426e-05,
+            "i": 2,
+            "maturity_constNotional_serial": 42257,
+            "maturity_resetting_serial": 42257,
+            "zero_constNotional": 0.009059213261790263,
+            "zero_resetting": 0.009070664670333827
+          },
+          {
+            "diff": 1.9859998934024584e-05,
+            "i": 3,
+            "maturity_constNotional_serial": 42625,
+            "maturity_resetting_serial": 42625,
+            "zero_constNotional": 0.009381409481877908,
+            "zero_resetting": 0.009401269480811932
+          },
+          {
+            "diff": 2.7974207876637833e-05,
+            "i": 4,
+            "maturity_constNotional_serial": 42989,
+            "maturity_resetting_serial": 42989,
+            "zero_constNotional": 0.009551944690879019,
+            "zero_resetting": 0.009579918898755656
+          },
+          {
+            "diff": 3.581135002611244e-05,
+            "i": 5,
+            "maturity_constNotional_serial": 43353,
+            "maturity_resetting_serial": 43353,
+            "zero_constNotional": 0.00964634110405072,
+            "zero_resetting": 0.009682152454076833
+          },
+          {
+            "diff": 4.97563414837178e-05,
+            "i": 6,
+            "maturity_constNotional_serial": 44084,
+            "maturity_resetting_serial": 44084,
+            "zero_constNotional": 0.009656974295932149,
+            "zero_resetting": 0.009706730637415867
+          },
+          {
+            "diff": 6.9237968659654e-05,
+            "i": 7,
+            "maturity_constNotional_serial": 45180,
+            "maturity_resetting_serial": 45180,
+            "zero_constNotional": 0.009584085440503522,
+            "zero_resetting": 0.009653323409163176
+          },
+          {
+            "diff": 9.833343316725113e-05,
+            "i": 8,
+            "maturity_constNotional_serial": 47007,
+            "maturity_resetting_serial": 47007,
+            "zero_constNotional": 0.009395651149932982,
+            "zero_resetting": 0.009493984583100233
+          },
+          {
+            "diff": 0.0001241969935073372,
+            "i": 9,
+            "maturity_constNotional_serial": 48834,
+            "maturity_resetting_serial": 48834,
+            "zero_constNotional": 0.009208812301538341,
+            "zero_resetting": 0.009333009295045679
+          },
+          {
+            "diff": 0.00016656158074218955,
+            "i": 10,
+            "maturity_constNotional_serial": 52484,
+            "maturity_resetting_serial": 52484,
+            "zero_constNotional": 0.0088672018557587,
+            "zero_resetting": 0.00903376343650089
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": false,
+        "isFxBaseCurrencyCollateralCurrency": false,
+        "isFxBaseCurrencyLegResettable": false,
+        "paymentFrequency": -1,
+        "paymentLag": 0,
+        "today_serial": 41523,
+        "useOvernightIndex": false
+      },
+      "name": "resetting_collat_quote_basis_quote"
+    },
+    {
+      "expected": {
+        "zero_pairs": [
+          {
+            "diff": -2.1247481800518164e-06,
+            "i": 0,
+            "maturity_constNotional_serial": 41892,
+            "maturity_resetting_serial": 41892,
+            "zero_constNotional": 0.0055321624869434085,
+            "zero_resetting": 0.005530037738763357
+          },
+          {
+            "diff": -2.6112471761168335e-06,
+            "i": 1,
+            "maturity_constNotional_serial": 42073,
+            "maturity_resetting_serial": 42073,
+            "zero_constNotional": 0.00512905061223035,
+            "zero_resetting": 0.005126439365054233
+          },
+          {
+            "diff": -2.8542260544868123e-06,
+            "i": 2,
+            "maturity_constNotional_serial": 42257,
+            "maturity_resetting_serial": 42257,
+            "zero_constNotional": 0.004926447677144322,
+            "zero_resetting": 0.004923593451089835
+          },
+          {
+            "diff": -3.228021282521837e-06,
+            "i": 3,
+            "maturity_constNotional_serial": 42625,
+            "maturity_resetting_serial": 42625,
+            "zero_constNotional": 0.004596476529631574,
+            "zero_resetting": 0.004593248508349052
+          },
+          {
+            "diff": -3.408223740438386e-06,
+            "i": 4,
+            "maturity_constNotional_serial": 42989,
+            "maturity_resetting_serial": 42989,
+            "zero_constNotional": 0.004418376552817699,
+            "zero_resetting": 0.00441496832907726
+          },
+          {
+            "diff": -3.5071675349336584e-06,
+            "i": 5,
+            "maturity_constNotional_serial": 43353,
+            "maturity_resetting_serial": 43353,
+            "zero_constNotional": 0.004316472293678898,
+            "zero_resetting": 0.004312965126143964
+          },
+          {
+            "diff": -3.533505623574268e-06,
+            "i": 6,
+            "maturity_constNotional_serial": 44084,
+            "maturity_resetting_serial": 44084,
+            "zero_constNotional": 0.004291081890475354,
+            "zero_resetting": 0.004287548384851779
+          },
+          {
+            "diff": -3.4838210785266555e-06,
+            "i": 7,
+            "maturity_constNotional_serial": 45180,
+            "maturity_resetting_serial": 45180,
+            "zero_constNotional": 0.004342601979651568,
+            "zero_resetting": 0.004339118158573041
+          },
+          {
+            "diff": -3.328409148160155e-06,
+            "i": 8,
+            "maturity_constNotional_serial": 47007,
+            "maturity_resetting_serial": 47007,
+            "zero_constNotional": 0.004497767089780301,
+            "zero_resetting": 0.004494438680632141
+          },
+          {
+            "diff": -3.1663347207274567e-06,
+            "i": 9,
+            "maturity_constNotional_serial": 48834,
+            "maturity_resetting_serial": 48834,
+            "zero_constNotional": 0.004654232788838423,
+            "zero_resetting": 0.004651066454117695
+          },
+          {
+            "diff": -2.85041155983351e-06,
+            "i": 10,
+            "maturity_constNotional_serial": 52484,
+            "maturity_resetting_serial": 52484,
+            "zero_constNotional": 0.004944597716245266,
+            "zero_resetting": 0.004941747304685432
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": true,
+        "isFxBaseCurrencyCollateralCurrency": false,
+        "isFxBaseCurrencyLegResettable": false,
+        "paymentFrequency": 52,
+        "paymentLag": 0,
+        "today_serial": 41523,
+        "useOvernightIndex": false
+      },
+      "name": "resetting_arbitraryFreq"
+    },
+    {
+      "expected": {
+        "zero_pairs": [
+          {
+            "diff": -2.177077962350893e-16,
+            "i": 0,
+            "maturity_constNotional_serial": 41892,
+            "maturity_resetting_serial": 41892,
+            "zero_constNotional": 0.0055321624869434085,
+            "zero_resetting": 0.005532162486943191
+          },
+          {
+            "diff": 4.45427485889268e-06,
+            "i": 1,
+            "maturity_constNotional_serial": 42073,
+            "maturity_resetting_serial": 42073,
+            "zero_constNotional": 0.00512905061223035,
+            "zero_resetting": 0.005133504887089243
+          },
+          {
+            "diff": 3.174632271200732e-05,
+            "i": 2,
+            "maturity_constNotional_serial": 42257,
+            "maturity_resetting_serial": 42257,
+            "zero_constNotional": 0.004926447677144322,
+            "zero_resetting": 0.004958193999856329
+          },
+          {
+            "diff": 3.0100415822987073e-06,
+            "i": 3,
+            "maturity_constNotional_serial": 42625,
+            "maturity_resetting_serial": 42625,
+            "zero_constNotional": 0.004596476529631574,
+            "zero_resetting": 0.004599486571213873
+          },
+          {
+            "diff": 2.277367920627306e-06,
+            "i": 4,
+            "maturity_constNotional_serial": 42989,
+            "maturity_resetting_serial": 42989,
+            "zero_constNotional": 0.004418376552817699,
+            "zero_resetting": 0.004420653920738326
+          },
+          {
+            "diff": 1.7965428357781532e-06,
+            "i": 5,
+            "maturity_constNotional_serial": 43353,
+            "maturity_resetting_serial": 43353,
+            "zero_constNotional": 0.004316472293678898,
+            "zero_resetting": 0.004318268836514676
+          },
+          {
+            "diff": 9.367025807593618e-06,
+            "i": 6,
+            "maturity_constNotional_serial": 44084,
+            "maturity_resetting_serial": 44084,
+            "zero_constNotional": 0.004291081890475354,
+            "zero_resetting": 0.004300448916282947
+          },
+          {
+            "diff": 5.928832598348435e-07,
+            "i": 7,
+            "maturity_constNotional_serial": 45180,
+            "maturity_resetting_serial": 45180,
+            "zero_constNotional": 0.004342601979651568,
+            "zero_resetting": 0.004343194862911403
+          },
+          {
+            "diff": 2.871528671103199e-07,
+            "i": 8,
+            "maturity_constNotional_serial": 47007,
+            "maturity_resetting_serial": 47007,
+            "zero_constNotional": 0.004497767089780301,
+            "zero_resetting": 0.004498054242647411
+          },
+          {
+            "diff": 1.4470353002903752e-07,
+            "i": 9,
+            "maturity_constNotional_serial": 48834,
+            "maturity_resetting_serial": 48834,
+            "zero_constNotional": 0.004654232788838423,
+            "zero_resetting": 0.004654377492368452
+          },
+          {
+            "diff": 1.7258597077738844e-06,
+            "i": 10,
+            "maturity_constNotional_serial": 52484,
+            "maturity_resetting_serial": 52484,
+            "zero_constNotional": 0.004944597716245266,
+            "zero_resetting": 0.0049463235759530395
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": true,
+        "isFxBaseCurrencyCollateralCurrency": false,
+        "isFxBaseCurrencyLegResettable": false,
+        "paymentFrequency": -1,
+        "paymentLag": 2,
+        "today_serial": 41523,
+        "useOvernightIndex": false
+      },
+      "name": "resetting_paymentLag"
+    },
+    {
+      "expected": {
+        "zero_pairs": [
+          {
+            "diff": 0.0,
+            "i": 0,
+            "maturity_constNotional_serial": 41892,
+            "maturity_resetting_serial": 41892,
+            "zero_constNotional": 0.0055321624869434085,
+            "zero_resetting": 0.0055321624869434085
+          },
+          {
+            "diff": 0.0,
+            "i": 1,
+            "maturity_constNotional_serial": 42073,
+            "maturity_resetting_serial": 42073,
+            "zero_constNotional": 0.00512905061223035,
+            "zero_resetting": 0.00512905061223035
+          },
+          {
+            "diff": -1.0928757898653885e-16,
+            "i": 2,
+            "maturity_constNotional_serial": 42257,
+            "maturity_resetting_serial": 42257,
+            "zero_constNotional": 0.004926447677144322,
+            "zero_resetting": 0.004926447677144213
+          },
+          {
+            "diff": -1.448494102440634e-16,
+            "i": 3,
+            "maturity_constNotional_serial": 42625,
+            "maturity_resetting_serial": 42625,
+            "zero_constNotional": 0.004596476529631574,
+            "zero_resetting": 0.004596476529631429
+          },
+          {
+            "diff": 0.0,
+            "i": 4,
+            "maturity_constNotional_serial": 42989,
+            "maturity_resetting_serial": 42989,
+            "zero_constNotional": 0.004418376552817699,
+            "zero_resetting": 0.004418376552817699
+          },
+          {
+            "diff": 0.0,
+            "i": 5,
+            "maturity_constNotional_serial": 43353,
+            "maturity_resetting_serial": 43353,
+            "zero_constNotional": 0.004316472293678898,
+            "zero_resetting": 0.004316472293678898
+          },
+          {
+            "diff": 0.0,
+            "i": 6,
+            "maturity_constNotional_serial": 44084,
+            "maturity_resetting_serial": 44084,
+            "zero_constNotional": 0.004291081890475354,
+            "zero_resetting": 0.004291081890475354
+          },
+          {
+            "diff": 2.168404344971009e-17,
+            "i": 7,
+            "maturity_constNotional_serial": 45180,
+            "maturity_resetting_serial": 45180,
+            "zero_constNotional": 0.004342601979651568,
+            "zero_resetting": 0.00434260197965159
+          },
+          {
+            "diff": 0.0,
+            "i": 8,
+            "maturity_constNotional_serial": 47007,
+            "maturity_resetting_serial": 47007,
+            "zero_constNotional": 0.004497767089780301,
+            "zero_resetting": 0.004497767089780301
+          },
+          {
+            "diff": 0.0,
+            "i": 9,
+            "maturity_constNotional_serial": 48834,
+            "maturity_resetting_serial": 48834,
+            "zero_constNotional": 0.004654232788838423,
+            "zero_resetting": 0.004654232788838423
+          },
+          {
+            "diff": -3.8163916471489756e-17,
+            "i": 10,
+            "maturity_constNotional_serial": 52484,
+            "maturity_resetting_serial": 52484,
+            "zero_constNotional": 0.004944597716245266,
+            "zero_resetting": 0.004944597716245227
+          }
+        ]
+      },
+      "inputs": {
+        "curveSettlement_serial": 41523,
+        "isBasisOnFxBaseCurrencyLeg": true,
+        "isFxBaseCurrencyCollateralCurrency": false,
+        "isFxBaseCurrencyLegResettable": false,
+        "paymentFrequency": 4,
+        "paymentLag": 0,
+        "today_serial": 41523,
+        "useOvernightIndex": true
+      },
+      "name": "resetting_overnightIndex"
+    },
+    {
+      "expected": {
+        "throws": true
+      },
+      "inputs": {
+        "index_freq": "3M",
+        "tenor": "1M"
+      },
+      "name": "tenorShorterThanIndexFreq_throws"
+    },
+    {
+      "expected": {
+        "throws": true
+      },
+      "inputs": {
+        "paymentFrequency": "NoFrequency",
+        "useOvernightIndex": true
+      },
+      "name": "resetting_overnightIndex_exception"
+    },
+    {
+      "expected": {
+        "distinct": true,
+        "newQuote": 0.02705429628899434,
+        "oldQuote": 0.016895095878926375
+      },
+      "inputs": {
+        "newCollatRate": 0.03,
+        "oldCollatRate": 0.02,
+        "today_serial": 46037
+      },
+      "name": "relinking_oldVsNew"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-17T03:18:31Z",
+  "generated_by": "crosscurrency_probe",
+  "test_group": "experimental/crosscurrency"
+}
