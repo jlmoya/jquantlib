@@ -481,6 +481,17 @@ public class CapFloorTest {
      * Failures are tolerated when bracketing fails AND the input value is
      * within tolerance of the zero-vol value (mirrors the C++ skip
      * condition).
+     *
+     * <p>Java tweak: the test uses an {@link Actual365Fixed} engine
+     * day-counter so the engine that prices the cap matches the day-counter
+     * used by the internal {@code ImpliedCapVolHelper} engine (which
+     * follows C++ capfloor.cpp:71-77 verbatim and hard-codes Actual365Fixed).
+     * The shared {@link CommonVars#makeEngine(double)} returns an
+     * {@code ActualActual.ISDA} engine for the other tests; mixing the two
+     * day-counters would otherwise yield a volatility consistent with the
+     * helper's Actual365Fixed engine that, when re-priced under
+     * {@code ActualActual.ISDA}, differs slightly — masquerading as a
+     * solver-precision failure.
      */
     @Test
     public void testImpliedVolatility() {
@@ -510,13 +521,23 @@ public class CapFloorTest {
                 for (final double strike : strikes) {
 
                     final CapFloor capfloor = vars.makeCapFloor(type, leg, strike, 0.0);
+                    // Replace the ActualActual engine with an Actual365Fixed
+                    // one so the test engine matches the helper's internal
+                    // engine day-counter (see method javadoc).
+                    capfloor.setPricingEngine(new BlackCapFloorEngine(
+                            vars.termStructure,
+                            new Handle<Quote>(new SimpleQuote(0.0)),
+                            new org.jquantlib.daycounters.Actual365Fixed()));
 
                     for (final double r : rRates) {
                         for (final double v : vols) {
 
                             vars.termStructure.linkTo(Utilities.flatRate(
                                     vars.settlement, r, new Actual360()));
-                            capfloor.setPricingEngine(vars.makeEngine(v));
+                            capfloor.setPricingEngine(new BlackCapFloorEngine(
+                                    vars.termStructure,
+                                    new Handle<Quote>(new SimpleQuote(v)),
+                                    new org.jquantlib.daycounters.Actual365Fixed()));
 
                             final double value = capfloor.NPV();
                             double implVol = 0.0;
@@ -532,7 +553,10 @@ public class CapFloorTest {
                                         0.0);
                             } catch (final RuntimeException e) {
                                 // couldn't bracket?
-                                capfloor.setPricingEngine(vars.makeEngine(0.0));
+                                capfloor.setPricingEngine(new BlackCapFloorEngine(
+                                        vars.termStructure,
+                                        new Handle<Quote>(new SimpleQuote(0.0)),
+                                        new org.jquantlib.daycounters.Actual365Fixed()));
                                 final double value2 = capfloor.NPV();
                                 if (Math.abs(value - value2) < tolerance) {
                                     // ok, just skip:
@@ -553,7 +577,10 @@ public class CapFloorTest {
                             }
                             if (Math.abs(implVol - v) > tolerance) {
                                 // the difference might not matter
-                                capfloor.setPricingEngine(vars.makeEngine(implVol));
+                                capfloor.setPricingEngine(new BlackCapFloorEngine(
+                                        vars.termStructure,
+                                        new Handle<Quote>(new SimpleQuote(implVol)),
+                                        new org.jquantlib.daycounters.Actual365Fixed()));
                                 final double value2 = capfloor.NPV();
                                 if (Math.abs(value - value2) > tolerance) {
                                     fail("implied vol failure: " + type
