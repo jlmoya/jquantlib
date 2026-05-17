@@ -255,7 +255,16 @@ public class InterpolatedSmileSection extends SmileSection {
     @Override
     public void update() {
         super.update();
+        // Phase 5e.5b-CFC-d-158: align to C++ LazyObject::update(), which
+        // forwards observer notifications when the cached state is
+        // invalidated. Without this, downstream observables (e.g.
+        // PiecewiseBlackVarianceSurface) never propagate quote changes
+        // sourced from this smile section, breaking observer chains.
+        final boolean wasCalculated = calculated_;
         calculated_ = false;
+        if (wasCalculated) {
+            notifyObservers();
+        }
     }
 
     //

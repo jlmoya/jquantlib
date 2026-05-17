@@ -216,11 +216,17 @@ public class PiecewiseBlackVarianceSurfaceTest {
                 vol2, surface.blackVol(dBeyond, strike, true), 1.0e-12);
     }
 
+    /** {@code testObserver} — Java port of v1.42.1
+     * {@code test-suite/piecewiseblackvariancesurface.cpp::testObserver}.
+     *
+     * <p>Phase 5e.5b-CFC-d-158: un-ignored. The aligning fix to
+     * {@link org.jquantlib.termstructures.volatilities.InterpolatedSmileSection#update()}
+     * now forwards observer notifications when the cached state is
+     * invalidated, matching C++ {@code LazyObject::update()} semantics. This
+     * propagates through the smile sections to the surface and on to any
+     * external observers (here, a {@link Flag}).
+     */
     @Test
-    @Ignore("Phase 5e.5b-CFC-d-67 — InterpolatedSmileSection.update() does not "
-            + "forward notifyObservers() in JQuantLib (would be a one-line "
-            + "alignment to C++ LazyObject::update). Deferred to a focused "
-            + "SmileSection observer-plumbing alignment pass.")
     public void testObserver() {
         final Date today = new Date(15, Month.January, 2026);
         new Settings().setEvaluationDate(today);
@@ -883,10 +889,14 @@ public class PiecewiseBlackVarianceSurfaceTest {
     }
 
     @Test
-    @Ignore("Phase 5e.5b-CFC-d-67 — FD local-vol FdBlackScholesVanillaEngine "
-            + "wiring deferred: 1e-2 tolerance vs analytic engine is sensitive "
-            + "to FD discretization defaults; cross-validation against C++ "
-            + "deferred to a focused FD-pricing port pass.")
+    @Ignore("Phase 5e.5b-CFC-d-158: requires a local-vol code path in "
+            + "FdBlackScholesVanillaEngine (C++ ctor's localVol=true branch). "
+            + "Java engine currently supports only the constant/handle-vol path; "
+            + "Dupire-derivation + LocalVolSurface + the FD engine's localVol "
+            + "branch are unported (~300-500 LOC + LocalVolSurface class). "
+            + "Surface itself is validated by testExactRepricing / "
+            + "testInterpolation / testBlackVolDerivation; this test only adds "
+            + "a downstream FD-pricing cross-check at 1c tolerance.")
     public void testLocalVolFdPricingFromSabrSmiles() {
         // C++ test uses FdBlackScholesVanillaEngine with localVol=true at
         // (100 timesteps × 200 spatial × 0 dampening, Douglas scheme) and
