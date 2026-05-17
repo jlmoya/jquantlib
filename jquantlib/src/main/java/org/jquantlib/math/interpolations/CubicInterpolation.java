@@ -45,6 +45,7 @@ import java.util.Arrays;
 import org.jquantlib.QL;
 import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.Closeness;
+import org.jquantlib.math.Constants;
 import org.jquantlib.math.interpolations.factories.Cubic;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.TridiagonalOperator;
@@ -397,7 +398,29 @@ public class CubicInterpolation extends AbstractInterpolation {
                         case ModifiedParabolic:
                             throw new LibraryException("ModifiedParabolic not implemented yet");
                         case FritschButland:
-                            throw new LibraryException("FritschButland not implemented yet");
+                            // Fritsch-Butland approximation (local, monotonic, non-linear).
+                            // Mirrors C++ CubicInterpolation::FritschButland case
+                            // (cubicinterpolation.hpp lines 585-604, v1.42.1).
+                            // intermediate points
+                            for (int i=1; i<n-1; ++i) {
+                                final double Smin = Math.min(S[i-1], S[i]);
+                                final double Smax = Math.max(S[i-1], S[i]);
+                                if (Smax + 2.0*Smin == 0.0) {
+                                    if (Smin*Smax < 0.0) {
+                                        tmp[i] = Constants.QL_MIN_REAL;
+                                    } else if (Smin*Smax == 0.0) {
+                                        tmp[i] = 0.0;
+                                    } else {
+                                        tmp[i] = Constants.QL_MAX_REAL;
+                                    }
+                                } else {
+                                    tmp[i] = 3.0*Smin*Smax/(Smax + 2.0*Smin);
+                                }
+                            }
+                            // end points (require n >= 3)
+                            tmp[0]   = ((2.0*dx[0]+dx[1])*S[0] - dx[0]*S[1]) / (dx[0]+dx[1]);
+                            tmp[n-1] = ((2.0*dx[n-2]+dx[n-3])*S[n-2] - dx[n-2]*S[n-3]) / (dx[n-2]+dx[n-3]);
+                            break;
                         case Akima:
                             throw new LibraryException("Akima not implemented yet");
                         case Kruger:

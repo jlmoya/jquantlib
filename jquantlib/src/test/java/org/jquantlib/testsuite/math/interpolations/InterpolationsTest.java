@@ -35,13 +35,17 @@ import static org.junit.Assert.assertFalse;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.BSpline;
+import org.jquantlib.math.Constants;
 import org.jquantlib.math.GaussianKernel;
 import org.jquantlib.math.KernelFunction;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.RichardsonExtrapolation;
+import org.jquantlib.math.interpolations.CubicInterpolation;
+import org.jquantlib.math.interpolations.FritschButlandCubic;
 import org.jquantlib.math.interpolations.KernelInterpolation;
 import org.jquantlib.math.interpolations.KernelInterpolation2D;
 import org.jquantlib.math.interpolations.LagrangeInterpolation;
+import org.jquantlib.math.interpolations.MixedLinearCubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.junit.Ignore;
@@ -225,15 +229,116 @@ public class InterpolationsTest {
             + "(via testAsFunctor). C++ interpolations.cpp testInterpolateWithoutUpdate.")
     public void testInterpolateWithoutUpdate() { }
 
+    /**
+     * Faithful port of {@code testFritschButland} (interpolations.cpp lines
+     * 976-1009). Verifies that Fritsch-Butland cubic interpolation preserves
+     * the monotonicity of each input segment: on every sub-interval the
+     * interpolant's discrete sign (using the {@link #signOf(double, double)}
+     * helper, mirroring the C++ {@code sign} free function at line 209) must
+     * match the sign of the segment's endpoint difference.
+     *
+     * <p>Phase 5e.5b-CFC-d-92.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no Fritsch-Butland interpolation class. "
-            + "C++ interpolations.cpp testFritschButland.")
-    public void testFritschButland() { }
+    public void testFritschButland() {
+        QL.info("Testing Fritsch-Butland interpolation...");
 
+        final double[] x = { 0.0, 1.0, 2.0, 3.0, 4.0 };
+        final double[][] y = {
+                { 1.0, 2.0, 1.0, 1.0, 2.0 },
+                { 1.0, 2.0, 1.0, 1.0, 1.0 },
+                { 2.0, 1.0, 0.0, 2.0, 3.0 }
+        };
+
+        for (int i = 0; i < 3; ++i) {
+            final FritschButlandCubic f = new FritschButlandCubic(
+                    new Array(x), new Array(y[i]));
+            f.update();
+
+            for (int j = 0; j < 4; ++j) {
+                final double leftKnot = x[j];
+                final int expectedSign = signOf(y[i][j], y[i][j + 1]);
+                for (int k = 0; k < 10; ++k) {
+                    final double x1 = leftKnot + k * 0.1;
+                    final double x2 = leftKnot + (k + 1) * 0.1;
+                    final double y1 = f.op(x1);
+                    final double y2 = f.op(x2);
+                    assertFalse("NaN detected in case " + i + ": f(" + x1 + ") = " + y1,
+                            Double.isNaN(y1));
+                    assertEquals(
+                            "interpolation is not monotonic in case " + i
+                                    + ": f(" + x1 + ") = " + y1
+                                    + ", f(" + x2 + ") = " + y2,
+                            expectedSign, signOf(y1, y2));
+                }
+            }
+        }
+    }
+
+    /**
+     * C++ {@code sign(Real y1, Real y2)} from interpolations.cpp line 209:
+     * returns 0 if equal, +1 if increasing, -1 if decreasing.
+     */
+    private static int signOf(final double y1, final double y2) {
+        if (y1 == y2) {
+            return 0;
+        }
+        return y1 < y2 ? 1 : -1;
+    }
+
+    /**
+     * Faithful port of {@code testMixedLinearCubicMatchDerivatives}
+     * (interpolations.cpp lines 1246-1276). Builds a 6-point mixed
+     * linear/spline interpolation over {@code y = -x^2} on
+     * {@code [-2, 2]} with the split at index {@code k=2}, requesting that
+     * the cubic segment's first derivative match the linear segment's at the
+     * switch point (achieved by passing {@link Constants#NULL_REAL} as the
+     * left-condition value with {@code FirstDerivative} boundary condition).
+     * The left- and right-side derivatives at the switch point must agree
+     * within a tight 1e-12 tolerance.
+     *
+     * <p>Phase 5e.5b-CFC-d-92.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no MixedLinearCubicInterpolation. "
-            + "C++ interpolations.cpp testMixedLinearCubicMatchDerivatives.")
-    public void testMixedLinearCubicMatchDerivatives() { }
+    public void testMixedLinearCubicMatchDerivatives() {
+        QL.info("Testing match-derivatives for mixed linear/cubic interpolation...");
+
+        final int n = 6;
+        final int k = 2;
+
+        // C++ xRange / parabolic helpers (interpolations.cpp lines 62-83):
+        // xRange(-2, 2, 6) and y = -x^2.
+        final double start = -2.0;
+        final double finish = 2.0;
+        final double[] xArr = new double[n];
+        final double[] yArr = new double[n];
+        final double dx = (finish - start) / (n - 1);
+        for (int i = 0; i < n - 1; ++i) {
+            xArr[i] = start + i * dx;
+        }
+        xArr[n - 1] = finish;
+        for (int i = 0; i < n; ++i) {
+            yArr[i] = -xArr[i] * xArr[i];
+        }
+
+        final MixedLinearCubicInterpolation f = new MixedLinearCubicInterpolation(
+                new Array(xArr), new Array(yArr),
+                k, MixedLinearCubicInterpolation.Behavior.SplitRanges,
+                CubicInterpolation.DerivativeApprox.Spline, false,
+                CubicInterpolation.BoundaryCondition.FirstDerivative, Constants.NULL_REAL,
+                CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0);
+        f.update();
+
+        final double tolerance = 1.0e-12;
+        final double eps = tolerance / 10.0;
+
+        final double leftSide = f.derivative(xArr[k] - eps, true);
+        final double rightSide = f.derivative(xArr[k] + eps, true);
+        assertEquals(
+                "derivatives at the switch point do not match"
+                        + " (left=" + leftSide + ", right=" + rightSide + ")",
+                leftSide, rightSide, tolerance);
+    }
 
     @Test
     @Ignore("Phase 5g audit — Java SABRInterpolationTest covers SABR. "
