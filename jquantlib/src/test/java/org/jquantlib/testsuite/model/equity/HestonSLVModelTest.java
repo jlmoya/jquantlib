@@ -129,10 +129,12 @@ public class HestonSLVModelTest {
 
     // Phase 5h.5-SLV-c body-fills landed for testTransformedZeroFlowBC,
     // testSquareRootEvolveWithStationaryDensity, testSquareRootLogEvolveWithStationaryDensity.
-    // testSquareRootZeroFlowBC + testSquareRootFokkerPlanckFwdEquation are body-filled
-    // but @Ignore'd pending an exact non-central chi-squared PDF (Java currently uses
-    // a CDF central-difference approximation). Remaining @Ignore reasons are per-test
-    // and identify the specific missing infrastructure class(es).
+    // Phase 5e.5b-CFC-d-146 un-ignored testSquareRootZeroFlowBC and
+    // testSquareRootFokkerPlanckFwdEquation now that SquareRootProcessRNDCalculator.pdf
+    // delegates to the exact closed-form non-central chi-squared PDF
+    // (NonCentralCumulativeChiSquaredDistribution#pdf - Phase 5h.5-SLV-d Boost port).
+    // Remaining @Ignore reasons are per-test and identify the specific missing
+    // infrastructure class(es).
 
     /**
      * Mirrors C++ {@code stationaryLogProbabilityFct}
@@ -375,16 +377,11 @@ public class HestonSLVModelTest {
      * matches the analytic PDF at maturity.
      *
      * <p><strong>Java tolerance status:</strong> {@link SquareRootProcessRNDCalculator#pdf}
-     * is a CDF central-difference approximation (~1e-4 slack vs Boost's
-     * exact non-central chi-squared PDF). Body-fill exercises the FDM
-     * operator but fails at boundary point {@code v ~ 0.0023} where the
-     * pdf approximation error (~2.3e-3) exceeds the 2e-3 test tolerance.
-     * Will pass once Java has an exact non-central chi-squared PDF (or
-     * modified Bessel functions of fractional order).
+     * now uses the exact closed-form non-central chi-squared PDF via
+     * {@link org.jquantlib.math.distributions.NonCentralCumulativeChiSquaredDistribution#pdf}
+     * (Phase 5h.5-SLV-d Boost-equivalent port: Bessel form for {@code ncp <= 50},
+     * Poisson series otherwise). Un-ignored in Phase 5e.5b-CFC-d-146.
      */
-    @Ignore("Phase 5h.5-SLV-c — needs exact non-central chi-squared PDF "
-            + "(boundary point fails by ~2.3e-3 vs 2e-3 tol due to CDF central-difference "
-            + "approximation in Java SquareRootProcessRNDCalculator.pdf).")
     @Test
     public void testSquareRootFokkerPlanckFwdEquation() {
         final double kappa = 1.2;
@@ -468,19 +465,12 @@ public class HestonSLVModelTest {
      *
      * <p><strong>Java tolerance status:</strong> C++ uses the closed-form
      * non-central chi-squared PDF (Bessel-based); Java's
-     * {@code SquareRootProcessRNDCalculator.pdf} is a CDF central-difference
-     * approximation (LOOSE 1e-4 — Phase 5h.5-RND). The C++ test compares
-     * derivative values against expected[5][5] within 2e-6 absolute, which
-     * Java cannot meet without porting Boost's non-central chi-squared PDF.
-     *
-     * <p>The {@code expected[5][5]} matrix is kept here as documentation and
-     * the test runs but stays {@code @Ignore}d pending Java having an exact
-     * non-central chi-squared PDF (or modified Bessel functions of fractional
-     * order).
+     * {@code SquareRootProcessRNDCalculator.pdf} now matches via the Phase
+     * 5h.5-SLV-d Boost-equivalent port in
+     * {@link org.jquantlib.math.distributions.NonCentralCumulativeChiSquaredDistribution#pdf}
+     * (Bessel form for {@code ncp <= 50}, Poisson series otherwise).
+     * Un-ignored in Phase 5e.5b-CFC-d-146.
      */
-    @Ignore("Phase 5h.5-SLV-c — needs exact non-central chi-squared PDF "
-            + "(Java SquareRootProcessRNDCalculator.pdf is CDF central-difference "
-            + "with ~1e-4 slack vs. C++ Boost; test requires 2e-6 derivative tol).")
     @Test
     public void testSquareRootZeroFlowBC() {
         final double kappa = 1.0;
