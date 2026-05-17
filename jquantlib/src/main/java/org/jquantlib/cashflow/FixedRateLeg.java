@@ -126,13 +126,11 @@ public class FixedRateLeg extends Leg {
      *  (ql/cashflows/fixedratecoupon.cpp:164-174). Records ex-coupon
      *  parameters for downstream coupon construction.
      *
-     *  <p>NOTE: Java {@link FixedRateCoupon} does not yet expose an
-     *  {@code exCouponDate} parameter (mirrors the gap noted in
-     *  {@code CPICoupon} comments). The values are recorded and the
-     *  {@code exCouponDate} is computed inside {@link #Leg()} for future
-     *  threading; for now the date is computed but discarded. Tracked as
-     *  Phase 5d.5-Bonds-c carry-forward (FixedRateCoupon ex-coupon
-     *  parameter + Coupon.exCouponDate accessor). */
+     *  <p>Phase 5e.5b-CFC-d-93 — {@link FixedRateCoupon} now accepts an
+     *  {@code exCouponDate} parameter; {@link #Leg()} threads the
+     *  computed ex-coupon date through to each coupon so
+     *  {@link FixedRateCoupon#accruedAmount(Date)} returns negative
+     *  values on ex-coupon settlement dates. */
     public FixedRateLeg withExCouponPeriod(final Period period,
                                            final Calendar cal,
                                            final BusinessDayConvention convention,
@@ -168,9 +166,8 @@ public class FixedRateLeg extends Leg {
         // first period might be short or long
         Date start = schedule_.date(0), end = schedule_.date(1);
         Date paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
-        // exCouponDate (computed for future threading; FixedRateCoupon ctor
-        // does not yet accept it — see Phase 5d.5-Bonds-c carry-forward)
-        @SuppressWarnings("unused")
+        // Phase 5e.5b-CFC-d-93 — thread exCouponDate through FixedRateCoupon
+        // ctor (was previously discarded).
         Date exCouponDate = computeExCouponDate(paymentDate, hasExCoupon);
         InterestRate rate = couponRates_[0];
         /*@Real*/ double nominal = notionals_[0];
@@ -184,13 +181,13 @@ public class FixedRateLeg extends Leg {
                 && !schedule_.isRegular(1);
         if (!firstStubIsShortOrLong) {
             QL.require(firstPeriodDayCounter_==null || !firstPeriodDayCounter_.equals(paymentDayCounter_) , "regular first coupon does not allow a first-period day count"); // TODO: message
-            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end));
+            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end, exCouponDate));
         } else {
             Date ref = end.sub(schedule_.tenor());
             ref = calendar.adjust(ref, schedule_.businessDayConvention());
             // FIXME: empty() method on dayCounter missing --> substituted by == null (probably incorrect)
             final DayCounter dc = (firstPeriodDayCounter_ == null) ? paymentDayCounter_ : firstPeriodDayCounter_;
-            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, dc, start, end, ref, end));
+            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, dc, start, end, ref, end, exCouponDate));
         }
         // regular periods
         for (int i = 2; i < schedule_.size() - 1; ++i) {
@@ -208,7 +205,7 @@ public class FixedRateLeg extends Leg {
             } else {
                 nominal = notionals_[notionals_.length - 1];
             }
-            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end));
+            leg.add(new FixedRateCoupon(nominal, paymentDate, rate, paymentDayCounter_, start, end, start, end, exCouponDate));
         }
 
         if (schedule_.size() > 2) {
@@ -245,11 +242,11 @@ public class FixedRateLeg extends Leg {
                     !schedule_.hasTenor()
                     || (schedule_.hasIsRegular() && schedule_.isRegular(N - 1));
             if (lastIsRegularOrNoTenor) {
-                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, end));
+                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, end, exCouponDate));
             } else {
                 Date ref = start.add(schedule_.tenor());
                 ref = calendar.adjust(ref, schedule_.businessDayConvention());
-                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, ref));
+                leg.add(new FixedRateCoupon(nominal, paymentDate, lastRate, lastDc, start, end, start, ref, exCouponDate));
             }
         }
         return leg;

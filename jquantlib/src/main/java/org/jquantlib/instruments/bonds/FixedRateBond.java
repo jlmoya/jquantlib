@@ -87,8 +87,41 @@ public class FixedRateBond extends Bond {
             final BusinessDayConvention paymentConvention,
             /*Real*/final double redemption,
             final Date  issueDate){
-    	
-        super(settlementDays, schedule.calendar(), issueDate);
+        this(settlementDays, faceAmount, schedule, coupons, accrualDayCounter,
+             paymentConvention, redemption, issueDate, null /* paymentCalendar */,
+             new Period(), null /* exCouponCalendar */,
+             BusinessDayConvention.Following, false);
+    }
+
+    /**
+     * Mirror of C++ {@code FixedRateBond(settlementDays, faceAmount,
+     * schedule, coupons, accrualDayCounter, paymentConvention,
+     * redemption, issueDate, paymentCalendar, exCouponPeriod,
+     * exCouponCalendar, exCouponConvention, exCouponEndOfMonth,
+     * firstPeriodDayCounter)} (ql/instruments/bonds/fixedratebond.cpp:31-69).
+     *
+     * <p>Phase 5e.5b-CFC-d-93 — adds the ex-coupon parameter overload
+     * needed for UK Gilt / Australian AGB / South-African R2048 bond
+     * tests. {@code paymentCalendar == null} falls back to
+     * {@code schedule.calendar()}.
+     */
+    public FixedRateBond(/*@Natural*/final int settlementDays,
+            /*@Real*/final double faceAmount,
+            final Schedule schedule,
+            final double[] coupons,
+            final DayCounter accrualDayCounter,
+            final BusinessDayConvention paymentConvention,
+            /*Real*/final double redemption,
+            final Date  issueDate,
+            final Calendar paymentCalendar,
+            final Period exCouponPeriod,
+            final Calendar exCouponCalendar,
+            final BusinessDayConvention exCouponConvention,
+            final boolean exCouponEndOfMonth){
+
+        super(settlementDays,
+              (paymentCalendar == null) ? schedule.calendar() : paymentCalendar,
+              issueDate);
 
         // Mirrors C++ ql/instruments/bonds/fixedratebond.cpp:48 —
         // schedule.hasTenor() ? schedule.tenor().frequency() : NoFrequency.
@@ -97,12 +130,18 @@ public class FixedRateBond extends Bond {
         frequency_ = schedule.hasTenor() ? schedule.tenor().frequency() : Frequency.NoFrequency;
         dayCounter_ = accrualDayCounter;
         maturityDate_ = schedule.endDate().clone();
-        
-        cashflows_ = new FixedRateLeg(schedule, accrualDayCounter)
-        				.withNotionals(faceAmount)
-        				.withCouponRates(coupons)
-        				.withPaymentAdjustment(paymentConvention)
-        				.Leg();
+
+        final FixedRateLeg leg = new FixedRateLeg(schedule, accrualDayCounter)
+                .withNotionals(faceAmount)
+                .withCouponRates(coupons)
+                .withPaymentCalendar(calendar_)
+                .withPaymentAdjustment(paymentConvention);
+        if (exCouponPeriod != null && exCouponPeriod.length() != 0) {
+            leg.withExCouponPeriod(exCouponPeriod,
+                    (exCouponCalendar == null) ? new Calendar() : exCouponCalendar,
+                    exCouponConvention, exCouponEndOfMonth);
+        }
+        cashflows_ = leg.Leg();
 
         addRedemptionsToCashflows(new double[]{redemption});
 

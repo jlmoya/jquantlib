@@ -96,6 +96,60 @@ public class Schedule {
     	this.finalIsRegular_ = true;
     }
 
+    /**
+     * Mirror of C++ {@code Schedule(dates, calendar, convention,
+     * terminationDateConvention, tenor, rule, endOfMonth, isRegular)}
+     * (ql/time/schedule.cpp:53-74). Preserves the meta-info
+     * (tenor, rule, EOM, isRegular per-period) from an existing schedule
+     * while replacing the date vector — used by date-vector "clone" patterns
+     * such as the South-African R2048 bond test where individual dates are
+     * adjusted (e.g. 29-Feb -> 28-Feb) but the schedule's tenor / rule /
+     * regularity metadata should be retained.
+     *
+     * <p>Phase 5e.5b-CFC-d-93.
+     */
+    public Schedule(final List<Date> dates,
+                    final Calendar calendar,
+                    final BusinessDayConvention convention,
+                    final BusinessDayConvention terminationDateConvention,
+                    final Period tenor,
+                    final DateGeneration.Rule rule,
+                    final boolean endOfMonth,
+                    final List<Boolean> isRegular) {
+        this.dates_ = dates;
+        this.isRegular_ = (isRegular == null) ? new ArrayList<Boolean>() : new ArrayList<Boolean>(isRegular);
+
+        this.calendar_ = calendar;
+        this.convention_ = convention;
+        this.terminationDateConvention_ = terminationDateConvention;
+
+        // Mirrors C++ schedule.cpp:65-68 — if tenor doesn't allow EOM the
+        // flag is forced false. {@code allowsEndOfMonth} is conditional on
+        // tenor.length() >= 1 Month; we approximate the C++ behaviour by
+        // honouring the caller's flag when tenor is non-empty.
+        this.tenor_ = (tenor == null) ? new Period() : tenor;
+        this.endOfMonth_ = (this.tenor_.length() == 0) ? false : endOfMonth;
+
+        this.rule_ = (rule == null) ? DateGeneration.Rule.Forward : rule;
+
+        // Has-tenor / hasIsRegular metadata derives from the supplied
+        // arguments — flagging the schedule as "full interface" so
+        // downstream callers (FixedRateLeg, FixedRateBond,
+        // ActualActual ISMA) can read tenor / rule / isRegular without
+        // throwing.
+        this.fullInterface_ = (this.tenor_.length() != 0);
+        this.finalIsRegular_ = this.isRegular_.isEmpty()
+                ? true
+                : this.isRegular_.get(this.isRegular_.size() - 1);
+
+        // Mirror C++ schedule.cpp:70-73 isRegular size invariant.
+        QL.require(this.isRegular_.isEmpty()
+                || this.isRegular_.size() == dates.size() - 1,
+                "isRegular size (" + this.isRegular_.size()
+                + ") must be zero or equal to the number of dates minus 1 ("
+                + (dates.size() - 1) + ")");
+    }
+
     public Schedule(final Date  effectiveDate,
     				final Date  terminationDate,
     				final Period  tenor,
@@ -460,6 +514,17 @@ public class Schedule {
                        "index (" + i + ") must be in [1, " +
                        isRegular_.size() +"]"); // TODO: message
        return isRegular_.get(i-1);
+    }
+
+    /** Mirror of C++ {@code Schedule::isRegular()} (ql/time/schedule.hpp:170).
+     *  Returns the full per-period regularity vector — used by the
+     *  metadata-preserving {@link #Schedule(List, Calendar, BusinessDayConvention,
+     *  BusinessDayConvention, Period, DateGeneration.Rule, boolean, List)}
+     *  ctor when callers (e.g. R2048 South-African bond test) need to clone
+     *  a schedule with adjusted dates. Phase 5e.5b-CFC-d-93. */
+    public List<Boolean> isRegular() /* @ReadOnly */ {
+        QL.require(hasIsRegular(), "full interface (isRegular) not available");
+        return isRegular_;
     }
 
     /**

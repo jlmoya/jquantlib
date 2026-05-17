@@ -44,6 +44,39 @@ public abstract class CashFlow extends Event implements Comparable<CashFlow> {
 	 */
 	public abstract double amount();
 
+    /**
+     * Mirror of C++ {@code CashFlow::exCouponDate()}
+     * (ql/cashflow.hpp:66). Default implementation returns a null/default
+     * {@link Date}, meaning "the cashflow has no ex-coupon date".
+     * Subclasses such as {@link Coupon} override this. Phase 5e.5b-CFC-d-93.
+     */
+    public Date exCouponDate() {
+        return new Date();
+    }
+
+    /**
+     * Mirror of C++ {@code CashFlow::tradingExCoupon(refDate)}
+     * (ql/cashflow.cpp:51-61). Returns {@code true} iff the cashflow has
+     * a non-null ex-coupon date that is on or before {@code refDate}
+     * (or the {@link Settings#evaluationDate()} when {@code refDate} is
+     * null/default). Phase 5e.5b-CFC-d-93.
+     */
+    public boolean tradingExCoupon(final Date refDate) {
+        final Date ecd = exCouponDate();
+        if (ecd == null || ecd.isNull()) {
+            return false;
+        }
+        final Date ref = (refDate != null && !refDate.isNull())
+                ? refDate
+                : new Settings().evaluationDate();
+        return ecd.le(ref);
+    }
+
+    /** Overload — uses today's evaluation date. */
+    public boolean tradingExCoupon() {
+        return tradingExCoupon(null);
+    }
+
     //
     // overrides Event::hasOccurred to honor C++ semantics
     //

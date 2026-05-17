@@ -1,0 +1,118 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "accruedAmount": 3.802197802197793,
+        "convexity": 42.15314859297786,
+        "duration": 5.676044458269272,
+        "npv": 106.8021978021978,
+        "npvFromYield": 106.80219777121134,
+        "priceFromYield": 102.99999996901354,
+        "yield": 0.074951805927977
+      },
+      "inputs": {
+        "settlement_serial": 41423,
+        "testPrice": 103.0
+      },
+      "name": "gilt_41423"
+    },
+    {
+      "expected": {
+        "accruedAmount": -0.17582417582417964,
+        "convexity": 43.75621861721069,
+        "duration": 5.892816328136797,
+        "npv": 102.82417582417582,
+        "npvFromYield": 102.82417582525026,
+        "priceFromYield": 103.00000000107444,
+        "yield": 0.0749618354313839
+      },
+      "inputs": {
+        "settlement_serial": 41424,
+        "testPrice": 103.0
+      },
+      "name": "gilt_41424"
+    },
+    {
+      "expected": {
+        "accruedAmount": -0.15384615384614886,
+        "convexity": 43.723943814882155,
+        "duration": 5.890186027753822,
+        "npv": 102.84615384615385,
+        "npvFromYield": 102.84615389029568,
+        "priceFromYield": 103.00000004414183,
+        "yield": 0.07495987491625454
+      },
+      "inputs": {
+        "settlement_serial": 41425,
+        "testPrice": 103.0
+      },
+      "name": "gilt_41425"
+    },
+    {
+      "expected": {
+        "accruedAmount": 2.867403314917128,
+        "convexity": 6.548715361508172,
+        "duration": 2.2627657018157885,
+        "npv": 105.86740331491713,
+        "npvFromYield": 105.86740332877082,
+        "priceFromYield": 103.0000000138537,
+        "yield": 0.04723646499216558
+      },
+      "inputs": {
+        "settlement_serial": 41858,
+        "testPrice": 103.0
+      },
+      "name": "agb_41858"
+    },
+    {
+      "expected": {
+        "accruedAmount": -0.1160220994475214,
+        "convexity": 6.725307116039826,
+        "duration": 2.32535993346375,
+        "npv": 102.88397790055248,
+        "npvFromYield": 102.88397791709859,
+        "priceFromYield": 103.00000001654611,
+        "yield": 0.0472355755418539
+      },
+      "inputs": {
+        "settlement_serial": 41859,
+        "testPrice": 103.0
+      },
+      "name": "agb_41859"
+    },
+    {
+      "expected": {
+        "accruedAmount": -0.06629834254143763,
+        "convexity": 6.684065037791054,
+        "duration": 2.317318449266939,
+        "npv": 102.93370165745856,
+        "npvFromYield": 102.93370165767165,
+        "priceFromYield": 103.00000000021309,
+        "yield": 0.04719402767717838
+      },
+      "inputs": {
+        "settlement_serial": 41862,
+        "testPrice": 103.0
+      },
+      "name": "agb_41862"
+    },
+    {
+      "expected": {
+        "accruedAmount": 0.24171270718231774,
+        "dirtyPrice": 95.75705760072937
+      },
+      "inputs": {
+        "coupon": 0.0875,
+        "evaluation_serial": 42254,
+        "settlement_serial": 42257,
+        "yield": 0.09185
+      },
+      "name": "r2048_2015_09_07"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-17T04:59:54Z",
+  "generated_by": "excoupon_bonds_probe",
+  "test_group": "instruments/excoupon_bonds"
+}

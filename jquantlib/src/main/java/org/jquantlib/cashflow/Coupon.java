@@ -50,6 +50,10 @@ public abstract class Coupon extends CashFlow {
     protected Date accrualEndDate_;
     protected Date refPeriodStart_;
     protected Date refPeriodEnd_;
+    /** Mirror of C++ {@code Coupon::exCouponDate_} (ql/cashflows/coupon.hpp:93).
+     *  Null/default-construed {@link Date} = "no ex-coupon date".
+     *  Phase 5e.5b-CFC-d-93. */
+    protected Date exCouponDate_;
 
 
     //
@@ -60,7 +64,7 @@ public abstract class Coupon extends CashFlow {
             final Date paymentDate,
             final Date accrualStartDate,
             final Date accrualEndDate){
-        this(nominal, paymentDate, accrualStartDate, accrualEndDate, new Date(), new Date());
+        this(nominal, paymentDate, accrualStartDate, accrualEndDate, new Date(), new Date(), new Date());
     }
 
     public Coupon(final double nominal,
@@ -69,12 +73,28 @@ public abstract class Coupon extends CashFlow {
             final Date accrualEndDate,
             final Date refPeriodStart,
             final Date refPeriodEnd){
+        this(nominal, paymentDate, accrualStartDate, accrualEndDate,
+             refPeriodStart, refPeriodEnd, new Date());
+    }
+
+    /** Mirror of C++ {@code Coupon::Coupon(paymentDate, nominal,
+     *  accrualStartDate, accrualEndDate, refPeriodStart, refPeriodEnd,
+     *  exCouponDate)} (ql/cashflows/coupon.cpp:27-42).
+     *  Phase 5e.5b-CFC-d-93. */
+    public Coupon(final double nominal,
+            final Date paymentDate,
+            final Date accrualStartDate,
+            final Date accrualEndDate,
+            final Date refPeriodStart,
+            final Date refPeriodEnd,
+            final Date exCouponDate){
         this.nominal = nominal;
         this.paymentDate_ = paymentDate.clone();
         this.accrualStartDate_ = accrualStartDate.clone();
         this.accrualEndDate_ = accrualEndDate.clone();
         this.refPeriodStart_ = refPeriodStart.clone();
         this.refPeriodEnd_ = refPeriodEnd.clone();
+        this.exCouponDate_ = exCouponDate == null ? new Date() : exCouponDate.clone();
     }
 
 
@@ -123,6 +143,16 @@ public abstract class Coupon extends CashFlow {
     public long accrualDays() {
         return dayCounter().dayCount(accrualStartDate_,
                 accrualEndDate_);
+    }
+
+
+    /** Mirror of C++ {@code Coupon::exCouponDate()} (ql/cashflows/coupon.hpp:57).
+     *  Overrides {@link CashFlow#exCouponDate()} to return the configured
+     *  ex-coupon date. Returns a default-construed (null) {@link Date}
+     *  when no ex-coupon date is set. Phase 5e.5b-CFC-d-93. */
+    @Override
+    public Date exCouponDate() {
+        return exCouponDate_;
     }
 
 
