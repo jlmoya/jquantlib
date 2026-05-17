@@ -1,3 +1,12 @@
+/*
+ Copyright (C) 2006 Klaus Spanderen (C++ original).
+ Copyright (C) 2009 Ueli Hofstetter (Java port skeleton).
+ Copyright (C) 2026 JQuantLib migration contributors (Phase 5e.5b-CFC-d-132 fix).
+
+ This source code is release under the BSD License.
+ See LICENSE.TXT in the project root for licence terms.
+*/
+
 package org.jquantlib.legacy.libormarkets;
 
 import org.jquantlib.math.matrixutilities.Array;
@@ -8,30 +17,25 @@ import org.jquantlib.math.optimization.BoundaryConstraint;
 import org.jquantlib.math.optimization.PositiveConstraint;
 import org.jquantlib.model.ConstantParameter;
 
-//! %linear exponential correlation model
-/*! This class describes a exponential correlation model
-
- \f[
- \rho_{i,j}=rho + (1-rho)*e^{(-\beta \|i-j\|)}
- \f]
-
- References:
-
- Damiano Brigo, Fabio Mercurio, Massimo Morini, 2003,
- Different Covariance Parameterizations of Libor Market Model and Joint
- Caps/Swaptions Calibration,
- (<http://www.business.uts.edu.au/qfrc/conferences/qmf2001/Brigo_D.pdf>)
+/**
+ * Linear-exponential correlation model.
+ *
+ * <p>{@latex[ \rho_{i,j}=\rho + (1-\rho)e^{-\beta |i-j|} }
+ *
+ * <p>Java port of QuantLib v1.42.1
+ * {@code legacy/libormarketmodels/lmlinexpcorrmodel.{hpp,cpp}}.
  */
-
 public class LmLinearExponentialCorrelationModel extends LmCorrelationModel {
-    private Matrix corrMatrix_, pseudoSqrt_;
-    private int factors_;
 
-    public LmLinearExponentialCorrelationModel(final int size, final double rho, final double beta, int factors) {
+    private Matrix corrMatrix_;
+    private Matrix pseudoSqrt_;
+    private final int factors_;
+
+    public LmLinearExponentialCorrelationModel(final int size, final double rho,
+                                               final double beta, final int factors) {
         super(size, 2);
-
-        corrMatrix_ = new Matrix(size, size);
-        factors = factors != 0 ? 0 : size;
+        this.corrMatrix_ = new Matrix(size, size);
+        this.factors_ = (factors > 0) ? factors : size;
         arguments_.set(0, new ConstantParameter(rho, new BoundaryConstraint(-1.0, 1.0)));
         arguments_.set(1, new ConstantParameter(beta, new PositiveConstraint()));
         generateArguments();
@@ -42,13 +46,12 @@ public class LmLinearExponentialCorrelationModel extends LmCorrelationModel {
     }
 
     @Override
-    public Matrix correlation(final /* @ Time */double time, final Array x) {
-        // TODO: code review :: use of clone()
-        return corrMatrix_;
+    public Matrix correlation(final double time, final Array x) {
+        return corrMatrix_.clone();
     }
 
     @Override
-    public double correlation(final int i, final int j, /* @ Time */final double time, final Array x) {
+    public double correlation(final int i, final int j, final double time, final Array x) {
         return corrMatrix_.get(i, j);
     }
 
@@ -63,13 +66,12 @@ public class LmLinearExponentialCorrelationModel extends LmCorrelationModel {
     }
 
     @Override
-    public Matrix pseudoSqrt(final /* @ Time */double time, final Array x) {
-        // TODO: code review :: use of clone()
-        return pseudoSqrt_;
+    public Matrix pseudoSqrt(final double time, final Array x) {
+        return pseudoSqrt_.clone();
     }
 
     @Override
-    public void generateArguments() {
+    protected void generateArguments() {
         final double rho = arguments_.get(0).get(0.0);
         final double beta = arguments_.get(1).get(0.0);
 
@@ -82,6 +84,8 @@ public class LmLinearExponentialCorrelationModel extends LmCorrelationModel {
         }
 
         pseudoSqrt_ = PseudoSqrt.rankReducedSqrt(corrMatrix_, factors_, 1, SalvagingAlgorithm.None);
-        corrMatrix_ = pseudoSqrt_.mul(pseudoSqrt_).mul(pseudoSqrt_.transpose());
+        // Note: in C++ this is `pseudoSqrt_ * transpose(pseudoSqrt_)`; preserving
+        // that semantics here so a rank-reduced sqrt yields a consistent matrix.
+        corrMatrix_ = pseudoSqrt_.mul(pseudoSqrt_.transpose());
     }
 }

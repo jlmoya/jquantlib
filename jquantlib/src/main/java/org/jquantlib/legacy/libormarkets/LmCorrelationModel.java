@@ -32,6 +32,11 @@ import org.jquantlib.math.matrixutilities.PseudoSqrt;
 import org.jquantlib.math.matrixutilities.PseudoSqrt.SalvagingAlgorithm;
 import org.jquantlib.model.Parameter;
 
+/**
+ * Abstract base class for libor-market-model correlation models.
+ *
+ * <p>Java port of QuantLib v1.42.1 {@code legacy/libormarketmodels/lmcorrmodel.hpp}.
+ */
 public abstract class LmCorrelationModel {
 
     protected int size_;
@@ -40,7 +45,9 @@ public abstract class LmCorrelationModel {
     public LmCorrelationModel(final int size, final int nArguments) {
         this.size_ = size;
         this.arguments_ = new ArrayList<Parameter>(nArguments);
-
+        for (int i = 0; i < nArguments; ++i) {
+            this.arguments_.add(new Parameter());
+        }
     }
 
     public int size() {
@@ -55,27 +62,27 @@ public abstract class LmCorrelationModel {
         return false;
     }
 
-    public Matrix pseudoSqrt(
-    /* @Time */final double t, final Array x) {
+    public Matrix pseudoSqrt(final double t, final Array x) {
         return PseudoSqrt.pseudoSqrt(this.correlation(t, x), SalvagingAlgorithm.Spectral);
     }
 
-    public double correlation(final int i, final int j, /* @Time */final double t, final Array x) {
+    public Matrix pseudoSqrt(final double t) {
+        return pseudoSqrt(t, new Array(0));
+    }
+
+    public double correlation(final int i, final int j, final double t, final Array x) {
         // inefficient implementation, please overload in derived classes
         return correlation(t, x).get(i, j);
     }
 
-    public double correlation(final int i, final int j, /* @Time */final double t) {
-        // inefficient implementation, please overload in derived classes
-        return correlation(t, new Array(j)).get(i, j);//ZH: Should be size j
+    public double correlation(final int i, final int j, final double t) {
+        return correlation(t, new Array(0)).get(i, j);
     }
 
-    public abstract Matrix correlation(
-    /* @Time */double t, final Array x);
+    public abstract Matrix correlation(double t, final Array x);
 
-    public Matrix correlation(
-    /* @Time */final double t) {
-        return correlation(t, new Array(0));//ZH:Default Null<Array>
+    public Matrix correlation(final double t) {
+        return correlation(t, new Array(0));
     }
 
     public List<Parameter> params() {

@@ -30,6 +30,11 @@ import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.model.Parameter;
 
+/**
+ * Abstract base class for libor-market-model volatility models.
+ *
+ * <p>Java port of QuantLib v1.42.1 {@code legacy/libormarketmodels/lmvolmodel.hpp}.
+ */
 public abstract class LmVolatilityModel {
 
     private static final String integrated_variance_not_supported = "integratedVariance() method is not supported";
@@ -38,9 +43,11 @@ public abstract class LmVolatilityModel {
     protected List<Parameter> arguments_;
 
     public LmVolatilityModel(final int size, final int nArguments){
-
         this.size_ = size;
         this.arguments_ = new ArrayList<Parameter>(nArguments);
+        for (int i = 0; i < nArguments; ++i) {
+            this.arguments_.add(new Parameter());
+        }
     }
 
     public int size(){
@@ -52,7 +59,7 @@ public abstract class LmVolatilityModel {
     }
 
     public double volatility(final int i, final double t){
-        return volatility(t, new Array(i)).get(i);//ZH size should be atleast i
+        return volatility(t, new Array(0)).get(i);
     }
 
     public double volatility(final int i, final double t, final Array x){
@@ -60,13 +67,17 @@ public abstract class LmVolatilityModel {
     }
 
     public Array volatility(final double t) {
-        return volatility(t, new Array(0));//ZH Default value as Null<Array>
+        return volatility(t, new Array(0));
     }
 
     public abstract Array volatility(double t, Array x);
 
     public double integratedVariance(final int i, final int ii, final double t, final Array list){
-        throw new LibraryException(integrated_variance_not_supported); // QA:[RG]::verified
+        throw new LibraryException(integrated_variance_not_supported);
+    }
+
+    public List<Parameter> params(){
+        return arguments_;
     }
 
     public void setParams(final List<Parameter> arguments){

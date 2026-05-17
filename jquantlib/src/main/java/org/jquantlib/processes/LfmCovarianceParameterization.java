@@ -57,7 +57,10 @@ public abstract class LfmCovarianceParameterization {
     }
 
     public Matrix covariance(/* @Time */final double t) {
-        return diffusion(t, new Array(0)); //ZH:QL097 using Null<Array> which is new Array(), see Null.hpp
+        // Phase 5e.5b-CFC-d-132 fix: previously this delegated to diffusion(),
+        // which is the bug the LMM tests hit at t=0 — covariance(t) silently
+        // returned the diffusion matrix instead of diff * diff^T.
+        return covariance(t, new Array(0));
     }
 
     public Matrix integratedCovariance(/* @Time */final double t, final Array x) {
