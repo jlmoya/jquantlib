@@ -103,6 +103,12 @@ public class OvernightIndexedCouponTest {
             this.forecastCurve = new RelinkableHandle<YieldTermStructure>();
             this.sofr = new Sofr(forecastCurve);
 
+            // Clear any past fixings persisted in the global IndexManager from
+            // earlier tests (e.g. testAccruedAmountSpanningToday adds an extra
+            // 23-Nov-2021 fixing that would otherwise leak into subsequent
+            // tests sharing the same SOFR index name).
+            this.sofr.clearFixings();
+
             // 56-row past-fixings table (C++ overnightindexedcoupon.cpp:85-130).
             // Cluster 1: 31 fixings 2019-06-21..2019-08-05 (lookback / lockout tests).
             // Cluster 2: 25 fixings 2021-10-18..2021-11-22 (past / spanning-today tests).
@@ -613,7 +619,6 @@ public class OvernightIndexedCouponTest {
     // ---------------------------------------------------------------------
 
     /** Mirror of C++ {@code testAccruedAmountInThePast} (cpp:432-442). */
-    @Ignore(REASON_ACCRUED)
     @Test
     public void testAccruedAmountInThePast() {
         QL.info("Testing accrued amount in the past for overnight-indexed coupon...");
@@ -630,7 +635,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testAccruedAmountSpanningToday} (cpp:444-465). */
-    @Ignore(REASON_ACCRUED)
     @Test
     public void testAccruedAmountSpanningToday() {
         QL.info("Testing accrued amount spanning today for current overnight-indexed coupon...");
@@ -655,7 +659,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testAccruedAmountInTheFuture} (cpp:467-483). */
-    @Ignore(REASON_ACCRUED)
     @Test
     public void testAccruedAmountInTheFuture() {
         QL.info("Testing accrued amount in the future for overnight-indexed coupon...");
@@ -674,7 +677,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testAccruedAmountOnPastHoliday} (cpp:485-498). */
-    @Ignore(REASON_ACCRUED)
     @Test
     public void testAccruedAmountOnPastHoliday() {
         QL.info("Testing accrued amount on a past holiday for overnight-indexed coupon...");
@@ -691,7 +693,6 @@ public class OvernightIndexedCouponTest {
     }
 
     /** Mirror of C++ {@code testAccruedAmountOnFutureHoliday} (cpp:499-514). */
-    @Ignore(REASON_ACCRUED)
     @Test
     public void testAccruedAmountOnFutureHoliday() {
         QL.info("Testing accrued amount on a future holiday for overnight-indexed coupon...");

@@ -253,6 +253,70 @@ public class OvernightIndexedCoupon extends FloatingRateCoupon {
         return fixingDates_.get(fixingDates_.size() - 1);
     }
 
+    /**
+     * Compounded accrued amount truncated to the sub-period
+     * {@code [accrualStartDate, min(d, accrualEndDate)]}.
+     * <p>
+     * Mirror of C++ {@code OvernightIndexedCoupon::accruedAmount(d)}
+     * (ql/cashflows/overnightindexedcoupon.cpp:210-220):
+     * <pre>
+     *   if (d &lt;= accrualStartDate || d &gt; paymentDate) return 0.0;
+     *   if (tradingExCoupon(d))
+     *       return nominal * averageRate(d) * accruedPeriod(d);
+     *   else
+     *       return nominal * averageRate(min(d, accrualEndDate)) * accruedPeriod(d);
+     * </pre>
+     * <p>
+     * Overrides the generic {@link FloatingRateCoupon#accruedAmount(Date)}
+     * (which uses {@code rate() * yearFraction[start, min(d,end)]}) to compute
+     * the compounded rate over the truncated {@code [start, d]} sub-period
+     * via {@link CompoundingOvernightIndexedCouponPricer#averageRate(Date)}.
+     * <p>
+     * {@code accruedPeriod(d)} is computed inline (Java {@link Coupon} does
+     * not yet expose a {@code accruedPeriod(Date)} method); the semantics
+     * mirror C++ {@code Coupon::accruedPeriod(d)}
+     * (ql/cashflows/coupon.cpp:57-69).
+     */
+    @Override
+    public double accruedAmount(final Date d) {
+        if (d.le(accrualStartDate_) || d.gt(paymentDate_)) {
+            // out of coupon range
+            return 0.0;
+        }
+        final double accruedPeriod;
+        if (tradingExCoupon(d)) {
+            accruedPeriod = -dayCounter().yearFraction(
+                    d, Date.max(d, accrualEndDate_),
+                    refPeriodStart_, refPeriodEnd_);
+            return nominal() * averageRate(d) * accruedPeriod;
+        } else {
+            accruedPeriod = dayCounter().yearFraction(
+                    accrualStartDate_, Date.min(d, accrualEndDate_),
+                    refPeriodStart_, refPeriodEnd_);
+            // usual case: compounded rate computed over [start, min(d, end)]
+            return nominal() * averageRate(Date.min(d, accrualEndDate_)) * accruedPeriod;
+        }
+    }
+
+    /**
+     * Compounded (or arithmetic) average rate over
+     * {@code [accrualStartDate, d]} including spread and gearing.
+     * <p>
+     * Mirror of C++ {@code OvernightIndexedCoupon::averageRate(d)}
+     * (ql/cashflows/overnightindexedcoupon.cpp:222-230) — delegates to
+     * the pricer's {@code averageRate(d)} when the pricer is an
+     * {@link OvernightIndexedCouponPricer}, otherwise falls back to
+     * {@link FloatingRateCouponPricer#swapletRate()}.
+     */
+    public double averageRate(final Date d) {
+        QL.require(pricer_ != null, "pricer not set");
+        pricer_.initialize(this);
+        if (pricer_ instanceof OvernightIndexedCouponPricer) {
+            return ((OvernightIndexedCouponPricer) pricer_).averageRate(d);
+        }
+        return pricer_.swapletRate();
+    }
+
     @Override
     public void accept(final PolymorphicVisitor pv) {
         final Visitor<OvernightIndexedCoupon> v =
