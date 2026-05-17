@@ -58,7 +58,7 @@ public class BackwardFlat implements Interpolation.Interpolator {
     public final boolean global()     { return false; }
 
     @Override
-    public final int requiredPoints() { return 2; }
+    public final int requiredPoints() { return 1; }
 
     @Override
     public Interpolation interpolate(final Array vx, final Array vy) /* @ReadOnly */{

@@ -198,10 +198,20 @@ public abstract class AbstractInterpolation implements Interpolation {
 
 
         protected Impl(final Array vx, final Array vy) {
+            this(vx, vy, 2);
+        }
+
+        /**
+         * Mirrors C++ {@code Interpolation::templateImpl} constructor that
+         * accepts a {@code requiredPoints} count. Subclasses such as
+         * {@link BackwardFlatInterpolation} (C++ {@code BackwardFlat::requiredPoints == 1})
+         * can pass {@code 1} to permit single-point interpolation.
+         */
+        protected Impl(final Array vx, final Array vy, final int requiredPoints) {
             this.vx = vx; // TODO: clone?
             this.vy = vy; // TODO: clone?
 
-            QL.require(vx.size() >= 2 , "not enough points to interpolate"); // TODO: message
+            QL.require(vx.size() >= requiredPoints , "not enough points to interpolate"); // TODO: message
             QL.require(extraSafetyChecks(), "unsorted values on array X");   // TODO: message
         }
 

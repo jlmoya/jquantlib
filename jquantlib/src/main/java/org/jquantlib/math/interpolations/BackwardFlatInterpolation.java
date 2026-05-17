@@ -63,7 +63,9 @@ public class BackwardFlatInterpolation extends AbstractInterpolation {
         //
 
         protected BackwardFlatInterpolationImpl(final Array vx, final Array vy) {
-            super(vx, vy);
+            // BackwardFlat.requiredPoints == 1 in C++ v1.42.1
+            // (ql/math/interpolations/backwardflatinterpolation.hpp).
+            super(vx, vy, 1);
             this.vp = new Array(vx.size());
         }
 
@@ -83,7 +85,9 @@ public class BackwardFlatInterpolation extends AbstractInterpolation {
 
         @Override
         public double op(final double x) {
-            if (x <= vx.get(0)) {
+            // Mirror C++ v1.42.1: when there is a single node, the
+            // backward-flat function degenerates to the constant y[0].
+            if (x <= vx.get(0) || vx.size() == 1) {
                 return vy.get(0);
             }
             final int i = locate(x);
@@ -96,6 +100,11 @@ public class BackwardFlatInterpolation extends AbstractInterpolation {
 
         @Override
         public double primitive(final double x) {
+            // Mirror C++ v1.42.1: on a single node, the primitive is the
+            // straight line y[0] * (x - x[0]).
+            if (vx.size() == 1) {
+                return (x - vx.get(0)) * vy.get(0);
+            }
             final int i = locate(x);
             final double dx = x - vx.get(i);
             return vp.get(i) + dx*vy.get(i+1);

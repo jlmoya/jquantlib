@@ -21,6 +21,7 @@
 
 package org.jquantlib.math.interpolations;
 
+import org.jquantlib.math.Closeness;
 import org.jquantlib.math.Constants;
 
 /**
@@ -120,6 +121,46 @@ public class LagrangeInterpolation {
      */
     public double value(final double[] y, final double x) {
         return _value(y, x);
+    }
+
+    /**
+     * First derivative of the barycentric Lagrange interpolant at {@code x}
+     * using the stored y-values.
+     *
+     * <p>Faithful port of C++ v1.42.1
+     * {@code LagrangeInterpolationImpl::derivative(Real)} in
+     * {@code ql/math/interpolations/lagrangeinterpolation.hpp}.
+     *
+     * @param x query point
+     * @return interpolated derivative
+     */
+    public double derivative(final double x) {
+        final int n = xNodes_.length;
+        double num = 0.0, den = 0.0, numD = 0.0, denD = 0.0;
+        for (int i = 0; i < n; ++i) {
+            final double xi = xNodes_[i];
+
+            if (Closeness.isCloseEnough(x, xi)) {
+                // When x coincides with a node, use the closed-form
+                // expression from Berrut & Trefethen (2004) eq. 9.4.
+                double p = 0.0;
+                for (int j = 0; j < n; ++j) {
+                    if (i != j) {
+                        p += lambda_[j] / (x - xNodes_[j])
+                                * (yValues_[j] - yValues_[i]);
+                    }
+                }
+                return p / lambda_[i];
+            }
+
+            final double alpha  = lambda_[i] / (x - xi);
+            final double alphaD = -alpha / (x - xi);
+            num  += alpha  * yValues_[i];
+            den  += alpha;
+            numD += alphaD * yValues_[i];
+            denD += alphaD;
+        }
+        return (numD * den - num * denD) / (den * den);
     }
 
     // --- private ---
