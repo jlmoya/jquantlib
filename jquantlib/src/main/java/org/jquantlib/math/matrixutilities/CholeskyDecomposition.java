@@ -180,4 +180,79 @@ public class CholeskyDecomposition {
         return X;
     }
 
+
+
+    //
+    // public static factories (Phase 5e.5b-CFC-d-52)
+    //
+
+    /**
+     * Free-function equivalent of QuantLib v1.42.1
+     * {@code CholeskyDecomposition(const Matrix& S, bool flexible)} in
+     * {@code ql/math/matrixutilities/choleskydecomposition.cpp}. Returns the
+     * lower-triangular Cholesky factor {@code L} so that {@code L*L^T = S}.
+     *
+     * <p>When {@code flexible == true}, semidefinite (sum &le; 0) diagonal
+     * entries collapse to zero rather than raising. C++ uses
+     * {@code close_enough} to detect the zero-pivot case; we mirror that
+     * with a tolerance check against
+     * {@link org.jquantlib.math.Constants#QL_EPSILON}.
+     */
+    public static Matrix CholeskyDecomposition(final Matrix S, final boolean flexible) {
+        final int size = S.rows();
+        QL.require(size == S.cols(), "input matrix is not a square matrix");
+
+        final Matrix result = new Matrix(size, size);
+        for (int i = 0; i < size; i++) {
+            for (int j = i; j < size; j++) {
+                double sum = S.get(i, j);
+                for (int k = 0; k <= i - 1; k++) {
+                    sum -= result.get(i, k) * result.get(j, k);
+                }
+                if (i == j) {
+                    QL.require(flexible || sum > 0.0,
+                            "input matrix is not positive definite");
+                    result.set(i, i, Math.sqrt(Math.max(sum, 0.0)));
+                } else {
+                    final double diag = result.get(i, i);
+                    if (Math.abs(diag) <= org.jquantlib.math.Constants.QL_EPSILON) {
+                        result.set(j, i, 0.0);
+                    } else {
+                        result.set(j, i, sum / diag);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Free-function port of QuantLib v1.42.1
+     * {@code CholeskySolveFor(const Matrix& L, const Array& b)} in
+     * {@code ql/math/matrixutilities/choleskydecomposition.cpp}.
+     * Solves {@code L * L^T * x = b}.
+     */
+    public static Array CholeskySolveFor(final Matrix L, final Array b) {
+        final int n = b.size();
+        QL.require(L.rows() == n && L.cols() == n,
+                "Size of input matrix and vector does not match.");
+
+        final Array x = new Array(n);
+        for (int i = 0; i < n; ++i) {
+            double sum = b.get(i);
+            for (int k = 0; k < i; ++k) {
+                sum -= L.get(i, k) * x.get(k);
+            }
+            x.set(i, sum / L.get(i, i));
+        }
+        for (int i = n - 1; i >= 0; --i) {
+            double sum = x.get(i);
+            for (int k = i + 1; k < n; ++k) {
+                sum -= L.get(k, i) * x.get(k);
+            }
+            x.set(i, sum / L.get(i, i));
+        }
+        return x;
+    }
+
 }

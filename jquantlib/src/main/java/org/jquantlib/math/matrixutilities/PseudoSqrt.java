@@ -53,7 +53,7 @@ public class PseudoSqrt {
     private final static String unknown_salvaging_algorithm = "unknown salvaging algorithm";
 
     public enum SalvagingAlgorithm {
-        None, Spectral, Hypersphere, LowerDiagonal, Higham;
+        None, Spectral, Hypersphere, LowerDiagonal, Higham, Principal;
     }
 
     //! Returns the pseudo square root of a real symmetric matrix
@@ -445,7 +445,9 @@ public class PseudoSqrt {
                 throw new IllegalArgumentException( "negative eigenvalue(s) ("
                         + /*std::scientific*/ + jd.eigenvalues().get(size-1)
                         + ")");
-            result = matrix.cholesky().L();
+            // Phase 5e.5b-CFC-d-52 align: C++ pseudosqrt.cpp:375 uses the
+            // free function CholeskyDecomposition(matrix, true).
+            result = CholeskyDecomposition.CholeskyDecomposition(matrix, true);
             break;
         case Spectral:
             // negative eigenvalues set to zero
@@ -492,18 +494,122 @@ public class PseudoSqrt {
                 throw new UnsupportedOperationException("work in progress");
             //result = hypersphereOptimize(matrix, result, true);
             break;
-        case Higham:
+        case Higham: {
+            // Phase 5e.5b-CFC-d-52 port of C++ pseudosqrt.cpp:415-420.
             final int maxIterations = 40;
             final double tol = 1e-6;
-            if(true)
-                throw new UnsupportedOperationException("work in progress");
-            //result = highamImplementation(matrix, maxIterations, tol);
-            // result = new CholeskyDecomposition().CholeskyDecomposition(result, true);
+            final Matrix adjusted = highamImplementation(matrix, maxIterations, tol);
+            result = CholeskyDecomposition.CholeskyDecomposition(adjusted, true);
             break;
+        }
+        case Principal: {
+            // Phase 5e.5b-CFC-d-52 port of C++ pseudosqrt.cpp:422-447.
+            if (jd.eigenvalues().get(size-1) < -10.0 * org.jquantlib.math.Constants.QL_EPSILON) {
+                throw new IllegalArgumentException("negative eigenvalue(s) ("
+                        + jd.eigenvalues().get(size-1) + ")");
+            }
+            final double[] sqrtEv = new double[size];
+            for (int i = 0; i < size; ++i) {
+                sqrtEv[i] = Math.sqrt(Math.max(jd.eigenvalues().get(i), 0.0));
+            }
+            // C++ pseudosqrt.cpp:437-443: diagonal[k][i] = eigenvectors[i][k] * sqrtEv[k]
+            for (int i = 0; i < size; ++i) {
+                for (int k = 0; k < size; ++k) {
+                    diagonal.set(k, i, sqrtEv[k] * jd.eigenvectors().get(i, k));
+                }
+            }
+            final Matrix prod = jd.eigenvectors().mul(diagonal);
+            final Matrix sym = new Matrix(size, size);
+            for (int i = 0; i < size; ++i) {
+                for (int j = 0; j < size; ++j) {
+                    sym.set(i, j, 0.5 * (prod.get(i, j) + prod.get(j, i)));
+                }
+            }
+            result = sym;
+            break;
+        }
         default:
             throw new LibraryException(unknown_salvaging_algorithm); // TODO: message
         }
         return result;
+    }
+
+
+    //
+    // Higham nearest-correlation-matrix iteration (Phase 5e.5b-CFC-d-52)
+    //
+
+    /** Matrix infinity norm: max over rows of sum |a_ij|. C++ pseudosqrt.cpp:268. */
+    private static double normInf(final Matrix M) {
+        double norm = 0.0;
+        for (int i = 0; i < M.rows(); ++i) {
+            double colSum = 0.0;
+            for (int j = 0; j < M.cols(); ++j) {
+                colSum += Math.abs(M.get(i, j));
+            }
+            norm = Math.max(norm, colSum);
+        }
+        return norm;
+    }
+
+    /** Set all diagonal entries to 1. C++ pseudosqrt.cpp:282. */
+    private static Matrix projectToUnitDiagonalMatrix(final Matrix M) {
+        final int size = M.rows();
+        QL.require(size == M.cols(), Cells.MATRIX_MUST_BE_SQUARE);
+        final Matrix result = M.clone();
+        for (int i = 0; i < size; ++i) {
+            result.set(i, i, 1.0);
+        }
+        return result;
+    }
+
+    /** Project to positive-semidefinite: V * diag(max(lambda_i, 0)) * V^T. C++ pseudosqrt.cpp:295. */
+    private static Matrix projectToPositiveSemidefiniteMatrix(final Matrix M) {
+        final int size = M.rows();
+        QL.require(size == M.cols(), Cells.MATRIX_MUST_BE_SQUARE);
+        final SymmetricSchurDecomposition jd = new SymmetricSchurDecomposition(M);
+        final Matrix diag = new Matrix(size, size);
+        for (int i = 0; i < size; ++i) {
+            diag.set(i, i, Math.max(jd.eigenvalues().get(i), 0.0));
+        }
+        return jd.eigenvectors().mul(diag).mul(jd.eigenvectors().transpose());
+    }
+
+    /**
+     * Higham iteration for nearest correlation matrix. Java port of
+     * QuantLib v1.42.1 {@code highamImplementation} in
+     * {@code ql/math/matrixutilities/pseudosqrt.cpp:312}.
+     */
+    private static Matrix highamImplementation(final Matrix A, final int maxIterations, final double tolerance) {
+        final int size = A.rows();
+        Matrix Y = A.clone();
+        Matrix X = A.clone();
+        Matrix deltaS = new Matrix(size, size);
+        Matrix lastX = X.clone();
+        Matrix lastY = Y.clone();
+
+        for (int i = 0; i < maxIterations; ++i) {
+            final Matrix R = Y.sub(deltaS);
+            X = projectToPositiveSemidefiniteMatrix(R);
+            deltaS = X.sub(R);
+            Y = projectToUnitDiagonalMatrix(X);
+
+            final double convX = normInf(X.sub(lastX)) / normInf(X);
+            final double convY = normInf(Y.sub(lastY)) / normInf(Y);
+            final double convYX = normInf(Y.sub(X)) / normInf(Y);
+            if (Math.max(convX, Math.max(convY, convYX)) <= tolerance) {
+                break;
+            }
+            lastX = X.clone();
+            lastY = Y.clone();
+        }
+
+        for (int i = 0; i < size; ++i) {
+            for (int j = 0; j < i; ++j) {
+                Y.set(i, j, Y.get(j, i));
+            }
+        }
+        return Y;
     }
 
     /*

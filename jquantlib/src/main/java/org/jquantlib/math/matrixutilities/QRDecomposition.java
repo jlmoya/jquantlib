@@ -202,26 +202,122 @@ public class QRDecomposition {
             final Array b,
             final boolean pivot,
             final Array d) {
+        return qrSolve(A, b, pivot, d);
+    }
 
+
+    //
+    // public static factories (Phase 5e.5b-CFC-d-52)
+    //
+
+    /**
+     * Free-function port of QuantLib v1.42.1 {@code qrSolve} from
+     * {@code ql/math/matrixutilities/qrdecomposition.cpp:125-159}.
+     * Solves {@code A*x = b} with optional column pivoting and LM damping.
+     */
+    public static Array qrSolve(final Matrix A, final Array b,
+                                final boolean pivot, final Array d) {
+        final int m = A.rows();
+        final int n = A.cols();
         QL.require(b.size() == m, "dimensions of A and b don't match");
-        QL.require(d != null && !d.empty() && d.size() == n, "dimensions of A and d don't match");
+        QL.require(d == null || d.empty() || d.size() == n,
+                "dimensions of A and d don't match");
 
-        final Matrix aT = A.transpose();
-        final Matrix rT = R.transpose();
-
-        final Array sdiag = new Array(n);
+        final Matrix mT = A.clone().toJava().transpose();
+        final int[] lipvt = new int[n];
+        final Array rdiag = new Array(n);
         final Array wa = new Array(n);
 
-        final Array ld = new Array(n);
-        if (d!=null && !d.empty()) {
-            ld.fill(d);
-        }
-        final Array x = new Array(n);
-        final Array qtb = Q.transpose().mul(b);
+        Minpack.qrfac(m, n, mT, pivot, lipvt, rdiag, rdiag, wa);
 
-        throw new UnsupportedOperationException();
-        //TODO:: Minpack.qrsolv(n, rT, n, ipvt, ld, qtb, x, sdiag, wa);
-        //TODO:: return x;
+        // build R
+        final double[][] rArr = new double[n][n];
+        for (int i = 0; i < n; i++) {
+            rArr[i][i] = rdiag.get(i);
+            if (i < m) {
+                for (int k = i + 1; k < n; k++) {
+                    rArr[i][k] = mT.get(k, i);
+                }
+            }
+        }
+
+        // build Q (mirrors C++ qrdecomposition.cpp:62-110)
+        final double[][] qArr = new double[m][n];
+        if (m > n) {
+            final int u = Math.min(n, m);
+            for (int i = 0; i < u; ++i) qArr[i][i] = 1.0;
+            final double[] v = new double[m];
+            for (int i = u - 1; i >= 0; --i) {
+                if (Math.abs(mT.get(i, i)) > org.jquantlib.math.Constants.QL_EPSILON) {
+                    final double tau = 1.0 / mT.get(i, i);
+                    for (int k = 0; k < i; ++k) v[k] = 0.0;
+                    for (int k = i; k < m; ++k) v[k] = mT.get(i, k);
+
+                    final double[] w = new double[n];
+                    for (int l = 0; l < n; ++l) {
+                        double s = 0.0;
+                        for (int k = i; k < m; ++k) s += v[k] * qArr[k][l];
+                        w[l] = s;
+                    }
+                    for (int k = i; k < m; ++k) {
+                        final double a = tau * v[k];
+                        for (int l = 0; l < n; ++l) qArr[k][l] -= a * w[l];
+                    }
+                }
+            }
+        } else {
+            final double[] w = new double[m];
+            for (int k = 0; k < m; ++k) {
+                for (int i = 0; i < m; ++i) w[i] = 0.0;
+                w[k] = 1.0;
+                for (int j = 0; j < Math.min(n, m); ++j) {
+                    final double t3 = mT.get(j, j);
+                    if (t3 != 0.0) {
+                        double t = 0.0;
+                        for (int i = j; i < m; ++i) t += mT.get(j, i) * w[i];
+                        t /= t3;
+                        for (int i = j; i < m; ++i) w[i] -= mT.get(j, i) * t;
+                    }
+                    qArr[k][j] = w[j];
+                }
+            }
+        }
+
+        final Matrix Q = new Matrix(qArr);
+        final Matrix R = new Matrix(rArr);
+
+        final int[] ipvt = new int[n];
+        if (pivot) {
+            System.arraycopy(lipvt, 0, ipvt, 0, n);
+        } else {
+            for (int i = 0; i < n; ++i) ipvt[i] = i;
+        }
+
+        // qrSolve: rT = transpose(R); qtb = Q^T * b; call qrsolv.
+        final Matrix rT = R.transpose();
+        final double[] sdiag = new double[n];
+        final double[] waArr = new double[n];
+        final double[] ld = new double[n];
+        if (d != null && !d.empty()) {
+            for (int i = 0; i < n; ++i) ld[i] = d.get(i);
+        }
+        final Array qtb = Q.transpose().mul(b);
+        final double[] qtbArr = new double[n];
+        for (int i = 0; i < n; ++i) qtbArr[i] = qtb.get(i);
+
+        final double[] xArr = new double[n];
+
+        // Build R in column-major layout for Minpack.qrsolv.
+        final double[] rFlat = new double[n * n];
+        for (int col = 0; col < n; ++col) {
+            for (int row = 0; row < n; ++row) {
+                rFlat[row + n * col] = rT.get(row, col);
+            }
+        }
+
+        Minpack.qrsolv(n, rFlat, n, ipvt, ld, qtbArr, xArr, sdiag, waArr);
+
+        return new Array(xArr);
     }
 
 
