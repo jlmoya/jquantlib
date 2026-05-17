@@ -31,6 +31,7 @@ import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.IborLeg;
 import org.jquantlib.cashflow.Leg;
+import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.Euribor6M;
@@ -472,10 +473,104 @@ public class CapFloorTest {
         }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
-            + "needs implied-volatility solver wiring on CapFloor.")
+    /**
+     * Mirrors C++ capfloor.cpp testImpliedVolatility (lines 453-534). Vary the
+     * (length, type, strike, rate, vol) test grid, compute the cap/floor NPV
+     * with a flat-vol Black engine, then invert via
+     * {@link CapFloor#impliedVolatility} and check the round-trip price.
+     * Failures are tolerated when bracketing fails AND the input value is
+     * within tolerance of the zero-vol value (mirrors the C++ skip
+     * condition).
+     */
     @Test
     public void testImpliedVolatility() {
+        QL.info("Testing implied term volatility for cap and floor...");
+
+        final CommonVars vars = new CommonVars();
+
+        final int maxEvaluations = 100;
+        final double tolerance = 1.0e-8;
+
+        final CapFloor.Type[] types = { CapFloor.Type.Cap, CapFloor.Type.Floor };
+        final double[] strikes = { 0.02, 0.03, 0.04 };
+        final int[] lengths = { 1, 5, 10 };
+
+        // test data
+        final double[] rRates = { 0.02, 0.03, 0.04, 0.05, 0.06, 0.07 };
+        final double[] vols = { 0.01, 0.05, 0.10, 0.20, 0.30, 0.70, 0.90 };
+
+        // See testStrikeDependency for the reference-date shift rationale.
+        final Date startDate = vars.termStructure.currentLink()
+                .referenceDate().add(new Period(vars.frequency));
+
+        for (final int length : lengths) {
+            final Leg leg = vars.makeLeg(startDate, length);
+
+            for (final CapFloor.Type type : types) {
+                for (final double strike : strikes) {
+
+                    final CapFloor capfloor = vars.makeCapFloor(type, leg, strike, 0.0);
+
+                    for (final double r : rRates) {
+                        for (final double v : vols) {
+
+                            vars.termStructure.linkTo(Utilities.flatRate(
+                                    vars.settlement, r, new Actual360()));
+                            capfloor.setPricingEngine(vars.makeEngine(v));
+
+                            final double value = capfloor.NPV();
+                            double implVol = 0.0;
+                            boolean failedToBracket = false;
+                            try {
+                                implVol = capfloor.impliedVolatility(value,
+                                        vars.termStructure,
+                                        0.10,
+                                        tolerance,
+                                        maxEvaluations,
+                                        10.0e-7, 4.0,
+                                        org.jquantlib.model.VolatilityType.ShiftedLognormal,
+                                        0.0);
+                            } catch (final RuntimeException e) {
+                                // couldn't bracket?
+                                capfloor.setPricingEngine(vars.makeEngine(0.0));
+                                final double value2 = capfloor.NPV();
+                                if (Math.abs(value - value2) < tolerance) {
+                                    // ok, just skip:
+                                    failedToBracket = true;
+                                } else {
+                                    // otherwise, report error
+                                    fail("implied vol failure: " + type
+                                            + "\n  strike:     " + strike
+                                            + "\n  risk-free:  " + r
+                                            + "\n  length:     " + length + "Y"
+                                            + "\n  volatility: " + v
+                                            + "\n  price:      " + value + "\n"
+                                            + e.getMessage());
+                                }
+                            }
+                            if (failedToBracket) {
+                                continue;
+                            }
+                            if (Math.abs(implVol - v) > tolerance) {
+                                // the difference might not matter
+                                capfloor.setPricingEngine(vars.makeEngine(implVol));
+                                final double value2 = capfloor.NPV();
+                                if (Math.abs(value - value2) > tolerance) {
+                                    fail("implied vol failure: " + type
+                                            + "\n  strike:        " + strike
+                                            + "\n  risk-free:     " + r
+                                            + "\n  length:        " + length + "Y"
+                                            + "\n  volatility:    " + v
+                                            + "\n  price:         " + value
+                                            + "\n  implied vol:   " + implVol
+                                            + "\n  implied price: " + value2);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
