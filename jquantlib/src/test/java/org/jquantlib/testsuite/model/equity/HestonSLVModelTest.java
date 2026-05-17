@@ -11,6 +11,16 @@ import static org.junit.Assert.fail;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.ActualActual;
+import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.exercise.EuropeanExercise;
+import org.jquantlib.exercise.Exercise;
+import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.PlainVanillaPayoff;
+import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.VanillaOption;
+import org.jquantlib.math.Closeness;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.GammaFunction;
 import org.jquantlib.math.integrals.DiscreteSimpsonIntegral;
@@ -18,15 +28,31 @@ import org.jquantlib.math.integrals.GaussLobattoIntegral;
 import org.jquantlib.math.interpolations.NaturalCubicInterpolation;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
+import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
 import org.jquantlib.methods.finitedifferences.meshers.Predefined1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher;
+import org.jquantlib.methods.finitedifferences.operators.FdmBlackScholesFwdOp;
+import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp.TransformationType;
 import org.jquantlib.methods.finitedifferences.schemes.DouglasScheme;
 import org.jquantlib.methods.finitedifferences.utilities.FdmMesherIntegral;
 import org.jquantlib.methods.finitedifferences.utilities.SquareRootProcessRNDCalculator;
+import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
+import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.BlackVolTermStructure;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.testsuite.util.Utilities;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -147,12 +173,195 @@ public class HestonSLVModelTest {
         return new FdmMesherComposite(ms);
     }
 
+    /**
+     * Java port of C++ helper {@code fokkerPlanckPrice1D}
+     * (test-suite/hestonslvmodel.cpp:100). Initialises a Dirac density at
+     * {@code x0} on the mesh, evolves it forward via Douglas, then integrates
+     * {@code payoff(exp(x)) * p(x)} against a {@link NaturalCubicInterpolation}
+     * spline over the mesh.
+     */
+    private static double fokkerPlanckPrice1D(final FdmMesher mesher,
+                                              final FdmLinearOpComposite op,
+                                              final StrikedTypePayoff payoff,
+                                              final double x0,
+                                              final double maturity,
+                                              final int tGrid) {
+        final Array x = mesher.locations(0);
+        final int n = x.size();
+        final Array p = new Array(n).fill(0.0);
+
+        if (!(n > 3 && x.get(1) <= x0 && x.get(n - 2) >= x0)) {
+            throw new IllegalArgumentException("insufficient mesher");
+        }
+
+        // upper_bound: first index where x[i] > x0
+        int upperIdx = -1;
+        for (int i = 0; i < n; ++i) {
+            if (x.get(i) > x0) { upperIdx = i; break; }
+        }
+        if (upperIdx < 0) { upperIdx = n; }
+        final int lowerIdx = upperIdx - 1;
+
+        if (upperIdx < n && Closeness.isCloseEnough(x.get(upperIdx), x0)) {
+            final double dx = (x.get(upperIdx + 1) - x.get(upperIdx - 1)) / 2.0;
+            p.set(upperIdx, 1.0 / dx);
+        } else if (lowerIdx >= 0 && Closeness.isCloseEnough(x.get(lowerIdx), x0)) {
+            final double dx = (x.get(lowerIdx + 1) - x.get(lowerIdx - 1)) / 2.0;
+            p.set(lowerIdx, 1.0 / dx);
+        } else {
+            final double dxBracket = x.get(upperIdx) - x.get(lowerIdx);
+            final double lowerP = (x.get(upperIdx) - x0) / dxBracket;
+            final double upperP = (x0 - x.get(lowerIdx)) / dxBracket;
+            final double lowerDx = (x.get(lowerIdx + 1) - x.get(lowerIdx - 1)) / 2.0;
+            final double upperDx = (x.get(upperIdx + 1) - x.get(upperIdx - 1)) / 2.0;
+            p.set(lowerIdx, lowerP / lowerDx);
+            p.set(upperIdx, upperP / upperDx);
+        }
+
+        // C++ FdmSchemeDesc::Douglas().theta == 0.5
+        final DouglasScheme evolver = new DouglasScheme(0.5, op);
+        final double dt = maturity / tGrid;
+        evolver.setStep(dt);
+
+        for (double t = dt; t <= maturity + 20.0 * 1.0e-16; t += dt) {
+            evolver.step(p, t);
+        }
+
+        final double[] xs = new double[n];
+        final double[] ys = new double[n];
+        for (int i = 0; i < n; ++i) {
+            xs[i] = x.get(i);
+            ys[i] = payoff.get(Math.exp(x.get(i))) * p.get(i);
+        }
+        final NaturalCubicInterpolation spline =
+                new NaturalCubicInterpolation(new Array(xs), new Array(ys));
+        spline.update();
+        spline.enableExtrapolation();
+        final Ops.DoubleOp f = new Ops.DoubleOp() {
+            @Override
+            public double op(final double v) { return spline.op(v, true); }
+        };
+        return new GaussLobattoIntegral(1000, 1.0e-6).op(f, x.first(), x.last());
+    }
+
     /* ---- 1. Fokker-Planck forward PDE -------------------------------- */
 
-    @Ignore("Phase 5h.5-SLV-c — needs FdmBlackScholesFwdOp (forward PDE adapter "
-            + "for the BS process); only the backward FdmBlackScholesOp is in Java.")
+    /**
+     * Tests the Black-Scholes Fokker-Planck forward PDE on three mesh
+     * variants (uniform, concentrated, shifted-concentrated). Mirrors C++
+     * {@code testBlackScholesFokkerPlanckFwdEquation}
+     * (test-suite/hestonslvmodel.cpp:725). Tolerance 0.02 absolute.
+     *
+     * <p>For each strike in {50, 80, 100, 130, 150}: builds a vanilla European
+     * call, takes the analytic NPV / discount as the reference (forward
+     * undiscounted call price), and compares to the
+     * {@code fokkerPlanckPrice1D} evaluation that evolves a Dirac density
+     * via the {@link FdmBlackScholesFwdOp} operator on each mesh.
+     *
+     * <p>Unblocked by the Phase 5e.5b-CFC-d-131 port of
+     * {@link FdmBlackScholesFwdOp}.
+     */
     @Test
-    public void testBlackScholesFokkerPlanckFwdEquation() { fail("not implemented"); }
+    public void testBlackScholesFokkerPlanckFwdEquation() {
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final Date todaysDate = new Date(28, Month.December, 2012);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final Date maturityDate = todaysDate.add(new Period(2, TimeUnit.Years));
+        final double maturity = dc.yearFraction(todaysDate, maturityDate);
+
+        final double s0 = 100.0;
+        final double x0 = Math.log(s0);
+        final double r = 0.035;
+        final double q = 0.01;
+        final double vol = 0.35;
+
+        final int xGrid = 2 * 100 + 1;
+        final int tGrid = 400;
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dc));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dc));
+        final Handle<BlackVolTermStructure> vTS = new Handle<BlackVolTermStructure>(
+                Utilities.flatVol(todaysDate, vol, dc));
+
+        final GeneralizedBlackScholesProcess process =
+                new GeneralizedBlackScholesProcess(spot, qTS, rTS, vTS);
+
+        final PricingEngine engine = new AnalyticEuropeanEngine(process);
+
+        // Uniform mesher (no cPoint).
+        final FdmMesher uniformMesher = new FdmMesherComposite(
+                new FdmBlackScholesMesher(xGrid, process, maturity, s0,
+                        Double.NaN, Double.NaN, 0.0001, 1.5,
+                        Double.NaN, 0.1,                 // no cPoint
+                        null, 0.0));
+        final FdmLinearOpComposite uniformBSFwdOp =
+                new FdmBlackScholesFwdOp(uniformMesher, process, s0, false);
+
+        // Concentrated mesher: cPoint at (s0, 0.1).
+        final FdmMesher concentratedMesher = new FdmMesherComposite(
+                new FdmBlackScholesMesher(xGrid, process, maturity, s0,
+                        Double.NaN, Double.NaN, 0.0001, 1.5,
+                        s0, 0.1,
+                        null, 0.0));
+        final FdmLinearOpComposite concentratedBSFwdOp =
+                new FdmBlackScholesFwdOp(concentratedMesher, process, s0, false);
+
+        // Shifted mesher: cPoint at (s0*1.1, 0.2).
+        final FdmMesher shiftedMesher = new FdmMesherComposite(
+                new FdmBlackScholesMesher(xGrid, process, maturity, s0,
+                        Double.NaN, Double.NaN, 0.0001, 1.5,
+                        s0 * 1.1, 0.2,
+                        null, 0.0));
+        final FdmLinearOpComposite shiftedBSFwdOp =
+                new FdmBlackScholesFwdOp(shiftedMesher, process, s0, false);
+
+        final Exercise exercise = new EuropeanExercise(maturityDate);
+        final double[] strikes = {50.0, 80.0, 100.0, 130.0, 150.0};
+        final double tol = 0.02;
+
+        for (final double strike : strikes) {
+            final StrikedTypePayoff payoff =
+                    new PlainVanillaPayoff(Option.Type.Call, strike);
+
+            final VanillaOption option = new VanillaOption(payoff, exercise);
+            option.setPricingEngine(engine);
+
+            final double expected = option.NPV()
+                    / rTS.currentLink().discount(maturityDate);
+            final double calcUniform = fokkerPlanckPrice1D(uniformMesher,
+                    uniformBSFwdOp, payoff, x0, maturity, tGrid);
+            final double calcConcentrated = fokkerPlanckPrice1D(concentratedMesher,
+                    concentratedBSFwdOp, payoff, x0, maturity, tGrid);
+            final double calcShifted = fokkerPlanckPrice1D(shiftedMesher,
+                    shiftedBSFwdOp, payoff, x0, maturity, tGrid);
+
+            if (Math.abs(expected - calcUniform) > tol) {
+                fail("failed to reproduce european option price with a uniform mesher"
+                        + "\n   strike:     " + strike
+                        + "\n   calculated: " + calcUniform
+                        + "\n   expected:   " + expected
+                        + "\n   tolerance:  " + tol);
+            }
+            if (Math.abs(expected - calcConcentrated) > tol) {
+                fail("failed to reproduce european option price with a concentrated mesher"
+                        + "\n   strike:     " + strike
+                        + "\n   calculated: " + calcConcentrated
+                        + "\n   expected:   " + expected
+                        + "\n   tolerance:  " + tol);
+            }
+            if (Math.abs(expected - calcShifted) > tol) {
+                fail("failed to reproduce european option price with a shifted mesher"
+                        + "\n   strike:     " + strike
+                        + "\n   calculated: " + calcShifted
+                        + "\n   expected:   " + expected
+                        + "\n   tolerance:  " + tol);
+            }
+        }
+    }
 
     /**
      * Tests the Fokker-Planck forward equation for the square-root process
