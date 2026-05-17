@@ -1,0 +1,165 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "grid": [
+          {
+            "dim": 2,
+            "discrepancy": 0.0010770619011062994,
+            "points": 1023
+          },
+          {
+            "dim": 3,
+            "discrepancy": 0.0014759114916498455,
+            "points": 1023
+          },
+          {
+            "dim": 5,
+            "discrepancy": 0.0017379280039108783,
+            "points": 1023
+          },
+          {
+            "dim": 10,
+            "discrepancy": 0.0007891475175889063,
+            "points": 1023
+          },
+          {
+            "dim": 15,
+            "discrepancy": 0.00020948811602991018,
+            "points": 1023
+          },
+          {
+            "dim": 30,
+            "discrepancy": 4.4208190597851965e-07,
+            "points": 1023
+          },
+          {
+            "dim": 50,
+            "discrepancy": 1.9277079453218397e-10,
+            "points": 1023
+          },
+          {
+            "dim": 100,
+            "discrepancy": 9.847558179150334e-20,
+            "points": 1023
+          }
+        ]
+      },
+      "inputs": {
+        "randomShift": false,
+        "randomStart": true,
+        "seed": 123456
+      },
+      "name": "randomstart"
+    },
+    {
+      "expected": {
+        "grid": [
+          {
+            "dim": 2,
+            "discrepancy": 0.0013202031316405093,
+            "points": 1023
+          },
+          {
+            "dim": 3,
+            "discrepancy": 0.001957856269912325,
+            "points": 1023
+          },
+          {
+            "dim": 5,
+            "discrepancy": 0.0020154425117469006,
+            "points": 1023
+          },
+          {
+            "dim": 10,
+            "discrepancy": 0.0009246343234685174,
+            "points": 1023
+          },
+          {
+            "dim": 15,
+            "discrepancy": 0.00017504508329837623,
+            "points": 1023
+          },
+          {
+            "dim": 30,
+            "discrepancy": 8.111669355732367e-07,
+            "points": 1023
+          },
+          {
+            "dim": 50,
+            "discrepancy": 1.1372984107501054e-10,
+            "points": 1023
+          },
+          {
+            "dim": 100,
+            "discrepancy": 3.364890773725758e-19,
+            "points": 1023
+          }
+        ]
+      },
+      "inputs": {
+        "randomShift": true,
+        "randomStart": false,
+        "seed": 123456
+      },
+      "name": "randomshift"
+    },
+    {
+      "expected": {
+        "grid": [
+          {
+            "dim": 2,
+            "discrepancy": 0.0013453257970209075,
+            "points": 1023
+          },
+          {
+            "dim": 3,
+            "discrepancy": 0.00216531972538882,
+            "points": 1023
+          },
+          {
+            "dim": 5,
+            "discrepancy": 0.0021134035431640175,
+            "points": 1023
+          },
+          {
+            "dim": 10,
+            "discrepancy": 0.000841454965714289,
+            "points": 1023
+          },
+          {
+            "dim": 15,
+            "discrepancy": 0.00016588138209481224,
+            "points": 1023
+          },
+          {
+            "dim": 30,
+            "discrepancy": 1.853865006490129e-06,
+            "points": 1023
+          },
+          {
+            "dim": 50,
+            "discrepancy": 2.917153985051073e-10,
+            "points": 1023
+          },
+          {
+            "dim": 100,
+            "discrepancy": 4.442468971274416e-19,
+            "points": 1023
+          }
+        ]
+      },
+      "inputs": {
+        "randomShift": true,
+        "randomStart": true,
+        "seed": 123456
+      },
+      "name": "randomstart_randomshift"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-17T16:35:35Z",
+  "generated_by": "halton_discrepancy_probe",
+  "test_group": "math/randomnumbers/halton_discrepancy"
+}

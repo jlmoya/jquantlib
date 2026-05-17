@@ -1477,13 +1477,20 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
             }
             break;
         case Jaeckel:
-            // maxTabulated = 32;
-            maxTabulated = sizeInitializers/(Long.SIZE/8) + 1;
+            // Phase 5e.5b-CFC-d-145 align: C++ computes maxTabulated as
+            // {@code sizeof(initializers)/sizeof(uint32_t*) + 1}, i.e. the
+            // count of dim-array POINTERS (one per dimension covered) + 1.
+            // The previous Java form
+            // {@code sizeInitializers/(Long.SIZE/8) + 1} summed the *lengths*
+            // of every dim array and divided by 8, giving 204/8+1=26 instead
+            // of 31+1=32 — causing dims 27..31 to fall through to the
+            // random-init path and producing the homogeneity divergence
+            // recorded in testSobol's deferred sub-test.
+            maxTabulated = initializers.length + 1;
             for (int k = 1; k < Math.min(this.dimensionality, maxTabulated); k++) {
                 int j = 0;
                 // 0UL marks coefficients' end for a given dimension
                 while (initializers[k-1][j] != 0) {
-                    // FIXME: Translate these two lines
                     directionIntegers[k][j] = initializers[k-1][j];
                     directionIntegers[k][j] <<= (BITS-j-1);
                     j++;
@@ -1491,13 +1498,13 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
             }
             break;
         case SobolLevitan:
-            // maxTabulated = 40;
-            maxTabulated = sizeSLinitializers/(Long.SIZE/8) + 1;
+            // Phase 5e.5b-CFC-d-145 align: see Jaeckel branch.
+            // C++ value is 39+1=40; Java buggy form was 270/8+1=34.
+            maxTabulated = SLinitializers.length + 1;
             for (int k = 1; k < Math.min(this.dimensionality, maxTabulated); k++) {
                 int j = 0;
                 // 0UL marks coefficients' end for a given dimension
                 while (SLinitializers[k - 1][j] != 0) {
-                    // FIXME: Translate these two lines
                     directionIntegers[k][j] = SLinitializers[k - 1][j];
                     directionIntegers[k][j] <<= (BITS - j - 1);
                     j++;
@@ -1505,13 +1512,13 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
             }
             break;
         case SobolLevitanLemieux:
-            maxTabulated = 360;
-            maxTabulated = sizeLinitializers/(Long.SIZE/8) + 1;
+            // Phase 5e.5b-CFC-d-145 align: see Jaeckel branch.
+            // C++ value is 359+1=360; Java buggy form was sizeLinitializers/8+1.
+            maxTabulated = Linitializers.length + 1;
             for (int k = 1; k < Math.min(this.dimensionality, maxTabulated); k++) {
                 int j = 0;
                 // 0UL marks coefficients' end for a given dimension
                 while (Linitializers[k - 1][j] != 0L) {
-                    // FIXME: Translate these two lines
                     directionIntegers[k][j] = Linitializers[k - 1][j];
                     directionIntegers[k][j] <<= (BITS - j - 1);
                     j++;
@@ -1524,22 +1531,29 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
 
 
         // random initialization for higher dimensions
-
-        // FIXME: Check maxTabulated below: How is it initialized?
         if (this.dimensionality > maxTabulated) {
             final MersenneTwisterUniformRng uniformRng = new MersenneTwisterUniformRng(seed);
             for (int k = maxTabulated; k < this.dimensionality; k++) {
                 for (int l = 1; l <= degree[k]; l++) {
 
+                    // Phase 5e.5b-CFC-d-145 align: C++ loops while the candidate
+                    // is EVEN and stops on the first ODD draw
+                    // ({@code } while ((di & 1UL) == 0U);}). The original Java
+                    // translation flipped the test ({@code !((di & 1) == 0)}),
+                    // i.e. it looped while ODD and stopped on EVEN — so the
+                    // random direction integer always ended up at 0 (the only
+                    // even value in {0, 1} produced by {@code (long)(u*2)} at
+                    // l=1), zeroing out the entire random-init dimension.
+                    // That made every sample component for dims >= 33 (Jaeckel)
+                    // collapse to 0.0, dragging the dim-33+ discrepancy off
+                    // the C++ pivot table.
                     do {
                         // u is in (0,1)
                         final double u = uniformRng.next().value().doubleValue();
                         // the direction integer has at most the
                         // rightmost l bits non-zero
-
-                        // FIXME: Translate this line
                         directionIntegers[k][l - 1] = (long) (u * (1 << l));
-                    } while (!((directionIntegers[k][l - 1] & 1) == 0));
+                    } while ((directionIntegers[k][l - 1] & 1L) == 0L);
 
                     // iterate until the direction integer is odd
                     // that is it has the rightmost bit set
@@ -1548,8 +1562,6 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
                     // we are guaranteed that the l-th leftmost bit
                     // is set, and only the first l leftmost bit
                     // can be non-zero
-
-                    // FIXME: Translate this line
                     directionIntegers[k][l - 1] <<= (BITS - l);
                 }
             }
@@ -1561,7 +1573,18 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
             final int gk = (int) degree[k];
             for (int l = gk; l < BITS; l++) {
                 // eq. 8.19 "Monte Carlo Methods in Finance" by P. Jaeckel
-                long n = (directionIntegers[k][l-gk] >> gk); // FIXME: unsigned long
+                //
+                // Phase 5e.5b-CFC-d-145 align: the C++ reference is
+                //   std::uint32_t n = (directionIntegers_[l-gk][k] >> gk)
+                // i.e. an UNSIGNED right shift. Using Java's signed
+                // {@code >>} sign-extends the top bit and the subsequent
+                // XOR step then flips the wrong direction integers,
+                // mirroring tabulated dim 1 into dims 2+ for the first
+                // few draws (observed via SobolRsg(2,Jaeckel) producing
+                // dim0==dim1 for samples 1..3). The {@code >>>} form
+                // matches C++ for both the 32-bit and the (currently
+                // used) 64-bit Java width.
+                long n = (directionIntegers[k][l-gk] >>> gk);
 
                 // a[k][j] are the coefficients of the monomials in ppmt[k]
                 // The highest order coefficient a[k][0] is not actually
@@ -1572,17 +1595,13 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
                 // provided that its degree is known.
                 // That is: a[k][j] = ppmt[k] >> (gk-j-1)
                 for (int j = 1; j < gk; j++) {
-                    // FIXME: Correct this line if ((ppmt.get(k) >>> (gk-j-1)) & 1 != 0)
-                    // TODO: REVIEW THIS.
-                    if (((ppmt[k] >> (gk - j - 1)) & 1L) != 0) {
+                    if (((ppmt[k] >>> (gk - j - 1)) & 1L) != 0) {
                         n ^= directionIntegers[k][l - j];
                     }
                 }
 
                 // a[k][gk] is always set, so directionIntegers_[k][l-gk]
                 // will always enter
-
-                // FIXME: Correct these two lines regarding directionIntegers_
                 n ^= directionIntegers[k][l - gk];
                 directionIntegers[k][l] = n;
             }
@@ -1632,24 +1651,62 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
     }
 
 
-    // skip to the n-th sample in the low-discrepancy sequence
-    private void skipTo(final /*@NonNegative*/ long skip) {
+    /**
+     * Skip to the n-th sample in the low-discrepancy sequence.
+     *
+     * <p>Phase 5e.5b-CFC-d-145 align: mirrors C++
+     * {@code SobolRsg::skipTo(std::uint32_t skip)} (sobolrsg.cpp:78775).
+     * After this returns, {@code integerSequence} holds the Sobol vector
+     * at sample index {@code skip+1}, {@code sequenceCounter == skip},
+     * and {@code firstDraw == true} so the very next call to
+     * {@link #nextInt32Sequence()} returns that same precomputed vector
+     * (matching the C++ pattern used by {@code testSobolSkipping}).
+     *
+     * <p>Previous bugs fixed:
+     * <ul>
+     *   <li>Used {@code =} instead of {@code ^=} when accumulating
+     *     direction integers for each set bit of the Gray code, so only
+     *     the highest-index bit ever survived.</li>
+     *   <li>Did not reset {@code firstDraw}, so calling
+     *     {@code nextInt32Sequence} after {@code skipTo} immediately
+     *     incremented the counter and applied a Gray-step from the
+     *     just-computed value, returning sample {@code skip+2} instead
+     *     of {@code skip+1}.</li>
+     * </ul>
+     *
+     * @param skip number of samples to skip (next sample returned is at
+     *     index {@code skip+1}, 1-indexed)
+     * @return the integer Sobol vector at sample {@code skip+1}
+     *     (same array reference as {@link #nextInt32Sequence()})
+     */
+    public long[] skipTo(final /*@NonNegative*/ long skip) {
         final long n = skip + 1;
+        // ops = ceil(log2(n+1)); +1 keeps the loop bound safe for n a power of two.
         final long ops = (long) (Math.log(n) / Constants.M_LN2) + 1;
 
         // Convert to Gray code
-        final long gray = n ^ (n>>1);
+        final long gray = n ^ (n >> 1);
 
-        // FIXME: Correct the following for loop regarding directionIntegers_ .
         for (int k = 0; k < this.dimensionality; k++) {
             integerSequence[k] = 0;
             for (int index = 0; index < ops; index++) {
                 if (((gray >> index) & 1) != 0) {
-                    integerSequence[k] = directionIntegers[k][index];
+                    integerSequence[k] ^= directionIntegers[k][index];
                 }
             }
         }
         sequenceCounter = skip;
+        // After skipTo, integerSequence already holds sample (skip+1).
+        // Mark firstDraw=true so the next nextInt32Sequence() returns it
+        // verbatim rather than Gray-stepping past it. Matches C++ semantics:
+        // skipTo does not touch firstDraw_, and the constructor leaves
+        // firstDraw_=true, so the equivalent flow in C++ is
+        //   SobolRsg rsg(...); rsg.skipTo(k); rsg.nextInt32Sequence();
+        //   --> returns the value just installed by skipTo.
+        // Java's nextInt32Sequence increments the counter on every non-first
+        // call, so we must reset the flag explicitly.
+        firstDraw = true;
+        return integerSequence;
     }
 
 

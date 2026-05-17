@@ -174,18 +174,15 @@ public class LowDiscrepancySequencesTest {
      *     dimensionality for 100 draws.</li>
      *   <li>1-D Sobol equals the van der Corput modulo-two sequence
      *     for 31 draws (five cycles).</li>
+     *   <li>33-D Sobol homogeneity: cumulative mean of every coordinate
+     *     converges to 0.5 at the end of cycles 1..5 (1, 3, 7, 15 samples).
+     *     Phase 5e.5b-CFC-d-145: this sub-test is now active after the
+     *     Jaeckel direction-integer divergence fix. The homogeneity check
+     *     covers dims 1..32, all of which the Jaeckel initializer table
+     *     tabulates (no random-init dependency on Java/C++ MT alignment).
+     *     The C++ test runs to dim 33 but k=32 ("dim 33") falls in the
+     *     random-init path; we therefore exercise only k=0..31.</li>
      * </ol>
-     * <p>
-     * <b>Deferred sub-test:</b> the C++ test additionally asserts that the
-     * cumulative mean of every coordinate of a 33-dimensional Sobol
-     * sequence converges to 0.5 at the end of cycles 2..5 (3, 7, 15
-     * samples). The Java production {@code SobolRsg} currently fails
-     * this for higher dimensions (e.g. dim 27 has mean 0.0 after 3 draws)
-     * because the tabulated-direction-integer path for Jaeckel
-     * initializers diverges from C++ at low draw indices. Pending a
-     * {@code align(math.randomnumbers.SobolRsg)} commit, this sub-test
-     * is intentionally omitted -- per project rules we never loosen
-     * tolerance to force green.
      */
     @Test
     public void testSobol() {
@@ -239,6 +236,33 @@ public class LowDiscrepancySequencesTest {
                         + " Corput sequence modulo two: it should have been "
                         + vanderCorputSequenceModuloTwo[i]
                         + " (error = " + error + ")");
+            }
+        }
+
+        // (3) homogeneity sub-test — dims 1..32 (Jaeckel tabulated range).
+        // Sobol's property A states the cumulative mean of every coordinate
+        // equals 0.5 at the end of every cycle 2^j - 1 for j >= 1. With the
+        // four bugs fixed in SobolRsg (maxTabulated, signed-shift recurrence,
+        // inverted random-init loop, skipTo accumulator), Jaeckel SobolRsg
+        // matches C++ bit-exactly for dims 0..31.
+        dimensionality = 32;
+        rsg = new SobolRsg(dimensionality);
+        final SequenceStatistics stat = new SequenceStatistics(dimensionality);
+        int kk = 0;
+        for (int j = 1; j < 5; j++) {
+            points = (int) Math.pow(2.0, j) - 1;
+            for (; kk < points; kk++) {
+                stat.add(rsg.nextSequence().value());
+            }
+            final Array mean = stat.mean();
+            for (int d = 0; d < dimensionality; d++) {
+                final double error = Math.abs(mean.get(d) - 0.5);
+                if (error > tolerance) {
+                    fail("Dimension " + d + " mean (" + mean.get(d)
+                            + ") at the end of the " + (j + 1)
+                            + "th cycle in Sobol sequence is not 0.5"
+                            + " (error = " + error + ")");
+                }
             }
         }
     }
@@ -704,58 +728,233 @@ public class LowDiscrepancySequencesTest {
         }
     }
 
-    @Ignore("Phase 5b.5: MT-seeded discrepancy alignment with C++ pivot table not cross-validated")
+    @Ignore("Phase 5e.5b-CFC-d-145: Java MT(seed) != C++ MT(seed) at large dim×draw counts (1023 draws x dim 100); needs MT cross-platform alignment")
     @Test
     public void testMersenneTwisterDiscrepancy() {
         // C++ test-suite/lowdiscrepancysequences.cpp:885
     }
 
-    @Ignore("Phase 5b.5: MT-seeded Halton random-start alignment with C++ pivot table not cross-validated")
+    @Ignore("Phase 5e.5b-CFC-d-145: HaltonRsg(randomStart=true) uses MT-seeded RSG; Java MT(123456) != C++ MT(123456)")
     @Test
     public void testRandomStartHaltonDiscrepancy() {
         // C++ test-suite/lowdiscrepancysequences.cpp:918
     }
 
-    @Ignore("Phase 5b.5: MT-seeded Halton random-shift alignment with C++ pivot table not cross-validated")
+    @Ignore("Phase 5e.5b-CFC-d-145: HaltonRsg(randomShift=true) uses MT-seeded RSG; Java MT(123456) != C++ MT(123456)")
     @Test
     public void testRandomShiftHaltonDiscrepancy() {
         // C++ test-suite/lowdiscrepancysequences.cpp:934
     }
 
-    @Ignore("Phase 5b.5: MT-seeded Halton random-start+shift alignment with C++ pivot table not cross-validated")
+    @Ignore("Phase 5e.5b-CFC-d-145: HaltonRsg(randomStart+randomShift) uses MT-seeded RSG; Java MT(123456) != C++ MT(123456)")
     @Test
     public void testRandomStartRandomShiftHaltonDiscrepancy() {
         // C++ test-suite/lowdiscrepancysequences.cpp:950
     }
 
-    @Ignore("Phase 5b.5: Java SobolRsg Jaeckel direction integers diverge from C++ at low draw indices (dims 2+); pending align(SobolRsg) commit")
-    @Test
-    public void testJackelSobolDiscrepancy() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:966
+    // ---------------------------------------------------------------
+    // Sobol discrepancy pivot tables (cross-validated against the C++
+    // sobol_rsg_probe at migration-harness/cpp/probes/math/randomnumbers/
+    // sobol_rsg_probe.cpp; reference JSON committed under
+    // migration-harness/references/math/randomnumbers/sobol_rsg.json).
+    //
+    // The C++ pivot tables shipped with QuantLib (lowdiscrepancysequences.cpp
+    // lines 555-726) are quoted at 2-3 significant figures only and use
+    // {@code DISCREPANCY_REL_TOL == 1e-2}. We use the same tolerance against
+    // the more precise reference-JSON values.
+    // ---------------------------------------------------------------
+
+    /**
+     * Jaeckel Sobol discrepancy @ 1023 samples, dim {2,3,5,10,15,30}.
+     *
+     * <p>Per the C++ probe at
+     * {@code migration-harness/cpp/probes/math/randomnumbers/sobol_rsg_probe.cpp},
+     * Java/Sobol matches C++ bit-exactly for dims 1..32 (which the Jaeckel
+     * initializers tabulate). Dims 33+ fall through to the random-init
+     * path, which depends on the (cross-platform-divergent) MersenneTwister
+     * uniform draw for {@code seed=123456}: Java MT and C++ MT produce
+     * different sequences for that seed, so dims 50 and 100 are excluded
+     * from this assertion (they remain covered by the {@code Unit} test
+     * which uses no random initialization).
+     */
+    private static final double[] JAECKEL_SOBOL_DISCR = {
+            8.326481e-04, 1.209684e-03, 1.587933e-03, 7.083686e-04,
+            1.593451e-04, 6.428807e-07
+    };
+
+    private static final int[] JAECKEL_SOBOL_DIMS = { 2, 3, 5, 10, 15, 30 };
+
+    /**
+     * Unit Sobol discrepancy @ 1023 samples, dim {2,3,5,10,15,30,50,100}.
+     *
+     * <p>The Unit direction-integer initializer is fully deterministic
+     * (it sets {@code directionIntegers[k][l-1] = 1L << (BITS-l)} for
+     * every dim) and uses no random fallback, so it matches C++ across
+     * the entire grid.
+     */
+    private static final double[] UNIT_SOBOL_DISCR = {
+            8.326481e-04, 1.209684e-03, 1.848105e-03, 7.672581e-04,
+            2.242687e-04, 4.350728e-05, 1.629699e-05, 4.968211e-06
+    };
+
+    private static void runSobolDiscrepancy(final SobolRsg.DirectionIntegers di,
+                                            final int[] dims,
+                                            final double[] expected,
+                                            final String label) {
+        for (int idx = 0; idx < dims.length; idx++) {
+            final int dim = dims[idx];
+            final SobolRsg rsg = new SobolRsg(dim, DISCREPANCY_SEED, di);
+            final DiscrepancyStatistics stat = new DiscrepancyStatistics(dim);
+
+            final int jMin = 10;
+            int k = 0;
+            for (int j = jMin; j < jMin + DISCREPANCY_MEASURES_NUMBER; j++) {
+                final int points = (int) Math.pow(2.0, j) - 1;
+                for (; k < points; k++) {
+                    final double[] sample = rsg.nextSequence().value();
+                    stat.add(sample);
+                }
+                final double discr = stat.discrepancy();
+                final double pivot = expected[idx];
+                final double error = Math.abs(discr - pivot);
+                if (error > DISCREPANCY_REL_TOL * Math.abs(discr)) {
+                    fail(label + " Sobol discrepancy dimension " + dim
+                            + " at " + points + " samples is "
+                            + discr + " instead of " + pivot
+                            + " (|diff|=" + error + " > tol="
+                            + (DISCREPANCY_REL_TOL * Math.abs(discr)) + ")");
+                }
+            }
+        }
     }
 
-    @Ignore("Phase 5b.5: same Java SobolRsg low-index divergence as testJackelSobolDiscrepancy")
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 966-980.
+     *
+     * <p>Phase 5e.5b-CFC-d-145: enabled after fixing four divergences in
+     * {@code SobolRsg}:
+     * <ol>
+     *   <li>{@code maxTabulated} for Jaeckel/SL/SLL was computed as
+     *     {@code sizeInitializers/(Long.SIZE/8)+1} (sum of dim-array
+     *     lengths / 8) instead of {@code initializers.length + 1}
+     *     (number of dim entries + 1). Made dims 27-31 in Jaeckel fall
+     *     through to random-init.</li>
+     *   <li>Recurrence relation used signed {@code >>} instead of
+     *     {@code >>>}, sign-extending the top bit of the 64-bit Java
+     *     direction integers and flipping every odd-index direction
+     *     integer for dims 2+. Made dims 2+ produce dim-1 values for
+     *     samples 2..3.</li>
+     *   <li>Random-init loop condition was inverted ({@code while !even}
+     *     instead of {@code while even}), zeroing out every random
+     *     direction integer at {@code l=1}. Made dim 33+ samples equal
+     *     0.0 in dim 0 of the random portion.</li>
+     *   <li>{@code skipTo} used {@code =} instead of {@code ^=} when
+     *     accumulating direction integers across Gray-code bits
+     *     (only the highest-index hit survived) and did not reset
+     *     {@code firstDraw}, so the next {@code nextInt32Sequence}
+     *     Gray-stepped past the just-installed sample.</li>
+     * </ol>
+     *
+     * <p>This test exercises only dims that are fully tabulated by the
+     * Jaeckel direction-integer table (dim &le; 32). The full C++ grid
+     * additionally includes dims 50 and 100, which depend on the
+     * random-init MT draw — Java's MT and C++ MT produce different
+     * sequences for the {@code seed=123456} used here, so those dims
+     * cannot be cross-validated without first aligning MT.
+     */
+    @Test
+    public void testJackelSobolDiscrepancy() {
+        QL.info("Testing Jaeckel-Sobol discrepancy...");
+        runSobolDiscrepancy(SobolRsg.DirectionIntegers.Jaeckel,
+                JAECKEL_SOBOL_DIMS, JAECKEL_SOBOL_DISCR, "Jaeckel");
+    }
+
+    /** Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 1014-1025. */
+    @Test
+    public void testUnitSobolDiscrepancy() {
+        QL.info("Testing Unit-Sobol discrepancy...");
+        runSobolDiscrepancy(SobolRsg.DirectionIntegers.Unit,
+                DIMENSIONALITY, UNIT_SOBOL_DISCR, "Unit");
+    }
+
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 982-996.
+     *
+     * <p>Still deferred: {@code SobolLevitan} (and {@code SobolLevitanLemieux})
+     * use C++'s {@code AltPrimitivePolynomials} table for the first 52
+     * dimensions, which has not yet been ported to Java's
+     * {@link org.jquantlib.math.randomnumbers.PrimitivePolynomials}. The
+     * Java SL Sobol matches C++ exactly for dims that fall outside the
+     * alt-poly range, but diverges for k &lt; 52, so the discrepancy
+     * pivots do not match.
+     */
+    @Ignore("Phase 5e.5b-CFC-d-145: SobolLevitan needs AltPrimitivePolynomials table (k<52); not yet ported")
     @Test
     public void testSobolLevitanSobolDiscrepancy() {
         // C++ test-suite/lowdiscrepancysequences.cpp:982
     }
 
-    @Ignore("Phase 5b.5: same Java SobolRsg low-index divergence as testJackelSobolDiscrepancy")
+    @Ignore("Phase 5e.5b-CFC-d-145: SobolLevitanLemieux needs AltPrimitivePolynomials table (k<52); not yet ported")
     @Test
     public void testSobolLevitanLemieuxSobolDiscrepancy() {
         // C++ test-suite/lowdiscrepancysequences.cpp:998
     }
 
-    @Ignore("Phase 5b.5: same Java SobolRsg low-index divergence as testJackelSobolDiscrepancy")
-    @Test
-    public void testUnitSobolDiscrepancy() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:1014
-    }
-
-    @Ignore("Phase 5b.5: SobolRsg.skipTo not exposed in Java")
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 1027-1069.
+     * <p>Phase 5e.5b-CFC-d-145: enabled after {@code SobolRsg.skipTo} was
+     * exposed (was previously {@code private}) and corrected (it used
+     * {@code =} instead of {@code ^=} when accumulating direction integers,
+     * dropping all but the last set bit of the Gray code; and it left
+     * {@code firstDraw} unset so the next {@code nextInt32Sequence} call
+     * Gray-stepped past the just-installed sample).
+     */
     @Test
     public void testSobolSkipping() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:1027
+        QL.info("Testing Sobol sequence skipping...");
+
+        final long seed = 42L;
+        final int[] dimensionality = { 1, 10, 100, 1000 };
+        final long[] skip = { 0L, 1L, 42L, 512L, 100_000L };
+        final SobolRsg.DirectionIntegers[] integers = {
+                SobolRsg.DirectionIntegers.Unit,
+                SobolRsg.DirectionIntegers.Jaeckel,
+                SobolRsg.DirectionIntegers.SobolLevitan,
+                SobolRsg.DirectionIntegers.SobolLevitanLemieux
+        };
+
+        for (final SobolRsg.DirectionIntegers di : integers) {
+            for (final int dim : dimensionality) {
+                for (final long k : skip) {
+                    // extract n samples one at a time
+                    final SobolRsg rsg1 = new SobolRsg(dim, seed, di);
+                    for (long l = 0; l < k; l++) {
+                        rsg1.nextInt32Sequence();
+                    }
+                    // skip n samples at once
+                    final SobolRsg rsg2 = new SobolRsg(dim, seed, di);
+                    rsg2.skipTo(k);
+
+                    // compare next 100 samples
+                    for (int m = 0; m < 100; m++) {
+                        final long[] s1 = rsg1.nextInt32Sequence();
+                        final long[] s2 = rsg2.nextInt32Sequence();
+                        for (int n = 0; n < s1.length; n++) {
+                            if (s1[n] != s2[n]) {
+                                fail("Mismatch after skipping:"
+                                        + "\n  size:     " + dim
+                                        + "\n  integers: " + di
+                                        + "\n  skipped:  " + k
+                                        + "\n  iter:     " + m
+                                        + "\n  at index: " + n
+                                        + "\n  expected: " + s1[n]
+                                        + "\n  found:    " + s2[n]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Ignore("Phase 5b.5: SobolBurleyRsg production class not yet ported")
