@@ -164,6 +164,27 @@ public class HestonModelTest {
             "Phase 5h.5 — requires Andersen-Piterbarg control-variate engine "
             + "and α-optimization helpers (not ported).";
 
+    private static final String REASON_AP_ALPHA =
+            "Phase 5e.5b-CFC-d-134: AnalyticHestonEngine AP/CV branches wired "
+            + "(commits 64dff629 + 064e0aa6) and three REASON_AP tests body-filled. "
+            + "testOptimalAlphaKmin/Kmax still need AnalyticHestonEngine.OptimalAlpha "
+            + "(Andersen-Lake 2018 alpha-shift root-finder) which is not yet ported.";
+
+    private static final String REASON_AP_DISCRETE_TRAPEZOID =
+            "Phase 5e.5b-CFC-d-134: AnalyticHestonEngine AP branches wired (064e0aa6). "
+            + "testAndersenPiterbargConvergence exercises only Integration.discreteTrapezoid "
+            + "which throws UnsupportedOperationException — requires DiscreteTrapezoidIntegrator "
+            + "(Phase 5e.5b-CFC-d-120 carry-forward).";
+
+    private static final String REASON_AP_ASYMPTOTIC =
+            "Phase 5e.5b-CFC-d-134: AnalyticHestonEngine AP branches wired (064e0aa6). "
+            + "testAsymptoticControlVariate's seed (v0=0.0225, sigma=2.0) selects "
+            + "AsymptoticChF via optimalControlVariate(...) — the AsymptoticChF "
+            + "controlVariateValue() path requires ExponentialIntegral.Ci/Si "
+            + "(see AnalyticHestonEngine.AP_Helper.controlVariateValue:815), which "
+            + "is not yet ported to Java. ExponentialFittingHestonEngine reaches the "
+            + "same code path. Body kept in place to enable trivially once Ci/Si land.";
+
     private static final String REASON_EXPANSION =
             "Phase 5h.5: HestonExpansion family ported (HestonExpansionEngine, FordeHestonExpansion, "
             + "LPP2HestonExpansion — commits 41966c40 + 24b3a98c); test bodies are "
@@ -1446,31 +1467,467 @@ public class HestonModelTest {
         }
     }
 
-    @Ignore(REASON_AP)
+    /**
+     * Phase 5e.5b-CFC-d-134 body-fill — port of C++ {@code testAndersenPiterbargPricing}
+     * (test-suite/hestonmodel.cpp:2036-2164). Drives {@link AnalyticHestonEngine}
+     * with {@link AnalyticHestonEngine.ComplexLogFormula#AndersenPiterbarg} through
+     * every supported integration method (Gauss-Laguerre, Gauss-Lobatto, Discrete
+     * Simpson, adaptive Trapezoid) and verifies each reproduces the Gauss-Laguerre
+     * reference price (cpxLog=Gatheral, order=192) within {@code 1e-8} across a
+     * 4 × 2 × 8 product of (maturity, optionType, strike).
+     *
+     * <p><b>Java port deltas:</b>
+     * <ul>
+     *   <li>The C++ test additionally exercises {@code discreteTrapezoid(164)}
+     *       and {@code ExponentialFittingHestonEngine}. The {@code discreteTrapezoid}
+     *       variant is skipped because {@code DiscreteTrapezoidIntegrator} is
+     *       not yet ported (Phase 5e.5b-CFC-d-120 carry-forward).
+     *       {@code ExponentialFittingHestonEngine} IS exercised.</li>
+     *   <li>The discrete-Simpson variant uses the Java fallback to adaptive
+     *       {@code SimpsonIntegral} at 256 evaluations (the C++
+     *       {@code DiscreteSimpsonIntegrator} is not yet ported). At 256 evals
+     *       this converges to the C++ reference within the {@code 1e-8} band.</li>
+     * </ul>
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:2036-2164} v1.42.1.
+     */
     @Test
-    public void testAndersenPiterbargPricing() { fail("not implemented"); }
+    public void testAndersenPiterbargPricing() {
+        final Date settlementDate = new Date(30, Month.March, 2017);
+        new Settings().setEvaluationDate(settlementDate);
 
-    @Ignore(REASON_AP)
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Handle<YieldTermStructure> riskFreeTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.10)), dayCounter));
+        final Handle<YieldTermStructure> dividendTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(0.06)), dayCounter));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+
+        final double v0    =  0.1;
+        final double rho   =  0.80;
+        final double sigma =  0.75;
+        final double kappa =  1.0;
+        final double theta =  0.1;
+
+        final HestonProcess process = new HestonProcess(riskFreeTS, dividendTS,
+                s0, v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+
+        // AP engines (C++ default andersenPiterbargEpsilon=1e-8 / 1e-9 per case).
+        final AnalyticHestonEngine apLaguerre = new AnalyticHestonEngine(
+                model, process,
+                AnalyticHestonEngine.ComplexLogFormula.AndersenPiterbarg,
+                AnalyticHestonEngine.Integration.gaussLaguerre());
+
+        final AnalyticHestonEngine apLobatto = new AnalyticHestonEngine(
+                model, process,
+                AnalyticHestonEngine.ComplexLogFormula.AndersenPiterbarg,
+                AnalyticHestonEngine.Integration.gaussLobatto(
+                        org.jquantlib.math.Constants.NULL_REAL, 1e-9, 10000, false))
+                    .withAndersenPiterbargEpsilon(1e-9);
+
+        final AnalyticHestonEngine apSimpson = new AnalyticHestonEngine(
+                model, process,
+                AnalyticHestonEngine.ComplexLogFormula.AndersenPiterbarg,
+                AnalyticHestonEngine.Integration.discreteSimpson(256))
+                    .withAndersenPiterbargEpsilon(1e-8);
+
+        final AnalyticHestonEngine apTrapezoid = new AnalyticHestonEngine(
+                model, process,
+                AnalyticHestonEngine.ComplexLogFormula.AndersenPiterbarg,
+                AnalyticHestonEngine.Integration.trapezoid(1e-8, 256))
+                    .withAndersenPiterbargEpsilon(1e-8);
+
+        final org.jquantlib.pricingengines.vanilla.ExponentialFittingHestonEngine apExpFitting =
+                new org.jquantlib.pricingengines.vanilla.ExponentialFittingHestonEngine(model);
+
+        final PricingEngine[] engines = {
+                apLaguerre, apLobatto, apSimpson, apTrapezoid, apExpFitting
+        };
+        final String[] algos = {
+                "Gauss-Laguerre", "Gauss-Lobatto",
+                "Discrete Simpson", "Trapezoid", "Exponential Fitting"
+        };
+
+        // Reference engine: Gatheral + Gauss-Laguerre at order 192.
+        final AnalyticHestonEngine analyticEngine =
+                new AnalyticHestonEngine(model, process, 192);
+
+        final Date[] maturityDates = {
+                settlementDate.add(new org.jquantlib.time.Period(1,
+                        org.jquantlib.time.TimeUnit.Days)),
+                settlementDate.add(new org.jquantlib.time.Period(1,
+                        org.jquantlib.time.TimeUnit.Weeks)),
+                settlementDate.add(new org.jquantlib.time.Period(1,
+                        org.jquantlib.time.TimeUnit.Years)),
+                settlementDate.add(new org.jquantlib.time.Period(10,
+                        org.jquantlib.time.TimeUnit.Years))
+        };
+
+        final Option.Type[] optionTypes = { Option.Type.Call, Option.Type.Put };
+        final double[] strikes = { 50, 75, 90, 100, 110, 130, 150, 200 };
+
+        final double tol = 1e-8;
+
+        for (final Date maturityDate : maturityDates) {
+            final Exercise exercise = new EuropeanExercise(maturityDate);
+
+            for (final Option.Type optionType : optionTypes) {
+                for (final double strike : strikes) {
+                    final VanillaOption option = new VanillaOption(
+                            new PlainVanillaPayoff(optionType, strike), exercise);
+
+                    option.setPricingEngine(analyticEngine);
+                    final double expected = option.NPV();
+
+                    for (int k = 0; k < engines.length; ++k) {
+                        option.setPricingEngine(engines[k]);
+                        final double calculated = option.NPV();
+                        final double error = Math.abs(calculated - expected);
+
+                        if (error > tol) {
+                            fail(" failed to reproduce prices with Andersen-"
+                                    + "Piterbarg control variate"
+                                    + "\n    algorithm      : " + algos[k]
+                                    + "\n    maturity       : " + maturityDate
+                                    + "\n    option type    : " + optionType
+                                    + "\n    strike         : " + strike
+                                    + "\n    control variate: " + calculated
+                                    + "\n    classic engine : " + expected
+                                    + "\n    difference:      " + error);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Phase 5e.5b-CFC-d-134 body-fill — port of C++
+     * {@code testAndersenPiterbargControlVariateIntegrand}
+     * (test-suite/hestonmodel.cpp:2166-2293). For each of eight control-variate
+     * variance choices (BS volatility built from {@code v0·T}, asymptotic mean
+     * variance, second moment, Corrado-Su skew/kurtosis correction, Rubinstein
+     * Edgeworth moment matching, implied vol, and the {@code chF}-implied
+     * limit), evaluates the AP integrand at a logarithmic sweep of frequencies
+     * {@code u ∈ [0.001, 15)} and asserts that the control-variate function
+     * stays below {@code 0.03} in absolute value — i.e. the CV always shrinks
+     * the bare integrand near {@code u → 0}.
+     *
+     * <p>This exercises {@link AnalyticHestonEngine#chF(Complex, double)},
+     * {@link COSHestonEngine#var(double)}, {@code skew}, {@code kurtosis} +
+     * {@link org.jquantlib.pricingengines.BlackFormula#blackFormulaImpliedStdDev}.
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:2166-2293} v1.42.1.
+     */
     @Test
-    public void testAndersenPiterbargControlVariateIntegrand() { fail("not implemented"); }
+    public void testAndersenPiterbargControlVariateIntegrand() {
+        final Date settlementDate = new Date(17, Month.April, 2017);
+        new Settings().setEvaluationDate(settlementDate);
+        final Date maturityDate = settlementDate.add(
+                new org.jquantlib.time.Period(2, org.jquantlib.time.TimeUnit.Years));
 
-    @Ignore(REASON_AP)
+        final DayCounter dayCounter = new Actual365Fixed();
+        final double r = 0.075;
+        final double q = 0.05;
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(r)), dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(settlementDate,
+                        new Handle<Quote>(new SimpleQuote(q)), dayCounter));
+
+        final double maturity = dayCounter.yearFraction(settlementDate, maturityDate);
+        final double df = rTS.currentLink().discount(maturity);
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(100.0));
+        final double fwd = s0.currentLink().value() * qTS.currentLink().discount(maturity) / df;
+
+        final double strike = 150.0;
+        final double sx = Math.log(strike);
+        final double dd = Math.log(s0.currentLink().value()
+                * qTS.currentLink().discount(maturity) / df);
+
+        final double v0    =  0.08;
+        final double rho   = -0.8;
+        final double sigma =  0.5;
+        final double kappa =  4.0;
+        final double theta =  0.05;
+
+        final HestonProcess process = new HestonProcess(rTS, qTS, s0,
+                v0, kappa, theta, sigma, rho);
+        final HestonModel hestonModel = new HestonModel(process);
+
+        final COSHestonEngine cosEngine = new COSHestonEngine(hestonModel, process);
+
+        final AnalyticHestonEngine engine = new AnalyticHestonEngine(
+                hestonModel, process,
+                AnalyticHestonEngine.ComplexLogFormula.AndersenPiterbarg,
+                AnalyticHestonEngine.Integration.gaussLaguerre());
+
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, strike),
+                new EuropeanExercise(maturityDate));
+        option.setPricingEngine(engine);
+
+        final double refNPV = option.NPV();
+
+        final double implStdDev =
+                org.jquantlib.pricingengines.BlackFormula.blackFormulaImpliedStdDev(
+                        Option.Type.Call, strike, fwd, refNPV, df);
+
+        final double var = cosEngine.var(maturity);
+        final double stdDev = Math.sqrt(var);
+
+        final double d = (Math.log(s0.currentLink().value() / strike)
+                + (r - q) * maturity + 0.5 * var) / stdDev;
+
+        final double skew = cosEngine.skew(maturity);
+        final double kurt = cosEngine.kurtosis(maturity);
+
+        final org.jquantlib.math.distributions.NormalDistribution n =
+                new org.jquantlib.math.distributions.NormalDistribution();
+
+        final double q3 = 1.0 / 6.0 * s0.currentLink().value() * stdDev * (2.0 * stdDev - d) * n.op(d);
+        final double q4 = 1.0 / 24.0 * s0.currentLink().value() * stdDev
+                * (d * d - 3.0 * d * stdDev - 1.0) * n.op(d);
+        final double q5 = 1.0 / 72.0 * s0.currentLink().value() * stdDev * (
+                d * d * d * d - 5.0 * d * d * d * stdDev - 6.0 * d * d
+                + 15.0 * d * stdDev + 3.0) * n.op(d);
+
+        final double bsNPV = org.jquantlib.pricingengines.BlackFormula.blackFormula(
+                Option.Type.Call, strike, fwd, stdDev, df);
+
+        // Eight CV variance choices, mirroring C++ verbatim.
+        final double[] variances = new double[8];
+        variances[0] = v0 * maturity;
+        variances[1] = ((1.0 - Math.exp(-kappa * maturity)) * (v0 - theta)
+                / (kappa * maturity) + theta) * maturity;
+        // 2: second moment.
+        variances[2] = var;
+        // 3-4: Corrado-Su skew (+ kurtosis) correction.
+        final double iv3 = org.jquantlib.pricingengines.BlackFormula.blackFormulaImpliedStdDev(
+                Option.Type.Call, strike, fwd, bsNPV + skew * q3, df);
+        variances[3] = iv3 * iv3;
+        final double iv4 = org.jquantlib.pricingengines.BlackFormula.blackFormulaImpliedStdDev(
+                Option.Type.Call, strike, fwd, bsNPV + skew * q3 + kurt * q4, df);
+        variances[4] = iv4 * iv4;
+        // 5: Rubinstein Edgeworth moment matching.
+        final double iv5 = org.jquantlib.pricingengines.BlackFormula.blackFormulaImpliedStdDev(
+                Option.Type.Call, strike, fwd,
+                bsNPV + skew * q3 + kurt * q4 + skew * skew * q5, df);
+        variances[5] = iv5 * iv5;
+        // 6: implied vol as control variate.
+        variances[6] = implStdDev * implStdDev;
+        // 7: chF-implied — remaining function -> 0 as u -> 0.
+        variances[7] = -8.0 * Math.log(engine.chF(
+                org.jquantlib.math.Complex.of(0.0, -0.5), maturity).real());
+
+        for (int i = 0; i < variances.length; ++i) {
+            final double sigmaBS = Math.sqrt(variances[i] / maturity);
+
+            for (double u = 0.001; u < 15.0; u *= 1.05) {
+                // z = (u, -0.5)
+                final org.jquantlib.math.Complex z =
+                        org.jquantlib.math.Complex.of(u, -0.5);
+
+                // phiBS = exp(-0.5 * sigmaBS^2 * T * (z^2 + i*z))
+                // where (i*z) = (-z.imag(), z.real())
+                final org.jquantlib.math.Complex zSquared = z.mul(z);
+                final org.jquantlib.math.Complex iz =
+                        org.jquantlib.math.Complex.of(-z.imag(), z.real());
+                final org.jquantlib.math.Complex phiBSArg =
+                        zSquared.add(iz).mul(-0.5 * sigmaBS * sigmaBS * maturity);
+                final org.jquantlib.math.Complex phiBS = phiBSArg.exp();
+
+                // ex = exp(i * u * (dd - sx))
+                final org.jquantlib.math.Complex ex =
+                        org.jquantlib.math.Complex.of(0.0, u * (dd - sx)).exp();
+
+                final org.jquantlib.math.Complex chf = engine.chF(z, maturity);
+
+                final double denom = u * u + 0.25;
+                final double orig = ex.neg().mul(chf).div(denom).real();
+                final double cv = ex.mul(phiBS.sub(chf)).div(denom).real();
+
+                if (Math.abs(cv) > 0.03) {
+                    fail(" Control variate function is greater "
+                            + "than original function"
+                            + "\n    control variate method  : " + i
+                            + "\n    z value                 : " + u
+                            + "\n    control variate function: " + cv
+                            + "\n    original function       : " + orig);
+                }
+            }
+        }
+    }
+
+    @Ignore(REASON_AP_DISCRETE_TRAPEZOID)
     @Test
     public void testAndersenPiterbargConvergence() { fail("not implemented"); }
 
-    @Ignore(REASON_AP)
+    /**
+     * Phase 5e.5b-CFC-d-134 body-fill — port of C++ {@code testOptimalControlVariateChoice}
+     * (test-suite/hestonmodel.cpp:3024-3054). Verifies
+     * {@link AnalyticHestonEngine#optimalControlVariate} returns
+     * {@link AnalyticHestonEngine.ComplexLogFormula#AsymptoticChF} for the
+     * high-vol-of-vol seed (v0=0.0225, sigma=2.0) and
+     * {@link AnalyticHestonEngine.ComplexLogFormula#AngledContour} when either
+     * sigma is small (0.05) or v0 is large (0.5).
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:3024-3054} v1.42.1.
+     */
     @Test
-    public void testOptimalControlVariateChoice() { fail("not implemented"); }
+    public void testOptimalControlVariateChoice() {
+        final double v0    = 0.0225;
+        final double rho   = 0.5;
+        final double sigma = 2.0;
+        final double kappa = 0.1;
+        final double theta = 0.01;
+        final double t     = 2.0;
 
-    @Ignore(REASON_AP)
+        AnalyticHestonEngine.ComplexLogFormula calculated =
+                AnalyticHestonEngine.optimalControlVariate(t, v0, kappa, theta, sigma, rho);
+        if (calculated != AnalyticHestonEngine.ComplexLogFormula.AsymptoticChF) {
+            fail("failed to reproduce optimal control variate choice"
+                    + "\n    expected:   AsymptoticChF"
+                    + "\n    calculated: " + calculated);
+        }
+
+        calculated = AnalyticHestonEngine.optimalControlVariate(t, v0, kappa, theta, 0.05, rho);
+        if (calculated != AnalyticHestonEngine.ComplexLogFormula.AngledContour) {
+            fail("failed to reproduce optimal control variate choice"
+                    + "\n    expected:   AngledContour (small sigma)"
+                    + "\n    calculated: " + calculated);
+        }
+
+        calculated = AnalyticHestonEngine.optimalControlVariate(t, 0.5, kappa, theta, sigma, rho);
+        if (calculated != AnalyticHestonEngine.ComplexLogFormula.AngledContour) {
+            fail("failed to reproduce optimal control variate choice"
+                    + "\n    expected:   AngledContour (large v0)"
+                    + "\n    calculated: " + calculated);
+        }
+    }
+
+    /**
+     * Phase 5e.5b-CFC-d-134 body-fill — port of C++ {@code testAsymptoticControlVariate}
+     * (test-suite/hestonmodel.cpp:3056-3149). Cross-validates three engines
+     * — {@code OptimalCV + GaussLobatto}, {@code OptimalCV + GaussLaguerre(96)},
+     * and {@link org.jquantlib.pricingengines.vanilla.ExponentialFittingHestonEngine}
+     * — against the C++ reference call/put prices over an extreme-moneyness
+     * grid ({@code m ∈ {-15, -10, -5, 0, 5, 10, 15}}) with tolerance {@code 5e-8}.
+     *
+     * <p>Also asserts the adaptive engines stay under 5000 function evaluations
+     * per pricing (a performance regression guard).
+     *
+     * <p>Source: {@code test-suite/hestonmodel.cpp:3056-3149} v1.42.1.
+     *
+     * <p><b>Currently @Ignore'd:</b> the seed (v0=0.0225, sigma=2.0) selects
+     * the {@link AnalyticHestonEngine.ComplexLogFormula#AsymptoticChF}
+     * control-variate branch via {@code optimalControlVariate(t, v0, ...)},
+     * and {@code AP_Helper.controlVariateValue()} for AsymptoticChF requires
+     * {@code ExponentialIntegral.Ci/Si} (Phase 5e.5b-CFC-d-134 carry-forward).
+     * Body kept in place to enable trivially once Ci/Si land.
+     */
+    @Ignore(REASON_AP_ASYMPTOTIC)
     @Test
-    public void testAsymptoticControlVariate() { fail("not implemented"); }
+    public void testAsymptoticControlVariate() {
+        final Date todaysDate = new Date(4, Month.August, 2020);
+        new Settings().setEvaluationDate(todaysDate);
 
-    @Ignore(REASON_AP)
+        final DayCounter dc = new Actual365Fixed();
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate,
+                        new Handle<Quote>(new SimpleQuote(0.0)), dc));
+
+        final Handle<Quote> s0 = new Handle<Quote>(new SimpleQuote(1.0));
+
+        final double v0    = 0.0225;
+        final double rho   = 0.5;
+        final double sigma = 2.0;
+        final double kappa = 0.1;
+        final double theta = 0.01;
+
+        final HestonProcess process = new HestonProcess(rTS, rTS, s0,
+                v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+
+        final Date maturityDate = todaysDate.add(
+                new org.jquantlib.time.Period(2, org.jquantlib.time.TimeUnit.Years));
+        final double t = dc.yearFraction(todaysDate, maturityDate);
+        final Exercise exercise = new EuropeanExercise(maturityDate);
+
+        final double[] moneynesses = { -15, -10, -5, 0, 5, 10, 15 };
+
+        final double[] expected = {
+                0.0074676425640918,
+                0.008680823863233695,
+                0.010479611906112223,
+                0.023590088942038945,
+                0.0019575784806211706,
+                0.0005490310253748906,
+                0.0001657118753134695
+        };
+
+        final PricingEngine[] engines = {
+                new AnalyticHestonEngine(model, process,
+                        AnalyticHestonEngine.ComplexLogFormula.OptimalCV,
+                        AnalyticHestonEngine.Integration.gaussLobatto(
+                                1e-10, 1e-10, 100000, false)),
+                new AnalyticHestonEngine(model, process,
+                        AnalyticHestonEngine.ComplexLogFormula.OptimalCV,
+                        AnalyticHestonEngine.Integration.gaussLaguerre(96)),
+                new org.jquantlib.pricingengines.vanilla.ExponentialFittingHestonEngine(model)
+        };
+
+        for (int j = 0; j < engines.length; ++j) {
+            for (int i = 0; i < moneynesses.length; ++i) {
+                final double moneyness = moneynesses[i];
+
+                final double strike = Math.exp(-moneyness * Math.sqrt(theta * t));
+
+                final PlainVanillaPayoff payoff = new PlainVanillaPayoff(
+                        strike > 1.0 ? Option.Type.Call : Option.Type.Put, strike);
+
+                final PricingEngine engine = engines[j];
+
+                final VanillaOption option = new VanillaOption(payoff, exercise);
+                option.setPricingEngine(engine);
+
+                final double calculated = option.NPV();
+
+                if (engine instanceof AnalyticHestonEngine) {
+                    final AnalyticHestonEngine ahe = (AnalyticHestonEngine) engine;
+                    if (ahe.numberOfEvaluations() > 5000) {
+                        fail("too many function valuation needed "
+                                + "\n  moneyness      : " + moneyness
+                                + "\n  evaluations    : " + ahe.numberOfEvaluations()
+                                + "\n  max evaluations: " + 5000);
+                    }
+                }
+
+                final double diff = Math.abs(calculated - expected[i]);
+                if (diff > 5e-8) {
+                    fail("failed to reproduce extreme Heston model values for"
+                            + "\n  moneyness : " + moneyness
+                            + "\n  #engine   : " + j
+                            + "\n  calculated: " + calculated
+                            + "\n  expected  : " + expected[i]
+                            + "\n  difference: " + diff
+                            + "\n  tolerance : " + 5e-8);
+                }
+            }
+        }
+    }
+
+    @Ignore(REASON_AP_ALPHA)
     @Test
     public void testOptimalAlphaKmin() { fail("not implemented"); }
 
-    @Ignore(REASON_AP)
+    @Ignore(REASON_AP_ALPHA)
     @Test
     public void testOptimalAlphaKmax() { fail("not implemented"); }
 
