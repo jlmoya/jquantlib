@@ -21,7 +21,9 @@ import org.jquantlib.instruments.DiscreteAveragingAsianOption;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.ContinuousAveragingAsianOption;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.asian.ContinuousArithmeticAsianLevyEngine;
 import org.jquantlib.pricingengines.asian.TurnbullWakemanAsianEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.quotes.Handle;
@@ -359,9 +361,127 @@ public class AsianOptionsAdditionalTest {
         }
     }
 
-    @Ignore(REASON_LEVY)
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testLevyEngine}.
+     *
+     * <p>Data from Haug, "Option Pricing Formulas", p. 99-100.  Verifies the
+     * Levy two-moment matching engine for continuously-averaged arithmetic
+     * Asian options against the published reference values, including
+     * seasoned options (where averaging has already begun before today).
+     *
+     * <p>Tolerance: LOOSE {@code 1e-4} — matches the C++ reference tolerance
+     * for this moment-matching approximation.
+     */
     @Test
-    public void testLevyEngine() { fail("not implemented"); }
+    public void testLevyEngine() {
+
+        final LevyCase[] cases = new LevyCase[] {
+            new LevyCase(Option.Type.Call,  6.80,   6.80,   6.90, 0.09, 0.07, 0.14, 180,   0, 0.0944),
+            new LevyCase(Option.Type.Put,   6.80,   6.80,   6.90, 0.09, 0.07, 0.14, 180,   0, 0.2237),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,   95.0, 0.05, 0.10, 0.15, 270,   0, 7.0544),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,   95.0, 0.05, 0.10, 0.15, 270,  90, 5.6731),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,   95.0, 0.05, 0.10, 0.15, 270, 180, 5.0806),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,   95.0, 0.05, 0.10, 0.35, 270,   0, 10.1213),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,   95.0, 0.05, 0.10, 0.35, 270,  90, 6.9705),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,   95.0, 0.05, 0.10, 0.35, 270, 180, 5.1411),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  100.0, 0.05, 0.10, 0.15, 270,   0, 3.7845),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  100.0, 0.05, 0.10, 0.15, 270,  90, 1.9964),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  100.0, 0.05, 0.10, 0.15, 270, 180, 0.6722),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  100.0, 0.05, 0.10, 0.35, 270,   0, 7.5038),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  100.0, 0.05, 0.10, 0.35, 270,  90, 4.0687),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  100.0, 0.05, 0.10, 0.35, 270, 180, 1.4222),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  105.0, 0.05, 0.10, 0.15, 270,   0, 1.6729),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  105.0, 0.05, 0.10, 0.15, 270,  90, 0.3565),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  105.0, 0.05, 0.10, 0.15, 270, 180, 0.0004),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  105.0, 0.05, 0.10, 0.35, 270,   0, 5.4071),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  105.0, 0.05, 0.10, 0.35, 270,  90, 2.1359),
+            new LevyCase(Option.Type.Call, 100.0, 100.0,  105.0, 0.05, 0.10, 0.35, 270, 180, 0.1552),
+        };
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        for (final LevyCase l : cases) {
+            final SimpleQuote spot = new SimpleQuote(l.spot);
+            final YieldTermStructure qTS = Utilities.flatRate(today, l.dividendYield, dc);
+            final YieldTermStructure rTS = Utilities.flatRate(today, l.riskFreeRate, dc);
+            final BlackVolTermStructure volTS = Utilities.flatVol(today, l.volatility, dc);
+
+            final AverageType averageType = AverageType.Arithmetic;
+            final SimpleQuote average = new SimpleQuote(l.currentAverage);
+
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(l.type, l.strike);
+
+            final Date startDate = today.sub(l.elapsed);
+            final Date maturity = startDate.add(l.length);
+
+            final Exercise exercise = new EuropeanExercise(maturity);
+
+            final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                    new Handle<Quote>(spot),
+                    new Handle<YieldTermStructure>(qTS),
+                    new Handle<YieldTermStructure>(rTS),
+                    new Handle<BlackVolTermStructure>(volTS));
+
+            final PricingEngine engine =
+                    new ContinuousArithmeticAsianLevyEngine(stochProcess,
+                            new Handle<Quote>(average));
+
+            final ContinuousAveragingAsianOption option =
+                    new ContinuousAveragingAsianOption(averageType, startDate, payoff, exercise);
+            option.setPricingEngine(engine);
+
+            final double calculated = option.NPV();
+            final double expected = l.result;
+            final double tolerance = 1.0e-4;
+            final double error = Math.abs(expected - calculated);
+            if (error > tolerance) {
+                fail("Asian option with Levy engine:"
+                        + "\n    spot:            " + l.spot
+                        + "\n    current average: " + l.currentAverage
+                        + "\n    strike:          " + l.strike
+                        + "\n    dividend yield:  " + l.dividendYield
+                        + "\n    risk-free rate:  " + l.riskFreeRate
+                        + "\n    volatility:      " + l.volatility
+                        + "\n    reference date:  " + today
+                        + "\n    length:          " + l.length
+                        + "\n    elapsed:         " + l.elapsed
+                        + "\n    expected value:  " + expected
+                        + "\n    calculated:      " + calculated
+                        + "\n    error:           " + error);
+            }
+        }
+    }
+
+    /** Local row-data holder for {@link #testLevyEngine}. */
+    private static final class LevyCase {
+        final Option.Type type;
+        final double spot;
+        final double currentAverage;
+        final double strike;
+        final double dividendYield;
+        final double riskFreeRate;
+        final double volatility;
+        final int length;   // days from startDate to maturity
+        final int elapsed;  // days from startDate to today
+        final double result;
+
+        LevyCase(final Option.Type type, final double spot, final double currentAverage,
+                 final double strike, final double dividendYield, final double riskFreeRate,
+                 final double volatility, final int length, final int elapsed,
+                 final double result) {
+            this.type = type;
+            this.spot = spot;
+            this.currentAverage = currentAverage;
+            this.strike = strike;
+            this.dividendYield = dividendYield;
+            this.riskFreeRate = riskFreeRate;
+            this.volatility = volatility;
+            this.length = length;
+            this.elapsed = elapsed;
+            this.result = result;
+        }
+    }
 
     @Ignore(REASON_VECER)
     @Test

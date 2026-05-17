@@ -49,6 +49,7 @@ import org.jquantlib.exercise.Exercise;
 import org.jquantlib.lang.reflect.ReflectConstants;
 import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.time.Date;
 
 /**
  * Description of the terms and conditions of a discrete average out fixed strike option.
@@ -58,13 +59,38 @@ import org.jquantlib.pricingengines.PricingEngine;
 public class ContinuousAveragingAsianOption extends OneAssetOption {
 
     protected AverageType averageType;
+    protected Date startDate;
 
+    /**
+     * Unseasoned (fresh) continuously-averaging Asian option — averaging has
+     * not yet started.
+     */
     public ContinuousAveragingAsianOption(
             final AverageType averageType,
             final StrikedTypePayoff payoff,
             final Exercise exercise) {
         super(payoff, exercise);
         this.averageType = averageType;
+        this.startDate = null;
+    }
+
+    /**
+     * Seasoned continuously-averaging Asian option — averaging has already
+     * started.  The {@code startDate} is a contract term specifying when
+     * averaging began; the current average (market data) should be provided
+     * to the pricing engine.
+     *
+     * <p>Port of {@code ContinuousAveragingAsianOption(Average::Type, Date,
+     * StrikedTypePayoff, Exercise)} from QuantLib v1.42.1.
+     */
+    public ContinuousAveragingAsianOption(
+            final AverageType averageType,
+            final Date startDate,
+            final StrikedTypePayoff payoff,
+            final Exercise exercise) {
+        super(payoff, exercise);
+        this.averageType = averageType;
+        this.startDate = startDate;
     }
 
     @Override
@@ -73,6 +99,7 @@ public class ContinuousAveragingAsianOption extends OneAssetOption {
         QL.require(ContinuousAveragingAsianOption.Arguments.class.isAssignableFrom(arguments.getClass()), ReflectConstants.WRONG_ARGUMENT_TYPE); // QA:[RG]::verified
         final ContinuousAveragingAsianOption.ArgumentsImpl a = (ContinuousAveragingAsianOption.ArgumentsImpl) arguments;
         a.averageType = averageType;
+        a.startDate = startDate;
     }
 
 
@@ -91,6 +118,7 @@ public class ContinuousAveragingAsianOption extends OneAssetOption {
 
         // FIXME: public fields here is a bad design technique :(
         public AverageType averageType;
+        public Date startDate;
 
 
         //
