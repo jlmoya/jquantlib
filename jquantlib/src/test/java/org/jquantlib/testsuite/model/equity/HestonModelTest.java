@@ -1994,13 +1994,121 @@ public class HestonModelTest {
         }
     }
 
-    @Ignore(REASON_AP_ALPHA)
+    /**
+     * Phase 5e.5b-CFC-d-153 port of C++ {@code testOptimalAlphaKmin}
+     * (test-suite/hestonmodel.cpp:3238-3303). Exercises
+     * {@link AnalyticHestonEngine.OptimalAlpha#alphaSmallerMinusOne(double)}
+     * for the figure-3 parameter set of Andersen &amp; Lake (2018,
+     * <i>Robust High-Precision Option Pricing by Fourier Transforms</i>):
+     * {@code (v0, kappa, theta, sigma, rho) = (0.01, 0.1, 0.01, 2.0, 0.8)},
+     * {@code spot = 150}, {@code strike = 100}, {@code T = 1y}.
+     *
+     * <p>Expected α* satisfies {@code |α* + 3.71| < 0.0051} (tolerance from C++).
+     *
+     * <p>The C++ test then re-prices the same option with the
+     * AngledContour CV and again with ExponentialFittingHestonEngine
+     * (OptimalCV) and asserts agreement to 1e-10 / 1e-8 respectively;
+     * those legs require ExponentialFittingHestonEngine wiring still in
+     * flight (see REASON_AP_ASYMPTOTIC) so we only assert the α* leg.
+     */
     @Test
-    public void testOptimalAlphaKmin() { fail("not implemented"); }
+    public void testOptimalAlphaKmin() {
+        final Date todaysDate = new Date(1, Month.January, 2023);
+        new Settings().setEvaluationDate(todaysDate);
 
-    @Ignore(REASON_AP_ALPHA)
+        final DayCounter dc = new Actual365Fixed();
+        final HestonProcess process = new HestonProcess(
+                new Handle<YieldTermStructure>(
+                        new FlatForward(todaysDate,
+                                new Handle<Quote>(new SimpleQuote(0.0)), dc)),
+                new Handle<YieldTermStructure>(
+                        new FlatForward(todaysDate,
+                                new Handle<Quote>(new SimpleQuote(0.0)), dc)),
+                new Handle<Quote>(new SimpleQuote(150.0)),
+                0.01, 0.1, 0.01, 2.0, 0.8);
+        final HestonModel model = new HestonModel(process);
+
+        final AnalyticHestonEngine engine = new AnalyticHestonEngine(
+                model, process,
+                AnalyticHestonEngine.ComplexLogFormula.Gatheral,
+                AnalyticHestonEngine.Integration.gaussLobatto(
+                        org.jquantlib.math.Constants.NULL_REAL, 1e-12, 100000, false));
+
+        final double strike = 100.0;
+        final double alphaStar = new AnalyticHestonEngine.OptimalAlpha(1.0, engine)
+                .alphaSmallerMinusOne(strike)[0];
+
+        // C++: QL_CHECK_SMALL(alphaStar + 3.71, 0.0051)  ⇒  |α* + 3.71| < 0.0051.
+        if (Math.abs(alphaStar + 3.71) > 0.0051) {
+            fail("alphaSmallerMinusOne failed to reproduce Andersen-Lake 2018 fig.3 reference:"
+                 + "\n  alphaStar  : " + alphaStar
+                 + "\n  expected   : -3.71"
+                 + "\n  difference : " + Math.abs(alphaStar + 3.71)
+                 + "\n  tolerance  : 0.0051");
+        }
+    }
+
+    /**
+     * Phase 5e.5b-CFC-d-153 port of C++ {@code testOptimalAlphaKmax}
+     * (test-suite/hestonmodel.cpp:3305-3353). Exercises
+     * {@link AnalyticHestonEngine.OptimalAlpha#alphaGreaterZero(double)} on
+     * four Heston parameter seeds chosen to cover all branches of
+     * {@code alphaMax}:
+     *
+     * <ol>
+     *   <li>case 1: {@code κ − σρ > 0} — α* ≈ 3.22615</li>
+     *   <li>case 2: {@code κ − σρ < 0, T < t_cut} — α* ≈ 0.31137</li>
+     *   <li>case 3: {@code κ − σρ < 0, T ≥ t_cut} — α* ≈ 0.11940</li>
+     *   <li>case 4: {@code κ − σρ == 0} — α* ≈ 0.28006</li>
+     * </ol>
+     *
+     * <p>C++ tolerance: {@code 1e-4} on each α*.
+     */
     @Test
-    public void testOptimalAlphaKmax() { fail("not implemented"); }
+    public void testOptimalAlphaKmax() {
+        final Date todaysDate = new Date(1, Month.January, 2022);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final DayCounter dc = new Actual365Fixed();
+        final Handle<YieldTermStructure> yTS = new Handle<YieldTermStructure>(
+                new FlatForward(todaysDate,
+                        new Handle<Quote>(new SimpleQuote(0.0)), dc));
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(75.0));
+        final double T = 2.0;
+        final double strike = 100.0;
+
+        // case 1: kappa - sigma*rho > 0
+        HestonProcess process = new HestonProcess(yTS, yTS, spot, 0.1, 1.2, 0.2, 0.2, -0.8);
+        HestonModel model = new HestonModel(process);
+        AnalyticHestonEngine engine = new AnalyticHestonEngine(model, process);
+        double alphaStar = new AnalyticHestonEngine.OptimalAlpha(T, engine)
+                .alphaGreaterZero(strike)[0];
+        assertEquals("case 1 (kappa - sigma*rho > 0)", 3.22615, alphaStar, 1e-4);
+
+        // case 2: kappa - sigma*rho < 0, T < t_cut
+        process = new HestonProcess(yTS, yTS, spot, 0.1, 1.2, 0.2, 1.5, 0.9);
+        model = new HestonModel(process);
+        engine = new AnalyticHestonEngine(model, process);
+        alphaStar = new AnalyticHestonEngine.OptimalAlpha(T, engine)
+                .alphaGreaterZero(strike)[0];
+        assertEquals("case 2 (kappa - sigma*rho < 0, T < t_cut)", 0.31137, alphaStar, 1e-4);
+
+        // case 3: kappa - sigma*rho < 0, T >= t_cut
+        process = new HestonProcess(yTS, yTS, spot, 0.1, 1.2, 0.2, 2.25, 0.9);
+        model = new HestonModel(process);
+        engine = new AnalyticHestonEngine(model, process);
+        alphaStar = new AnalyticHestonEngine.OptimalAlpha(T, engine)
+                .alphaGreaterZero(strike)[0];
+        assertEquals("case 3 (kappa - sigma*rho < 0, T >= t_cut)", 0.11940, alphaStar, 1e-4);
+
+        // case 4: kappa - sigma*rho == 0
+        process = new HestonProcess(yTS, yTS, spot, 0.1, 1.0, 0.2, 2.0, 0.5);
+        model = new HestonModel(process);
+        engine = new AnalyticHestonEngine(model, process);
+        alphaStar = new AnalyticHestonEngine.OptimalAlpha(T, engine)
+                .alphaGreaterZero(strike)[0];
+        assertEquals("case 4 (kappa - sigma*rho == 0)", 0.28006, alphaStar, 1e-4);
+    }
 
     /**
      * Phase Body-Fill-4 partial port of C++

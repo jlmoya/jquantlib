@@ -877,6 +877,356 @@ public class AnalyticHestonEngine
     }
 
     // ----------------------------------------------------------------------
+    // OptimalAlpha nested class — Phase 5e.5b-CFC-d-153 port of C++
+    // AnalyticHestonEngine::OptimalAlpha (Andersen & Lake, 2018,
+    // "Robust High-Precision Option Pricing by Fourier Transforms",
+    // analytichestonengine.{hpp,cpp} lines 278-446 / 298-446).
+    //
+    // Combines:
+    //   * Brent root-finder (org.jquantlib.math.solvers1D.Brent) for
+    //     alphaMin / alphaMax bracketing of the M(k) - t = 0 boundary.
+    //   * Brent 1-D minimiser (the embedded brent_find_minima helper)
+    //     that minimises the saddle-point value of the alpha-shifted
+    //     log-characteristic-function on the admissible intervals.
+    //
+    // Java does not have boost::math::tools::brent_find_minima, so the
+    // textbook Brent parabolic-interpolation / golden-section hybrid is
+    // ported inline below as findMinimum(...).
+    // ----------------------------------------------------------------------
+
+    /**
+     * Andersen-Lake (2018) optimal-α shift selector for the Andersen-Piterbarg
+     * Fourier-inversion pricer. Mirrors C++
+     * {@code AnalyticHestonEngine::OptimalAlpha} (v1.42.1,
+     * ql/pricingengines/vanilla/analytichestonengine.{hpp,cpp}).
+     *
+     * <p>Given the Heston parameters carried by the supplied
+     * {@link AnalyticHestonEngine} and a maturity {@code t}, the helper
+     * locates the {@code α} value that minimises the integrand peak in the
+     * Andersen-Piterbarg / Angled-Contour representation:
+     *
+     * <pre>
+     *   minimise<sub>α</sub> [ ln |χ(α+1, t)| − ln(α(α+1)) + α·ln(F/K) ]
+     * </pre>
+     *
+     * <p>Two admissible intervals exist: {@code α ∈ (0, alphaMax(K))} (call
+     * representation) and {@code α ∈ (alphaMin(K), -1)} (put representation).
+     * {@link #alphaGreaterZero(double)} / {@link #alphaSmallerMinusOne(double)}
+     * return the minimiser and the minimum on each interval, and
+     * {@link #operator(double)} picks the global minimum of the two.
+     *
+     * <p>The boundaries {@code alphaMax(K)} and {@code alphaMin(K)} are
+     * located via {@link org.jquantlib.math.solvers1D.Brent} on the function
+     * {@code M(k) − t} (Andersen-Lake 2018 eq. (3.7)). The 1-D minimiser is
+     * a textbook Brent parabolic/golden-section hybrid ported here from
+     * {@code boost::math::tools::brent_find_minima}, since JQuantLib does
+     * not yet have a standalone 1-D minimiser class.
+     */
+    public static final class OptimalAlpha {
+
+        private final double t_;
+        private final double fwd_;
+        private final double kappa_;
+        private final double theta_;
+        private final double sigma_;
+        private final double rho_;
+
+        /** Convergence epsilon; C++ {@code 2^-(0.5*Real::digits)} = 2^-26 ≈ 1.49e-8. */
+        private final double eps_;
+
+        private final AnalyticHestonEngine enginePtr_;
+        private final double km_;
+        private final double kp_;
+        private int evaluations_ = 0;
+
+        /**
+         * @param t          maturity (year fraction)
+         * @param enginePtr  AnalyticHestonEngine carrying the Heston model
+         *                   and process (must be non-null)
+         */
+        public OptimalAlpha(final double t,
+                            final AnalyticHestonEngine enginePtr) {
+            QL.require(enginePtr != null, "pricing engine required");
+            this.t_ = t;
+            this.enginePtr_ = enginePtr;
+            this.fwd_ = enginePtr.process_.s0().currentLink().value()
+                    * enginePtr.process_.dividendYield().currentLink().discount(t)
+                    / enginePtr.process_.riskFreeRate().currentLink().discount(t);
+            this.kappa_ = enginePtr.model.kappa();
+            this.theta_ = enginePtr.model.theta();
+            this.sigma_ = enginePtr.model.sigma();
+            this.rho_   = enginePtr.model.rho();
+            // C++: std::pow(2, -int(0.5*std::numeric_limits<Real>::digits))
+            // = 2^-(0.5*53) = 2^-26 ≈ 1.49e-8.
+            this.eps_ = Math.pow(2.0, -26);
+            this.km_ = k(0.0, -1);
+            this.kp_ = k(0.0,  1);
+        }
+
+        /**
+         * Upper-bound α for the {@code α > 0} call-representation interval.
+         * Mirrors C++ {@code OptimalAlpha::alphaMax(strike)}
+         * (analytichestonengine.cpp:316-354).
+         *
+         * @param strike  option strike (currently unused — mirrors C++ signature)
+         */
+        public double alphaMax(final double strike) {
+            final double eps = 1e-8;
+            final Ops.DoubleOp cm = u -> M(u) - t_;
+
+            final double alpha_max;
+            final double adx = kappa_ - sigma_ * rho_;
+            if (adx > 0.0) {
+                final double kp_2pi = k(2.0 * Math.PI, 1);
+                alpha_max = new Brent().solve(
+                        cm, eps_, 0.5 * (kp_ + kp_2pi),
+                        (1.0 + eps) * kp_, (1.0 - eps) * kp_2pi) - 1.0;
+            } else if (adx < 0.0) {
+                final double tCut = -2.0 / (kappa_ - sigma_ * rho_ * kp_);
+                if (t_ < tCut) {
+                    final double kp_pi = k(Math.PI, 1);
+                    alpha_max = new Brent().solve(
+                            cm, eps_, 0.5 * (kp_ + kp_pi),
+                            (1.0 + eps) * kp_, (1.0 - eps) * kp_pi) - 1.0;
+                } else {
+                    alpha_max = new Brent().solve(
+                            cm, eps_, 0.5 * (1.0 + kp_),
+                            1.0 + eps, (1.0 - eps) * kp_) - 1.0;
+                }
+            } else {
+                final double kp_pi = k(Math.PI, 1);
+                alpha_max = new Brent().solve(
+                        cm, eps_, 0.5 * (kp_ + kp_pi),
+                        (1.0 + eps) * kp_, (1.0 - eps) * kp_pi) - 1.0;
+            }
+            QL.require(alpha_max >= 0.0, "alpha max must be larger than zero");
+            return alpha_max;
+        }
+
+        /**
+         * Lower-bound α for the {@code α < -1} put-representation interval.
+         * Mirrors C++ {@code OptimalAlpha::alphaMin(strike)}
+         * (analytichestonengine.cpp:363-375).
+         */
+        public double alphaMin(final double strike) {
+            final Ops.DoubleOp cm = u -> M(u) - t_;
+            final double km_2pi = k(2.0 * Math.PI, -1);
+            final double alpha_min = new Brent().solve(
+                    cm, eps_, 0.5 * (km_2pi + km_),
+                    (1.0 - 1e-8) * km_2pi, (1.0 + 1e-8) * km_) - 1.0;
+            QL.require(alpha_min <= -1.0, "alpha min must be smaller than minus one");
+            return alpha_min;
+        }
+
+        /**
+         * Locate the minimum of the saddle-point function on the
+         * {@code (eps_, alphaMax)} call-representation interval. Returns the
+         * pair {@code {alphaStar, fStar}} where {@code fStar} is the function
+         * value at the minimiser. Mirrors C++ {@code alphaGreaterZero(strike)}
+         * (analytichestonengine.cpp:357-361).
+         */
+        public double[] alphaGreaterZero(final double strike) {
+            final double alpha_max = alphaMax(strike);
+            return findMinima(eps_, Math.max(2.0 * eps_, (1.0 - 1e-6) * alpha_max), strike);
+        }
+
+        /**
+         * Locate the minimum of the saddle-point function on the
+         * {@code (alphaMin, -1)} put-representation interval. Returns the
+         * pair {@code {alphaStar, fStar}}. Mirrors C++
+         * {@code alphaSmallerMinusOne(strike)} (analytichestonengine.cpp:377-385).
+         */
+        public double[] alphaSmallerMinusOne(final double strike) {
+            final double alpha_min = alphaMin(strike);
+            return findMinima(
+                    Math.min(-1.0 - 1e-6, -1.0 + (1.0 - 1e-6) * (alpha_min + 1.0)),
+                    -1.0 - eps_, strike);
+        }
+
+        /**
+         * Returns the globally optimal α — picking whichever of the two
+         * admissible-interval minima ({@code α &lt; -1} put, or {@code α &gt; 0}
+         * call) is smaller. Returns the safe fallback {@code -0.5} on any
+         * solver failure, mirroring C++.
+         * Mirrors C++ {@code operator()(strike)} (analytichestonengine.cpp:387-403).
+         */
+        public double operator(final double strike) {
+            try {
+                final double[] minusOne = alphaSmallerMinusOne(strike);
+                final double[] greaterZero = alphaGreaterZero(strike);
+                if (minusOne[1] < greaterZero[1]) {
+                    return minusOne[0];
+                }
+                return greaterZero[0];
+            } catch (final RuntimeException e) {
+                return -0.5;
+            }
+        }
+
+        /** Cumulative evaluations of the 1-D minimisation integrand. */
+        public int numberOfEvaluations() {
+            return evaluations_;
+        }
+
+        /**
+         * M(k) — Andersen-Lake (2018) auxiliary function that gives the
+         * critical maturity at which the moment generating function ceases
+         * to exist. Mirrors C++ {@code OptimalAlpha::M(k)}
+         * (analytichestonengine.cpp:424-438).
+         */
+        public double M(final double k) {
+            final double beta = kappa_ - sigma_ * rho_ * k;
+            if (k >= km_ && k <= kp_) {
+                final double D = Math.sqrt(beta * beta - sigma_ * sigma_ * k * (k - 1.0));
+                return Math.log((beta - D) / (beta + D)) / D;
+            } else {
+                final double D_imag = Math.sqrt(-(beta * beta - sigma_ * sigma_ * k * (k - 1.0)));
+                return 2.0 / D_imag
+                        * (((beta > 0.0) ? Math.PI : 0.0) - Math.atan(D_imag / beta));
+            }
+        }
+
+        /**
+         * k(x, sgn) — Andersen-Lake (2018) auxiliary, the inverse of M(k)
+         * branch corresponding to the requested sign. Mirrors C++
+         * {@code OptimalAlpha::k(x, sgn)} (analytichestonengine.cpp:440-446).
+         */
+        public double k(final double x, final int sgn) {
+            final double diff = sigma_ - 2.0 * rho_ * kappa_;
+            return (diff + sgn * Math.sqrt(diff * diff
+                        + 4.0 * (kappa_ * kappa_ + x * x / (t_ * t_)) * (1.0 - rho_ * rho_)))
+                   / (2.0 * sigma_ * (1.0 - rho_ * rho_));
+        }
+
+        /**
+         * 1-D minimisation of the saddle-point function on {@code [lower, upper]}.
+         * Mirrors C++ {@code findMinima(lower, upper, strike)}
+         * (analytichestonengine.cpp:409-422), which delegates to
+         * {@code boost::math::tools::brent_find_minima}.
+         *
+         * @return {@code {alphaStar, fStar}} two-element array
+         */
+        private double[] findMinima(final double lower, final double upper, final double strike) {
+            final double freq = Math.log(fwd_ / strike);
+            final Ops.DoubleOp f = alpha -> {
+                evaluations_++;
+                final Complex z = new Complex(0.0, -(alpha + 1.0));
+                return enginePtr_.lnChF(z, t_).real()
+                        - Math.log(alpha * (alpha + 1.0)) + alpha * freq;
+            };
+            // C++ passes int(0.5*Real::digits) = 26 as the bit-precision
+            // argument — Brent halts when (upper - lower) ≤ 2·t·|x| where
+            // t = 2^(1-bits). We emulate by passing eps_ as the tolerance.
+            return brentFindMinima(f, lower, upper, 26);
+        }
+
+        /**
+         * Brent's algorithm for finding the minimum of a unimodal function
+         * on an interval — parabolic interpolation with golden-section
+         * fallback. Direct port of {@code boost::math::tools::brent_find_minima}
+         * (Boost.Math 1.84, common-factor.hpp / minima.hpp), itself
+         * derived from R. P. Brent, <i>Algorithms for Minimization without
+         * Derivatives</i> (Prentice-Hall 1973), Chapter 5.
+         *
+         * @param f      function to minimise
+         * @param min    lower bound of search interval
+         * @param max    upper bound of search interval
+         * @param bits   number of bits of precision desired (≤ 26 for IEEE-754
+         *               double; bits = 26 ≈ tolerance 1.49e-8 in interval width)
+         * @return {@code {x_min, f(x_min)}}
+         */
+        private static double[] brentFindMinima(final Ops.DoubleOp f,
+                                                double min,
+                                                double max,
+                                                final int bits) {
+            // Reproduce Boost's tolerance: t = ldexp(1.0, 1 - bits).
+            final double t = Math.scalb(1.0, 1 - bits);
+            // Golden ratio: 0.5 * (3 - sqrt(5)).
+            final double golden = 0.5 * (3.0 - Math.sqrt(5.0));
+
+            double a = min, b = max;
+            double v = a + golden * (b - a);
+            double w = v;
+            double x = v;
+            double delta = 0.0;
+            double delta2 = 0.0;
+            double fv = f.op(v);
+            double fw = fv;
+            double fx = fv;
+            // Boost iterates until convergence; max-iterations is governed by
+            // bits/precision in the original — we cap at 200 (Boost's default
+            // is 100, but findMinima can be slow in deep regions; 200 is safe).
+            final int maxIters = 200;
+            for (int iter = 0; iter < maxIters; ++iter) {
+                final double mid = 0.5 * (a + b);
+                // Convergence test, identical to Boost: tolerance scales
+                // with |x| (relative) but never below t.
+                final double fract1 = t * Math.abs(x) + t / 4.0;
+                final double fract2 = 2.0 * fract1;
+                if (Math.abs(x - mid) <= (fract2 - 0.5 * (b - a))) {
+                    break;
+                }
+
+                double p = 0.0, q = 0.0, r = 0.0;
+                if (Math.abs(delta2) > fract1) {
+                    // Try parabolic fit.
+                    r = (x - w) * (fx - fv);
+                    q = (x - v) * (fx - fw);
+                    p = (x - v) * q - (x - w) * r;
+                    q = 2.0 * (q - r);
+                    if (q > 0.0) {
+                        p = -p;
+                    }
+                    q = Math.abs(q);
+                    final double td = delta2;
+                    delta2 = delta;
+                    // Accept parabolic step if it falls in (a, b) and is less
+                    // than half the previous step before last.
+                    if (Math.abs(p) >= Math.abs(0.5 * q * td)
+                            || p <= q * (a - x)
+                            || p >= q * (b - x)) {
+                        // Reject parabolic; fall back to golden-section.
+                        delta2 = (x >= mid) ? a - x : b - x;
+                        delta = golden * delta2;
+                    } else {
+                        // Parabolic accepted.
+                        delta = p / q;
+                        final double u = x + delta;
+                        if ((u - a) < fract2 || (b - u) < fract2) {
+                            delta = (mid - x < 0.0) ? -Math.abs(fract1) : Math.abs(fract1);
+                        }
+                    }
+                } else {
+                    // Step before-last too small — golden-section.
+                    delta2 = (x >= mid) ? a - x : b - x;
+                    delta = golden * delta2;
+                }
+
+                final double u = (Math.abs(delta) >= fract1)
+                        ? x + delta
+                        : (delta > 0.0 ? x + Math.abs(fract1) : x - Math.abs(fract1));
+                final double fu = f.op(u);
+
+                if (fu <= fx) {
+                    if (u >= x) { a = x; } else { b = x; }
+                    v = w; w = x; x = u;
+                    fv = fw; fw = fx; fx = fu;
+                } else {
+                    if (u < x) { a = u; } else { b = u; }
+                    if (fu <= fw || w == x) {
+                        v = w; w = u;
+                        fv = fw; fw = fu;
+                    } else if (fu <= fv || v == x || v == w) {
+                        v = u;
+                        fv = fu;
+                    }
+                }
+            }
+            return new double[] { x, fx };
+        }
+    }
+
+    // ----------------------------------------------------------------------
     // Integration nested class — Phase 5e.5b-CFC-d-120 port
     // ----------------------------------------------------------------------
 
