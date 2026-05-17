@@ -1,0 +1,165 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "component_diff": 1.1262962354690459e-05,
+        "cpn1a_rate": 0.020212602989110397,
+        "cpn1b_rate": 0.020201340026755707,
+        "spread_rate": 1.1262962354690459e-05
+      },
+      "inputs": {
+        "state": "no_fixings"
+      },
+      "name": "identity_ln_no_fixings"
+    },
+    {
+      "expected": {
+        "component_diff": 0.029798659973244296,
+        "cpn1a_rate": 0.05,
+        "cpn1b_rate": 0.020201340026755707,
+        "spread_rate": 0.029798659973244296
+      },
+      "inputs": {
+        "state": "one_fixing"
+      },
+      "name": "identity_ln_one_fixing"
+    },
+    {
+      "expected": {
+        "component_diff": 0.020000000000000004,
+        "cpn1a_rate": 0.05,
+        "cpn1b_rate": 0.03,
+        "spread_rate": 0.020000000000000004
+      },
+      "inputs": {
+        "state": "both_fixings"
+      },
+      "name": "identity_ln_both_fixings"
+    },
+    {
+      "expected": {
+        "rate": 0.000750878709963862
+      },
+      "inputs": {
+        "configuration": "plain",
+        "pricer": "ln"
+      },
+      "name": "plain_ln"
+    },
+    {
+      "expected": {
+        "rate": 0.0004274870535555494
+      },
+      "inputs": {
+        "configuration": "capped_at_0.03",
+        "pricer": "ln"
+      },
+      "name": "capped_ln"
+    },
+    {
+      "expected": {
+        "rate": 0.01177566933969961
+      },
+      "inputs": {
+        "configuration": "floored_at_0.01",
+        "pricer": "ln"
+      },
+      "name": "floored_ln"
+    },
+    {
+      "expected": {
+        "rate": 0.011452277683291297
+      },
+      "inputs": {
+        "configuration": "collared_0.01_0.03",
+        "pricer": "ln"
+      },
+      "name": "collared_ln"
+    },
+    {
+      "expected": {
+        "rate": 0.0003529500436387292
+      },
+      "inputs": {
+        "configuration": "plain",
+        "pricer": "sln"
+      },
+      "name": "plain_sln"
+    },
+    {
+      "expected": {
+        "rate": 0.00033960963736606807
+      },
+      "inputs": {
+        "configuration": "capped_at_0.03",
+        "pricer": "sln"
+      },
+      "name": "capped_sln"
+    },
+    {
+      "expected": {
+        "rate": 0.010662991642952318
+      },
+      "inputs": {
+        "configuration": "floored_at_0.01",
+        "pricer": "sln"
+      },
+      "name": "floored_sln"
+    },
+    {
+      "expected": {
+        "rate": 0.010649651236679656
+      },
+      "inputs": {
+        "configuration": "collared_0.01_0.03",
+        "pricer": "sln"
+      },
+      "name": "collared_sln"
+    },
+    {
+      "expected": {
+        "rate": 0.0021209155485561668
+      },
+      "inputs": {
+        "configuration": "plain",
+        "pricer": "n"
+      },
+      "name": "plain_n"
+    },
+    {
+      "expected": {
+        "rate": 0.0011839816985091513
+      },
+      "inputs": {
+        "configuration": "capped_at_0.03",
+        "pricer": "n"
+      },
+      "name": "capped_n"
+    },
+    {
+      "expected": {
+        "rate": 0.015100429935176664
+      },
+      "inputs": {
+        "configuration": "floored_at_0.01",
+        "pricer": "n"
+      },
+      "name": "floored_n"
+    },
+    {
+      "expected": {
+        "rate": 0.014163496085129648
+      },
+      "inputs": {
+        "configuration": "collared_0.01_0.03",
+        "pricer": "n"
+      },
+      "name": "collared_n"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-17T04:18:53Z",
+  "generated_by": "cms_spread_coupon_pricing_probe",
+  "test_group": "experimental/cms_spread_coupon_pricing"
+}
