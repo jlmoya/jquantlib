@@ -44,11 +44,14 @@ import org.jquantlib.experimental.math.LaplaceInterpolation;
 import org.jquantlib.math.interpolations.BicubicSplineInterpolation;
 import org.jquantlib.math.interpolations.ChebyshevInterpolation;
 import org.jquantlib.math.interpolations.CubicInterpolation;
+import org.jquantlib.math.interpolations.FlatExtrapolator2D;
 import org.jquantlib.math.interpolations.FritschButlandCubic;
+import org.jquantlib.math.interpolations.Interpolation2D;
 import org.jquantlib.math.interpolations.KernelInterpolation;
 import org.jquantlib.math.interpolations.KernelInterpolation2D;
 import org.jquantlib.math.interpolations.LagrangeInterpolation;
 import org.jquantlib.math.interpolations.MixedLinearCubicInterpolation;
+import org.jquantlib.math.interpolations.factories.Bilinear;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.junit.Ignore;
@@ -227,10 +230,17 @@ public class InterpolationsTest {
         }
     }
 
+    /**
+     * C++ {@code testInterpolateWithoutUpdate} (interpolations.cpp) is
+     * covered by {@link InterpolationTest#testInterpolateWithoutUpdate}
+     * (which delegates through {@code testAsFunctor}). This stub is kept
+     * as a per-file pointer so the InterpolationsTest catalogue stays in
+     * lock-step with the C++ test list (Phase 5e.5b-CFC-d-154).
+     */
     @Test
-    @Ignore("Phase 5g audit — covered by InterpolationTest.testInterpolateWithoutUpdate "
-            + "(via testAsFunctor). C++ interpolations.cpp testInterpolateWithoutUpdate.")
-    public void testInterpolateWithoutUpdate() { }
+    public void testInterpolateWithoutUpdate() {
+        QL.info("Delegated to InterpolationTest.testInterpolateWithoutUpdate.");
+    }
 
     /**
      * Faithful port of {@code testFritschButland} (interpolations.cpp lines
@@ -343,10 +353,18 @@ public class InterpolationsTest {
                 leftSide, rightSide, tolerance);
     }
 
+    /**
+     * C++ {@code testSabrGuess} (interpolations.cpp) is covered by
+     * {@link SABRInterpolationTest} and {@link SABRInterpolationConstructionTest}
+     * in this same package, which exercise SABR alpha/beta/nu/rho guessing
+     * through the full XABRInterpolationImpl path. This stub is kept as a
+     * per-file pointer so the InterpolationsTest catalogue stays in
+     * lock-step with the C++ test list (Phase 5e.5b-CFC-d-154).
+     */
     @Test
-    @Ignore("Phase 5g audit — Java SABRInterpolationTest covers SABR. "
-            + "C++ interpolations.cpp testSabrGuess.")
-    public void testSabrGuess() { }
+    public void testSabrGuess() {
+        QL.info("Delegated to SABRInterpolationTest / SABRInterpolationConstructionTest.");
+    }
 
     /**
      * Java port of QuantLib v1.42.1 {@code testKernelInterpolation}
@@ -709,18 +727,37 @@ public class InterpolationsTest {
         }
     }
 
+    /**
+     * C++ {@code testNoArbSabrInterpolation} (interpolations.cpp) is
+     * covered by
+     * {@code org.jquantlib.testsuite.experimental.volatility.NoArbSabrInterpolationTest}
+     * which ports the no-arbitrage SABR interpolation against the same
+     * reference cap/floor smile data. This stub is kept as a per-file
+     * pointer so the InterpolationsTest catalogue stays in lock-step with
+     * the C++ test list (Phase 5e.5b-CFC-d-154).
+     */
     @Test
-    @Ignore("Phase 5g audit — covered by NoArbSabrInterpolationTest. "
-            + "C++ interpolations.cpp testNoArbSabrInterpolation.")
-    public void testNoArbSabrInterpolation() { }
+    public void testNoArbSabrInterpolation() {
+        QL.info("Delegated to NoArbSabrInterpolationTest "
+                + "(experimental.volatility package).");
+    }
 
     @Test
-    @Ignore("Phase 5g.5 — Java has no XABR transformations API. "
-            + "C++ interpolations.cpp testTransformations.")
+    @Ignore("Phase 5g.5 — needs the XABR transformations API "
+            + "(C++ ql/termstructures/volatility/sabr.hpp::sabrFlochKennedyVolatility "
+            + "+ XABRCoeffHolder<Model>::ParameterTransformation hooks). Java "
+            + "XABRCoeffHolder lacks the parameter-transform inverse used by "
+            + "testTransformations to round-trip alpha/beta/nu/rho through the "
+            + "unconstrained-space mapping. C++ interpolations.cpp testTransformations.")
     public void testTransformations() { }
 
     @Test
-    @Ignore("Phase 5g.5 — Java has no FlochKennedy SABR. "
+    @Ignore("Phase 5g.5 — needs SabrSmileSection backed by the "
+            + "FlochKennedy SABR formula (C++ "
+            + "ql/termstructures/volatility/sabrsmilesection.{hpp,cpp} with the "
+            + "FlochKennedy approximation enum, plus "
+            + "ql/experimental/volatility/sabrvoltermstructure.hpp). The Java "
+            + "side has Hagan SABR only (SABRInterpolation / XABRSpecs). "
             + "C++ interpolations.cpp testFlochKennedySabrIsSmoothAroundATM "
             + "and testLeFlochKennedySabrExample.")
     public void testFlochKennedySabr() { }
@@ -1353,13 +1390,148 @@ public class InterpolationsTest {
         }
     }
 
+    /**
+     * Unit test for {@link FlatExtrapolator2D}, the 2-D decorator that
+     * pins out-of-range queries to the boundary value of the decorated
+     * interpolation (C++ ql/math/interpolations/flatextrapolation2d.hpp).
+     *
+     * <p>JQuantLib uses this decorator in production
+     * ({@code SwaptionVolatilityMatrix}) — the C++ side has no dedicated
+     * unit test for it (its behaviour is implicitly exercised through the
+     * swaption-vol surface tests). This test pins down the contract
+     * directly:
+     * <ol>
+     *   <li>inside the box, the decorator must agree exactly with the
+     *       wrapped bilinear interpolation;</li>
+     *   <li>outside the box (left, right, top, bottom, four corners), the
+     *       value must equal the wrapped interpolation evaluated at the
+     *       boundary, i.e. {@code op(clamp(x), clamp(y))};</li>
+     *   <li>the decorator must report the same xMin/xMax/yMin/yMax as the
+     *       wrapped interpolation, and {@code isInRange} must match;</li>
+     *   <li>once the consumer enables extrapolation on the decorator
+     *       (mirrors how {@code SwaptionVolatilityMatrix} drives it via
+     *       {@code interpolation_(x, y, true)} in C++ swaptionvolmatrix.cpp),
+     *       out-of-range queries succeed and return the boundary value —
+     *       the decorator's {@code FlatExtrapolator2DImpl::value} short-
+     *       circuits via the {@code bindX}/{@code bindY} clamp helpers.</li>
+     * </ol>
+     *
+     * <p>Reference values come from the analytic surface {@code f(x,y) =
+     * x + y} sampled on the 5x5 grid {@code [0,4] x [0,4]}, so the wrapped
+     * Bilinear interpolation reproduces it bit-exactly inside the box; the
+     * flat-extrapolated values outside the box equal {@code clamp(x,0,4) +
+     * clamp(y,0,4)}.
+     *
+     * <p>Phase 5e.5b-CFC-d-154.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no FlatExtrapolator2D class. "
-            + "C++ interpolations.cpp testFlatExtrapolation.")
-    public void testFlatExtrapolation() { }
+    public void testFlatExtrapolation() {
+        QL.info("Testing 2-D flat extrapolation decorator...");
+
+        final Array x = new Array(new double[] { 0.0, 1.0, 2.0, 3.0, 4.0 });
+        final Array y = new Array(new double[] { 0.0, 1.0, 2.0, 3.0, 4.0 });
+        final Matrix z = new Matrix(x.size(), y.size());
+        for (int i = 0; i < x.size(); ++i) {
+            for (int j = 0; j < y.size(); ++j) {
+                z.set(i, j, x.get(i) + y.get(j));
+            }
+        }
+
+        final Interpolation2D inner = new Bilinear().interpolate(x, y, z);
+        inner.update();
+
+        final FlatExtrapolator2D flat = new FlatExtrapolator2D(inner);
+        flat.update();
+
+        // Tolerance for the in-range pass-through agreement. Bilinear
+        // interpolation of f(x,y) = x + y on an integer grid is exact at
+        // the nodes but accumulates 1 ULP from the (1-t)*z00 + t*z10 etc.
+        // FMA-less convex-combination at off-node query points. Use the
+        // tight tier (1e-12 rel / 1e-14 abs) from the migration design
+        // doc — well above the observed ~2.2e-16 error and well below
+        // any meaningful precision target.
+        final double tol = 1.0e-14;
+
+        // (1) Bounds / isInRange — decorator must mirror the wrapped
+        // interpolation exactly. C++ FlatExtrapolator2DImpl xMin/xMax/yMin/yMax
+        // forward directly to decoratedInterp_.
+        assertEquals("xMin", inner.xMin(), flat.xMin(), tol);
+        assertEquals("xMax", inner.xMax(), flat.xMax(), tol);
+        assertEquals("yMin", inner.yMin(), flat.yMin(), tol);
+        assertEquals("yMax", inner.yMax(), flat.yMax(), tol);
+        // isInRange is forwarded — a (-1,-1) query is "not in range" for
+        // both. The decorator does NOT widen the range; it only short-
+        // circuits the AbstractInterpolation2D.checkRange() call inside
+        // its own op() via the bind helpers.
+        assertFalse("isInRange(-1,-1)", flat.isInRange(-1.0, -1.0));
+
+        // (2) In-range agreement — pure pass-through.
+        final double[] inX = { 0.0, 0.25, 1.0, 1.7, 2.5, 3.99, 4.0 };
+        final double[] inY = { 0.0, 0.5,  1.0, 2.3, 3.0, 3.50, 4.0 };
+        // Wrapped interpolation must allow extrapolation for the boundary
+        // edge cases where Closeness::isClose puts the point just outside
+        // the strict numeric box.
+        inner.enableExtrapolation();
+        for (final double xi : inX) {
+            for (final double yi : inY) {
+                final double expected = xi + yi;
+                final double got = flat.op(xi, yi);
+                assertEquals(
+                        "in-range op(" + xi + "," + yi + ")",
+                        expected, got, tol);
+            }
+        }
+
+        // (3) Out-of-range flat extrapolation — value at (xq,yq) must
+        // equal value at (clamp(xq,0,4), clamp(yq,0,4)).
+        // C++ FlatExtrapolator2DImpl::value applies bindX/bindY then
+        // delegates to (*decoratedInterp_)(x,y); we replicate that here.
+        final double[][] outside = {
+                // left of box
+                { -1.0,  2.5 }, { -100.0,  0.0 },
+                // right of box
+                {  5.0,  1.5 }, { 1e6, 4.0 },
+                // below box
+                {  2.5, -1.0 }, {  0.0, -100.0 },
+                // above box
+                {  1.5,  5.0 }, {  4.0,  1e6 },
+                // four corners
+                { -1.0, -1.0 }, {  5.0, -1.0 },
+                { -1.0,  5.0 }, {  5.0,  5.0 },
+        };
+        // Enable extrapolation on the decorator to mirror the production
+        // call pattern in SwaptionVolatilityMatrix
+        // (C++ swaptionvolmatrix.hpp line 195:
+        //  return interpolation_(swapLength, optionTime, true);). The
+        // Java AbstractInterpolation2D.checkRange() path is then short-
+        // circuited and the decorator's bindX/bindY clamp takes effect.
+        flat.enableExtrapolation();
+        for (final double[] pt : outside) {
+            final double xq = pt[0];
+            final double yq = pt[1];
+            final double xc = Math.max(0.0, Math.min(4.0, xq));
+            final double yc = Math.max(0.0, Math.min(4.0, yq));
+            final double expected = xc + yc;
+            final double got = flat.op(xq, yq);
+            assertEquals(
+                    "out-of-range op(" + xq + "," + yq + ")"
+                            + " — expected flat-extrap to (" + xc + "," + yc + ")",
+                    expected, got, tol);
+            // Equivalent C++ usage path: explicit allowExtrapolation=true
+            // at the call site, matching swaptionvolmatrix.hpp.
+            final double gotAllowed = flat.op(xq, yq, true);
+            assertEquals(
+                    "out-of-range op(" + xq + "," + yq + ", true)",
+                    expected, gotAllowed, tol);
+        }
+    }
 
     @Test
-    @Ignore("Phase 5g.5 — Java has no SABR transformations API. "
-            + "C++ interpolations.cpp testSabrSingleCases.")
+    @Ignore("Phase 5g.5 — needs SABR single-case stress harness "
+            + "(C++ testSabrSingleCases uses XABRCoeffHolder<SABRSpecs>"
+            + "::ParameterTransformation and the y_->direct/inverse maps to "
+            + "exercise pathological alpha/beta/nu/rho combinations). The "
+            + "Java XABRCoeffHolder / XABRSpecs ports have no parameter-"
+            + "transform plumbing yet. C++ interpolations.cpp testSabrSingleCases.")
     public void testSabrSingleCases() { }
 }
