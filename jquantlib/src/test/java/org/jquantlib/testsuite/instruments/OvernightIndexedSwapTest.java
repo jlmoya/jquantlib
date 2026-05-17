@@ -19,7 +19,11 @@ import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.indexes.Euribor3M;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.indexes.ibor.Eonia;
+import org.jquantlib.indexes.ibor.FedFunds;
+import org.jquantlib.indexes.ibor.Sofr;
+import org.jquantlib.indexes.ibor.Sonia;
 import org.jquantlib.instruments.MakeOIS;
 import org.jquantlib.instruments.OvernightIndexedSwap;
 import org.jquantlib.instruments.VanillaSwap;
@@ -28,6 +32,8 @@ import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.testsuite.util.Flag;
+import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.termstructures.Bootstrap;
 import org.jquantlib.termstructures.IterativeBootstrap;
 import org.jquantlib.termstructures.RateHelper;
@@ -78,11 +84,19 @@ import org.junit.Test;
  *       non-telescopic for a seasoned swap with historical fixings.
  * </ul>
  *
- * <p><strong>Deferred (still @Ignore'd):</strong> 9 cases either need
- * production work (lookback/lockout/observation-shift MakeOIS; multi-nominal
- * OIS constructors; MakeOIS default-settlement-days table; FedFunds OIS + Pillar
- * enum hooks in OISRateHelper; OISRateHelper.withCouponPricer for custom
- * arithmetic pricer; Flag-based observable wiring), out of scope for body-fill.
+ * <p><strong>Body-fills (Phase 5e.5b-CFC-d-121, additional):</strong>
+ * {@link #testNotifications()}, {@link #testMakeOISDefaultSettlementDays()}
+ * (with a divergence note — restricted to indices ported to JQL), and
+ * {@link #testMakeOisEndOfMonthRegression2453()} (with Eonia/TARGET
+ * substitution for the unported Aonia).
+ *
+ * <p><strong>Deferred (still @Ignore'd):</strong> 4 cases need
+ * production work in OISRateHelper that is out of scope:
+ * {@code testBootstrapWithCustomPricer} (OISRateHelper.withCouponPricer);
+ * {@code testBootstrapRegression} (Pillar::MaturityDate enum hook);
+ * {@code test131BootstrapRegression} (date-based OISRateHelper ctor);
+ * {@code testBootstrapWithDifferentCalendars} (Pillar::LastRelevantDate +
+ * separate fixing/payment calendar + DateGeneration in OISRateHelper).
  *
  * <p>Source: {@code test-suite/overnightindexedswap.cpp} v1.42.1 @
  * {@code 099987f0ca}.
@@ -886,9 +900,190 @@ public class OvernightIndexedSwapTest {
         assertArrayEquals("ois4 overnightNominals", floatN4, ois4.overnightNominals(), 0.0);
     }
 
-    @Ignore(REASON_NOTIFY) @Test public void testNotifications() { fail("not implemented"); }
-    @Ignore(REASON_MAKE_OIS) @Test public void testMakeOISDefaultSettlementDays() { fail("not implemented"); }
-    @Ignore(REASON_MAKE_OIS) @Test public void testMakeOisEndOfMonthRegression2453() { fail("not implemented"); }
+    /**
+     * Port of C++ {@code testNotifications}
+     * (overnightindexedswap.cpp:910-949).
+     *
+     * <p>Verifies that after registering a {@link Flag} with an OIS and
+     * relinking the forecasting yield-curve handle, the OIS observer fires.
+     * {@code DefaultObservable.notifyObservers} propagates through the
+     * {@link OvernightIndex} chain.
+     */
+    @Test
+    public void testNotifications() {
+        QL.info("Testing cash-flow notifications for OIS...");
+
+        final CommonVars vars = new CommonVars();
+
+        final Date spot = vars.calendar.advance(vars.today,
+                new Period(2, TimeUnit.Days), BusinessDayConvention.Following);
+        final double nominal = 100000.0;
+
+        final Date end = vars.calendar.advance(spot,
+                new Period(2, TimeUnit.Years), BusinessDayConvention.Following);
+        final Schedule schedule = new MakeSchedule()
+                .from(spot)
+                .to(end)
+                .withCalendar(vars.calendar)
+                .withFrequency(Frequency.Annual)
+                .schedule();
+
+        final RelinkableHandle<YieldTermStructure> forecastHandle =
+                new RelinkableHandle<YieldTermStructure>();
+        forecastHandle.linkTo(Utilities.flatRate(
+                vars.today, 0.02, new Actual360()));
+
+        final RelinkableHandle<YieldTermStructure> discountHandle =
+                new RelinkableHandle<YieldTermStructure>();
+        discountHandle.linkTo(Utilities.flatRate(
+                vars.today, 0.02, new Actual360()));
+
+        final Eonia index = new Eonia(forecastHandle);
+
+        final OvernightIndexedSwap ois = new OvernightIndexedSwap(
+                VanillaSwap.Type.Payer, nominal, schedule, 0.03,
+                new Actual360(), index);
+        ois.setPricingEngine(new DiscountingSwapEngine(discountHandle));
+        ois.NPV();
+
+        final Flag flag = new Flag();
+        ois.addObserver(flag);
+        flag.lower();
+
+        forecastHandle.linkTo(Utilities.flatRate(
+                vars.today, 0.03, new Actual360()));
+
+        if (!flag.isUp()) {
+            fail("OIS was not notified of curve change");
+        }
+    }
+
+    /**
+     * Port of C++ {@code testMakeOISDefaultSettlementDays}
+     * (overnightindexedswap.cpp:951-1025).
+     *
+     * <p>Verifies that {@link MakeOIS} applies the correct default settlement
+     * days per overnight index (SONIA = 0, others = 2), respects manual
+     * overrides via {@code withSettlementDays(...)}, and rolls weekend
+     * evaluation dates forward correctly.
+     *
+     * <p><strong>Divergence:</strong> the C++ test exercises 13 overnight
+     * indices including CORRA (1-day settlement), AONIA, TONAR, SARON, NZOCR,
+     * ESTR, DESTR, SWESTR, KOFR — none of these are ported to JQuantLib yet.
+     * This Java port restricts coverage to {@link Sonia} (0-day),
+     * {@link Eonia} / {@link FedFunds} / {@link Sofr} (2-day); the 1-day
+     * branch (CORRA) is therefore not exercised here. Behavior of the
+     * remaining indices is identical: the Java {@code MakeOIS} only
+     * special-cases {@code SONIA} (= 0) vs the 2-day default.
+     */
+    @Test
+    public void testMakeOISDefaultSettlementDays() {
+        QL.info("Testing default settlement days in MakeOIS...");
+
+        final Date today = new Date(12, Month.May, 2025);
+        new Settings().setEvaluationDate(today);
+
+        // (name, index) pairs covering the indices ported to JQuantLib.
+        // Use a parallel array structure to mirror the C++ vector<pair>.
+        final String[] names = { "SONIA", "EONIA", "FedFunds", "SOFR" };
+        final OvernightIndex[] indices = {
+                new Sonia(),
+                new Eonia(),
+                new FedFunds(),
+                new Sofr()
+        };
+
+        // Test default settlement days.
+        for (int i = 0; i < names.length; i++) {
+            final String name = names[i];
+            final OvernightIndex index = indices[i];
+            final OvernightIndexedSwap swap = new MakeOIS(
+                    new Period(6, TimeUnit.Months), index, 0.01).value();
+            final Date expected;
+            if ("SONIA".equals(name)) {
+                expected = today; // T+0 settlement for SONIA
+            } else {
+                expected = today.add(new Period(2, TimeUnit.Days)); // T+2 default
+            }
+            assertEquals("default settlement startDate (" + name + ")",
+                         expected, swap.startDate());
+        }
+
+        // Test manual override: settlementDays = 1 for all.
+        for (int i = 0; i < names.length; i++) {
+            final String name = names[i];
+            final OvernightIndex index = indices[i];
+            final int override = 1;
+            final OvernightIndexedSwap swap = new MakeOIS(
+                    new Period(6, TimeUnit.Months), index, 0.01)
+                    .withSettlementDays(override)
+                    .value();
+            final Date expected = today.add(new Period(override, TimeUnit.Days));
+            assertEquals("override settlement startDate (" + name + ")",
+                         expected, swap.startDate());
+        }
+
+        // Test weekend handling: Sat 10 May 2025.
+        final Date weekend = new Date(10, Month.May, 2025);
+        new Settings().setEvaluationDate(weekend);
+
+        // SONIA: 0-day → first business day = Mon 12 May 2025.
+        {
+            final OvernightIndexedSwap swap = new MakeOIS(
+                    new Period(6, TimeUnit.Months), indices[0], 0.01).value();
+            assertEquals("SONIA weekend startDate",
+                         new Date(12, Month.May, 2025), swap.startDate());
+        }
+        // EONIA: 2-day → first biz day (Mon) + 2 biz days = Wed 14 May 2025.
+        {
+            final OvernightIndexedSwap swap = new MakeOIS(
+                    new Period(6, TimeUnit.Months), indices[1], 0.01).value();
+            assertEquals("EONIA weekend startDate",
+                         new Date(14, Month.May, 2025), swap.startDate());
+        }
+    }
+
+    /**
+     * Port of C++ {@code testMakeOisEndOfMonthRegression2453}
+     * (overnightindexedswap.cpp:1027-1044).
+     *
+     * <p>QuantLib issue #2453: before the fix, an OIS built with
+     * {@code withSettlementDays(1).withEndOfMonth(true)} on a non-EOM
+     * evaluation date would roll backward from the day-after-tenor-end
+     * (creating a front stub) instead of from the exact tenor-end date.
+     *
+     * <p><strong>Divergence:</strong> the C++ test uses {@code Aonia}
+     * (Australia calendar); this is not ported to JQuantLib. We substitute
+     * {@link Eonia} (TARGET calendar). The dates {@code 17 December 2025}
+     * (Wed) and {@code 17 December 2026} (Thu) are both TARGET business
+     * days, so the substitution preserves the regression check: the first
+     * overnight period must run from the exact start date to start + 1 year,
+     * with no front stub.
+     */
+    @Test
+    public void testMakeOisEndOfMonthRegression2453() {
+        QL.info("Testing end-of-month regression in MakeOIS...");
+
+        final Date today = new Date(16, Month.December, 2025);
+        new Settings().setEvaluationDate(today);
+
+        final Handle<YieldTermStructure> yts = new Handle<YieldTermStructure>(
+                Utilities.flatRate(today, 0.03, new Actual365Fixed()));
+        final Eonia eonia = new Eonia(yts);
+        final OvernightIndexedSwap swap = new MakeOIS(
+                new Period(3, TimeUnit.Years), eonia, 0.0)
+                .withSettlementDays(1)
+                .withEndOfMonth(true)
+                .value();
+
+        assertEquals("overnightSchedule[0]",
+                     new Date(17, Month.December, 2025),
+                     swap.overnightSchedule().date(0));
+        assertEquals("overnightSchedule[1]",
+                     new Date(17, Month.December, 2026),
+                     swap.overnightSchedule().date(1));
+    }
+
 
     /**
      * Port of C++ {@code testSettlementDaysEffectiveDateConflict}
