@@ -50,51 +50,21 @@ import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * Phase 5e.5b-CFC-d-81 port of {@code test-suite/crosscurrencyratehelpers.cpp}
- * v1.42.1 (755 LOC, 16 test cases).
+ * Phase 5e.5b-CFC-d-81 / activated Phase 5e.5b-CFC-d-87 port of
+ * {@code test-suite/crosscurrencyratehelpers.cpp} v1.42.1 (755 LOC,
+ * 16 test cases).
  *
  * <p>Cross-validated against C++ QuantLib v1.42.1
- * via the {@code crosscurrency_probe} (see
- * {@code migration-harness/cpp/probes/experimental/crosscurrency_probe.cpp}
- * and {@code migration-harness/references/experimental/crosscurrency.json}).
- *
- * <p>Pin convention: the C++ test fixture pins
- * {@code today = TARGET.adjust(6-Sep-2013)}, {@code curveSettlementDays = 0}
- * (so {@code curveSettlementDt = today}), {@code instrumentSettlementDays = 2},
- * {@code calendar = TARGET}, {@code endOfMonth = false},
- * {@code dayCount = Actual365Fixed}, {@code basisPoint = 1e-4},
- * {@code fxSpot = 1.25}; flat forward curves at 0.7% (EUR) and 1.5% (USD);
- * 11 quote points (1Y, 18M, 2Y, 3Y, 4Y, 5Y, 7Y, 10Y, 15Y, 20Y, 30Y)
- * with basis spreads from Moreni & Pallavicini (2015) Table 2.
- *
- * <p>The expected values pinned below are <strong>continuously compounded
- * zero rates</strong> at each helper's {@code maturityDate} on the bootstrapped
- * {@code PiecewiseYieldCurve<Discount, LogLinear>}. The four constant-notional
- * cases use a tight tolerance (1e-12); the resetting cases compare the
- * resetting bootstrap against the constant-notional bootstrap with the same
- * tolerance as C++ ({@code 5e-4} = 5 basis points, since the resetting and
- * non-resetting curves are only expected to differ by a few bps).
- *
- * <h3>Source</h3>
- * {@code test-suite/crosscurrencyratehelpers.cpp} v1.42.1
- * @ {@code 099987f0ca}.
+ * via the {@code crosscurrency_probe}.
  */
 public class CrossCurrencyRateHelpersTest {
 
-    // -------------------------------------------------------------------------
-    // Common fixture
-    // -------------------------------------------------------------------------
-
     private static final double BASIS_POINT = 1.0e-4;
     private static final double FX_SPOT = 1.25;
-
-    /** Constant-notional bootstrap tolerance (C++ uses 1e-12 in NPV). */
     private static final double TIGHT_TOL = 1.0e-12;
-    /** Resetting vs constant-notional tolerance (C++ uses 5 * 1e-4). */
     private static final double LOOSE_TOL = 5.0e-4;
 
     private Date savedEvalDate;
@@ -106,14 +76,12 @@ public class CrossCurrencyRateHelpersTest {
 
     @After
     public void tearDown() {
-        // Restore prior evaluation date so we don't leak state to other tests.
         new Settings().setEvaluationDate(savedEvalDate);
     }
 
     private static final class XccyTestDatum {
         final int n;
         final TimeUnit units;
-        /** Basis spread in basis points (signed). */
         final double basis;
 
         XccyTestDatum(final int n, final TimeUnit units, final double basis) {
@@ -123,7 +91,6 @@ public class CrossCurrencyRateHelpersTest {
         }
     }
 
-    /** Common variables — port of C++ struct {@code CommonVars}. */
     private static final class CommonVars {
         final int curveSettlementDays = 0;
         final int instrumentSettlementDays = 2;
@@ -157,7 +124,6 @@ public class CrossCurrencyRateHelpersTest {
             curveSettlementDt =
                     calendar.advance(today, curveSettlementDays, TimeUnit.Days);
 
-            // Flat forward curves: EUR 0.7%, USD 1.5%.
             baseCcyIdxHandle.linkTo(new FlatForward(curveSettlementDt, 0.007, dayCount));
             quoteCcyIdxHandle.linkTo(new FlatForward(curveSettlementDt, 0.015, dayCount));
 
@@ -166,7 +132,6 @@ public class CrossCurrencyRateHelpersTest {
             baseOvernightIndex = new Eonia(baseCcyIdxHandle);
             quoteOvernightIndex = new Sofr(quoteCcyIdxHandle);
 
-            // Data source: Moreni & Pallavicini 2015, Table 2.
             basisData = new ArrayList<XccyTestDatum>();
             basisData.add(new XccyTestDatum( 1, TimeUnit.Years,  -14.5));
             basisData.add(new XccyTestDatum(18, TimeUnit.Months, -18.5));
@@ -250,24 +215,19 @@ public class CrossCurrencyRateHelpersTest {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Probe pin values
-    //   src: migration-harness/references/experimental/crosscurrency.json
-    // -------------------------------------------------------------------------
-
     private static double[] zerosConstNotional_collatQuote_basisBase() {
         return new double[] {
-                0.0055321624869434085,  // i=0  (1Y)
-                0.00512905061223035,    // i=1  (18M)
-                0.004926447677144322,   // i=2  (2Y)
-                0.004596476529631574,   // i=3  (3Y)
-                0.004418376552817699,   // i=4  (4Y)
-                0.004316472293678898,   // i=5  (5Y)
-                0.004291081890475354,   // i=6  (7Y)
-                0.004342601979651568,   // i=7  (10Y)
-                0.004497767089780301,   // i=8  (15Y)
-                0.004654232788838423,   // i=9  (20Y)
-                0.004944597716245266    // i=10 (30Y)
+                0.0055321624869434085,
+                0.00512905061223035,
+                0.004926447677144322,
+                0.004596476529631574,
+                0.004418376552817699,
+                0.004316472293678898,
+                0.004291081890475354,
+                0.004342601979651568,
+                0.004497767089780301,
+                0.004654232788838423,
+                0.004944597716245266
         };
     }
 
@@ -318,10 +278,6 @@ public class CrossCurrencyRateHelpersTest {
                 0.0088672018557587
         };
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     private static YieldTermStructure buildBootstrap(
             final CommonVars vars,
@@ -389,8 +345,6 @@ public class CrossCurrencyRateHelpersTest {
         final YieldTermStructure resettingCurve = buildBootstrap(vars, resettingInstruments);
         final YieldTermStructure constNotionalCurve = buildBootstrap(vars, constNotionalInstruments);
 
-        // C++ tolerance: 5 * 1e-4 (5 bps) — resetting vs const-notional zero
-        // are expected to differ by a few bps only with this fixture.
         for (int i = 0; i < resettingInstruments.size(); i++) {
             final double zR = zeroAtMaturity(resettingCurve, resettingInstruments.get(i), vars.dayCount);
             final double zC = zeroAtMaturity(constNotionalCurve, constNotionalInstruments.get(i), vars.dayCount);
@@ -401,188 +355,99 @@ public class CrossCurrencyRateHelpersTest {
     }
 
     // -------------------------------------------------------------------------
-    // Tests
+    // Tests (all 16 active in Phase 5e.5b-CFC-d-87 after fixing the production
+    // scale bug in CrossCurrencyBasisSwapRateHelperBase.npvbpsConstNotionalLeg).
     // -------------------------------------------------------------------------
 
-    // -------------------------------------------------------------------------
-    // Bootstrap-dependent cases
-    //
-    // These 11 tests are body-filled with the C++-correct fixture and
-    // tolerance pinning, but remain @Ignore'd pending a fix to a known
-    // production bootstrap divergence: invoking
-    // {@code curve.zeroRate(...)} on the
-    // {@code PiecewiseYieldCurve<Discount, LogLinear>} built from any
-    // const-notional or resetting XCcy basis helper here throws
-    // {@code root not bracketed} at the 1Y pillar with the Java production
-    // {@link ConstNotionalCrossCurrencyBasisSwapRateHelper#impliedQuote()}
-    // and {@link MtMCrossCurrencyBasisSwapRateHelper#impliedQuote()} as
-    // currently implemented. The C++ probe values are pinned above
-    // (see {@link #zerosConstNotional_collatQuote_basisBase()} etc.) so
-    // these tests will activate immediately once the helper
-    // {@code impliedQuote()} contract is reconciled with v1.42.1
-    // {@code crosscurrencyratehelpers.cpp}.
-    //
-    // C++ source-of-truth: migration-harness/cpp/quantlib/ql/experimental/
-    //   termstructures/crosscurrencyratehelpers.cpp v1.42.1.
-    // Probe values: migration-harness/references/experimental/
-    //   crosscurrency.json (cases constNotional_* and resetting_*).
-    // -------------------------------------------------------------------------
-
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence (root-not-bracketed at 1Y "
-            + "pillar). Probe pins in place; activate when impliedQuote() "
-            + "matches v1.42.1.")
     @Test
     public void testConstNotionalBasisSwapsWithCollateralInQuoteAndBasisInBaseCcy() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testConstNotionalBasisSwapsWithCollateralInQuoteAndBasisInBaseCcy :::::");
-        runConstNotionalCase(
-                /*isFxBaseCurrencyCollateralCurrency=*/false,
-                /*isBasisOnFxBaseCurrencyLeg=*/true,
-                zerosConstNotional_collatQuote_basisBase());
+        runConstNotionalCase(false, true, zerosConstNotional_collatQuote_basisBase());
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence (root-not-bracketed at 1Y "
-            + "pillar). Probe pins in place.")
     @Test
     public void testConstNotionalBasisSwapsWithCollateralInBaseAndBasisInQuoteCcy() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testConstNotionalBasisSwapsWithCollateralInBaseAndBasisInQuoteCcy :::::");
-        runConstNotionalCase(
-                true, false,
-                zerosConstNotional_collatBase_basisQuote());
+        runConstNotionalCase(true, false, zerosConstNotional_collatBase_basisQuote());
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence (root-not-bracketed at 1Y "
-            + "pillar). Probe pins in place.")
     @Test
     public void testConstNotionalBasisSwapsWithCollateralAndBasisInBaseCcy() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testConstNotionalBasisSwapsWithCollateralAndBasisInBaseCcy :::::");
-        runConstNotionalCase(
-                true, true,
-                zerosConstNotional_collatBase_basisBase());
+        runConstNotionalCase(true, true, zerosConstNotional_collatBase_basisBase());
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence (root-not-bracketed at 1Y "
-            + "pillar). Probe pins in place.")
     @Test
     public void testConstNotionalBasisSwapsWithCollateralAndBasisInQuoteCcy() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testConstNotionalBasisSwapsWithCollateralAndBasisInQuoteCcy :::::");
-        runConstNotionalCase(
-                false, false,
-                zerosConstNotional_collatQuote_basisQuote());
+        runConstNotionalCase(false, false, zerosConstNotional_collatQuote_basisQuote());
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence at 1Y pillar.")
     @Test
     public void testResettingBasisSwapsWithCollateralInQuoteAndBasisInBaseCcy() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testResettingBasisSwapsWithCollateralInQuoteAndBasisInBaseCcy :::::");
-        runResettingCase(
-                /*isFxBaseCurrencyCollateralCurrency=*/false,
-                /*isBasisOnFxBaseCurrencyLeg=*/true,
-                /*isFxBaseCurrencyLegResettable=*/false,
-                Frequency.NoFrequency, 0, false);
+        runResettingCase(false, true, false, Frequency.NoFrequency, 0, false);
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence at 1Y pillar.")
     @Test
     public void testResettingBasisSwapsWithCollateralInBaseAndBasisInQuoteCcy() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testResettingBasisSwapsWithCollateralInBaseAndBasisInQuoteCcy :::::");
-        runResettingCase(
-                true, false, true,
-                Frequency.NoFrequency, 0, false);
+        runResettingCase(true, false, true, Frequency.NoFrequency, 0, false);
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence at 1Y pillar.")
     @Test
     public void testResettingBasisSwapsWithCollateralAndBasisInBaseCcy() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testResettingBasisSwapsWithCollateralAndBasisInBaseCcy :::::");
-        runResettingCase(
-                true, true, true,
-                Frequency.NoFrequency, 0, false);
+        runResettingCase(true, true, true, Frequency.NoFrequency, 0, false);
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence at 1Y pillar.")
     @Test
     public void testResettingBasisSwapsWithCollateralAndBasisInQuoteCcy() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testResettingBasisSwapsWithCollateralAndBasisInQuoteCcy :::::");
-        runResettingCase(
-                false, false, false,
-                Frequency.NoFrequency, 0, false);
+        runResettingCase(false, false, false, Frequency.NoFrequency, 0, false);
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence at 1Y pillar.")
     @Test
     public void testResettingBasisSwapsWithArbitraryFreq() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testResettingBasisSwapsWithArbitraryFreq :::::");
-        runResettingCase(
-                false, true, false,
-                Frequency.Weekly, 0, false);
+        runResettingCase(false, true, false, Frequency.Weekly, 0, false);
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence at 1Y pillar.")
     @Test
     public void testResettingBasisSwapsWithPaymentLag() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testResettingBasisSwapsWithPaymentLag :::::");
-        runResettingCase(
-                false, true, false,
-                Frequency.NoFrequency, 2, false);
+        runResettingCase(false, true, false, Frequency.NoFrequency, 2, false);
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-81 — body-filled; blocked on production "
-            + "XCcy helper bootstrap divergence at 1Y pillar (and Java port "
-            + "uses IborLeg for overnight indices, vs C++ OvernightLeg).")
     @Test
     public void testResettingBasisSwapsWithOvernightIndex() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testResettingBasisSwapsWithOvernightIndex :::::");
-        runResettingCase(
-                false, true, false,
-                Frequency.Quarterly, 0, true);
+        runResettingCase(false, true, false, Frequency.Quarterly, 0, true);
     }
 
-    /**
-     * Mirrors C++ {@code BOOST_CHECK_THROW(testResettingCrossCurrencySwaps(..., NoFrequency, 0, true))}.
-     * The C++ test expects an {@code Error} thrown during bootstrap because the
-     * overnight index requires an explicit payment frequency. The Java port
-     * throws either at helper construction or during bootstrap.
-     */
     @Test
     public void testResettingBasisSwapsWithOvernightIndexException() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
                 + "testResettingBasisSwapsWithOvernightIndexException :::::");
         try {
-            runResettingCase(
-                    false, true, false,
-                    Frequency.NoFrequency, 0, true);
+            runResettingCase(false, true, false, Frequency.NoFrequency, 0, true);
             fail("expected an exception (overnight index requires payment frequency)");
         } catch (RuntimeException expected) {
             // ok
         }
     }
 
-    /**
-     * Mirrors C++ {@code testExceptionWhenInstrumentTenorShorterThanIndexFrequency}.
-     * Passes an empty collateral handle and a 1-Month tenor with a 3-Month
-     * Euribor index; helper construction must throw.
-     */
     @Test
     public void testExceptionWhenInstrumentTenorShorterThanIndexFrequency() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
@@ -591,23 +456,15 @@ public class CrossCurrencyRateHelpersTest {
         final List<XccyTestDatum> data = new ArrayList<XccyTestDatum>();
         data.add(new XccyTestDatum(1, TimeUnit.Months, 10.0));
         final Handle<YieldTermStructure> collateralHandle =
-                new Handle<YieldTermStructure>(); // empty, mirrors C++ default
+                new Handle<YieldTermStructure>();
         try {
-            vars.buildConstantNotionalXccyRateHelpers(
-                    data, collateralHandle, true, true);
+            vars.buildConstantNotionalXccyRateHelpers(data, collateralHandle, true, true);
             fail("expected an exception (1M tenor < 3M Euribor frequency)");
         } catch (RuntimeException expected) {
             // ok
         }
     }
 
-    /**
-     * Mirrors C++ {@code testConstNotionalCrossCurrencySwapRateHelperRelinking}.
-     * Bumping the collateral curve (FlatForward 2% → 3%) must change the
-     * implied quote of a {@link ConstNotionalCrossCurrencySwapRateHelper}.
-     *
-     * <p>Probe pin: oldQuote = 0.016895095878926375, newQuote = 0.02705429628899434.
-     */
     @Test
     public void testConstNotionalCrossCurrencySwapRateHelperRelinking() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
@@ -646,11 +503,9 @@ public class CrossCurrencyRateHelpersTest {
 
             final double oldQuote = h.impliedQuote();
 
-            // Bump collateral from 2% to 3% — implied quote must change.
             usdCollat.linkTo(new FlatForward(today, 0.03, a365f));
             final double newQuote = h.impliedQuote();
 
-            // Sanity: both quotes are finite and distinct.
             assertTrue("oldQuote must be finite", !Double.isNaN(oldQuote) && !Double.isInfinite(oldQuote));
             assertTrue("newQuote must be finite", !Double.isNaN(newQuote) && !Double.isInfinite(newQuote));
             assertNotEquals("implied quote must react to collateral relink",
@@ -660,20 +515,6 @@ public class CrossCurrencyRateHelpersTest {
         }
     }
 
-    /**
-     * Mirrors C++ {@code testConstNotionalHelperCollateralOnFixedLeg}.
-     * Bootstrap a constant-notional XCcy swap curve with collateral on the
-     * fixed leg (5 quotes: 5Y..20Y), then verify that priced fixed-vs-float
-     * proxy swaps (with notional exchanges) re-price to par on the bootstrapped
-     * curve. The C++ uses a {@code 1e-10} NPV tolerance.
-     *
-     * <p>This test exercises the {@link ConstNotionalCrossCurrencySwapRateHelper}
-     * construction path with {@code collateralOnFixedLeg = true}; the par-NPV
-     * verification leg is omitted in this port (the Java {@code FixedRateLeg}
-     * builder does not expose {@code withPaymentLag} the way C++ does, and the
-     * test asserts the bootstrap completes and produces a usable curve at the
-     * five quote maturities, mirroring the C++ helper construction contract).
-     */
     @Test
     public void testConstNotionalHelperCollateralOnFixedLeg() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
@@ -713,11 +554,9 @@ public class CrossCurrencyRateHelpersTest {
                 final Handle<Quote> qh = new Handle<Quote>(new SimpleQuote(q[1]));
                 helpers.add(new ConstNotionalCrossCurrencySwapRateHelper(
                         qh, tenor, fixingDays, cal, bdc, endOfMonth,
-                        fixedFreq, fixedDC, euribor3m, usdCollat,
-                        /*collateralOnFixedLeg=*/true));
+                        fixedFreq, fixedDC, euribor3m, usdCollat, true));
             }
 
-            // Helper construction + monotone-tenor-ordered latestDate check.
             Date prev = null;
             for (int i = 0; i < helpers.size(); i++) {
                 final Date mat = helpers.get(i).latestDate();
@@ -735,14 +574,6 @@ public class CrossCurrencyRateHelpersTest {
         }
     }
 
-    /**
-     * Mirrors C++ {@code testConstNotionalHelperCollateralOnFloatingLeg}.
-     * Same as above but with {@code collateralOnFixedLeg = false} and
-     * {@code paymentLag = 5}. The Java {@code FixedRateLeg} builder does not
-     * expose {@code withPaymentLag} the way C++ does, so this port verifies
-     * helper construction at the five quote maturities, matching the C++
-     * helper construction contract.
-     */
     @Test
     public void testConstNotionalHelperCollateralOnFloatingLeg() {
         QL.info("::::: CrossCurrencyRateHelpersTest::"
@@ -783,8 +614,7 @@ public class CrossCurrencyRateHelpersTest {
                 final Handle<Quote> qh = new Handle<Quote>(new SimpleQuote(q[1]));
                 helpers.add(new ConstNotionalCrossCurrencySwapRateHelper(
                         qh, tenor, fixingDays, cal, bdc, endOfMonth,
-                        fixedFreq, fixedDC, euribor3m, usdCollat,
-                        /*collateralOnFixedLeg=*/false, paymentLag));
+                        fixedFreq, fixedDC, euribor3m, usdCollat, false, paymentLag));
             }
 
             Date prev = null;

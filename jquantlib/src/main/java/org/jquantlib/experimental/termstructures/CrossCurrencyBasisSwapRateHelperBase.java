@@ -29,17 +29,18 @@
 
 package org.jquantlib.experimental.termstructures;
 
+import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.IborLeg;
 import org.jquantlib.cashflow.Leg;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.indexes.OvernightIndex;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
-import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.MakeSchedule;
 import org.jquantlib.time.Period;
@@ -174,9 +175,15 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase
     /**
      * Builds a floating (ibor) leg for the given index, frequency, and payment lag.
      * <p>
+     * Mirrors C++ {@code buildFloatingLeg}
+     * (crosscurrencyratehelpers.cpp:59-86): for overnight indices the caller
+     * must supply an explicit payment frequency, otherwise the leg would use
+     * the overnight tenor (1D) which is meaningless for a basis swap.
+     * <p>
      * Java deviation: paymentLag is not applied to coupon dates (JQuantLib's
-     * {@link IborLeg} builder does not expose {@code withPaymentLag});
-     * payment dates are therefore coincident with accrual end dates.
+     * {@link IborLeg} builder does not expose {@code withPaymentLag} in the
+     * legacy interface used here); payment dates are therefore coincident
+     * with accrual end dates.
      */
     protected static Leg buildFloatingLeg(
             final Date evaluationDate,
@@ -189,9 +196,15 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase
             final Frequency paymentFrequency,
             final int paymentLag) {
 
-        final Period freqPeriod = (paymentFrequency == Frequency.NoFrequency)
-                ? idx.tenor()
-                : new Period(paymentFrequency);
+        final boolean isOvernight = idx instanceof OvernightIndex;
+        final Period freqPeriod;
+        if (paymentFrequency == Frequency.NoFrequency) {
+            QL.require(!isOvernight,
+                    "Require payment frequency for overnight indices.");
+            freqPeriod = idx.tenor();
+        } else {
+            freqPeriod = new Period(paymentFrequency);
+        }
 
         final Schedule sch = legSchedule(evaluationDate, tenor, freqPeriod,
                 fixingDays, calendar, convention, endOfMonth);
@@ -207,7 +220,18 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase
      * Computes (NPV, BPS) for a constant-notional leg, including the initial
      * (-1) and final (+1) notional exchange cash flows.
      * <p>
-     * Mirrors C++ anonymous {@code npvbpsConstNotionalLeg}.
+     * Mirrors C++ anonymous {@code npvbpsConstNotionalLeg}
+     * (ql/experimental/termstructures/crosscurrencyratehelpers.cpp v1.42.1
+     * lines 108-123). The C++ implementation delegates to
+     * {@code CashFlows::npvbps(...)}, which returns
+     * {@code bps = basisPoint_ * sum(nominal*accrual*df) / d}, and then
+     * undoes the {@code basisPoint_} factor via {@code bps /= basisPoint;}.
+     * Because the caller pins {@code npvDate = settlementDate = referenceDate},
+     * the divisor {@code d = discount(referenceDate) = 1.0}, so the net
+     * result is {@code bps = sum(nominal*accrual*df)} — i.e. the raw
+     * PV01-without-basisPoint-scaling, consistent with
+     * {@code npvbpsResettingLeg}. The {@code impliedQuote()} formula
+     * {@code -(npvQuote - npvBase) / bps} relies on these matched scales.
      */
     protected static double[] npvbpsConstNotionalLeg(
             final Leg leg,
@@ -215,7 +239,6 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase
             final Date finalNotionalExchangeDate,
             final Handle<YieldTermStructure> discountCurveHandle) {
 
-        final double basisPoint = 1.0e-4;
         final YieldTermStructure disc = discountCurveHandle.currentLink();
         final Date refDt = disc.referenceDate();
 
@@ -236,7 +259,7 @@ public abstract class CrossCurrencyBasisSwapRateHelperBase
         // Include notional exchange at start (pay) and maturity (receive)
         npv += (-1.0) * disc.discount(initialNotionalExchangeDate);
         npv +=          disc.discount(finalNotionalExchangeDate);
-        bps /= basisPoint;
+        // bps is kept in raw {nominal*accrual*df} units; see contract above.
 
         return new double[] { npv, bps };
     }

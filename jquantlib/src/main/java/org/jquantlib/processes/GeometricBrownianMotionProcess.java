@@ -43,6 +43,11 @@ public class GeometricBrownianMotionProcess extends StochasticProcess1D {
             final double initialValue,
             final double mue,
             final double sigma) {
+        // Mirrors C++ v1.42.1 ql/processes/geometricbrownianprocess.cpp:
+        // StochasticProcess1D(ext::shared_ptr<discretization>(new EulerDiscretization)).
+        // Without it, the inherited expectation/stdDeviation/variance/evolve
+        // chain throws NPE on discretization1D.
+        super(new EulerDiscretization());
         this.sigma_ = sigma;
         this.initialValue_ = initialValue;
         this.mue_ = mue;
