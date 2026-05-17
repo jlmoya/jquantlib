@@ -34,8 +34,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.BSpline;
 import org.jquantlib.math.GaussianKernel;
 import org.jquantlib.math.KernelFunction;
+import org.jquantlib.math.Ops;
+import org.jquantlib.math.RichardsonExtrapolation;
 import org.jquantlib.math.interpolations.KernelInterpolation;
 import org.jquantlib.math.interpolations.KernelInterpolation2D;
 import org.jquantlib.math.interpolations.LagrangeInterpolation;
@@ -85,6 +88,46 @@ public class InterpolationsTest {
         // C++ interpolations.cpp lines 237-239.
         return Math.abs(x) + 0.5 * x - x * x;
     }
+
+    /**
+     * C++ interpolations.cpp lines 232-234 — Richardson example function
+     * {@code f(h) = (1 + h)^(1/h)} (converges to {@code e} as {@code h -> 0}).
+     */
+    private static final Ops.DoubleOp RICHARDSON_F = new Ops.DoubleOp() {
+        @Override
+        public double op(final double h) {
+            return Math.pow(1.0 + h, 1.0 / h);
+        }
+    };
+
+    /**
+     * C++ interpolations.cpp lines 215-226 — functor
+     * {@code GF(h) = pi + factor * h^exponent + (factor*h)^(exponent+1)}.
+     */
+    private static final class GF implements Ops.DoubleOp {
+        private final double exponent_;
+        private final double factor_;
+
+        GF(final double exponent, final double factor) {
+            this.exponent_ = exponent;
+            this.factor_ = factor;
+        }
+
+        @Override
+        public double op(final double h) {
+            return Math.PI
+                 + factor_ * Math.pow(h, exponent_)
+                 + Math.pow(factor_ * h, exponent_ + 1.0);
+        }
+    }
+
+    /** C++ interpolations.cpp lines 228-230 — {@code limCos(h) = -cos(h)}. */
+    private static final Ops.DoubleOp LIM_COS = new Ops.DoubleOp() {
+        @Override
+        public double op(final double h) {
+            return -Math.cos(h);
+        }
+    };
 
     /**
      * Faithful port of {@code testLagrangeInterpolation} (lines 2274-2327).
@@ -371,15 +414,109 @@ public class InterpolationsTest {
             + "C++ interpolations.cpp testBicubicUpdate.")
     public void testBicubicUpdate() { }
 
+    /**
+     * Faithful port of {@code testRichardsonExtrapolation} (C++
+     * interpolations.cpp lines 1841-1877). Known order of convergence;
+     * reference values from
+     * www.ipvs.uni-stuttgart.de/.../Richardson.pdf.
+     *
+     * <p>Phase 5e.5b-CFC-d-91.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no RichardsonExtrapolation class. "
-            + "C++ interpolations.cpp testRichardsonExtrapolation.")
-    public void testRichardsonExtrapolation() { }
+    public void testRichardsonExtrapolation() {
+        QL.info("Testing Richardson extrapolation...");
 
+        final double stepSize = 0.1;
+        final double orderOfConvergence = 1.0;
+        final RichardsonExtrapolation extrap =
+                new RichardsonExtrapolation(RICHARDSON_F, stepSize, orderOfConvergence);
+
+        final double tol = 0.00002;
+        double expected = 2.71285;
+
+        final double scalingFactor = 2.0;
+        double calculated = extrap.valueAt(scalingFactor);
+        assertEquals("failed to reproduce Richardson extrapolation",
+                expected, calculated, tol);
+
+        calculated = extrap.valueAt();
+        assertEquals("failed to reproduce Richardson extrapolation (default t)",
+                expected, calculated, tol);
+
+        expected = 2.721376;
+        final double scalingFactor2 = 4.0;
+        calculated = extrap.valueAt(scalingFactor2, scalingFactor);
+        assertEquals("failed to reproduce Richardson extrapolation (t,s)",
+                expected, calculated, tol);
+    }
+
+    /**
+     * Faithful port of {@code testUnknownRichardsonExtrapolation} (C++
+     * interpolations.cpp lines 1795-1839). Exercises the order-of-convergence
+     * solver across known {@code (exponent, factor)} pairs, a high-order
+     * case, the high-order failure case, and the {@code limCos} limit.
+     *
+     * <p>Phase 5e.5b-CFC-d-91.
+     */
     @Test
-    @Ignore("Phase 5g.5 — see testRichardsonExtrapolation. "
-            + "C++ interpolations.cpp testUnknownRichardsonExtrapolation.")
-    public void testUnknownRichardsonExtrapolation() { }
+    public void testUnknownRichardsonExtrapolation() {
+        QL.info("Testing Richardson extrapolation with unknown order of convergence...");
+
+        final double stepSize = 0.01;
+
+        final double[][] testCases = {
+                {1.0, 1.0}, {1.0, -1.0},
+                {2.0, 0.25}, {2.0, -1.0},
+                {3.0, 2.0}, {3.0, -0.5},
+                {4.0, 1.0}, {4.0, 0.5}
+        };
+
+        for (final double[] tc : testCases) {
+            final RichardsonExtrapolation extrap =
+                    new RichardsonExtrapolation(new GF(tc[0], tc[1]), stepSize);
+
+            final double calculated = extrap.valueAt(4.0, 2.0);
+            final double diff = Math.abs(Math.PI - calculated);
+
+            final double tol = Math.pow(stepSize, tc[0] + 1.0);
+
+            if (diff > tol) {
+                org.junit.Assert.fail(
+                        "failed to reproduce Richardson extrapolation"
+                        + " with unknown order of convergence"
+                        + "\n    exponent  : " + tc[0]
+                        + "\n    factor    : " + tc[1]
+                        + "\n    calculated: " + calculated
+                        + "\n    difference: " + diff
+                        + "\n    tolerance : " + tol);
+            }
+        }
+
+        final double highOrder =
+                new RichardsonExtrapolation(new GF(14.0, 1.0), 0.5).valueAt(4.0, 2.0);
+        assertEquals("failed to reproduce Richardson extrapolation"
+                + " with unknown order of convergence (high order)",
+                Math.PI, highOrder, 1e-12);
+
+        boolean threw = false;
+        try {
+            new RichardsonExtrapolation(new GF(16.0, 1.0), 0.5).valueAt(4.0, 2.0);
+        } catch (final RuntimeException e) {
+            threw = true;
+        }
+        assertEquals("Richardson extrapolation with order of convergence above 15"
+                + " should throw exception", true, threw);
+
+        final double limCosValue =
+                new RichardsonExtrapolation(LIM_COS, 0.01).valueAt(4.0, 2.0);
+        if (Math.abs(limCosValue + 1.0) > 1e-6) {
+            org.junit.Assert.fail(
+                    "failed to reproduce Richardson extrapolation"
+                    + " with unknown order of convergence (limCos)"
+                    + "\n    calculated: " + limCosValue
+                    + "\n    expected  : " + (-1.0));
+        }
+    }
 
     @Test
     @Ignore("Phase 5g audit — covered by NoArbSabrInterpolationTest. "
@@ -407,10 +544,55 @@ public class InterpolationsTest {
             + "C++ interpolations.cpp testLagrangeInterpolationOnChebyshevPoints.")
     public void testLagrangeInterpolationOnChebyshevPoints() { }
 
+    /**
+     * Faithful port of {@code testBSplines} (C++ interpolations.cpp lines
+     * 2402-2442). Reference values from the R package {@code splines2}.
+     *
+     * <p>Phase 5e.5b-CFC-d-91.
+     */
     @Test
-    @Ignore("Phase 5g.5 — Java has no BSpline class. "
-            + "C++ interpolations.cpp testBSplines.")
-    public void testBSplines() { }
+    public void testBSplines() {
+        QL.info("Testing B-Splines...");
+
+        final double[] knots = { -1.0, 0.5, 0.75, 1.2, 3.0, 4.0, 5.0 };
+
+        final int p = 2;
+        final BSpline bspline = new BSpline(p, knots.length - p - 2, knots);
+
+        // {idx, x, expected}
+        final double[][] referenceValues = {
+                {0, -0.95, 9.5238095238e-04},
+                {0, -0.01, 0.37337142857},
+                {0,  0.49, 0.84575238095},
+                {0,  1.21, 0.0},
+                {1,  1.49, 0.562987654321},
+                {1,  1.59, 0.490888888889},
+                {2,  1.99, 0.62429409171},
+                {3,  1.19, 0.0},
+                {3,  1.99, 0.12382936508},
+                {3,  3.59, 0.765914285714}
+        };
+
+        final double tol = 1e-10;
+        for (final double[] ref : referenceValues) {
+            final int idx = (int) ref[0];
+            final double x = ref[1];
+            final double expected = ref[2];
+
+            final double calculated = bspline.valueAt(idx, x);
+
+            if (Double.isNaN(calculated) || Math.abs(calculated - expected) > tol) {
+                org.junit.Assert.fail(
+                        "failed to reproduce the B-Spline value"
+                        + "\n    i         : " + idx
+                        + "\n    x         : " + x
+                        + "\n    calculated: " + calculated
+                        + "\n    expected  : " + expected
+                        + "\n    difference: " + Math.abs(calculated - expected)
+                        + "\n    tolerance : " + tol);
+            }
+        }
+    }
 
     @Test
     @Ignore("Phase 5g.5 — Java BackwardFlat needs single-point handling check. "
