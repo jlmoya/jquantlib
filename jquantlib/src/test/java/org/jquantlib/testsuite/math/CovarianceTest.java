@@ -31,7 +31,6 @@ import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.matrixutilities.PseudoSqrt;
 import org.jquantlib.math.matrixutilities.PseudoSqrt.SalvagingAlgorithm;
 import org.jquantlib.math.statistics.SequenceStatistics;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -57,10 +56,64 @@ public class CovarianceTest {
         return Math.sqrt(sum);
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no rankReducedSqrt() helper "
-            + "(C++ ql/math/matrixutilities/pseudosqrt.hpp). Port then enable.")
     @Test
     public void testRankReduction() {
+        QL.info("Testing matrix rank reduction salvaging algorithms...");
+
+        // Java port of C++ test-suite/covariance.cpp:testRankReduction
+        // (v1.42.1). Phase 5e.5b-CFC-d-90: un-ignored — production
+        // PseudoSqrt.rankReducedSqrt(...) is present (see PseudoSqrt.java).
+
+        final int n = 3;
+
+        final Matrix badCorr = new Matrix(n, n);
+        badCorr.set(0, 0, 1.0); badCorr.set(0, 1, 0.9); badCorr.set(0, 2, 0.7);
+        badCorr.set(1, 0, 0.9); badCorr.set(1, 1, 1.0); badCorr.set(1, 2, 0.3);
+        badCorr.set(2, 0, 0.7); badCorr.set(2, 1, 0.3); badCorr.set(2, 2, 1.0);
+
+        final Matrix goodCorr = new Matrix(n, n);
+        goodCorr.set(0, 0, 1.00000000000); goodCorr.set(1, 1, 1.00000000000);
+        goodCorr.set(2, 2, 1.00000000000);
+        goodCorr.set(0, 1, 0.894024408508599); goodCorr.set(1, 0, 0.894024408508599);
+        goodCorr.set(0, 2, 0.696319066114392); goodCorr.set(2, 0, 0.696319066114392);
+        goodCorr.set(1, 2, 0.300969036104592); goodCorr.set(2, 1, 0.300969036104592);
+
+        Matrix b = PseudoSqrt.rankReducedSqrt(badCorr, 3, 1, SalvagingAlgorithm.Spectral);
+        Matrix calcCorr = b.mul(b.transpose());
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                final double expected = goodCorr.get(i, j);
+                final double calculated = calcCorr.get(i, j);
+                if (Math.abs(calculated - expected) > 1.0e-10) {
+                    fail("Salvaging correlation with spectral alg "
+                            + "through rankReducedSqrt "
+                            + "cor[" + i + "][" + j + "]:\n"
+                            + "    calculated: " + calculated
+                            + "\n    expected:   " + expected);
+                }
+            }
+        }
+
+        final Matrix badCov = new Matrix(n, n);
+        badCov.set(0, 0, 0.04000); badCov.set(0, 1, 0.03240); badCov.set(0, 2, 0.02240);
+        badCov.set(1, 0, 0.03240); badCov.set(1, 1, 0.03240); badCov.set(1, 2, 0.00864);
+        badCov.set(2, 0, 0.02240); badCov.set(2, 1, 0.00864); badCov.set(2, 2, 0.02560);
+
+        // Mirrors C++ lines 84-85: first call pseudoSqrt then rankReducedSqrt.
+        // The pseudoSqrt call is exercised purely for parity with the C++ test
+        // (its result is overwritten by rankReducedSqrt on the next line).
+        b = PseudoSqrt.pseudoSqrt(badCov, SalvagingAlgorithm.Spectral);
+        b = PseudoSqrt.rankReducedSqrt(badCov, 3, 1, SalvagingAlgorithm.Spectral);
+        final Matrix goodCov = b.mul(b.transpose());
+
+        final double error = norm(goodCov.sub(badCov));
+        if (error > 4.0e-4) {
+            fail(error + " error while salvaging covariance matrix with spectral alg "
+                    + "through rankReducedSqrt\n"
+                    + "input matrix:\n" + badCov
+                    + "salvaged matrix:\n" + goodCov);
+        }
     }
 
     @Test

@@ -34,7 +34,6 @@ import org.jquantlib.testsuite.util.Flag;
 import org.jquantlib.util.LazyObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -199,13 +198,56 @@ public class LazyObjectTest {
         }
     }
 
-    @Ignore("Phase 5a.5 carry-forward - the C++ testNotificationLoop wires Stock1 -> "
-            + "Stock2 -> Stock3 -> Stock1 via Stock-as-Observer registerWith calls. "
-            + "Java's LazyObject.update() silently breaks the cycle via the 'updating_' "
-            + "guard (matches C++ default behaviour without QL_THROW_IN_CYCLES) but the "
-            + "full Stock-cycle setup requires more Instrument plumbing; deferred.")
+    /**
+     * Java port of C++ {@code testNotificationLoop}
+     * (test-suite/lazyobject.cpp:162). Verifies that a Stock1 -> Stock2 ->
+     * Stock3 -> Stock1 observer cycle does not livelock and that observers
+     * downstream of the ring still receive notifications when an upstream
+     * input changes. Phase 5e.5b-CFC-d-90 body-fill: Java's LazyObject.update()
+     * silently breaks the cycle via the {@code updating_} guard (matches
+     * C++ default behaviour without {@code QL_THROW_IN_CYCLES}).
+     *
+     * <p>The C++ helpers {@code Stock::registerWith(other)} and
+     * {@code Stock::unregisterWithAll()} map to the Java Observable API as:
+     * <ul>
+     *   <li>{@code s3.registerWith(s2)} -> {@code s2.addObserver(s3)}</li>
+     *   <li>{@code s1.unregisterWithAll()} -> {@code s1.deleteObservers()}
+     *     (clears the outgoing notification list; in Java the ring is
+     *     unreachable for GC once test-local refs go out of scope, so this
+     *     mirrors the C++ "break the ring" intent).</li>
+     * </ul>
+     */
     @Test
     public void testNotificationLoop() {
+        QL.info("Testing that lazy objects manage recursive notifications...");
+
+        LazyObject.Defaults.instance().alwaysForwardNotifications();
+
+        final SimpleQuote q = new SimpleQuote(0.0);
+        final Instrument s1 = new Stock(new Handle<Quote>(q));
+        final Instrument s2 = new Stock(new Handle<Quote>());
+        final Instrument s3 = new Stock(new Handle<Quote>());
+
+        // C++ s3->registerWith(s2) <==> s2 emits, s3 listens.
+        s2.addObserver(s3);
+        s1.addObserver(s2);
+        s3.addObserver(s1);
+
+        final Flag f = new Flag();
+        s3.addObserver(f);
+
+        // Trigger the ring: q -> s1 -> s2 -> s3 -> s1 (silenced by updating_).
+        q.setValue(2.0);
+
+        if (!f.isUp()) {
+            fail("Observer was not notified of change");
+        }
+
+        // Break the ring of dependencies (mirrors C++ unregisterWithAll() —
+        // see https://github.com/lballabio/QuantLib/issues/1725 ).
+        s1.deleteObservers();
+        s2.deleteObservers();
+        s3.deleteObservers();
     }
 
     /**

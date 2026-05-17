@@ -76,9 +76,12 @@ public class OperatorsTest {
         // applyTo/solveFor inverse property.
     }
 
-    @Ignore("Phase 5a.5 carry-forward — TridiagonalOperator.SOR method is commented out "
-            + "in JQuantLib; the C++ assertion 'applyTo + SOR == identity' cannot be exercised. "
-            + "Uncomment the SOR implementation, then enable this case.")
+    @Ignore("Production SOR not ported — TridiagonalOperator.SOR(rhs, tol) is "
+            + "commented out (see TridiagonalOperator.java lines 214-235). The 2-arg "
+            + "solveFor(rhs, result) variant is also absent. Requires a production "
+            + "port of the C++ SOR iterative solver "
+            + "(ql/methods/finitedifferences/tridiagonaloperator.cpp) before this "
+            + "test case can be exercised. Phase 5e.5b-CFC-d-90 confirmed stale.")
     @Test
     public void testTridiagonalSOR() {
     }
