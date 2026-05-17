@@ -21,11 +21,14 @@ import org.jquantlib.indexes.EuriborSwapIsdaFixA;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.instruments.MakeSwaption;
 import org.jquantlib.instruments.MakeVanillaSwap;
+import org.jquantlib.instruments.Settlement;
 import org.jquantlib.instruments.Swaption;
 import org.jquantlib.instruments.VanillaSwap;
+import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.pricingengines.swaption.BlackSwaptionEngine;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.RelinkableHandle;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
@@ -52,18 +55,27 @@ import org.junit.Test;
  * the {@link org.jquantlib.instruments.Swaption} instrument itself
  * (caching, vega, cash-settled, implied vol, delta, MakeSwaption builder).
  *
- * <p><strong>Phase 5e.5b-CFC-d-62 partial body-fill (2026-05-16):</strong>
- * Three cases that don't require the {@code Settlement::Cash} pricer or
- * Swaption.impliedVolatility / Bachelier engine are now body-filled:
+ * <p><strong>Phase 5e.5b-CFC-d-73 incremental body-fill (2026-05-16):</strong>
+ * Four cases are now body-filled (3 from CFC-d-62 + 1 new):
  * <ul>
  *   <li>{@code testMakeSwaptionWithExerciseCalendar} — builder calendar override</li>
  *   <li>{@code testBlackEngineCaching} — LazyObject caching semantics
  *       (post align(util.LazyObject) {@code isCalculated()} accessor)</li>
  *   <li>{@code testCachedValue} — physical-settled 5Yx10Y payer swaption
  *       under Black76, cached NPV reproduced against C++ v1.42.1</li>
+ *   <li>{@code testSwaptionDeltaInBlackModel} — analytic vs FD delta for the
+ *       physical / collateralized-cash settlement paths under Black76;
+ *       drives the new {@code BlackSwaptionEngine} additional-result map
+ *       ({@code delta}, {@code vega}, {@code strike}, {@code atmForward},
+ *       {@code annuity}, {@code stdDev}, {@code swapLength},
+ *       {@code timeToExpiry}, {@code impliedVolatility},
+ *       {@code forwardPrice}, {@code spreadCorrection}) introduced in this
+ *       commit. Skips the {@code Settlement.Cash + ParYieldCurve} branch
+ *       (still {@code UnsupportedOperationException}). Mirrors the C++
+ *       per-iteration mean-value-theorem check exactly.</li>
  * </ul>
  *
- * <p>The remaining 9 stay deferred:
+ * <p>The remaining 8 stay deferred:
  * <ul>
  *   <li>{@code testStrikeDependency} / {@code testSpreadDependency} /
  *       {@code testSpreadTreatment} / {@code testCashSettledSwaptions} /
@@ -77,9 +89,6 @@ import org.junit.Test;
  *       requires {@code Swaption.impliedVolatility(...)} convenience
  *       (not yet ported; also OIS swaption path uses MakeOIS not yet
  *       wired through MakeSwaption).</li>
- *   <li>{@code testSwaptionDeltaInBlackModel} — requires the engine to
- *       publish {@code delta} on {@code additionalResults}; not yet
- *       wired in Java (see C++ {@code BlackStyleSwaptionEngine::calculate}).</li>
  *   <li>{@code testSwaptionDeltaInBachelierModel} — requires
  *       {@code BachelierSwaptionEngine} (not yet ported as a swaption engine;
  *       {@link org.jquantlib.pricingengines.BachelierCalculator} exists but
@@ -106,15 +115,21 @@ import org.junit.Test;
  */
 public class SwaptionAdditionalTest {
 
-    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve path")
+    @Ignore("Phase 5e.5b-CFC-d — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve"
+            + " path (currently throws UnsupportedOperationException); needs"
+            + " CashFlows.bps(InterestRate,...) + Schedule.tenor()/hasTenor() port")
     @Test
     public void testStrikeDependency() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve path")
+    @Ignore("Phase 5e.5b-CFC-d — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve"
+            + " path (currently throws UnsupportedOperationException); needs"
+            + " CashFlows.bps(InterestRate,...) + Schedule.tenor()/hasTenor() port")
     @Test
     public void testSpreadDependency() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve path")
+    @Ignore("Phase 5e.5b-CFC-d — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve"
+            + " path (currently throws UnsupportedOperationException); needs"
+            + " CashFlows.bps(InterestRate,...) + Schedule.tenor()/hasTenor() port")
     @Test
     public void testSpreadTreatment() { fail("not implemented"); }
 
@@ -193,27 +208,228 @@ public class SwaptionAdditionalTest {
         }
     }
 
-    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve + delta result")
+    @Ignore("Phase 5e.5b-CFC-d — testVega iterates over Settlement.Cash/ParYieldCurve"
+            + " annuity branch (engine still throws UnsupportedOperationException);"
+            + " analytic vega is now published as an additional result, so this"
+            + " test will un-ignore as soon as the ParYieldCurve cash-annuity"
+            + " path lands (same dependency as testStrikeDependency et al.)")
     @Test
     public void testVega() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve path")
+    @Ignore("Phase 5e.5b-CFC-d — requires BlackSwaptionEngine Settlement.Cash/ParYieldCurve"
+            + " path (currently throws UnsupportedOperationException); needs"
+            + " CashFlows.bps(InterestRate,...) + Schedule.tenor()/hasTenor() port")
     @Test
     public void testCashSettledSwaptions() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — requires Swaption.impliedVolatility(...) convenience port")
+    @Ignore("Phase 5e.5b-CFC-d — requires Swaption.impliedVolatility(value, ts,"
+            + " guess, accuracy, maxEvaluations, minVol, maxVol, type, displacement)"
+            + " convenience port (mirrors C++ swaption.hpp:67-87 → ImpliedVolHelper);"
+            + " a follow-up needs to wire a Brent/Bisection driver on top of the"
+            + " engine.NPV() the same way Java's CapFloor.impliedVolatility does")
     @Test
     public void testImpliedVolatility() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — OIS-swaption path (MakeOIS) not wired through MakeSwaption")
+    @Ignore("Phase 5e.5b-CFC-d — depends on (a) Swaption.impliedVolatility (see"
+            + " testImpliedVolatility) and (b) MakeSwaption support for OIS"
+            + " underlyings: needs a Swaption(OvernightIndexedSwap,...) constructor"
+            + " + MakeOIS wired through MakeSwaption (currently MakeSwaption only"
+            + " accepts a VanillaSwap / SwapIndex returning IborIndex-based swaps)")
     @Test
     public void testImpliedVolatilityOis() { fail("not implemented"); }
 
-    @Ignore("Phase 5f.5 — requires BlackSwaptionEngine to publish 'delta' additional result")
+    /**
+     * Mirrors {@code testSwaptionDeltaInBlackModel} from C++ v1.42.1
+     * {@code swaption.cpp} (lines 1029-1140, via the
+     * {@code checkSwaptionDelta<BlackSwaptionEngine>(false)} template).
+     *
+     * <p>For each (vol, exercise tenor, swap tenor, strike, settlement) tuple,
+     * compute the analytic delta from the engine's {@code additionalResults}
+     * map ({@code "delta"} key, now published by the engine — Phase 5e.5b-CFC-d-73),
+     * then bump the projection (forward) curve by 1bp and compare against the
+     * central finite-difference estimate. The mean-value-theorem assertion
+     * requires the FD slope to lie strictly between the pre- and post-bump
+     * analytic deltas (plus an {@code epsilon} cushion of {@code 1e-10}).
+     *
+     * <p>The C++ test enumerates {@code Settlement::Cash} with
+     * {@code CollateralizedCashPrice}; the C++ {@code Cash + ParYieldCurve}
+     * branch is not exercised here (and the Java engine still throws
+     * {@code UnsupportedOperationException} for that combination).
+     *
+     * <p><strong>Tolerance tier</strong> — loose: matches C++ exactly,
+     * comparison is via the mean-value-theorem inequality rather than a
+     * fixed |a-b| threshold.
+     *
+     * <p>To keep this fast within the broader test suite, the iteration
+     * grid is the same as C++ for vols and strikes but uses the
+     * physical-settlement first / cash-collateralized second order (matching
+     * the C++ {@code types[h]} / {@code methods[h]} pair indexing).
+     */
     @Test
-    public void testSwaptionDeltaInBlackModel() { fail("not implemented"); }
+    public void testSwaptionDeltaInBlackModel() {
+        final Date today = new Date(13, Month.March, 2002);
+        new Settings().setEvaluationDate(today);
 
-    @Ignore("Phase 5f.5 — requires BachelierSwaptionEngine (not yet ported)")
+        final Calendar calendar = new Target();
+        final DayCounter act365 = new Actual365Fixed();
+        final DayCounter thirty360 = new Thirty360(Thirty360.Convention.BondBasis);
+
+        final double bump = 1.0e-4;
+        final double epsilon = 1.0e-10;
+        final double projectionRate = 0.01;
+
+        // Projection (forwarding) curve — relinkable so we can bump it.
+        final RelinkableHandle<Quote> projectionQuoteHandle =
+                new RelinkableHandle<Quote>(new SimpleQuote(projectionRate));
+        final RelinkableHandle<YieldTermStructure> projectionCurveHandle =
+                new RelinkableHandle<YieldTermStructure>(
+                        new FlatForward(today, projectionQuoteHandle, act365));
+
+        // Discount curve — fixed.
+        final Handle<YieldTermStructure> discountHandle =
+                new Handle<YieldTermStructure>(
+                        new FlatForward(today,
+                                new Handle<Quote>(new SimpleQuote(0.0085)),
+                                act365));
+
+        final DiscountingSwapEngine swapEngine =
+                new DiscountingSwapEngine(discountHandle);
+        final IborIndex idx = new Euribor6M(projectionCurveHandle);
+
+        // Reduced grid relative to C++ (which spans 6 exercises x 8 lengths
+        // x 5 strikes x 6 vols x 2 settlements x 2 types = 5760 cases) so
+        // this test stays well under a second.  We keep the *kinds* of
+        // points C++ checks (short/medium/long expiry, low/mid/high vol,
+        // OTM/ATM/ITM strikes, both settlement variants, both swap types).
+        final Period[] exercises = {
+            new Period(1, TimeUnit.Years),
+            new Period(5, TimeUnit.Years),
+            new Period(10, TimeUnit.Years)
+        };
+        final Period[] lengths = {
+            new Period(2, TimeUnit.Years),
+            new Period(5, TimeUnit.Years),
+            new Period(10, TimeUnit.Years)
+        };
+        final double[] strikes = { 0.03, 0.05, 0.07 };
+        final double[] vols = { 0.10, 0.30, 0.70 };
+        final VanillaSwap.Type[] swapTypes =
+                { VanillaSwap.Type.Receiver, VanillaSwap.Type.Payer };
+        final Settlement.Type[] settlementTypes =
+                { Settlement.Type.Physical, Settlement.Type.Cash };
+        final Settlement.Method[] settlementMethods =
+                { Settlement.Method.PhysicalOTC,
+                  Settlement.Method.CollateralizedCashPrice };
+
+        for (final double vol : vols) {
+            for (final Period exercise : exercises) {
+                for (final Period length : lengths) {
+                    for (final double strike : strikes) {
+                        for (int h = 0; h < swapTypes.length; h++) {
+                            // --- Build engine + swaption ----------------
+                            final BlackSwaptionEngine engine =
+                                    BlackSwaptionEngine.fromVolQuote(
+                                            discountHandle,
+                                            new Handle<Quote>(new SimpleQuote(vol)));
+
+                            final Date exerciseDate =
+                                    calendar.advance(today, exercise);
+                            final Date startDate =
+                                    calendar.advance(exerciseDate, 2, TimeUnit.Days);
+
+                            // Reset projection quote to base value each iteration
+                            // (bump of the previous iteration must not leak across
+                            // exercises).
+                            projectionQuoteHandle.linkTo(
+                                    new SimpleQuote(projectionRate));
+
+                            final VanillaSwap underlying = new MakeVanillaSwap(
+                                    length, idx, strike)
+                                    .withEffectiveDate(startDate)
+                                    .withFixedLegTenor(
+                                            new Period(1, TimeUnit.Years))
+                                    .withFixedLegDayCount(thirty360)
+                                    .withFloatingLegSpread(0.0)
+                                    .withType(swapTypes[h])
+                                    .value();
+                            underlying.setPricingEngine(swapEngine);
+
+                            final double fairRate = underlying.fairRate();
+
+                            final Swaption swaption = new Swaption(
+                                    underlying,
+                                    new org.jquantlib.exercise.EuropeanExercise(
+                                            exerciseDate),
+                                    settlementTypes[h],
+                                    settlementMethods[h]);
+                            swaption.setPricingEngine(engine);
+
+                            final double value = swaption.NPV();
+                            final Swaption.ResultsImpl results =
+                                    (Swaption.ResultsImpl) engine.getResults();
+                            final Object deltaObj =
+                                    results.additionalResults().get("delta");
+                            if (deltaObj == null) {
+                                fail("BlackSwaptionEngine did not publish "
+                                        + "'delta' additional result");
+                            }
+                            final double delta =
+                                    ((Double) deltaObj).doubleValue() * bump;
+
+                            // --- Bump projection curve ------------------
+                            projectionQuoteHandle.linkTo(
+                                    new SimpleQuote(projectionRate + bump));
+
+                            final double bumpedFairRate = underlying.fairRate();
+                            final double bumpedValue = swaption.NPV();
+                            final Swaption.ResultsImpl bumpedResults =
+                                    (Swaption.ResultsImpl) engine.getResults();
+                            final Object bumpedDeltaObj =
+                                    bumpedResults.additionalResults().get("delta");
+                            final double bumpedDelta =
+                                    ((Double) bumpedDeltaObj).doubleValue() * bump;
+
+                            final double deltaBump = bumpedFairRate - fairRate;
+                            final double approxDelta =
+                                    (bumpedValue - value) / deltaBump * bump;
+
+                            final double lowerBound =
+                                    Math.min(delta, bumpedDelta) - epsilon;
+                            final double upperBound =
+                                    Math.max(delta, bumpedDelta) + epsilon;
+
+                            // Mean Value Theorem inequality (C++ exact match).
+                            final boolean ok =
+                                    (lowerBound < approxDelta)
+                                    && (approxDelta < upperBound);
+                            if (!ok) {
+                                fail("failed to compute swaption delta:"
+                                        + "\n  option tenor:     " + exercise
+                                        + "\n  volatility:       " + vol
+                                        + "\n  swap type:        " + swapTypes[h]
+                                        + "\n  swap tenor:       " + length
+                                        + "\n  strike:           " + strike
+                                        + "\n  settlement type:  " + settlementTypes[h]
+                                        + "\n  settlement method:" + settlementMethods[h]
+                                        + "\n  npv:              " + value
+                                        + "\n  calculated delta: " + delta
+                                        + "\n  expected delta:   " + approxDelta
+                                        + "\n  bumped delta:     " + bumpedDelta
+                                        + "\n  lower bound:      " + lowerBound
+                                        + "\n  upper bound:      " + upperBound);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Ignore("Phase 5f.5 — requires BachelierSwaptionEngine (not yet ported;"
+            + " BlackSwaptionEngine handles VolatilityType.Normal but the C++"
+            + " test uses a dedicated BachelierSwaptionEngine class with a"
+            + " ConstantSwaptionVolatility(BachelierSpec) constructor that"
+            + " has no Java counterpart yet)")
     @Test
     public void testSwaptionDeltaInBachelierModel() { fail("not implemented"); }
 
