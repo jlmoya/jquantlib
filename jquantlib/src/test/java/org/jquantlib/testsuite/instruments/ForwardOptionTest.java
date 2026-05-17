@@ -19,8 +19,12 @@ import org.jquantlib.instruments.ForwardVanillaOption;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.VanillaOption;
+import org.jquantlib.methods.lattices.CoxRossRubinstein;
 import org.jquantlib.pricingengines.forward.ForwardPerformanceVanillaEngine;
 import org.jquantlib.pricingengines.forward.ForwardVanillaEngine;
+import org.jquantlib.pricingengines.vanilla.BinomialVanillaEngine;
+import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -58,10 +62,20 @@ import org.junit.Test;
  *       performance-variant {@link ForwardPerformanceVanillaEngine}.
  * </ul>
  *
+ * <p><strong>Phase 5e.5b-CFC-d-58 addition:</strong>
+ * <ul>
+ *   <li>{@link #testGreeksInitialization()} — verifies the
+ *       {@link ForwardVanillaEngine} correctly propagates "not-provided"
+ *       greeks from a binomial inner engine
+ *       ({@link BinomialVanillaEngine} parameterised on
+ *       {@link CoxRossRubinstein}, 300 fixed steps). C++ uses a local
+ *       {@code TestBinomialEngine} subclass; Java uses the protected
+ *       {@code ForwardVanillaEngine.buildInnerEngine} hook (see
+ *       {@link BinomialInnerForwardEngine} below).
+ * </ul>
+ *
  * <p><strong>Carry-forward to Phase 5i.5</strong>:
  * <ul>
- *   <li>{@code testGreeksInitialization} — needs binomial inner engine
- *       (TestBinomialEngine adaptor not yet present in Java).
  *   <li>{@code testMCPrices} / {@code testHestonMCPrices} —
  *       {@code MCForwardEuropeanBSEngine} and {@code MCForwardEuropeanHestonEngine}
  *       not yet ported.
@@ -77,10 +91,6 @@ public class ForwardOptionTest {
     public ForwardOptionTest() {
         QL.info("::::: " + getClass().getSimpleName() + " :::::");
     }
-
-    private static final String REASON_GREEKS_INIT =
-            "Phase 5i.5: needs a Java BinomialVanillaEngine adapter (CoxRossRubinstein, "
-          + "fixed steps) for the Greeks-initialization regression — adapter not yet ported.";
 
     private static final String REASON_MC_BS =
             "Phase 5i.5 — requires MCForwardEuropeanBSEngine port "
@@ -490,9 +500,153 @@ public class ForwardOptionTest {
         return Math.abs(x1 - x2);
     }
 
-    @Ignore(REASON_GREEKS_INIT)
+    /**
+     * Port of C++ {@code forwardoption.cpp::testGreeksInitialization}
+     * (v1.42.1 lines 360-475).
+     *
+     * <p>C++ defines a local {@code TestBinomialEngine} subclass of
+     * {@code BinomialVanillaEngine<CoxRossRubinstein>} with fixed
+     * {@code timeSteps=300}, then prices a forward option using
+     * {@code ForwardVanillaEngine<TestBinomialEngine>}. The test verifies
+     * that whenever the binomial control engine cannot compute a given
+     * greek (delta requires {@code strikeSensitivity}; rho, dividendRho,
+     * vega are simply not populated by the binomial pricer), the forward
+     * engine also reports the same greek as unavailable.
+     *
+     * <p>Java implementation differences:
+     * <ul>
+     *   <li>C++ has a templated {@code ForwardVanillaEngine<Engine>};
+     *       Java's {@link ForwardVanillaEngine} hardcodes
+     *       {@link org.jquantlib.pricingengines.AnalyticEuropeanEngine}
+     *       but exposes a protected {@code buildInnerEngine} hook
+     *       (added Phase 5e.5b-CFC-d-58) — overridden here via
+     *       {@link BinomialInnerForwardEngine}.
+     *   <li>C++ {@code BinomialVanillaEngine::calculate} throws
+     *       {@code QuantLib::Error} when an un-set greek is requested;
+     *       Java {@link BinomialVanillaEngine#calculate()} leaves rho,
+     *       vega, dividendRho as {@code Double.NaN}. The Java accessor
+     *       {@code OneAssetOption.rho()} et al. only checks
+     *       {@code NULL_REAL == Double.MAX_VALUE}, so NaN returns
+     *       silently. The forward engine maps NaN-input greeks to
+     *       {@code NULL_REAL}, so {@code option.rho()} et al. throw.
+     *       Test verifies: whenever the binomial control engine fails to
+     *       supply a usable value, the forward engine fails too.
+     * </ul>
+     */
     @Test
-    public void testGreeksInitialization() { fail("not implemented"); }
+    public void testGreeksInitialization() {
+        QL.info("Testing forward option greeks initialization...");
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Date(15, Month.January, 2026);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot  = new SimpleQuote(100.0);
+        final SimpleQuote qRate = new SimpleQuote(0.04);
+        final SimpleQuote rRate = new SimpleQuote(0.01);
+        final SimpleQuote vol   = new SimpleQuote(0.11);
+
+        final Handle<Quote> spotH  = new Handle<Quote>(spot);
+        final Handle<Quote> qRateH = new Handle<Quote>(qRate);
+        final Handle<Quote> rRateH = new Handle<Quote>(rRate);
+        final Handle<Quote> volH   = new Handle<Quote>(vol);
+
+        final Calendar cal = new NullCalendar();
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                new FlatForward(today, qRateH, dc,
+                        Compounding.Continuous, Frequency.Annual));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                new FlatForward(today, rRateH, dc,
+                        Compounding.Continuous, Frequency.Annual));
+        final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                new BlackConstantVol(today, cal, volH, dc));
+
+        final BlackScholesMertonProcess stochProcess =
+                new BlackScholesMertonProcess(spotH, qTS, rTS, volTS);
+
+        final ForwardVanillaEngine fwdEngine = new BinomialInnerForwardEngine(stochProcess);
+        final Date exDate = today.add(new org.jquantlib.time.Period(1,
+                org.jquantlib.time.TimeUnit.Years));
+        final Exercise exercise = new EuropeanExercise(exDate);
+        final Date reset = today.add(new org.jquantlib.time.Period(6,
+                org.jquantlib.time.TimeUnit.Months));
+        final StrikedTypePayoff payoff =
+                new PlainVanillaPayoff(Option.Type.Call, 0.0);
+
+        final ForwardVanillaOption option =
+                new ForwardVanillaOption(0.9, reset, payoff, exercise);
+        option.setPricingEngine(fwdEngine);
+
+        final BinomialVanillaEngine<CoxRossRubinstein> ctrlEngine =
+                new BinomialVanillaEngine<CoxRossRubinstein>(
+                        CoxRossRubinstein.class, stochProcess, 300);
+        final VanillaOption ctrloption = new VanillaOption(payoff, exercise);
+        ctrloption.setPricingEngine(ctrlEngine);
+
+        // C++ contract (mirrored in Java with NaN-vs-NULL_REAL semantics
+        // documented above): when the binomial control engine cannot
+        // produce a usable greek, the forward engine must not produce
+        // one either.
+        checkGreekFallthrough("delta",       () -> ctrloption.delta(),       () -> option.delta());
+        checkGreekFallthrough("rho",         () -> ctrloption.rho(),         () -> option.rho());
+        checkGreekFallthrough("dividendRho", () -> ctrloption.dividendRho(), () -> option.dividendRho());
+        checkGreekFallthrough("vega",        () -> ctrloption.vega(),        () -> option.vega());
+    }
+
+    /**
+     * Mirrors the C++ try/catch idiom from
+     * {@code forwardoption.cpp::testGreeksInitialization}: if the
+     * control (binomial) engine cannot supply a greek, the forward
+     * engine must also fail to provide it.
+     *
+     * <p>A greek is considered "unavailable" if either the call throws
+     * or it returns {@code Double.NaN} (Java's binomial engine leaves
+     * un-computed greeks as NaN rather than throwing).
+     */
+    private static void checkGreekFallthrough(
+            final String label,
+            final java.util.concurrent.Callable<Double> ctrlCall,
+            final java.util.concurrent.Callable<Double> fwdCall) {
+        boolean ctrlOk;
+        try {
+            final double ctrl = ctrlCall.call();
+            ctrlOk = !Double.isNaN(ctrl);
+        } catch (final Exception e) {
+            ctrlOk = false;
+        }
+        boolean fwdOk;
+        double fwd = Double.NaN;
+        try {
+            fwd = fwdCall.call();
+            fwdOk = !Double.isNaN(fwd);
+        } catch (final Exception e) {
+            fwdOk = false;
+        }
+        if (!ctrlOk) {
+            assertTrue("Forward " + label + " invalid (ctrl unavailable, "
+                    + "fwd available=" + fwdOk + ", fwd=" + fwd + ")", !fwdOk);
+        }
+    }
+
+    /**
+     * Local subclass of {@link ForwardVanillaEngine} that swaps the
+     * inner engine from {@code AnalyticEuropeanEngine} to
+     * {@code BinomialVanillaEngine<CoxRossRubinstein>} with 300 fixed
+     * steps. Java equivalent of the C++ {@code TestBinomialEngine}
+     * defined inline in {@code test-suite/forwardoption.cpp}.
+     */
+    private static final class BinomialInnerForwardEngine extends ForwardVanillaEngine {
+        BinomialInnerForwardEngine(final GeneralizedBlackScholesProcess process) {
+            super(process);
+        }
+
+        @Override
+        protected org.jquantlib.instruments.OneAssetOption.EngineImpl buildInnerEngine(
+                final GeneralizedBlackScholesProcess fwdProcess) {
+            return new BinomialVanillaEngine<CoxRossRubinstein>(
+                    CoxRossRubinstein.class, fwdProcess, 300);
+        }
+    }
 
     @Ignore(REASON_MC_BS)
     @Test
