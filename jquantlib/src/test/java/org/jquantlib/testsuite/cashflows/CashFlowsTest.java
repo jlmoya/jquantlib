@@ -10,16 +10,36 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.BlackIborCouponPricer;
 import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.CashFlows;
+import org.jquantlib.cashflow.FloatingRateCoupon;
+import org.jquantlib.cashflow.IborCoupon;
+import org.jquantlib.cashflow.IborLeg;
 import org.jquantlib.cashflow.Leg;
 import org.jquantlib.cashflow.SimpleCashFlow;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.indexes.ibor.USDLibor;
+import org.jquantlib.math.Constants;
+import org.jquantlib.quotes.Handle;
 import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.optionlet.ConstantOptionletVolatility;
+import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.Target;
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -41,57 +61,18 @@ import org.junit.Test;
  * the C++-aligned {@code CashFlow.hasOccurred(Date, Boolean)} override
  * (cashflow.cpp v1.42.1 lines 27-49).
  *
- * <p>Remaining Phase 5d.5 cases:
- * <ul>
- *   <li>{@code testAccessViolation}, {@code testDefaultSettlementDate},
- *       {@code testNullFixingDays}, {@code testExCouponDates},
- *       {@code testIrregularFirstCouponReferenceDatesAtEndOfMonth},
- *       {@code testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth},
- *       {@code testIrregularLastCouponReferenceDatesAtEndOfMonth},
- *       {@code testPartialScheduleLegConstruction},
- *       {@code testFixedIborCouponWithoutForecastCurve},
- *       {@code testIborCouponKnowsWhenitHasFixed}.
- * </ul>
+ * <p><strong>Phase 5e.5b-CFC-d-63</strong> bodied
+ * {@code testAccessViolation} (wide {@link FloatingRateCoupon} ctor +
+ * {@link BlackIborCouponPricer}) and {@code testNullFixingDays}
+ * ({@code Constants.NULL_NATURAL} sentinel into {@link IborLeg#withFixingDays(double)}
+ * under the {@code IborCoupon.Settings.usingAtParCoupons()} precondition guard).
  *
- * <p>Specific gaps that block immediate body-fill:
- * <ul>
- *   <li>{@code testNullFixingDays} requires the
- *       {@code IborCoupon::Settings::usingAtParCoupons()} precondition
- *       (Java has the accessor — Phase 2x — but the precondition guard
- *       on this case wasn't ported);
- *   <li>{@code testIrregular*ReferenceDatesAt*} expectations come from
- *       the C++ schedule generation rules; reference values must be
- *       captured via probe before body-fill;
- *   <li>{@code testIborCouponKnowsWhenitHasFixed} regression depends on
- *       fixing-history population helpers that are partially ported.
- * </ul>
- *
- * <p>Source: {@code test-suite/cashflows.cpp} v1.42.1 @ {@code 099987f0ca}.
+ * <p>Remaining cases require production-side work tracked in the per-test
+ * {@code @Ignore} reasons below. Source: {@code test-suite/cashflows.cpp}
+ * v1.42.1 @ {@code 099987f0ca}.
  */
 public class CashFlowsTest {
 
-    private static final String REASON =
-            "Phase 5d.5 — requires reference-value probes for CashFlows facade "
-          + "behaviour (settlement / ex-coupon / irregular-reference-date logic); "
-          + "Java production code is in place but probes not yet authored";
-
-    private static final String REASON_NULL_FIXING =
-            "Phase 5d.5 — requires precondition-guarded usingAtParCoupons() "
-          + "test variant; Java has the accessor (Phase 2x) but the precondition "
-          + "wrapper / parametric flag is not wired into the JUnit case yet";
-
-    private static final String REASON_FIXING =
-            "Phase 5d.5 — requires fixing-history harness to validate the "
-          + "IborCoupon-knows-when-it-has-fixed regression";
-
-    /**
-     * Mirrors C++ {@code CashFlowTests::testSettings} (test-suite/cashflows.cpp
-     * v1.42.1 lines 48-179). Validates the
-     * {@link Settings#includeReferenceDateEvents()} and
-     * {@link Settings#includeTodaysCashFlows()} flag interaction with
-     * {@link CashFlow#hasOccurred(Date, Boolean)} and
-     * {@link CashFlows#npv(Leg, org.jquantlib.termstructures.YieldTermStructure, boolean, Date, Date)}.
-     */
     @Test
     public void testSettings() {
         // Save Settings state for restoration at the end (mirrors C++
@@ -240,14 +221,188 @@ public class CashFlowsTest {
                 expected, npv, 1e-6);
     }
 
-    @Ignore(REASON) @Test public void testAccessViolation() { fail("not implemented"); }
-    @Ignore(REASON) @Test public void testDefaultSettlementDate() { fail("not implemented"); }
-    @Ignore(REASON_NULL_FIXING) @Test public void testNullFixingDays() { fail("not implemented"); }
-    @Ignore(REASON) @Test public void testExCouponDates() { fail("not implemented"); }
-    @Ignore(REASON) @Test public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
-    @Ignore(REASON) @Test public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() { fail("not implemented"); }
-    @Ignore(REASON) @Test public void testIrregularLastCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
-    @Ignore(REASON) @Test public void testPartialScheduleLegConstruction() { fail("not implemented"); }
-    @Ignore(REASON) @Test public void testFixedIborCouponWithoutForecastCurve() { fail("not implemented"); }
-    @Ignore(REASON_FIXING) @Test public void testIborCouponKnowsWhenitHasFixed() { fail("not implemented"); }
+    /**
+     * Mirrors C++ {@code CashFlowTests::testAccessViolation}
+     * (test-suite/cashflows.cpp v1.42.1 lines 181-222). The original C++
+     * regression: in v1.0, constructing a bare {@link FloatingRateCoupon}
+     * (not an {@link IborCoupon}) and then asking it for {@code amount()}
+     * caused a dynamic-cast access violation inside the Black ibor-coupon
+     * pricer. The fix made the pricer fail gracefully — either by throwing
+     * a proper {@code Error} or by succeeding when the coupon type is
+     * compatible. The Java port mirrors the test as a "must not crash"
+     * smoke: the call either returns normally or throws a checked
+     * RuntimeException (Java has no SIGSEGV equivalent — a JVM access
+     * violation surfaces as a thrown exception either way).
+     */
+    @Test
+    public void testAccessViolation() {
+        final Settings settings = new Settings();
+        final Date savedEval = settings.evaluationDate();
+        try {
+            final Date todaysDate = new Date(7, Month.April, 2010);
+            final Date settlementDate = new Date(9, Month.April, 2010);
+            settings.setEvaluationDate(todaysDate);
+            final Calendar calendar = new Target();
+
+            final Handle<YieldTermStructure> rhTermStructure =
+                    new Handle<YieldTermStructure>(new FlatForward(
+                            settlementDate, 0.04875825, new Actual365Fixed()));
+
+            final double volatility = 0.10;
+            final Handle<OptionletVolatilityStructure> vol =
+                    new Handle<OptionletVolatilityStructure>(
+                            new ConstantOptionletVolatility(
+                                    2,
+                                    calendar,
+                                    BusinessDayConvention.ModifiedFollowing,
+                                    volatility,
+                                    new Actual365Fixed()));
+
+            final IborIndex index3m = new USDLibor(new Period(3, TimeUnit.Months),
+                    rhTermStructure);
+
+            final Date payDate = new Date(20, Month.December, 2013);
+            final Date startDate = new Date(20, Month.September, 2013);
+            final Date endDate = new Date(20, Month.December, 2013);
+            final double spread = 0.0115;
+            final BlackIborCouponPricer pricer = new BlackIborCouponPricer(vol);
+            // C++ constructs a bare FloatingRateCoupon (not IborCoupon):
+            //   FloatingRateCoupon(payDate, 100, startDate, endDate, 2,
+            //                      index3m, 1.0, spread / 100);
+            // Java wide ctor: paymentDate, nominal, startDate, endDate,
+            //   fixingDays, index, gearing, spread,
+            //   refPeriodStart, refPeriodEnd, dayCounter, isInArrears.
+            // C++ refPeriodStart/refPeriodEnd default to Date() (null),
+            // dayCounter defaults to DayCounter() (empty -> falls back to
+            // index.dayCounter()), and isInArrears defaults to false.
+            final FloatingRateCoupon coupon = new FloatingRateCoupon(
+                    payDate, 100, startDate, endDate, 2,
+                    index3m, 1.0, spread / 100,
+                    new Date(), new Date(),
+                    index3m.dayCounter(), false);
+            coupon.setPricer(pricer);
+
+            try {
+                // this caused an access violation in v1.0;
+                // post-fix it either succeeds or throws a proper exception
+                coupon.amount();
+            } catch (final RuntimeException ok) {
+                // ok; proper exception thrown (matches C++ `catch (Error&)`)
+            }
+        } finally {
+            settings.setEvaluationDate(savedEval);
+        }
+    }
+
+    /**
+     * Mirrors C++ {@code CashFlowTests::testNullFixingDays}
+     * (test-suite/cashflows.cpp v1.42.1 lines 254-271). The C++ case is
+     * guarded by {@code precondition(usingAtParCoupons())}, i.e. it only
+     * runs when {@code IborCoupon::Settings::usingAtParCoupons() == true}.
+     * The Java port uses {@link Assume#assumeTrue} for the equivalent
+     * precondition skip semantics.
+     *
+     * <p>The regression: building an {@link IborLeg} with
+     * {@code withFixingDays(Null<Natural>)} caused an exception when the
+     * null sentinel was not handled — Constants.NULL_NATURAL is the Java
+     * mirror of {@code Null<Natural>}. The fix in
+     * {@link FloatingRateCoupon} substitutes {@code index.fixingDays()}
+     * when the sentinel is seen.
+     */
+    @Test
+    public void testNullFixingDays() {
+        Assume.assumeTrue("requires IborCoupon.Settings.usingAtParCoupons() == true",
+                IborCoupon.Settings.getInstance().usingAtParCoupons());
+
+        final Settings settings = new Settings();
+        final Date today = settings.evaluationDate();
+        // C++ MakeSchedule().from(today-2*Months).to(today+4*Months)
+        //     .withFrequency(Semiannual).withCalendar(TARGET())
+        //     .withConvention(Following).backwards()
+        // Java MakeSchedule's constructor takes the same args directly;
+        // the fluent .from/.to/.withFrequency/.withCalendar/.withConvention
+        // wrappers are not yet ported (tracked in the @Ignore reasons
+        // below for the schedule-generator cases that need them).
+        final Date from = today.sub(new Period(2, TimeUnit.Months));
+        final Date to = today.add(new Period(4, TimeUnit.Months));
+        final Schedule schedule = new Schedule(
+                from, to,
+                new Period(Frequency.Semiannual),
+                new Target(),
+                BusinessDayConvention.Following,
+                BusinessDayConvention.Following,
+                DateGeneration.Rule.Backward,
+                false,
+                new Date(), new Date());
+
+        final IborIndex index = new USDLibor(new Period(6, TimeUnit.Months));
+        // The case is about "this can happen with default values, and
+        // caused an exception when the null was not managed properly".
+        // Constants.NULL_NATURAL is the Java mirror of Null<Natural>.
+        // Successful construction of the leg (no thrown exception) IS the
+        // assertion — matching C++.
+        new IborLeg(schedule, index)
+                .withNotionals(100.0)
+                .withFixingDays(Constants.NULL_NATURAL)
+                .Leg();
+    }
+
+    @Ignore("Phase 5d.5 — needs CashFlows.accruedPeriod(Leg, boolean), "
+            + "CashFlows.accruedDays(Leg, boolean), and CashFlows.accruedAmount(Leg, boolean) "
+            + "static overloads that default the settlement date to Settings.evaluationDate. "
+            + "Java CashFlows currently exposes only the (Leg, boolean, Date) variants; "
+            + "the default-date overloads need porting from C++ cashflows.cpp.")
+    @Test public void testDefaultSettlementDate() { fail("not implemented"); }
+
+    @Ignore("Phase 5d.5 — needs Coupon.exCouponDate() accessor + "
+            + "FixedRateLeg.withExCouponPeriod(Period, Calendar, BusinessDayConvention, boolean) "
+            + "and the matching IborLeg.withExCouponPeriod chain to propagate the period to "
+            + "FixedRateCoupon / FloatingRateCoupon constructors. The current Java Coupon "
+            + "base class does not carry an ex-coupon-date field; production port required.")
+    @Test public void testExCouponDates() { fail("not implemented"); }
+
+    @Ignore("Phase 5d.5 — Schedule(...,endOfMonth=true) generator currently snaps "
+            + "irregular first-coupon reference start to schedule's first regular date "
+            + "rather than to the prior end-of-month per C++ Schedule::nextTwentieth/EOM "
+            + "logic. Reference value (31-Aug-2016 for the 17-Jan-2017 -> 28-Feb-2018 "
+            + "semi-annual schedule) must come from a probe against C++ v1.42.1 once "
+            + "the Schedule generator is aligned.")
+    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
+
+    @Ignore("Phase 5d.5 — requires MakeSchedule fluent methods .withCalendar / "
+            + ".withTenor / .withTerminationDateConvention / .withFirstDate / "
+            + ".withNextToLastDate (currently only constructor + .withRule/.endOfMonth/"
+            + ".withFirstDate/.withNextToLastDate are ported) AND the Schedule generator "
+            + "must handle the GovernmentBond-calendar end-of-calendar-month snapping "
+            + "exposed by the 30-Sep-2017 -> 30-Sep-2022 semi-annual schedule.")
+    @Test public void testIrregularFirstCouponReferenceDatesAtEndOfCalendarMonth() { fail("not implemented"); }
+
+    @Ignore("Phase 5d.5 — same Schedule(...,endOfMonth=true) generator divergence as "
+            + "testIrregularFirstCouponReferenceDatesAtEndOfMonth, but applied to the "
+            + "LAST coupon (referencePeriodEnd snapping to end-of-month). Expected "
+            + "value 31-Aug-2018 for the 17-Jan-2017 -> 15-Sep-2018 schedule with "
+            + "nextToLastDate=28-Feb-2018.")
+    @Test public void testIrregularLastCouponReferenceDatesAtEndOfMonth() { fail("not implemented"); }
+
+    @Ignore("Phase 5d.5 — requires Schedule(List<Date>, Calendar, BusinessDayConvention, "
+            + "BusinessDayConvention, Period, DateGeneration.Rule, boolean endOfMonth, "
+            + "List<Boolean> isRegular) metadata-preserving constructor. Java Schedule "
+            + "currently has only the (dates), (dates, calendar), and (dates, calendar, "
+            + "convention) date-based ctors — the 8-arg metadata variant is missing.")
+    @Test public void testPartialScheduleLegConstruction() { fail("not implemented"); }
+
+    @Ignore("Phase 5d.5 — needs IborCoupon.indexFixing() to short-circuit on a stored "
+            + "fixing-history hit BEFORE consulting the (possibly absent) forecast term "
+            + "structure, mirroring C++ iborcoupon.cpp v1.42.1 indexFixing() ordering. "
+            + "Java FloatingRateCoupon.indexFixing() currently calls index_.fixing(date) "
+            + "which short-circuits correctly only if IborIndex.fixing handles missing "
+            + "termStructure when a stored fixing exists — port needs verification.")
+    @Test public void testFixedIborCouponWithoutForecastCurve() { fail("not implemented"); }
+
+    @Ignore("Phase 5d.5 — needs IborCoupon.hasFixed() accessor + "
+            + "Settings.enforcesTodaysHistoricFixings() flag (with setter). The "
+            + "hasFixed() contract: true iff fixingDate < today, OR fixingDate == today "
+            + "AND enforcesTodaysHistoricFixings(). Java has neither the accessor nor "
+            + "the per-session flag; production port required before this test can run.")
+    @Test public void testIborCouponKnowsWhenitHasFixed() { fail("not implemented"); }
 }
