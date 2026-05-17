@@ -25,11 +25,18 @@ package org.jquantlib.testsuite.math.randomnumbers;
 import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.randomnumbers.FaureRsg;
 import org.jquantlib.math.randomnumbers.HaltonRsg;
+import org.jquantlib.math.randomnumbers.LatticeRule;
+import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
 import org.jquantlib.math.randomnumbers.PrimitivePolynomials;
+import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
+import org.jquantlib.math.randomnumbers.RandomizedLDS;
 import org.jquantlib.math.randomnumbers.SeedGenerator;
 import org.jquantlib.math.randomnumbers.SobolRsg;
 import org.jquantlib.math.statistics.DiscrepancyStatistics;
+import org.jquantlib.math.statistics.SequenceStatistics;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -440,28 +447,261 @@ public class LowDiscrepancySequencesTest {
     // tests (deferred)
     // ---------------------------------------------------------------
 
-    @Ignore("Phase 5b.5: RandomizedLDS production class not yet ported")
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 91-114.
+     * <p>
+     * Exercises {@link RandomizedLDS} ({@link SobolRsg} + MT) across the
+     * three C++ constructor overloads, calling {@code nextSequence},
+     * {@code lastSequence}, and {@code nextRandomizer} to make sure they
+     * all return sequences of the expected dimension.
+     */
     @Test
     public void testRandomizedLowDiscrepancySequence() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:90 — exercises
-        // RandomizedLDS<SobolRsg, RandomSequenceGenerator<...>> across
-        // multiple constructors and confirms nextSequence/lastSequence
-        // /nextRandomizer all return sequences of the expected dimension.
+        QL.info("Testing randomized low-discrepancy sequences up to dimension "
+                + (int) new PrimitivePolynomials().getPpmtMaxDim() + "...");
+
+        final int ppmtMaxDim = (int) new PrimitivePolynomials().getPpmtMaxDim();
+
+        // (1) ctor(Size, BigNatural ldsSeed=0, BigNatural prsSeed=0)
+        RandomizedLDS rldsg = RandomizedLDS.ofSobol(ppmtMaxDim, 0L, 0L);
+        double[] s1 = rldsg.nextSequence();
+        if (s1.length != ppmtMaxDim) {
+            fail("nextSequence dim mismatch: " + s1.length + " vs " + ppmtMaxDim);
+        }
+        double[] s2 = rldsg.lastSequence();
+        if (s2.length != ppmtMaxDim) {
+            fail("lastSequence dim mismatch: " + s2.length + " vs " + ppmtMaxDim);
+        }
+        rldsg.nextRandomizer();
+
+        // (2) ctor(const LDS& ldsg, PRS prsg) — explicit Sobol+MT-RSG
+        @SuppressWarnings("unused")
+        final MersenneTwisterUniformRng t0 = new MersenneTwisterUniformRng(0L);
+        final RandomSequenceGenerator<MersenneTwisterUniformRng> t2 =
+                new RandomSequenceGenerator<MersenneTwisterUniformRng>(
+                        MersenneTwisterUniformRng.class, ppmtMaxDim, 0L);
+        final int sobolSeed = 0;
+        final RandomizedLDS rldsg2 = new RandomizedLDS(
+                () -> RandomizedLDS.sobolAdapter(ppmtMaxDim, sobolSeed),
+                t2);
+        s1 = rldsg2.nextSequence();
+        if (s1.length != ppmtMaxDim) {
+            fail("rldsg2.nextSequence dim mismatch: " + s1.length);
+        }
+        s2 = rldsg2.lastSequence();
+        if (s2.length != ppmtMaxDim) {
+            fail("rldsg2.lastSequence dim mismatch: " + s2.length);
+        }
+        rldsg2.nextRandomizer();
+
+        // (3) ctor(const LDS& ldsg) — Sobol-only, MT-PRS auto-built with
+        // the same dimension (matches C++ which constructs prsg_(ldsg_.dimension())).
+        final RandomizedLDS rldsg3 = RandomizedLDS.ofSobol(ppmtMaxDim, 0L, 0L);
+        s1 = rldsg3.nextSequence();
+        if (s1.length != ppmtMaxDim) {
+            fail("rldsg3.nextSequence dim mismatch: " + s1.length);
+        }
+        s2 = rldsg3.lastSequence();
+        if (s2.length != ppmtMaxDim) {
+            fail("rldsg3.lastSequence dim mismatch: " + s2.length);
+        }
+        rldsg3.nextRandomizer();
     }
 
-    @Ignore("Phase 5b.5: LatticeRule + LatticeRsg production classes not yet ported")
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 116-180.
+     * <p>
+     * For each lattice rule A/B/C/D, generate {@code N=1024} samples in
+     * {@code maxDim=30} dimensions across {@code 32} randomized batches and
+     * verify the cross-batch mean of every dimension is within 4 standard
+     * deviations of {@code 0.5}.
+     */
     @Test
     public void testRandomizedLattices() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:173 — drives randomized
-        // lattice rules (A, B, C, D) and verifies mean error in std-deviations
-        // is within tolerance 4.0 across maxDim=30, N=1024 batches.
+        QL.info("Testing randomized lattice sequences (A,B,C,D) up to dimension 30...");
+        testRandomizedLatticeRule(LatticeRule.Type.A, "A");
+        testRandomizedLatticeRule(LatticeRule.Type.B, "B");
+        testRandomizedLatticeRule(LatticeRule.Type.C, "C");
+        testRandomizedLatticeRule(LatticeRule.Type.D, "D");
     }
 
-    @Ignore("Phase 5b.5: FaureRsg production class not yet ported")
+    private static void testRandomizedLatticeRule(final LatticeRule.Type name,
+                                                  final String nameString) {
+        final int maxDim = 30;
+        final int n = 1024;
+        final int numberBatches = 32;
+
+        final double[] z = LatticeRule.getRule(name, n);
+        final long seed = 12345678L;
+
+        // ofLattice mirrors C++ RandomizedLDS<LatticeRsg, RandomSequenceGenerator<MT>>
+        // (latticeGenerator, rsg) where rsg is MT-seeded with `seed`.
+        final RandomizedLDS rldsg = RandomizedLDS.ofLattice(maxDim, z, n, seed);
+
+        final SequenceStatistics outerStats = new SequenceStatistics(maxDim);
+
+        for (int i = 0; i < numberBatches; ++i) {
+            final SequenceStatistics innerStats = new SequenceStatistics(maxDim);
+            for (int j = 0; j < n; ++j) {
+                innerStats.add(rldsg.nextSequence());
+            }
+            outerStats.add(innerStats.mean());
+            rldsg.nextRandomizer();
+        }
+
+        final Array means = outerStats.mean();
+        final Array sds = outerStats.errorEstimate();
+        final double tolerance = 4.0;
+
+        for (int i = 0; i < maxDim; ++i) {
+            final double m = means.get(i);
+            final double sd = sds.get(i);
+            final double errorInSds = (m - 0.5) / sd;
+            if (Math.abs(errorInSds) > tolerance) {
+                fail("Lattice generator " + nameString + " returns a mean of "
+                        + m + " with error equal to " + errorInSds
+                        + " standard deviations in dimension " + i);
+            }
+        }
+    }
+
+    /**
+     * Java port of C++ test-suite/lowdiscrepancysequences.cpp lines 266-413.
+     * <p>
+     * Subtests:
+     * <ol>
+     *   <li>FaureRsg at PPMT_MAX_DIM returns sequences of correct
+     *     dimensionality for 100 draws.</li>
+     *   <li>1-D Faure (base 2): matches the van der Corput modulo-two
+     *     sequence for 31 draws.</li>
+     *   <li>2-D Faure (base 2): coordinate 0 matches van der Corput mod-2,
+     *     coordinate 1 matches the shuffled mod-2 published in
+     *     Thiemard's paper.</li>
+     *   <li>3-D Faure (base 3): coordinates 0/1/2 match the shuffled
+     *     van der Corput mod-3 sequences published in Glasserman, "Monte
+     *     Carlo Methods in Financial Engineering", p. 299.</li>
+     * </ol>
+     */
     @Test
     public void testFaure() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:265 — Faure base-prime
-        // sequences across dimensions 2..7.
+        QL.info("Testing Faure sequences...");
+
+        final double tolerance = 1.0e-15;
+        final int ppmtMaxDim = (int) new PrimitivePolynomials().getPpmtMaxDim();
+
+        // (1) testing "high" dimensionality
+        int dimensionality = ppmtMaxDim;
+        FaureRsg rsg = new FaureRsg(dimensionality);
+        int points = 100;
+        for (int i = 0; i < points; i++) {
+            final double[] point = rsg.nextSequence().value;
+            if (point.length != dimensionality) {
+                fail("Faure sequence generator returns a sequence of wrong "
+                        + "dimensionality: " + point.length
+                        + " instead of " + dimensionality);
+            }
+        }
+
+        // (2) 1-D Faure == van der Corput modulo two
+        final double[] vanderCorputSequenceModuloTwo = {
+                0.50000,
+                0.75000, 0.25000,
+                0.37500, 0.87500, 0.62500, 0.12500,
+                0.18750, 0.68750, 0.93750, 0.43750,
+                0.31250, 0.81250, 0.56250, 0.06250,
+                0.09375, 0.59375, 0.84375, 0.34375,
+                0.46875, 0.96875, 0.71875, 0.21875,
+                0.15625, 0.65625, 0.90625, 0.40625,
+                0.28125, 0.78125, 0.53125, 0.03125
+        };
+        dimensionality = 1;
+        rsg = new FaureRsg(dimensionality);
+        points = (int) Math.pow(2.0, 5) - 1;
+        for (int i = 0; i < points; i++) {
+            final double[] point = rsg.nextSequence().value;
+            final double error = Math.abs(point[0] - vanderCorputSequenceModuloTwo[i]);
+            if (error > tolerance) {
+                fail((i + 1) + "th draw, dimension 1 (" + point[0]
+                        + ") in 1-D Faure sequence should have been "
+                        + vanderCorputSequenceModuloTwo[i]
+                        + " (error = " + error + ")");
+            }
+        }
+
+        // (3) 2-D Faure: 1st dim == van der Corput mod 2; 2nd dim from
+        // Thiemard's reference C code (mirrors C++ FaureDimensionTwoOfTwo).
+        final double[] FaureDimensionTwoOfTwo = {
+                0.50000,
+                0.25000, 0.75000,
+                0.37500, 0.87500, 0.12500, 0.62500,
+                0.31250, 0.81250, 0.06250, 0.56250,
+                0.18750, 0.68750, 0.43750, 0.93750,
+                0.46875, 0.96875, 0.21875, 0.71875,
+                0.09375, 0.59375, 0.34375, 0.84375,
+                0.15625, 0.65625, 0.40625, 0.90625,
+                0.28125, 0.78125, 0.03125, 0.53125
+        };
+        dimensionality = 2;
+        rsg = new FaureRsg(dimensionality);
+        points = (int) Math.pow(2.0, 5) - 1;
+        for (int i = 0; i < points; i++) {
+            final double[] point = rsg.nextSequence().value;
+            double error = Math.abs(point[0] - vanderCorputSequenceModuloTwo[i]);
+            if (error > tolerance) {
+                fail((i + 1) + "th draw, dimension 1 (" + point[0]
+                        + ") in 2-D Faure sequence should have been "
+                        + vanderCorputSequenceModuloTwo[i]
+                        + " (error = " + error + ")");
+            }
+            error = Math.abs(point[1] - FaureDimensionTwoOfTwo[i]);
+            if (error > tolerance) {
+                fail((i + 1) + "th draw, dimension 2 (" + point[1]
+                        + ") in 2-D Faure sequence should have been "
+                        + FaureDimensionTwoOfTwo[i]
+                        + " (error = " + error + ")");
+            }
+        }
+
+        // (4) 3-D Faure: shuffled van der Corput mod 3 (Glasserman, p. 299).
+        final double[] FaureDimensionOneOfThree = {
+                1.0 / 3, 2.0 / 3,
+                7.0 / 9, 1.0 / 9, 4.0 / 9, 5.0 / 9, 8.0 / 9, 2.0 / 9
+        };
+        final double[] FaureDimensionTwoOfThree = {
+                1.0 / 3, 2.0 / 3,
+                1.0 / 9, 4.0 / 9, 7.0 / 9, 2.0 / 9, 5.0 / 9, 8.0 / 9
+        };
+        final double[] FaureDimensionThreeOfThree = {
+                1.0 / 3, 2.0 / 3,
+                4.0 / 9, 7.0 / 9, 1.0 / 9, 8.0 / 9, 2.0 / 9, 5.0 / 9
+        };
+        dimensionality = 3;
+        rsg = new FaureRsg(dimensionality);
+        points = (int) Math.pow(3.0, 2) - 1;
+        for (int i = 0; i < points; i++) {
+            final double[] point = rsg.nextSequence().value;
+            double error = Math.abs(point[0] - FaureDimensionOneOfThree[i]);
+            if (error > tolerance) {
+                fail((i + 1) + "th draw, dimension 1 (" + point[0]
+                        + ") in 3-D Faure sequence should have been "
+                        + FaureDimensionOneOfThree[i]
+                        + " (error = " + error + ")");
+            }
+            error = Math.abs(point[1] - FaureDimensionTwoOfThree[i]);
+            if (error > tolerance) {
+                fail((i + 1) + "th draw, dimension 2 (" + point[1]
+                        + ") in 3-D Faure sequence should have been "
+                        + FaureDimensionTwoOfThree[i]
+                        + " (error = " + error + ")");
+            }
+            error = Math.abs(point[2] - FaureDimensionThreeOfThree[i]);
+            if (error > tolerance) {
+                fail((i + 1) + "th draw, dimension 3 (" + point[2]
+                        + ") in 3-D Faure sequence should have been "
+                        + FaureDimensionThreeOfThree[i]
+                        + " (error = " + error + ")");
+            }
+        }
     }
 
     @Ignore("Phase 5b.5: MT-seeded discrepancy alignment with C++ pivot table not cross-validated")
