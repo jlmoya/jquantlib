@@ -13,9 +13,12 @@ import java.util.List;
 
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
+import org.jquantlib.experimental.asian.AnalyticContinuousGeometricAveragePriceAsianHestonEngine;
+import org.jquantlib.experimental.asian.AnalyticDiscreteGeometricAveragePriceAsianHestonEngine;
 import org.jquantlib.instruments.AverageType;
 import org.jquantlib.instruments.DiscreteAveragingAsianOption;
 import org.jquantlib.instruments.Option;
@@ -26,6 +29,7 @@ import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.asian.ContinuousArithmeticAsianLevyEngine;
 import org.jquantlib.pricingengines.asian.TurnbullWakemanAsianEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
+import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -93,11 +97,11 @@ public class AsianOptionsAdditionalTest {
             "Phase 5i.5 — requires MC Heston-driven Asian engines "
           + "(MCDiscreteGeometricAPHestonEngine, MCDiscreteArithmeticAPHestonEngine)";
 
-    private static final String REASON_ANALYTIC_HESTON =
-            "Phase 5i.5 — analytic Heston Asian engines exist under "
-          + "experimental.asian; the in-instruments-package (non-experimental) "
-          + "wrapper test is deferred until the experimental classes are "
-          + "promoted out of experimental";
+    private static final String REASON_ANALYTIC_HESTON_PAST_FIXINGS =
+            "Phase 5i.5 — past-fixings variant compares the analytic Heston "
+          + "engine against MakeMCDiscreteGeometricAPHestonEngine, which is "
+          + "not yet ported (analytic engine alone exercised by the "
+          + "non-past-fixings body-fills above)";
 
     private static final String REASON_LEVY =
             "Phase 5i.5 — requires AnalyticContinuousArithmeticAsianLevyEngine "
@@ -121,15 +125,287 @@ public class AsianOptionsAdditionalTest {
             "Phase 5i.5 — Choi engine prereq + seasoned-option time-step "
           + "schedule generation against C++ v1.42.1 semantics";
 
-    @Ignore(REASON_ANALYTIC_HESTON)
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testAnalyticContinuousGeometricAveragePriceHeston}.
+     *
+     * <p>Reference data from Kim & Wee, "Pricing of Geometric Asian Options under
+     * Heston's Stochastic Volatility Model", Quant. Finance 14:10, 1795-1809 (2011),
+     * Table 1 (Feller condition obeyed) and Table 4 (Feller condition violated); plus
+     * Kim, Kim, Kim & Wee, "A Recursive Method for Discretely Monitored Geometric
+     * Asian Option Prices", Bull. Korean Math. Soc. 53, 733-749 (2016), Tables 1-3
+     * (continuous limit). Engine: experimental
+     * {@link AnalyticContinuousGeometricAveragePriceAsianHestonEngine} (Kim-Wee 2014).
+     *
+     * <p>Tolerance: 1e-2 absolute for the 2011 paper data (matches C++ — limited by
+     * day-bracket precision around 547.5d ≈ 1.5y); per-case 1e-2 / 2e-2 for the 2016
+     * recursive-paper data (30-day options need the looser bracket).
+     */
     @Test
-    public void testAnalyticContinuousGeometricAveragePriceHeston() { fail("not implemented"); }
+    public void testAnalyticContinuousGeometricAveragePriceHeston() {
 
-    @Ignore(REASON_ANALYTIC_HESTON)
+        // 73, 548 and 1095 are 0.2, 1.5 and 3.0 years respectively in Actual365Fixed
+        final int[] days = { 73, 73, 73, 73, 73,
+                             548, 548, 548, 548, 548,
+                             1095, 1095, 1095, 1095, 1095 };
+        final double[] strikes = { 90.0, 95.0, 100.0, 105.0, 110.0,
+                                   90.0, 95.0, 100.0, 105.0, 110.0,
+                                   90.0, 95.0, 100.0, 105.0, 110.0 };
+
+        // Prices from Table 1 (params obey Feller condition)
+        final double[] prices = { 10.6571, 6.5871, 3.4478, 1.4552, 0.4724,
+                                  16.5030, 13.7625, 11.3374, 9.2245, 7.4122,
+                                  20.5102, 18.3060, 16.2895, 14.4531, 12.7882 };
+
+        // Prices from Table 4 (params do not obey Feller condition)
+        final double[] prices_2 = { 10.6425, 6.4362, 3.1578, 1.1936, 0.3609,
+                                    14.9955, 11.6707, 8.7767, 6.3818, 4.5118,
+                                    18.1219, 15.2009, 12.5707, 10.2539, 8.2611 };
+
+        // 0.2 and 3.0 match to 1e-4. Unfortunately 1.5 corresponds to 547.5 days,
+        // 547 and 548 bound the expected answer but are both out by ~5e-3.
+        final double tolerance = 1.0e-2;
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Settings().evaluationDate();
+        final Option.Type type = Option.Type.Call;
+        final AverageType averageType = AverageType.Geometric;
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(100.0));
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.05);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+
+        // ---- Set 1: Feller condition obeyed ----
+        final double v0     = 0.09;
+        final double kappa  = 1.15;
+        final double theta  = 0.348;
+        final double sigma  = 0.39;
+        final double rho    = -0.64;
+        final HestonProcess hestonProcess = new HestonProcess(
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<YieldTermStructure>(qTS),
+                spot, v0, kappa, theta, sigma, rho);
+        final AnalyticContinuousGeometricAveragePriceAsianHestonEngine engine =
+                new AnalyticContinuousGeometricAveragePriceAsianHestonEngine(hestonProcess);
+
+        for (int i = 0; i < strikes.length; i++) {
+            final double strike = strikes[i];
+            final int day = days[i];
+            final double expected = prices[i];
+            final Date expiryDate = today.add(day);
+            final Exercise europeanExercise = new EuropeanExercise(expiryDate);
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+            final ContinuousAveragingAsianOption option =
+                    new ContinuousAveragingAsianOption(averageType, payoff, europeanExercise);
+            option.setPricingEngine(engine);
+            final double calculated = option.NPV();
+            final double error = Math.abs(calculated - expected);
+            if (error > tolerance) {
+                fail("Failed to reproduce Kim-Wee 2014 Table 1 NPV:"
+                        + "\n    strike:     " + strike
+                        + "\n    days:       " + day
+                        + "\n    expected:   " + expected
+                        + "\n    calculated: " + calculated
+                        + "\n    error:      " + error
+                        + "\n    tolerance:  " + tolerance);
+            }
+        }
+
+        // ---- Set 2: Feller condition violated ----
+        final double v0_2     = 0.09;
+        final double kappa_2  = 2.0;
+        final double theta_2  = 0.09;
+        final double sigma_2  = 1.0;
+        final double rho_2    = -0.3;
+        final HestonProcess hestonProcess_2 = new HestonProcess(
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<YieldTermStructure>(qTS),
+                spot, v0_2, kappa_2, theta_2, sigma_2, rho_2);
+        final AnalyticContinuousGeometricAveragePriceAsianHestonEngine engine_2 =
+                new AnalyticContinuousGeometricAveragePriceAsianHestonEngine(hestonProcess_2);
+
+        for (int i = 0; i < strikes.length; i++) {
+            final double strike = strikes[i];
+            final int day = days[i];
+            final double expected = prices_2[i];
+            final Date expiryDate = today.add(day);
+            final Exercise europeanExercise = new EuropeanExercise(expiryDate);
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+            final ContinuousAveragingAsianOption option =
+                    new ContinuousAveragingAsianOption(averageType, payoff, europeanExercise);
+            option.setPricingEngine(engine_2);
+            final double calculated = option.NPV();
+            final double error = Math.abs(calculated - expected);
+            if (error > tolerance) {
+                fail("Failed to reproduce Kim-Wee 2014 Table 4 NPV (Feller violated):"
+                        + "\n    strike:     " + strike
+                        + "\n    days:       " + day
+                        + "\n    expected:   " + expected
+                        + "\n    calculated: " + calculated
+                        + "\n    error:      " + error
+                        + "\n    tolerance:  " + tolerance);
+            }
+        }
+
+        // ---- Set 3: data from Kim-Kim-Kim-Wee 2016, continuous limit ----
+        final int[] days_3 = { 30, 91, 182, 365, 730, 1095,
+                               30, 91, 182, 365, 730, 1095,
+                               30, 91, 182, 365, 730, 1095 };
+        final double[] strikes_3 = { 90, 90, 90, 90, 90, 90,
+                                     100, 100, 100, 100, 100, 100,
+                                     110, 110, 110, 110, 110, 110 };
+        // 30-day options need wider tolerance due to the day-bracket issue.
+        final double[] tol_3 = { 2.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2,
+                                 2.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2,
+                                 2.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2 };
+        // Prices from Tables 1, 2 and 3
+        final double[] prices_3 = { 10.1513, 10.8175, 11.8664, 13.5931, 16.0988, 17.9475,
+                                    2.0472, 3.5735, 5.0588, 7.1132, 9.9139, 11.9959,
+                                    0.0350, 0.4869, 1.3376, 2.8569, 5.2804, 7.2682 };
+
+        // Note that although these parameters look similar to the first set above,
+        // theta is a factor of 10 smaller. (C++ comment: "I guess there is a
+        // mis-transcription somewhere!")
+        final double v0_3     = 0.09;
+        final double kappa_3  = 1.15;
+        final double theta_3  = 0.0348;
+        final double sigma_3  = 0.39;
+        final double rho_3    = -0.64;
+        final HestonProcess hestonProcess_3 = new HestonProcess(
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<YieldTermStructure>(qTS),
+                spot, v0_3, kappa_3, theta_3, sigma_3, rho_3);
+        final AnalyticContinuousGeometricAveragePriceAsianHestonEngine engine_3 =
+                new AnalyticContinuousGeometricAveragePriceAsianHestonEngine(hestonProcess_3);
+
+        for (int i = 0; i < strikes_3.length; i++) {
+            final double strike = strikes_3[i];
+            final int day = days_3[i];
+            final double expected = prices_3[i];
+            final double caseTolerance = tol_3[i];
+            final Date expiryDate = today.add(day);
+            final Exercise europeanExercise = new EuropeanExercise(expiryDate);
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+            final ContinuousAveragingAsianOption option =
+                    new ContinuousAveragingAsianOption(averageType, payoff, europeanExercise);
+            option.setPricingEngine(engine_3);
+            final double calculated = option.NPV();
+            final double error = Math.abs(calculated - expected);
+            if (error > caseTolerance) {
+                fail("Failed to reproduce Kim-Kim-Kim-Wee 2016 continuous-limit NPV:"
+                        + "\n    strike:     " + strike
+                        + "\n    days:       " + day
+                        + "\n    expected:   " + expected
+                        + "\n    calculated: " + calculated
+                        + "\n    error:      " + error
+                        + "\n    tolerance:  " + caseTolerance);
+            }
+        }
+    }
+
+    /**
+     * Port of {@code test-suite/asianoptions.cpp::testAnalyticDiscreteGeometricAveragePriceHeston}.
+     *
+     * <p>Reference data from Kim, Kim, Kim & Wee, "A Recursive Method for
+     * Discretely Monitored Geometric Asian Option Prices", Bull. Korean Math.
+     * Soc. 53, 733-749 (2016), Tables 1-3 (weekly fixings). Engine:
+     * experimental {@link AnalyticDiscreteGeometricAveragePriceAsianHestonEngine}
+     * (Kim-Kim-Kim-Wee 2016 recursive method).
+     *
+     * <p>Tolerance: per-case 1e-2 to 8e-2 (matches the C++ per-case tolerance
+     * table). 30-day options need wider tolerance due to uncertainty around
+     * what "weekly fixing" dates mean over a 30-day month.
+     */
     @Test
-    public void testAnalyticDiscreteGeometricAveragePriceHeston() { fail("not implemented"); }
+    public void testAnalyticDiscreteGeometricAveragePriceHeston() {
 
-    @Ignore(REASON_ANALYTIC_HESTON + " + past-fixings semantics")
+        // Per-case tolerances matching C++ tol[] in asianoptions.cpp.
+        final double[] tol = { 3.0e-2, 2.0e-2, 2.0e-2, 2.0e-2, 3.0e-2, 4.0e-2,
+                               8.0e-2, 1.0e-2, 2.0e-2, 3.0e-2, 3.0e-2, 4.0e-2,
+                               2.0e-2, 1.0e-2, 1.0e-2, 2.0e-2, 3.0e-2, 4.0e-2 };
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Settings().evaluationDate();
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(100.0));
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.05);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+
+        final double v0     = 0.09;
+        final double kappa  = 1.15;
+        final double theta  = 0.0348;
+        final double sigma  = 0.39;
+        final double rho    = -0.64;
+        final HestonProcess hestonProcess = new HestonProcess(
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<YieldTermStructure>(qTS),
+                spot, v0, kappa, theta, sigma, rho);
+        final AnalyticDiscreteGeometricAveragePriceAsianHestonEngine engine =
+                new AnalyticDiscreteGeometricAveragePriceAsianHestonEngine(hestonProcess);
+
+        // Tables 1, 2, 3 reference data (from helper testDiscreteGeometricAveragePriceHeston)
+        final int[] days = { 30, 91, 182, 365, 730, 1095,
+                             30, 91, 182, 365, 730, 1095,
+                             30, 91, 182, 365, 730, 1095 };
+        final double[] strikes = { 90, 90, 90, 90, 90, 90,
+                                   100, 100, 100, 100, 100, 100,
+                                   110, 110, 110, 110, 110, 110 };
+        final double[] prices = { 10.2732, 10.9554, 11.9916, 13.6950, 16.1773, 18.0146,
+                                  2.4389, 3.7881, 5.2132, 7.2243, 9.9948, 12.0639,
+                                  0.1012, 0.5949, 1.4444, 2.9479, 5.3531, 7.3315 };
+
+        final Option.Type type = Option.Type.Call;
+        final AverageType averageType = AverageType.Geometric;
+        final double runningAccumulator = 1.0;
+        final int pastFixings = 0;
+
+        for (int i = 0; i < strikes.length; i++) {
+            final double strike = strikes[i];
+            final int day = days[i];
+            final double expected = prices[i];
+            final double caseTolerance = tol[i];
+
+            // "weekly fixings" — floor(day/7) future fixings; C++ loop:
+            //   for (int i=futureFixings-1; i>=0; i--) fixingDates[i] = expiryDate - i*7;
+            // so fixingDates[0] = expiryDate and fixingDates[futureFixings-1] =
+            // expiryDate - (futureFixings-1)*7 (earliest). The engine sorts internally,
+            // so traversal order is immaterial for pricing.
+            final int futureFixings = (int) Math.floor(day / 7.0);
+            final List<Date> fixingDates = new ArrayList<Date>(futureFixings);
+            final Date expiryDate = today.add(day);
+            for (int j = 0; j < futureFixings; j++) {
+                fixingDates.add(null);
+            }
+            for (int j = futureFixings - 1; j >= 0; j--) {
+                fixingDates.set(j, expiryDate.add(-j * 7));
+            }
+
+            final Exercise europeanExercise = new EuropeanExercise(expiryDate);
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+
+            final DiscreteAveragingAsianOption option =
+                    new DiscreteAveragingAsianOption(averageType, runningAccumulator,
+                            pastFixings, fixingDates, payoff, europeanExercise);
+            option.setPricingEngine(engine);
+
+            final double calculated = option.NPV();
+            final double error = Math.abs(calculated - expected);
+            if (error > caseTolerance) {
+                fail("Failed to reproduce Kim-Kim-Kim-Wee 2016 discrete NPV:"
+                        + "\n    strike:     " + strike
+                        + "\n    days:       " + day
+                        + "\n    expected:   " + expected
+                        + "\n    calculated: " + calculated
+                        + "\n    error:      " + error
+                        + "\n    tolerance:  " + caseTolerance);
+            }
+        }
+    }
+
+    @Ignore(REASON_ANALYTIC_HESTON_PAST_FIXINGS)
     @Test
     public void testDiscreteGeometricAveragePriceHestonPastFixings() { fail("not implemented"); }
 
