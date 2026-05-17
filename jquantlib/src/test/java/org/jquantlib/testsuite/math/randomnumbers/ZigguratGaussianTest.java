@@ -22,16 +22,22 @@
 
 package org.jquantlib.testsuite.math.randomnumbers;
 
+import static org.junit.Assert.fail;
+
 import org.jquantlib.QL;
-import org.junit.Ignore;
+import org.jquantlib.math.randomnumbers.Xoshiro256StarStarUniformRng;
+import org.jquantlib.math.randomnumbers.ZigguratGaussianRng;
+import org.jquantlib.math.statistics.IncrementalStatistics;
 import org.junit.Test;
 
 /**
  * Java port of QuantLib v1.42.1 test-suite/zigguratgaussian.cpp (Phase 5a).
  *
- * <p>1 BOOST_AUTO_TEST_CASE method. JQuantLib has no
- * {@code ZigguratGaussianRng} or {@code Xoshiro256StarStarUniformRng}
- * (C++ {@code ql/math/randomnumbers/}). Phase 5a.5 carry-forward.
+ * <p>Statistical sanity check on
+ * {@code ZigguratGaussianRng<Xoshiro256StarStarUniformRng>::nextReal()}: with
+ * seed 42 and 10<sup>7</sup> draws, the sample {mean, variance, skewness,
+ * kurtosis} should be close to {0, 1, 0, 0}. Tolerances match C++ exactly
+ * (0.001 mean, 0.005 variance, 0.001 skewness, 0.03 kurtosis).
  */
 public class ZigguratGaussianTest {
 
@@ -39,9 +45,37 @@ public class ZigguratGaussianTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has neither ZigguratGaussianRng nor "
-            + "Xoshiro256StarStarUniformRng (C++ ql/math/randomnumbers/). Port both then enable.")
     @Test
     public void testStatisticsOfNextReal() {
+        QL.info("Testing ZigguratGaussianRng<Xoshiro256StarStarUniformRng>::nextReal() for "
+                + "mean, variance, skewness and kurtosis...");
+
+        final long seed = 42L;
+        final Xoshiro256StarStarUniformRng uniform = new Xoshiro256StarStarUniformRng(seed);
+        final ZigguratGaussianRng random = new ZigguratGaussianRng(uniform);
+
+        final IncrementalStatistics randoms = new IncrementalStatistics();
+        final int iterations = 10_000_000;
+        for (int j = 0; j < iterations; ++j) {
+            randoms.add(random.next().value());
+        }
+
+        final double mean = randoms.mean();
+        final double variance = randoms.variance();
+        final double skewness = randoms.skewness();
+        final double kurtosis = randoms.kurtosis();
+
+        if (Math.abs(mean) > 0.001) {
+            fail("Mean " + mean + " for seed " + seed + " is not close to 0.");
+        }
+        if (Math.abs(1.0 - variance) > 0.005) {
+            fail("Variance " + variance + " for seed " + seed + " is not close to 1.");
+        }
+        if (Math.abs(skewness) > 0.001) {
+            fail("Skewness " + skewness + " for seed " + seed + " is not close to 0.");
+        }
+        if (Math.abs(kurtosis) > 0.03) {
+            fail("Kurtosis " + kurtosis + " for seed " + seed + " is not close to 0.");
+        }
     }
 }
