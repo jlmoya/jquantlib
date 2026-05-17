@@ -118,10 +118,18 @@ public abstract class Integrator {
 
 
     //
-    // protected virtual methods
+    // public virtual methods (continued)
     //
 
-    protected int numberOfEvaluations() /* @ReadOnly */ {
+    /**
+     * Number of function evaluations consumed by the most recent
+     * {@link #op(Ops.DoubleOp, double, double)} call. Promoted to
+     * {@code public} from {@code protected} so that
+     * {@link org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine.Integration}
+     * (Phase 5e.5b-CFC-d-120) and other engine wrappers can mirror C++
+     * {@code Integrator::numberOfEvaluations()} accessor.
+     */
+    public int numberOfEvaluations() /* @ReadOnly */ {
         return this.numberOfEvaluations;
     }
 
