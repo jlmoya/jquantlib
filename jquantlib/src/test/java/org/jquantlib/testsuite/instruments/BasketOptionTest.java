@@ -899,7 +899,7 @@ public class BasketOptionTest {
 
     // ---- Skeleton placeholders (Phase 5k.5b carry-forward) -----------
 
-    @Ignore(REASON_BARRAQUAND)         @Test public void testBarraquandThreeValues()                  { fail("not implemented"); }
+    // testBarraquandThreeValues body-filled in Phase 5e.5b-CFC-d-259 — see method below.
     @Ignore(REASON_LOCAL_VOL_SPREAD)   @Test public void testLocalVolatilitySpreadOption()            { fail("not implemented"); }
     // test2DPDEGreeks + testPDEvsApproximations body-filled in
     // Phase 5e.5b-CFC-d-166 — see methods below.
@@ -936,6 +936,8 @@ public class BasketOptionTest {
     private static final String UNUSED_STRANG_SPLITTING_REASON = REASON_STRANG_SPLITTING;
     @SuppressWarnings("unused")
     private static final String UNUSED_NO_DIV_ZERO_REASON = REASON_NO_DIV_ZERO;
+    @SuppressWarnings("unused")
+    private static final String UNUSED_BARRAQUAND_REASON = REASON_BARRAQUAND;
 
     // ---- Bodied tests for DengLiZhouBasketEngine (Phase 5e.5b-CFC-d-104) -----
 
@@ -2003,6 +2005,215 @@ public class BasketOptionTest {
             fail("failed to reproduce PDE spread option prices with Operator-Splitting second order:"
                     + "\n    stdev:     " + statOs2.standardDeviation()
                     + "\n    tolerance: " + tolOther);
+        }
+    }
+
+    // ---- Bodied test for Barraquand 3-asset basket (Phase 5e.5b-CFC-d-259) ----
+
+    /**
+     * Three-asset basket options against Barraquand &amp; Martineau (1995) Table 3
+     * European + American Max-Put reference values. Mirrors C++
+     * {@code testBarraquandThreeValues} ({@code test-suite/basketoption.cpp},
+     * v1.42.1, body of {@code BOOST_AUTO_TEST_CASE(testBarraquandThreeValues,
+     * *precondition(if_speed(Slow)))}).
+     *
+     * <p>Reference: Barraquand, J. and Martineau, D., "Numerical Valuation of
+     * High Dimensional American Securities", Journal of Financial and
+     * Quantitative Analysis 1995 3(30) 383-405. The C++ test mirrors Table 3
+     * (MaxBasket Put rows); only the rows whose euro/american values are
+     * uncommented in v1.42.1 are reproduced here (7 active rows out of 36).</p>
+     *
+     * <p>Two engines per row:
+     * <ul>
+     *   <li>European leg: {@link MCEuropeanBasketEngine} (PseudoRandom MT-19937
+     *       in this Java port; the C++ test uses Sobol/LowDiscrepancy with 8091
+     *       samples — quasi-random MC for basket options is deferred to
+     *       Phase 5k.5b. We use 10000 pseudo-random samples + 1 step/year +
+     *       antithetic instead, which produces sub-0.01 relative error on s1=40
+     *       across all 7 rows).</li>
+     *   <li>American leg: {@link MCAmericanBasketEngine} with the C++ exact
+     *       parameters (1000 samples, 500 time steps, antithetic,
+     *       calibrationSamples=250, seed=1).</li>
+     * </ul></p>
+     *
+     * <p>Tolerance: 1e-2 relative-to-{@code value.s1} (matches C++
+     * {@code mcRelativeErrorTolerance = mcAmericanRelativeErrorTolerance =
+     * 0.01}); with {@code s1 = 40} this is an absolute tolerance of ~0.4
+     * — generous enough for both PseudoRandom (Euro) and LSM (Amer.) MC
+     * variance.</p>
+     */
+    @Test
+    public void testBarraquandThreeValues() {
+        QL.info("Testing three-asset basket options against Barraquand's values...");
+
+        // Data from Barraquand-Martineau (1995) Table 3 — only the rows whose
+        // euroValue + amValue are uncommented in C++ v1.42.1 (7 rows).
+        // Columns: basketType, type, strike, s1, s2, s3, r, t (months/12 below),
+        // v1, v2, v3, rho, euroValue, amValue
+        final BasketOptionThreeData[] values = new BasketOptionThreeData[] {
+            // Table 3
+            new BasketOptionThreeData(BasketType.MaxBasket, Option.Type.Put,
+                    35.0, 40.0, 40.0, 40.0, 0.05, 1.00, 0.20, 0.30, 0.50, 0.0, 0.00, 0.00),
+            new BasketOptionThreeData(BasketType.MaxBasket, Option.Type.Put,
+                    40.0, 40.0, 40.0, 40.0, 0.05, 1.00, 0.20, 0.30, 0.50, 0.0, 0.13, 0.23),
+            new BasketOptionThreeData(BasketType.MaxBasket, Option.Type.Put,
+                    45.0, 40.0, 40.0, 40.0, 0.05, 1.00, 0.20, 0.30, 0.50, 0.0, 2.26, 5.00),
+            new BasketOptionThreeData(BasketType.MaxBasket, Option.Type.Put,
+                    40.0, 40.0, 40.0, 40.0, 0.05, 4.00, 0.20, 0.30, 0.50, 0.0, 0.25, 0.44),
+            new BasketOptionThreeData(BasketType.MaxBasket, Option.Type.Put,
+                    45.0, 40.0, 40.0, 40.0, 0.05, 4.00, 0.20, 0.30, 0.50, 0.0, 1.55, 5.00),
+            new BasketOptionThreeData(BasketType.MaxBasket, Option.Type.Put,
+                    45.0, 40.0, 40.0, 40.0, 0.05, 7.00, 0.20, 0.30, 0.50, 0.0, 1.41, 5.00),
+            new BasketOptionThreeData(BasketType.MaxBasket, Option.Type.Put,
+                    40.0, 40.0, 40.0, 40.0, 0.05, 7.00, 0.20, 0.30, 0.50, 0.5, 0.91, 1.19),
+        };
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        // Strong references for observers (Phase 2x A.4).
+        final SimpleQuote spot1 = new SimpleQuote(0.0);
+        final SimpleQuote spot2 = new SimpleQuote(0.0);
+        final SimpleQuote spot3 = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final SimpleQuote vol1 = new SimpleQuote(0.0);
+        final SimpleQuote vol2 = new SimpleQuote(0.0);
+        final SimpleQuote vol3 = new SimpleQuote(0.0);
+
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final BlackVolTermStructure volTS1 = Utilities.flatVol(today, vol1, dc);
+        final BlackVolTermStructure volTS2 = Utilities.flatVol(today, vol2, dc);
+        final BlackVolTermStructure volTS3 = Utilities.flatVol(today, vol3, dc);
+
+        // American MC params. Mirrors C++ {@code testBarraquandThreeValues}
+        // exactly: 1000 samples × 500 timeSteps × calibrationSamples=250.
+        // Deep-ITM rows (amValue=5.00 = strike - spot) rely on the LSM
+        // backward-induction interior-step exercise check to converge to
+        // the intrinsic value; 500 timesteps gives the regressor enough
+        // exercise opportunities along each path to push the rolled-back
+        // price up to ~5.00 within MC tolerance.
+        final int requiredAmSamples = 1000;
+        final int amTimeSteps = 500;
+        final long amSeed = 1L;
+        final double mcAmericanRelativeErrorTolerance = 1.0e-2;
+
+        // PseudoRandom equivalent for the European leg (C++ uses Sobol/8091).
+        // 10000 pseudo-MT samples + antithetic + 1 step/year gives variance
+        // comparable to Sobol/8091 for these payoffs at the chosen tolerance.
+        final int requiredEuSamples = 10000;
+        final int euTimeStepsPerYear = 1;
+        final long euSeed = 42L;
+        final double mcRelativeErrorTolerance = 1.0e-2;
+
+        for (final BasketOptionThreeData value : values) {
+            final PlainVanillaPayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
+
+            // C++: exDate = today + Integer(value.t) * 30 (months at 30 days each).
+            final Date exDate = today.add((int) (value.t * 30.0));
+            final Exercise exercise = new EuropeanExercise(exDate);
+            final Exercise amExercise = new AmericanExercise(today, exDate);
+
+            spot1.setValue(value.s1);
+            spot2.setValue(value.s2);
+            spot3.setValue(value.s3);
+            rRate.setValue(value.r);
+            vol1.setValue(value.v1);
+            vol2.setValue(value.v2);
+            vol3.setValue(value.v3);
+
+            final StochasticProcess1D p1 = new BlackScholesMertonProcess(
+                    new Handle<Quote>(spot1), new Handle<YieldTermStructure>(qTS),
+                    new Handle<YieldTermStructure>(rTS),
+                    new Handle<BlackVolTermStructure>(volTS1));
+            final StochasticProcess1D p2 = new BlackScholesMertonProcess(
+                    new Handle<Quote>(spot2), new Handle<YieldTermStructure>(qTS),
+                    new Handle<YieldTermStructure>(rTS),
+                    new Handle<BlackVolTermStructure>(volTS2));
+            final StochasticProcess1D p3 = new BlackScholesMertonProcess(
+                    new Handle<Quote>(spot3), new Handle<YieldTermStructure>(qTS),
+                    new Handle<YieldTermStructure>(rTS),
+                    new Handle<BlackVolTermStructure>(volTS3));
+
+            final List<StochasticProcess1D> procs = new ArrayList<StochasticProcess1D>();
+            procs.add(p1);
+            procs.add(p2);
+            procs.add(p3);
+
+            // Constant-rho correlation with unit diagonal (C++:
+            //   Matrix correlation(3, 3, value.rho);
+            //   for (j=0; j<3; ++j) correlation[j][j] = 1.0).
+            final Matrix correlation = new Matrix(3, 3);
+            for (int i = 0; i < 3; ++i) {
+                for (int j = 0; j < 3; ++j) {
+                    correlation.set(i, j, (i == j) ? 1.0 : value.rho);
+                }
+            }
+
+            final StochasticProcessArray process = new StochasticProcessArray(procs, correlation);
+
+            // ---- European leg --------------------------------------------------
+            final org.jquantlib.pricingengines.basket.MCEuropeanBasketEngine mcQuasiEngine =
+                    new org.jquantlib.pricingengines.basket.MCEuropeanBasketEngine(
+                            process,
+                            /* timeSteps */ McSimulation.NULL_SAMPLES,
+                            /* timeStepsPerYear */ euTimeStepsPerYear,
+                            /* brownianBridge */ false,
+                            /* antitheticVariate */ true,
+                            /* requiredSamples */ requiredEuSamples,
+                            /* requiredTolerance */ McSimulation.NULL_TOLERANCE,
+                            /* maxSamples */ McSimulation.NULL_SAMPLES,
+                            /* seed */ euSeed);
+
+            final BasketOption euroBasketOption = new BasketOption(
+                    basketTypeToPayoff(value.basketType, payoff), exercise);
+            euroBasketOption.setPricingEngine(mcQuasiEngine);
+
+            final double euroCalc = euroBasketOption.NPV();
+            final double euroExp = value.euroValue;
+            final double euroRelError = relativeError(euroCalc, euroExp, value.s1);
+            if (euroRelError > mcRelativeErrorTolerance) {
+                fail("MC Quasi value (PseudoRandom proxy): " + value.basketType + " "
+                        + value.type + " K=" + value.strike + " t=" + value.t
+                        + " rho=" + value.rho + ":\n"
+                        + "  expected   = " + euroExp + "\n"
+                        + "  calculated = " + euroCalc + "\n"
+                        + "  relError   = " + euroRelError + "\n"
+                        + "  tolerance  = " + mcRelativeErrorTolerance);
+            }
+
+            // ---- American leg --------------------------------------------------
+            final MCAmericanBasketEngine mcLSMCEngine = new MCAmericanBasketEngine(
+                    process,
+                    /* timeSteps */ amTimeSteps,
+                    /* timeStepsPerYear */ McSimulation.NULL_SAMPLES,
+                    /* brownianBridge */ false,
+                    /* antitheticVariate */ true,
+                    /* requiredSamples */ requiredAmSamples,
+                    /* requiredTolerance */ McSimulation.NULL_TOLERANCE,
+                    /* maxSamples */ McSimulation.NULL_SAMPLES,
+                    /* seed */ amSeed,
+                    /* nCalibrationSamples */ requiredAmSamples / 4,
+                    /* polynomialOrder */ 2,
+                    LsmBasisSystem.PolynomialType.Monomial);
+
+            final BasketOption amBasketOption = new BasketOption(
+                    basketTypeToPayoff(value.basketType, payoff), amExercise);
+            amBasketOption.setPricingEngine(mcLSMCEngine);
+
+            final double amCalc = amBasketOption.NPV();
+            final double amExp = value.amValue;
+            final double amRelError = relativeError(amCalc, amExp, value.s1);
+            if (amRelError > mcAmericanRelativeErrorTolerance) {
+                fail("MC LSMC Value: " + value.basketType + " " + value.type
+                        + " K=" + value.strike + " t=" + value.t
+                        + " rho=" + value.rho + ":\n"
+                        + "  expected   = " + amExp + "\n"
+                        + "  calculated = " + amCalc + "\n"
+                        + "  relError   = " + amRelError + "\n"
+                        + "  tolerance  = " + mcAmericanRelativeErrorTolerance);
+            }
         }
     }
 }
