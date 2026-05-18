@@ -75,7 +75,9 @@ import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
 import org.jquantlib.termstructures.volatilities.BlackVarianceSurface;
+import org.jquantlib.termstructures.volatilities.LocalVolSurface;
 import org.jquantlib.termstructures.volatilities.equityfx.FixedLocalVolSurface;
+import org.jquantlib.termstructures.volatilities.equityfx.HestonBlackVolSurface;
 import org.jquantlib.termstructures.volatilities.equityfx.NoExceptLocalVolSurface;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
@@ -1665,17 +1667,145 @@ public class HestonSLVModelTest {
 
     /* ---- 4. Pricing checks -------------------------------------------- */
 
-    @Ignore("Phase 5e.5b-CFC-d-257 — FdHestonDoubleBarrierEngine now landed; "
-            + "however the C++ test body itself does NOT use that engine — it "
-            + "compares AnalyticEuropeanEngine vs AnalyticHestonEngine vs "
-            + "FdBlackScholesVanillaEngine(localVol=true) over a strike x maturity "
-            + "grid driven by a HestonBlackVolSurface → LocalVolSurface. "
-            + "All four pricing engines + HestonBlackVolSurface + LocalVolSurface "
-            + "exist in Java, so the test is technically unblocked. Deferred to a "
-            + "follow-up body-fill (out of scope for Phase 5e.5b-CFC-d-257 which "
-            + "targets the FD double-barrier engine port itself).")
+    /**
+     * Body-fill of C++ {@code test-suite/hestonslvmodel.cpp:1635}
+     * ({@code testBarrierPricingViaHestonLocalVol}).
+     *
+     * <p>Despite its name, the C++ test body does NOT exercise any barrier
+     * engine. It builds a {@link HestonBlackVolSurface} from a Heston model,
+     * constructs an unused {@link LocalVolSurface} on top of the Heston
+     * surface (kept here for faithful porting), then for each
+     * {@code (strike, maturity)} pair compares three vanilla-option prices:
+     *
+     * <ol>
+     *   <li>{@link AnalyticHestonEngine} (Gauss-Laguerre order 164) — the
+     *       implied-vol benchmark;</li>
+     *   <li>{@link AnalyticEuropeanEngine} against the flat-vol process
+     *       {@code GeneralizedBlackScholesProcess(spot,qTS,rTS,flatVol(impliedVol))}
+     *       — should agree with Heston by definition (Heston volatility is
+     *       the implied surface evaluated at strike/maturity);</li>
+     *   <li>{@link FdBlackScholesVanillaEngine} in local-vol mode driving the
+     *       same flat-vol process — converges to the analytic European price
+     *       under uniform spot vol.</li>
+     * </ol>
+     *
+     * <p>Tolerance: absolute price diff {@code <= 1e-3} (C++ default at
+     * {@code tol = 1e-3} on line 1717).
+     *
+     * <p>Unblocked by Phase 5e.5b-CFC-d-257
+     * ({@code FdHestonDoubleBarrierEngine} port — although the test body
+     * does not use that engine, its un-ignore was previously bundled with
+     * the FdHestonDoubleBarrierEngine landing). All four pricing engines
+     * plus {@code HestonBlackVolSurface} and {@code LocalVolSurface} are
+     * available in Java.
+     */
     @Test
-    public void testBarrierPricingViaHestonLocalVol() { fail("not implemented"); }
+    public void testBarrierPricingViaHestonLocalVol() {
+        QL.info("Testing Heston/local-vol vanilla-pricing consistency "
+                + "(C++ test-suite/hestonslvmodel.cpp:1635)...");
+
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final Date todaysDate = new Date(5, Month.November, 2015);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final double s0 = 100.0;
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final double r = 0.1;
+        final double q = 0.025;
+
+        final double kappa =  2.0;
+        final double theta =  0.09;
+        final double rho   = -0.75;
+        final double sigma =  0.8;
+        final double v0    =  0.19;
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dc));
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+
+        final Handle<HestonModel> hestonModel = new Handle<HestonModel>(
+                new HestonModel(hestonProcess));
+
+        final Handle<BlackVolTermStructure> surf =
+                new Handle<BlackVolTermStructure>(
+                        new HestonBlackVolSurface(hestonModel.currentLink()));
+
+        final double[] strikeValues = { 50.0, 75.0, 100.0, 125.0, 150.0, 200.0, 400.0 };
+        final Period[] maturities = {
+                new Period(1, TimeUnit.Months), new Period(2, TimeUnit.Months),
+                new Period(3, TimeUnit.Months), new Period(4, TimeUnit.Months),
+                new Period(5, TimeUnit.Months), new Period(6, TimeUnit.Months),
+                new Period(9, TimeUnit.Months), new Period(1, TimeUnit.Years),
+                new Period(18, TimeUnit.Months), new Period(2, TimeUnit.Years),
+                new Period(3, TimeUnit.Years), new Period(5, TimeUnit.Years) };
+
+        // Unused in the C++ body but constructed for faithful porting.
+        @SuppressWarnings("unused")
+        final LocalVolSurface localVolSurface = new LocalVolSurface(
+                surf, rTS, qTS, spot);
+
+        final PricingEngine hestonEngine = new AnalyticHestonEngine(
+                hestonModel.currentLink(), hestonProcess, 164);
+
+        for (final double strike : strikeValues) {
+            for (final Period maturity : maturities) {
+                final Date exerciseDate = todaysDate.add(maturity);
+                final double t = dc.yearFraction(todaysDate, exerciseDate);
+
+                final double impliedVol = surf.currentLink().blackVol(t, strike, true);
+
+                final GeneralizedBlackScholesProcess bsProcess =
+                        new GeneralizedBlackScholesProcess(
+                                spot, qTS, rTS,
+                                new Handle<BlackVolTermStructure>(
+                                        Utilities.flatVol(todaysDate, impliedVol, dc)));
+
+                final PricingEngine analyticEngine = new AnalyticEuropeanEngine(bsProcess);
+
+                final Exercise exercise = new EuropeanExercise(exerciseDate);
+                final StrikedTypePayoff payoff = new PlainVanillaPayoff(
+                        spot.currentLink().value() < strike ? Option.Type.Call : Option.Type.Put,
+                        strike);
+
+                final PricingEngine localVolEngine = new FdBlackScholesVanillaEngine(
+                        bsProcess, 201, 801, 0,
+                        FdmSchemeDesc.Douglas(), true, Double.NaN);
+
+                final VanillaOption option = new VanillaOption(payoff, exercise);
+
+                option.setPricingEngine(analyticEngine);
+                final double analyticNPV = option.NPV();
+
+                option.setPricingEngine(hestonEngine);
+                final double hestonNPV = option.NPV();
+
+                option.setPricingEngine(localVolEngine);
+                final double localVolNPV = option.NPV();
+
+                final double tol = 1e-3;
+                if (Math.abs(analyticNPV - hestonNPV) > tol) {
+                    fail("Heston and BS price do not match"
+                            + "\n  strike       : " + strike
+                            + "\n  maturity     : " + maturity
+                            + "\n  Heston       : " + hestonNPV
+                            + "\n  Black-Scholes: " + analyticNPV
+                            + "\n  diff         : " + Math.abs(analyticNPV - hestonNPV));
+                }
+                if (Math.abs(analyticNPV - localVolNPV) > tol) {
+                    fail("LocalVol and BS price do not match"
+                            + "\n  strike       : " + strike
+                            + "\n  maturity     : " + maturity
+                            + "\n  LocalVol     : " + localVolNPV
+                            + "\n  Black-Scholes: " + analyticNPV
+                            + "\n  diff         : " + Math.abs(analyticNPV - localVolNPV));
+                }
+            }
+        }
+    }
 
     @Ignore("Phase 5e.5b-CFC-d-235 — MakeMCEuropeanHestonEngine[HestonSLVProcess] now "
             + "available (overloaded ctor on the existing builder; same engine class "
