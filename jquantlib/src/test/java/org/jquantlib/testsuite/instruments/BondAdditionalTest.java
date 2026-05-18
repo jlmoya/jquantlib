@@ -664,9 +664,98 @@ public class BondAdditionalTest {
                 expected, calculated, tolerance);
     }
 
-    @Ignore("Phase 5d.5 — requires RiskyBondEngine + FlatHazardRate "
-          + "(credit infrastructure not yet ported)")
-    @Test public void testRiskyBondWithGivenDates() { fail("not implemented"); }
+    /**
+     * Faithful Java port of {@code testRiskyBondWithGivenDates} from
+     * {@code test-suite/bonds.cpp:1613-1675} (v1.42.1).
+     *
+     * <p>Builds a {@link FixedRateBond} priced through
+     * {@link org.jquantlib.pricingengines.bond.RiskyBondEngine} (cash-flow
+     * survival-discount + recovery-at-default leg) against a flat
+     * {@link org.jquantlib.termstructures.credit.FlatHazardRate} default
+     * curve (hazard = 10%, recovery = 40%) and a 2% flat risk-free yield
+     * curve, and verifies the cached NPV ({@code 888458.819055}) and clean
+     * price ({@code 87.407883}) to the C++ tolerance of {@code 1.0e-6}.
+     *
+     * <p>The {@code notionals} vector declared in the C++ source is not
+     * used by the test (it is leftover code) and is intentionally omitted
+     * here. {@code couponRates} has 4 entries against the 8-period
+     * semiannual schedule — {@link org.jquantlib.cashflow.FixedRateLeg}
+     * mirrors the C++ behaviour of repeating the trailing rate.
+     *
+     * <p>Phase 5e.5b-CFC-d-205.
+     */
+    @Test
+    public void testRiskyBondWithGivenDates() {
+        final Date today = new Date(22, Month.November, 2005);
+        new Settings().setEvaluationDate(today);
+
+        // Probability structure: flat 10% hazard rate, Actual/360, TARGET.
+        final org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote> hazardRate =
+                new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(
+                        new org.jquantlib.quotes.SimpleQuote(0.1));
+        final Handle<org.jquantlib.termstructures.DefaultProbabilityTermStructure>
+                defaultProbability =
+                new Handle<org.jquantlib.termstructures.DefaultProbabilityTermStructure>(
+                        new org.jquantlib.termstructures.credit.FlatHazardRate(
+                                0,
+                                new org.jquantlib.time.calendars.Target(),
+                                hazardRate,
+                                new Actual360()));
+
+        // Yield term structure: flat 2% forward, Actual/360.
+        final Handle<YieldTermStructure> riskFree =
+                new Handle<YieldTermStructure>(
+                        Utilities.flatRate(today, 0.02, new Actual360()));
+
+        // Schedule: 30-Nov-2004 -> 30-Nov-2008, semiannual,
+        // United States(GovernmentBond), Unadjusted, Backward.
+        final Schedule sch1 = new Schedule(
+                new Date(30, Month.November, 2004),
+                new Date(30, Month.November, 2008),
+                new Period(Frequency.Semiannual),
+                new UnitedStates(UnitedStates.Market.GOVERNMENTBOND),
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward,
+                false);
+
+        // Bond parameters mirror C++: faceAmount = vars.faceAmount = 1,000,000.
+        final int settlementDays = 1;
+        final double faceAmount = 1000000.0;
+
+        // C++ declares couponRates with 4 entries; FixedRateLeg cycles the
+        // trailing value across the remaining 4 periods of the schedule.
+        final double[] couponRates = { 0.02875, 0.03, 0.03125, 0.0325 };
+        final double recoveryRate = 0.4;
+
+        final FixedRateBond bond = new FixedRateBond(
+                settlementDays,
+                faceAmount,
+                sch1,
+                couponRates,
+                new ActualActual(ActualActual.Convention.ISMA),
+                BusinessDayConvention.ModifiedFollowing,
+                100.0,
+                new Date(20, Month.November, 2004));
+
+        final PricingEngine bondEngine =
+                new org.jquantlib.pricingengines.bond.RiskyBondEngine(
+                        defaultProbability, recoveryRate, riskFree);
+        bond.setPricingEngine(bondEngine);
+
+        // C++ reference values (bonds.cpp:1655-1674) — tolerance 1.0e-6.
+        final double tolerance = 1.0e-6;
+
+        final double expectedNPV = 888458.819055;
+        final double calculatedNPV = bond.NPV();
+        assertEquals("Failed to reproduce risky bond NPV",
+                expectedNPV, calculatedNPV, tolerance);
+
+        final double expectedPrice = 87.407883;
+        final double calculatedPrice = bond.cleanPrice();
+        assertEquals("Failed to reproduce risky bond clean price",
+                expectedPrice, calculatedPrice, tolerance);
+    }
 
     /**
      * Faithful Java port of {@code testFixedRateBondWithArbitrarySchedule}
