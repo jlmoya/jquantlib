@@ -26,25 +26,38 @@ import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
+import org.jquantlib.math.distributions.InverseCumulativePoisson;
 import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
+import org.jquantlib.math.randomnumbers.PoissonPseudoRandom;
 import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
 import org.jquantlib.math.randomnumbers.RanluxUniformRng;
-import org.junit.Ignore;
+import org.junit.After;
 import org.junit.Test;
 
 /**
  * Java port of QuantLib v1.42.1 test-suite/rngtraits.cpp (Phase 5a).
  *
  * <p>4 BOOST_AUTO_TEST_CASE methods. {@code testGaussian} is portable;
- * {@code testDefaultPoisson} / {@code testCustomPoisson} require
- * {@code PoissonPseudoRandom} (not in JQuantLib); {@code testRanLux} was
- * un-ignored in Phase 5e.5b-CFC-d-77 once {@link RanluxUniformRng} was ported.
+ * {@code testDefaultPoisson} / {@code testCustomPoisson} were un-ignored in
+ * Phase 5e.5b-CFC-d-195 once {@link PoissonPseudoRandom} was ported;
+ * {@code testRanLux} was un-ignored in Phase 5e.5b-CFC-d-77.
  */
 public class RngTraitsTest {
 
     public RngTraitsTest() {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
+    }
+
+    /**
+     * {@link PoissonPseudoRandom#icInstance} is a static field that mirrors
+     * the C++ {@code shared_ptr<InverseCumulativePoisson>} on the trait
+     * class. The two Poisson tests below mutate it, so reset it after each
+     * test so the tests stay independent regardless of execution order.
+     */
+    @After
+    public void resetPoissonIcInstance() {
+        PoissonPseudoRandom.icInstance = null;
     }
 
     @Test
@@ -77,15 +90,64 @@ public class RngTraitsTest {
         }
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib has no PoissonPseudoRandom (C++ "
-            + "ql/math/randomnumbers/rngtraits.hpp). Port InverseCumulativePoisson then enable.")
+    /**
+     * Mirrors C++ testDefaultPoisson: with {@code icInstance == null} the
+     * trait factory builds a default {@link InverseCumulativePoisson}
+     * (lambda = 1.0), and the sum over 100 samples seeded with MT(1234)
+     * must equal {@code 108.0} exactly (each sample is an integer; the
+     * C++ test uses {@code close()} which is TIGHT, ~1e-12 relative).
+     */
     @Test
     public void testDefaultPoisson() {
+        QL.info("Testing Poisson pseudo-random number generation...");
+
+        PoissonPseudoRandom.icInstance = null;
+        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
+                                   InverseCumulativePoisson> rsg =
+                PoissonPseudoRandom.makeSequenceGenerator(100, 1234L);
+
+        final double[] values = rsg.nextSequence().value();
+        double sum = 0.0;
+        for (final double v : values) {
+            sum += v;
+        }
+
+        final double stored = 108.0;
+        final double tolerance = 1.0e-12;
+        if (Math.abs(sum - stored) > tolerance) {
+            fail("the sum of the samples does not match the stored value\n"
+                    + "    calculated: " + sum
+                    + "\n    expected:   " + stored);
+        }
     }
 
-    @Ignore("Phase 5a.5 carry-forward — depends on PoissonPseudoRandom (see testDefaultPoisson).")
+    /**
+     * Mirrors C++ testCustomPoisson: caller installs a custom
+     * {@link InverseCumulativePoisson} with lambda = 4.0, so the
+     * sum over 100 samples seeded with MT(1234) must equal {@code 409.0}.
+     */
     @Test
     public void testCustomPoisson() {
+        QL.info("Testing custom Poisson pseudo-random number generation...");
+
+        PoissonPseudoRandom.icInstance = new InverseCumulativePoisson(4.0);
+        final InverseCumulativeRsg<RandomSequenceGenerator<MersenneTwisterUniformRng>,
+                                   InverseCumulativePoisson> rsg =
+                PoissonPseudoRandom.makeSequenceGenerator(100, 1234L);
+
+        final double[] values = rsg.nextSequence().value();
+        double sum = 0.0;
+        for (final double v : values) {
+            sum += v;
+        }
+
+        final double stored = 409.0;
+        final double tolerance = 1.0e-12;
+        if (Math.abs(sum - stored) > tolerance) {
+            fail("the sum of the samples does not match the stored value\n"
+                    + "    calculated: " + sum
+                    + "\n    expected:   " + stored);
+        }
     }
 
     /**

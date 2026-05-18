@@ -27,15 +27,21 @@ import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.Factorial;
 import org.jquantlib.math.Ops;
+import org.jquantlib.math.randomnumbers.InverseCumulative;
 import org.jquantlib.math.transcendental.JQuantMath;
 
 /**
  * Inverse cumulative Poisson distribution function.
  *
+ * <p>Implements {@link InverseCumulative} (extends {@link Ops.DoubleOp})
+ * so that it can be plugged into {@link
+ * org.jquantlib.math.randomnumbers.InverseCumulativeRsg} — mirrors the
+ * C++ usage in {@code PoissonPseudoRandom} (rngtraits.hpp v1.42.1).
+ *
  * @author Dominik Holenstein
  */
 // TEST the correctness of the returned value is tested by checking it against known good results.
-public class InverseCumulativePoisson implements Ops.DoubleOp {
+public class InverseCumulativePoisson implements Ops.DoubleOp, InverseCumulative {
 
     //
     // private fields
