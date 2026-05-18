@@ -14,6 +14,7 @@ import org.jquantlib.cashflow.BlackIborCouponPricer;
 import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.CashFlows;
 import org.jquantlib.cashflow.Coupon;
+import org.jquantlib.cashflow.FixedRateCoupon;
 import org.jquantlib.cashflow.FixedRateLeg;
 import org.jquantlib.cashflow.FloatingRateCoupon;
 import org.jquantlib.cashflow.IborCoupon;
@@ -662,12 +663,156 @@ public class CashFlowsTest {
         }
     }
 
-    @Ignore("Phase 5d.5 — requires Schedule(List<Date>, Calendar, BusinessDayConvention, "
-            + "BusinessDayConvention, Period, DateGeneration.Rule, boolean endOfMonth, "
-            + "List<Boolean> isRegular) metadata-preserving constructor. Java Schedule "
-            + "currently has only the (dates), (dates, calendar), and (dates, calendar, "
-            + "convention) date-based ctors — the 8-arg metadata variant is missing.")
-    @Test public void testPartialScheduleLegConstruction() { fail("not implemented"); }
+    /**
+     * Mirror of C++ {@code CashFlowTests::testPartialScheduleLegConstruction}
+     * (test-suite/cashflows.cpp v1.42.1 lines 428-534). Exercises that a
+     * date-based {@link Schedule} cloned with full metadata
+     * (8-arg ctor: dates + calendar + convention + termination convention +
+     * tenor + rule + endOfMonth + isRegular vector) preserves the irregular
+     * first/last reference periods of the source schedule, while the bare
+     * date-vector ctor falls back to schedule-period boundaries.
+     *
+     * <p>Phase 5e.5b-CFC-d-191: un-ignored — the 8-arg metadata-preserving
+     * {@link Schedule} ctor landed in Phase 5e.5b-CFC-d-93 (Schedule.java:111),
+     * making the previous "missing ctor" reason stale. Test body mirrors the
+     * C++ assertions exactly: build a {@code MakeSchedule} with irregular
+     * first/last period, clone it twice (with and without metadata),
+     * attach to {@link FixedRateLeg} / {@link IborLeg} variants, and check
+     * the resulting first/last coupon {@code referencePeriodStart/End}
+     * dates.
+     */
+    @Test
+    public void testPartialScheduleLegConstruction() {
+        // schedule with irregular first and last period
+        final Schedule schedule = new MakeSchedule()
+                .from(new Date(15, Month.September, 2017))
+                .to(new Date(30, Month.September, 2020))
+                .withNextToLastDate(new Date(25, Month.September, 2020))
+                .withFrequency(Frequency.Semiannual)
+                .backwards()
+                .schedule();
+
+        // same schedule, date based, with metadata
+        final Schedule schedule2 = new Schedule(schedule.dates(),
+                new NullCalendar(),
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                new Period(6, TimeUnit.Months),
+                /* rule= */ null,
+                schedule.endOfMonth(),
+                schedule.isRegular());
+
+        // same schedule, date based, without metadata
+        final Schedule schedule3 = new Schedule(schedule.dates());
+
+        // fixed rate legs based on the three schedules
+        final Leg leg = new FixedRateLeg(schedule, new ActualActual(ActualActual.Convention.ISMA))
+                .withNotionals(100.0)
+                .withCouponRates(0.01)
+                .Leg();
+        final Leg leg2 = new FixedRateLeg(schedule2, new ActualActual(ActualActual.Convention.ISMA))
+                .withNotionals(100.0)
+                .withCouponRates(0.01)
+                .Leg();
+        final Leg leg3 = new FixedRateLeg(schedule3, new ActualActual(ActualActual.Convention.ISMA))
+                .withNotionals(100.0)
+                .withCouponRates(0.01)
+                .Leg();
+
+        // check reference period of first and last coupon in all variants —
+        // for the first two we expect a 6M reference period, for the third
+        // it can not be constructed, so it equals the schedule period.
+        checkFixedReferencePeriod(leg,
+                new Date(25, Month.March,     2017), new Date(25, Month.September, 2017),
+                new Date(25, Month.September, 2020), new Date(25, Month.March,     2021),
+                "leg");
+        checkFixedReferencePeriod(leg2,
+                new Date(25, Month.March,     2017), new Date(25, Month.September, 2017),
+                new Date(25, Month.September, 2020), new Date(25, Month.March,     2021),
+                "leg2");
+        checkFixedReferencePeriod(leg3,
+                new Date(15, Month.September, 2017), new Date(25, Month.September, 2017),
+                new Date(25, Month.September, 2020), new Date(30, Month.September, 2020),
+                "leg3");
+
+        // same check as above for a floating leg
+        final IborIndex iborIndex = new USDLibor(new Period(3, TimeUnit.Months));
+        final Leg legf = new IborLeg(schedule, iborIndex)
+                .withNotionals(100.0)
+                .withPaymentDayCounter(new ActualActual(ActualActual.Convention.ISMA))
+                .Leg();
+        final Leg legf2 = new IborLeg(schedule2, iborIndex)
+                .withNotionals(100.0)
+                .withPaymentDayCounter(new ActualActual(ActualActual.Convention.ISMA))
+                .Leg();
+        final Leg legf3 = new IborLeg(schedule3, iborIndex)
+                .withNotionals(100.0)
+                .withPaymentDayCounter(new ActualActual(ActualActual.Convention.ISMA))
+                .Leg();
+
+        checkFloatingReferencePeriod(legf,
+                new Date(25, Month.March,     2017), new Date(25, Month.September, 2017),
+                new Date(25, Month.September, 2020), new Date(25, Month.March,     2021),
+                "legf");
+        checkFloatingReferencePeriod(legf2,
+                new Date(25, Month.March,     2017), new Date(25, Month.September, 2017),
+                new Date(25, Month.September, 2020), new Date(25, Month.March,     2021),
+                "legf2");
+        checkFloatingReferencePeriod(legf3,
+                new Date(15, Month.September, 2017), new Date(25, Month.September, 2017),
+                new Date(25, Month.September, 2020), new Date(30, Month.September, 2020),
+                "legf3");
+    }
+
+    /** Helper for testPartialScheduleLegConstruction — fixed-rate leg checks. */
+    private static void checkFixedReferencePeriod(final Leg leg,
+            final Date expFirstStart, final Date expFirstEnd,
+            final Date expLastStart,  final Date expLastEnd,
+            final String tag) {
+        final CashFlow firstCf = leg.get(0);
+        final CashFlow lastCf  = leg.get(leg.size() - 1);
+        if (!(firstCf instanceof FixedRateCoupon)) {
+            fail(tag + ": first cashflow is not a FixedRateCoupon (got " + firstCf + ")");
+        }
+        if (!(lastCf instanceof FixedRateCoupon)) {
+            fail(tag + ": last cashflow is not a FixedRateCoupon (got " + lastCf + ")");
+        }
+        final FixedRateCoupon firstCpn = (FixedRateCoupon) firstCf;
+        final FixedRateCoupon lastCpn  = (FixedRateCoupon) lastCf;
+        assertEquals(tag + ": firstCpn.referencePeriodStart",
+                expFirstStart, firstCpn.referencePeriodStart());
+        assertEquals(tag + ": firstCpn.referencePeriodEnd",
+                expFirstEnd, firstCpn.referencePeriodEnd());
+        assertEquals(tag + ": lastCpn.referencePeriodStart",
+                expLastStart, lastCpn.referencePeriodStart());
+        assertEquals(tag + ": lastCpn.referencePeriodEnd",
+                expLastEnd, lastCpn.referencePeriodEnd());
+    }
+
+    /** Helper for testPartialScheduleLegConstruction — floating-rate leg checks. */
+    private static void checkFloatingReferencePeriod(final Leg leg,
+            final Date expFirstStart, final Date expFirstEnd,
+            final Date expLastStart,  final Date expLastEnd,
+            final String tag) {
+        final CashFlow firstCf = leg.get(0);
+        final CashFlow lastCf  = leg.get(leg.size() - 1);
+        if (!(firstCf instanceof FloatingRateCoupon)) {
+            fail(tag + ": first cashflow is not a FloatingRateCoupon (got " + firstCf + ")");
+        }
+        if (!(lastCf instanceof FloatingRateCoupon)) {
+            fail(tag + ": last cashflow is not a FloatingRateCoupon (got " + lastCf + ")");
+        }
+        final FloatingRateCoupon firstCpn = (FloatingRateCoupon) firstCf;
+        final FloatingRateCoupon lastCpn  = (FloatingRateCoupon) lastCf;
+        assertEquals(tag + ": firstCpn.referencePeriodStart",
+                expFirstStart, firstCpn.referencePeriodStart());
+        assertEquals(tag + ": firstCpn.referencePeriodEnd",
+                expFirstEnd, firstCpn.referencePeriodEnd());
+        assertEquals(tag + ": lastCpn.referencePeriodStart",
+                expLastStart, lastCpn.referencePeriodStart());
+        assertEquals(tag + ": lastCpn.referencePeriodEnd",
+                expLastEnd, lastCpn.referencePeriodEnd());
+    }
 
     /**
      * Mirror of C++ {@code CashFlowTests::testFixedIborCouponWithoutForecastCurve}
