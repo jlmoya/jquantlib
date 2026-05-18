@@ -137,6 +137,19 @@ public final class Complex {
         return this.log().mul(p).exp();
     }
 
+    /**
+     * Complex-exponent power: {@code z^w = exp(w * log(z))}. Principal
+     * branch (cut along the negative real axis, inherited from
+     * {@link #log()}). Mirrors {@code std::pow(std::complex,
+     * std::complex)} on libc++.
+     */
+    public Complex pow(final Complex w) {
+        if (re == 0.0 && im == 0.0) {
+            return ZERO;
+        }
+        return this.log().mul(w).exp();
+    }
+
     @Override
     public String toString() {
         return "(" + re + (im < 0 ? "" : "+") + im + "i)";
