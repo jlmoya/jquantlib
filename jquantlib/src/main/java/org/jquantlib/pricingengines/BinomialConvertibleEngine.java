@@ -155,6 +155,13 @@ public class BinomialConvertibleEngine<T extends BinomialTree> extends Convertib
         convertible.initialize(lattice, maturity);
         convertible.rollback(0.0);
         this.r.value = convertible.presentValue();
+        // Phase 5e.5b align: v1.42.1 BinomialConvertibleEngine::calculate()
+        // guards against floating-point overflow on the tree grid
+        // (binomialconvertibleengine.hpp:129-130). Mirrors the regression
+        // case in test-suite/convertiblebonds.cpp::testRegression which
+        // expects an Error when a pathological volatility blows up the
+        // recursive value/rate accumulation into INF.
+        QL.ensure(this.r.value < Double.MAX_VALUE, "floating-point overflow on tree grid");
     }
 
 }
