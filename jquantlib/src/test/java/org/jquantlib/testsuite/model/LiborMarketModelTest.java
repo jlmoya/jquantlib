@@ -30,13 +30,19 @@ import org.jquantlib.legacy.libormarkets.LfmSwaptionEngine;
 import org.jquantlib.legacy.libormarkets.LiborForwardModel;
 import org.jquantlib.legacy.libormarkets.LmCorrelationModel;
 import org.jquantlib.legacy.libormarkets.LmExponentialCorrelationModel;
+import org.jquantlib.legacy.libormarkets.LmExtLinearExponentialVolModel;
 import org.jquantlib.legacy.libormarkets.LmFixedVolatilityModel;
+import org.jquantlib.legacy.libormarkets.LmLinearExponentialCorrelationModel;
 import org.jquantlib.legacy.libormarkets.LmLinearExponentialVolatilityModel;
 import org.jquantlib.legacy.libormarkets.LmVolatilityModel;
+import org.jquantlib.math.Constants;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.optimization.EndCriteria;
+import org.jquantlib.math.optimization.LevenbergMarquardt;
+import org.jquantlib.math.optimization.NoConstraint;
 import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
 import org.jquantlib.math.randomnumbers.RandomSequenceGenerator;
@@ -45,12 +51,19 @@ import org.jquantlib.methods.montecarlo.MultiPath;
 import org.jquantlib.methods.montecarlo.MultiPathGenerator;
 import org.jquantlib.methods.montecarlo.Sample;
 import org.jquantlib.model.AffineModel;
+import org.jquantlib.model.BlackCalibrationHelper;
+import org.jquantlib.model.CalibrationHelper;
+import org.jquantlib.model.VolatilityType;
+import org.jquantlib.model.shortrate.calibrationhelpers.CapHelper;
+import org.jquantlib.model.shortrate.calibrationhelpers.SwaptionHelper;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.capfloor.AnalyticCapFloorEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
 import org.jquantlib.processes.LiborForwardModelProcess;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
+import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.CapletVarianceCurve;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.volatilities.optionlet.OptionletVolatilityStructure;
@@ -59,12 +72,12 @@ import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.DateGeneration;
+import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeGrid;
 import org.jquantlib.time.TimeUnit;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -91,9 +104,14 @@ import org.junit.Test;
  *       reference over the {@link LiborForwardModelProcess} via
  *       {@link MultiPathGenerator} + PseudoRandom (Mersenne Twister + inverse
  *       cumulative normal) RSG.</li>
- *   <li>{@code testCalibration} — still deferred. Needs CapHelper /
- *       SwaptionHelper engine plumbing wired to {@link LiborForwardModel}
- *       and a Levenberg-Marquardt loop with C++-parity result.</li>
+ *   <li>{@code testCalibration} — <strong>body-filled</strong>
+ *       (Phase 5e.5b-CFC-d-229). Builds 12 {@link CapHelper}s priced via
+ *       {@link AnalyticCapFloorEngine} and 49 {@link SwaptionHelper}s priced
+ *       via {@link LfmSwaptionEngine} against a fixed market vol surface,
+ *       then runs {@link LiborForwardModel#calibrate} with
+ *       {@link LevenbergMarquardt} (1e-6 tol) + {@link EndCriteria}
+ *       (2000 iter, 100 stationary, 1e-6 epsilons). Asserts the calibration
+ *       residual sqrt(sum diff^2) < 8e-3, matching C++ verbatim.</li>
  * </ul>
  *
  * <p>Source: {@code test-suite/libormarketmodel.cpp} v1.42.1 @
@@ -302,11 +320,125 @@ public class LiborMarketModelTest {
         }
     }
 
-    @Ignore("Phase 5f.6 — LFM calibration loop (LevenbergMarquardt over "
-            + "CapHelper + SwaptionHelper) requires deeper LFM-engine plumbing "
-            + "(out of scope for Phase 5e.5b-CFC-d-138)")
     @Test
-    public void testCalibration() { fail("not implemented"); }
+    public void testCalibration() {
+        // Mirror of C++ BOOST_AUTO_TEST_CASE(testCalibration)
+        // (test-suite/libormarketmodel.cpp:228-328).
+        final int size = 14;
+        // C++ uses tolerance 8e-3 against sqrt(sum_i diff_i^2). Java keeps
+        // this tier (LOOSE per CLAUDE.md: do not loosen below 1e-2).
+        final double tolerance = 8e-3;
+
+        final double[] capVols = {
+                0.145708, 0.158465, 0.166248, 0.168672,
+                0.169007, 0.167956, 0.166261, 0.164239,
+                0.162082, 0.159923, 0.157781, 0.155745,
+                0.153776, 0.151950, 0.150189, 0.148582,
+                0.147034, 0.145598, 0.144248
+        };
+
+        final double[] swaptionVols = {
+                0.170595, 0.166844, 0.158306, 0.147444,
+                0.136930, 0.126833, 0.118135, 0.175963,
+                0.166359, 0.155203, 0.143712, 0.132769,
+                0.122947, 0.114310, 0.174455, 0.162265,
+                0.150539, 0.138734, 0.128215, 0.118470,
+                0.110540, 0.169780, 0.156860, 0.144821,
+                0.133537, 0.123167, 0.114363, 0.106500,
+                0.164521, 0.151223, 0.139670, 0.128632,
+                0.119123, 0.110330, 0.103114, 0.158956,
+                0.146036, 0.134555, 0.124393, 0.115038,
+                0.106996, 0.100064
+        };
+
+        final IborIndex index = makeIndex();
+        final LiborForwardModelProcess process =
+                new LiborForwardModelProcess(size, index);
+        final Handle<YieldTermStructure> termStructure = index.termStructure();
+
+        // Model parameterisation: extended linear-exponential vol + linear-
+        // exponential correlation, mirroring C++ exactly.
+        final LmVolatilityModel volaModel =
+                new LmExtLinearExponentialVolModel(process.fixingTimes(),
+                        0.5, 0.6, 0.1, 0.1);
+        final LmCorrelationModel corrModel =
+                new LmLinearExponentialCorrelationModel(size, 0.5, 0.8);
+
+        final LiborForwardModel model =
+                new LiborForwardModel(process, volaModel, corrModel);
+
+        final DayCounter dayCounter =
+                index.termStructure().currentLink().dayCounter();
+
+        // Build the CapHelper + SwaptionHelper list. C++ uses
+        // ImpliedVolError for both; mirror the loop structure verbatim.
+        final List<CalibrationHelper> calibrationHelpers =
+                new ArrayList<CalibrationHelper>();
+        int swapVolIndex = 0;
+        for (int i = 2; i < size; ++i) {
+            final Period maturity = new Period(i * index.tenor().length(),
+                    index.tenor().units());
+            final Handle<Quote> capVol = new Handle<Quote>(
+                    new SimpleQuote(capVols[i - 2]));
+
+            final CapHelper capHelper = new CapHelper(maturity, capVol, index,
+                    Frequency.Annual, index.dayCounter(),
+                    /* includeFirstSwaplet */ true, termStructure,
+                    BlackCalibrationHelper.CalibrationErrorType.ImpliedVolError,
+                    VolatilityType.ShiftedLognormal, 0.0);
+            capHelper.setPricingEngine(
+                    new AnalyticCapFloorEngine(model, termStructure));
+            calibrationHelpers.add(capHelper);
+
+            if (i <= size / 2) {
+                for (int j = 1; j <= size / 2; ++j) {
+                    final Period len = new Period(j * index.tenor().length(),
+                            index.tenor().units());
+                    final Handle<Quote> swaptionVol = new Handle<Quote>(
+                            new SimpleQuote(swaptionVols[swapVolIndex++]));
+
+                    final SwaptionHelper swaptionHelper = new SwaptionHelper(
+                            maturity, len, swaptionVol, index,
+                            index.tenor(), dayCounter, index.dayCounter(),
+                            termStructure,
+                            BlackCalibrationHelper.CalibrationErrorType.ImpliedVolError,
+                            /* strike */ Constants.NULL_REAL,
+                            /* nominal */ 1.0,
+                            VolatilityType.ShiftedLognormal, 0.0);
+                    swaptionHelper.setPricingEngine(
+                            new LfmSwaptionEngine(model, termStructure));
+                    calibrationHelpers.add(swaptionHelper);
+                }
+            }
+        }
+
+        // C++:
+        //   LevenbergMarquardt om(1e-6, 1e-6, 1e-6);
+        //   model->calibrate(helpers, om, EndCriteria(2000, 100, 1e-6, 1e-6, 1e-6));
+        // The C++ 3-arg overload defaults additionalConstraint = NoConstraint()
+        // and weights = empty. Java's only public calibrate is the 5-arg
+        // overload, so mirror those defaults explicitly.
+        final LevenbergMarquardt om = new LevenbergMarquardt(1e-6, 1e-6, 1e-6);
+        final EndCriteria endCriteria = new EndCriteria(2000, 100,
+                1e-6, 1e-6, 1e-6);
+        model.calibrate(calibrationHelpers, om, endCriteria,
+                new NoConstraint(), /* weights */ null);
+
+        // Measure the calibration error: sum of squared per-helper errors,
+        // then sqrt — C++ test-suite/libormarketmodel.cpp:317-327.
+        double sumSq = 0.0;
+        for (int i = 0; i < calibrationHelpers.size(); ++i) {
+            final double diff = calibrationHelpers.get(i).calibrationError();
+            sumSq += diff * diff;
+        }
+        final double calculated = Math.sqrt(sumSq);
+
+        if (calculated > tolerance) {
+            fail("Failed to calibrate libor forward model"
+                    + "\n    calculated diff: " + calculated
+                    + "\n    expected: smaller than " + tolerance);
+        }
+    }
 
     @Test
     public void testSwaptionPricing() {
