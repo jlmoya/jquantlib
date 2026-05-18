@@ -1,0 +1,181 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "coupons": [
+          {
+            "accrualEnd": {
+              "date": "2025-10-01",
+              "serial": 45931
+            },
+            "accrualPeriod": 0.25555555555555554,
+            "accrualStart": {
+              "date": "2025-07-01",
+              "serial": 45839
+            },
+            "amount": 10512.011757437102,
+            "contribution": 10506.66950939682,
+            "discount": 0.999491795846166,
+            "fixingDates_first": {
+              "date": "2025-07-01",
+              "serial": 45839
+            },
+            "fixingDates_last": {
+              "date": "2025-07-11",
+              "serial": 45849
+            },
+            "fixingDates_size": 11,
+            "index": 0,
+            "paymentDate": {
+              "date": "2025-10-01",
+              "serial": 45931
+            },
+            "rate": 0.04113395905084083,
+            "valueDate_first": {
+              "date": "2025-07-01",
+              "serial": 45839
+            },
+            "valueDate_last": {
+              "date": "2025-10-01",
+              "serial": 45931
+            }
+          },
+          {
+            "accrualEnd": {
+              "date": "2026-01-02",
+              "serial": 46024
+            },
+            "accrualPeriod": 0.25833333333333336,
+            "accrualStart": {
+              "date": "2025-10-01",
+              "serial": 45931
+            },
+            "amount": 9340.428695890025,
+            "contribution": 9332.064975325795,
+            "discount": 0.9991045678055537,
+            "fixingDates_first": {
+              "date": "2025-10-01",
+              "serial": 45931
+            },
+            "fixingDates_last": {
+              "date": "2025-10-10",
+              "serial": 45940
+            },
+            "fixingDates_size": 11,
+            "index": 1,
+            "paymentDate": {
+              "date": "2026-01-02",
+              "serial": 46024
+            },
+            "rate": 0.0361564981776388,
+            "valueDate_first": {
+              "date": "2025-10-01",
+              "serial": 45931
+            },
+            "valueDate_last": {
+              "date": "2026-01-02",
+              "serial": 46024
+            }
+          },
+          {
+            "accrualEnd": {
+              "date": "2026-04-01",
+              "serial": 46113
+            },
+            "accrualPeriod": 0.24722222222222223,
+            "accrualStart": {
+              "date": "2026-01-02",
+              "serial": 46024
+            },
+            "amount": 8036.073305906389,
+            "contribution": 8025.900723714408,
+            "discount": 0.9987341352169468,
+            "fixingDates_first": {
+              "date": "2026-01-02",
+              "serial": 46024
+            },
+            "fixingDates_last": {
+              "date": "2026-01-13",
+              "serial": 46035
+            },
+            "fixingDates_size": 11,
+            "index": 2,
+            "paymentDate": {
+              "date": "2026-04-01",
+              "serial": 46113
+            },
+            "rate": 0.032505465057598874,
+            "valueDate_first": {
+              "date": "2026-01-02",
+              "serial": 46024
+            },
+            "valueDate_last": {
+              "date": "2026-04-01",
+              "serial": 46113
+            }
+          },
+          {
+            "accrualEnd": {
+              "date": "2026-07-01",
+              "serial": 46204
+            },
+            "accrualPeriod": 0.25277777777777777,
+            "accrualStart": {
+              "date": "2026-04-01",
+              "serial": 46113
+            },
+            "amount": 7030.876595099489,
+            "contribution": 7019.314461319239,
+            "discount": 0.9983555203076229,
+            "fixingDates_first": {
+              "date": "2026-04-01",
+              "serial": 46113
+            },
+            "fixingDates_last": {
+              "date": "2026-04-13",
+              "serial": 46125
+            },
+            "fixingDates_size": 11,
+            "index": 3,
+            "paymentDate": {
+              "date": "2026-07-01",
+              "serial": 46204
+            },
+            "rate": 0.027814456859734243,
+            "valueDate_first": {
+              "date": "2026-04-01",
+              "serial": 46113
+            },
+            "valueDate_last": {
+              "date": "2026-07-01",
+              "serial": 46204
+            }
+          }
+        ],
+        "diff_vs_cpp": 0.0,
+        "legSize": 4,
+        "npv": 34883.94966975626,
+        "npv_cpp_hardcoded": 34883.94966975626
+      },
+      "inputs": {
+        "averaging": "Compound",
+        "discountFlat": 0.0015,
+        "lockoutDays": 3,
+        "lookbackDays": "Null<Natural>",
+        "notional": 1000000.0,
+        "observationShift": false,
+        "telescopicValueDates": true,
+        "today": {
+          "date": "2025-06-01",
+          "serial": 45809
+        }
+      },
+      "name": "compound_lockout3_telescopic"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-18T11:42:26Z",
+  "generated_by": "oiscoupon_lockout_legnpv_probe",
+  "test_group": "cashflows/oiscoupon_lockout_legnpv"
+}

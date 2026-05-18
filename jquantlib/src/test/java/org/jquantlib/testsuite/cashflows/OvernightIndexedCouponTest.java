@@ -1380,8 +1380,47 @@ public class OvernightIndexedCouponTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d follow-up: needs leg-NPV probe (lockout=3, telescopic=true). Body-fill ready, expected value pending probe cross-validation.")
-    @Test public void testOvernightLegNPV() { fail("not implemented"); }
+    /**
+     * Mirror of C++ {@code testOvernightLegNPV}
+     * (overnightindexedcoupon.cpp:1018-1036). Builds a quarterly SOFR leg with
+     * {@code lockoutDays=3} and {@code telescopicValueDates=true}, then sums
+     * {@code cf.amount() * discount(cf.date())} over a flat 0.15% / Act-360
+     * discount curve and compares to the cached NPV captured from C++ v1.42.1.
+     *
+     * <p>Expected NPV {@code 34883.949669756257} matches the C++ hardcoded
+     * value verbatim and was reproduced by
+     * {@code migration-harness/cpp/probes/cashflows/oiscoupon_lockout_legnpv_probe.cpp};
+     * see {@code migration-harness/references/cashflows/oiscoupon_lockout_legnpv.json}
+     * (Phase 5e.5b-CFC-d-241).
+     */
+    @Test
+    public void testOvernightLegNPV() {
+        QL.info("Testing overnight leg NPV...");
+        final CommonVarsONLeg vars = new CommonVarsONLeg();
+        vars.setupForecastCurve();
+
+        final Leg leg = vars.makeLeg(Constants.NULL_NATURAL, 3, false, true,
+                RateAveraging.Type.Compound);
+
+        final Handle<YieldTermStructure> discountCurve =
+                new Handle<YieldTermStructure>(
+                        Utilities.flatRate(vars.today, 0.0015, new Actual360()));
+
+        // Probe-captured C++ v1.42.1 reference (TIGHT 1e-12).
+        // See migration-harness/references/cashflows/oiscoupon_lockout_legnpv.json
+        final double expectedNpv = 34883.949669756257;
+        double npv = 0.0;
+        for (int i = 0; i < leg.size(); ++i) {
+            final CashFlow cf = leg.get(i);
+            npv += cf.amount() * discountCurve.currentLink().discount(cf.date());
+        }
+
+        if (Math.abs(npv - expectedNpv) > 1e-12) {
+            fail("OvernightLeg NPV: java=" + npv
+                    + " expected=" + expectedNpv
+                    + " diff=" + Math.abs(npv - expectedNpv));
+        }
+    }
 
     @Test
     public void testOvernightLegWithCapsAndFloors() {
