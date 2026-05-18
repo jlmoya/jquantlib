@@ -22,9 +22,11 @@ import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
+import org.jquantlib.pricingengines.McSimulation;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticDigitalAmericanEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticDigitalAmericanKOEngine;
+import org.jquantlib.pricingengines.vanilla.MCDigitalEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -46,9 +48,6 @@ public class DigitalOptionTest {
 
     private static final String REASON_GREEKS =
             "Phase 5i.5 — requires Greeks bumping harness for digital payoffs";
-
-    private static final String REASON_MC =
-            "Phase 5i.5 — requires MCDigitalEngine port";
 
     private static final class DigitalOptionData {
         final Option.Type type;
@@ -297,7 +296,81 @@ public class DigitalOptionTest {
     @Test
     public void testCashAtHitOrNothingAmericanGreeks() { fail("not implemented"); }
 
-    @Ignore(REASON_MC)
+    /**
+     * Java port of {@code test-suite/digitaloption.cpp::testMCCashAtHit}
+     * (Phase 5e.5b-CFC-d-181). The C++ test uses LowDiscrepancy (Sobol)
+     * + 16383 samples; this Java MC infrastructure is currently
+     * specialised to PseudoRandom (Mersenne-Twister), so we use 524287
+     * samples to keep the empirical absolute error within the C++
+     * tolerance of {@code 1e-2}.
+     */
     @Test
-    public void testMCCashAtHit() { fail("not implemented"); }
+    public void testMCCashAtHit() {
+        QL.info("Testing Monte Carlo cash-(at-hit)-or-nothing American engine...");
+
+        final DigitalOptionData[] values = {
+            new DigitalOptionData(Option.Type.Put,  100.00, 105.00, 0.20, 0.10, 0.5, 0.20, 12.2715, 1e-2, true),
+            new DigitalOptionData(Option.Type.Call, 100.00,  95.00, 0.20, 0.10, 0.5, 0.20,  8.9109, 1e-2, true)
+        };
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        final SimpleQuote spot = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final SimpleQuote vol = new SimpleQuote(0.0);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+
+        final int timeStepsPerYear = 90;
+        final int maxSamples = 1_000_000;
+        final long seed = 1L;
+        // Sobol parity needs ~2^14-1 samples; MT needs ~2^19-1 for the
+        // same 1e-2 absolute tolerance. Both probe-validated empirically.
+        final int requiredSamples = (1 << 19) - 1; // 524287
+
+        for (final DigitalOptionData value : values) {
+            final StrikedTypePayoff payoff = new CashOrNothingPayoff(value.type, value.strike, 15.0);
+            final Date exDate = today.add(timeToDays(value.t));
+            final Exercise amExercise = new AmericanExercise(today, exDate);
+
+            spot.setValue(value.s);
+            qRate.setValue(value.q);
+            rRate.setValue(value.r);
+            vol.setValue(value.v);
+
+            final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                    new Handle<Quote>(spot),
+                    new Handle<YieldTermStructure>(qTS),
+                    new Handle<YieldTermStructure>(rTS),
+                    new Handle<BlackVolTermStructure>(volTS));
+
+            final PricingEngine mcEngine = new MCDigitalEngine(
+                    stochProcess,
+                    /* timeSteps */ McSimulation.NULL_SAMPLES,
+                    /* timeStepsPerYear */ timeStepsPerYear,
+                    /* brownianBridge */ true,
+                    /* antitheticVariate */ false,
+                    requiredSamples,
+                    /* requiredTolerance */ McSimulation.NULL_TOLERANCE,
+                    maxSamples,
+                    seed);
+
+            final VanillaOption opt = new VanillaOption(payoff, amExercise);
+            opt.setPricingEngine(mcEngine);
+
+            final double calculated = opt.NPV();
+            final double error = Math.abs(calculated - value.result);
+            if (error > value.tol) {
+                fail(amExercise + " " + payoff.optionType() + " " + payoff
+                        + " spot=" + value.s + " strike=" + payoff.strike()
+                        + " q=" + value.q + " r=" + value.r + " t=" + value.t
+                        + " v=" + value.v + " expected=" + value.result
+                        + " calculated=" + calculated + " error=" + error
+                        + " tol=" + value.tol);
+            }
+        }
+    }
 }
