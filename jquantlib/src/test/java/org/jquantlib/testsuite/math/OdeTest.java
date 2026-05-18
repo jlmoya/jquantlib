@@ -25,21 +25,22 @@ package org.jquantlib.testsuite.math;
 import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.Complex;
 import org.jquantlib.math.matrixutilities.Expm;
 import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.ode.AdaptiveRungeKutta;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Java port of QuantLib v1.42.1 test-suite/ode.cpp (Phase 5a).
  *
- * <p>3 BOOST_AUTO_TEST_CASE methods. {@link AdaptiveRungeKutta} in Java
- * supports only the {@code double[]}/Real-vector overload (ode #3 in C++).
- * The 1D real (#1), complex 1D (#2), and complex vector (#4) overloads are
- * Phase 5a.5 carry-forwards. {@code testMatrixExponential} and
- * {@code testMatrixExponentialOfZero} were un-ignored in
- * Phase 5e.5b-CFC-d-77 once {@link Expm} was ported.
+ * <p>3 BOOST_AUTO_TEST_CASE methods. The 1D real (#1), complex 1D (#2),
+ * and complex vector (#4) overloads were added to {@link AdaptiveRungeKutta}
+ * in Phase 5e.5b-CFC-d-187 and exercised by
+ * {@link #testAdaptiveRungeKutta1dAndComplex()}; the 2D real path (#3)
+ * is exercised by {@link #testAdaptiveRungeKutta()}.
+ * {@code testMatrixExponential} and {@code testMatrixExponentialOfZero}
+ * were un-ignored in Phase 5e.5b-CFC-d-77 once {@link Expm} was ported.
  */
 public class OdeTest {
 
@@ -72,11 +73,78 @@ public class OdeTest {
         }
     }
 
-    @Ignore("Phase 5a.5 carry-forward — JQuantLib AdaptiveRungeKutta has no 1D-Real or "
-            + "complex overloads (C++ template variants for ode #1, #2, #4). The 2D-Real "
-            + "case is exercised by testAdaptiveRungeKutta above.")
+    /**
+     * Mirrors the C++ {@code testAdaptiveRungeKutta} sub-cases #1, #2, #4 of
+     * {@code test-suite/ode.cpp}.
+     *
+     * <ul>
+     *   <li><b>ode #1</b> — scalar real: {@code f' = f, f(0) = 1}; exact
+     *       solution {@code exp(x)}. Tolerance {@code 5e-10} (loose tier
+     *       per C++ — exp(5) ~= 148 inflates rel error).</li>
+     *   <li><b>ode #2</b> — scalar complex: {@code f' = i*f, f(0) = i};
+     *       exact solution {@code exp(i*x) * i}. Tolerance {@code 2e-12}.</li>
+     *   <li><b>ode #4</b> — complex vector: {@code f'' = -f, f(0) = 1,
+     *       f'(0) = i}; exact solution {@code exp(i*x)}. Tolerance
+     *       {@code 2e-12}.</li>
+     * </ul>
+     */
     @Test
     public void testAdaptiveRungeKutta1dAndComplex() {
+        QL.info("Testing adaptive Runge Kutta (1D real + complex)...");
+
+        final AdaptiveRungeKutta rkReal = new AdaptiveRungeKutta(1e-12, 1e-4, 0.0);
+        final AdaptiveRungeKutta rkComplex = new AdaptiveRungeKutta(1e-12, 1e-4, 0.0);
+
+        final double tol1 = 5e-10;
+        final double tol2 = 2e-12;
+        final double tol4 = 2e-12;
+
+        // ode #1: f' = f, f(0) = 1
+        final AdaptiveRungeKutta.OdeFct1d ode1 = (t, y) -> y;
+        final double y10 = 1.0;
+
+        // ode #2: f' = i*f, f(0) = i
+        final AdaptiveRungeKutta.OdeFctC1d ode2 = (t, y) -> Complex.I.mul(y);
+        final Complex y20 = Complex.I;
+
+        // ode #4: f'' = -f, expressed as 2-component system
+        //   y[0]' = y[1], y[1]' = -y[0]
+        final AdaptiveRungeKutta.OdeFctC ode4 = (t, y) -> new Complex[] { y[1], y[0].neg() };
+        final Complex[] y40 = { Complex.ONE, Complex.I };
+
+        for (double x = 0.01; x <= 5.0; x += 0.01) {
+            final double y1 = rkReal.solve(ode1, y10, 0.0, x);
+            final Complex y2 = rkComplex.solveComplex(ode2, y20, 0.0, x);
+            final Complex[] y4 = rkComplex.solveComplex(ode4, y40, 0.0, x);
+
+            final double exact1 = Math.exp(x);
+            // exact2 = exp(i*x) * i
+            final Complex exact2 = new Complex(0.0, x).exp().mul(Complex.I);
+            // exact4 = exp(i*x)
+            final Complex exact4 = new Complex(0.0, x).exp();
+
+            if (Math.abs(exact1 - y1) > tol1) {
+                fail("Error in ode #1: exact solution at x=" + x
+                        + " is " + exact1
+                        + ", numerical solution is " + y1
+                        + " difference " + Math.abs(exact1 - y1)
+                        + " outside tolerance " + tol1);
+            }
+            if (exact2.sub(y2).abs() > tol2) {
+                fail("Error in ode #2: exact solution at x=" + x
+                        + " is " + exact2
+                        + ", numerical solution is " + y2
+                        + " difference " + exact2.sub(y2).abs()
+                        + " outside tolerance " + tol2);
+            }
+            if (exact4.sub(y4[0]).abs() > tol4) {
+                fail("Error in ode #4: exact solution at x=" + x
+                        + " is " + exact4
+                        + ", numerical solution is " + y4[0]
+                        + " difference " + exact4.sub(y4[0]).abs()
+                        + " outside tolerance " + tol4);
+            }
+        }
     }
 
     /**
