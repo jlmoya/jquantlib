@@ -1807,18 +1807,21 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-235 — MakeMCEuropeanHestonEngine[HestonSLVProcess] now "
-            + "available (overloaded ctor on the existing builder; same engine class "
-            + "specialised by instance-type dispatch). Phase 5e.5b-CFC-d-254 — "
-            + "FdHestonVanillaEngine now exposes a LocalVolTermStructure leverage-fct "
-            + "ctor variant (test-suite/hestonslvmodel.cpp:1905,1920; plumb-through "
-            + "validated by testFdHestonVanillaEngineLeverageFctCtorSmoke). "
-            + "Remaining blocker: HestonStochasticLocalVolProcess.evolve() port "
-            + "discrepancy (see testMonteCarloHestonSLVEnginePathGen probe — "
-            + "terminal S=0.0 under constant Brownian + leverage=1, indicating a "
-            + "sign or cumulant-correction mismatch vs. C++ "
-            + "ql/processes/hestonslvprocess.cpp). LocalConstantVol exists. "
-            + "Blocker out of scope for the Phase 5e.5b-CFC-d allowlist.")
+    @Ignore("Phase 5e.5b-CFC-d-238 + 254 + 265: prior infrastructure blockers "
+            + "(MakeMCEuropeanHestonEngine[HestonSLVProcess], "
+            + "HestonStochasticLocalVolProcess.evolve, FdHestonVanillaEngine "
+            + "leverage-fct ctor) are ALL landed and the test body now "
+            + "compiles + runs to assertion. Phase 5e.5b-CFC-d-265 body-fill "
+            + "executed end-to-end and revealed a NEW production divergence: "
+            + "the C++ bit-equality assertion 'priceFDM == priceFDMWithMix' "
+            + "(non-mixing leverage=0.25 sigma=0.8 vs mixing=0.1 sigma=8.0) "
+            + "fails in Java by ~2.2e-3 (5.7290687 vs 5.7312517 at strike=100). "
+            + "Root cause is in FdmHestonOp / FdHestonVanillaEngine's "
+            + "mixingFactor application path — the mixingFactor scaling of "
+            + "internal sigma when leverage_fct is present does not reproduce "
+            + "the C++ bit-equality. Body-fill reverted and reason refined; "
+            + "production fix is a separate WI (DO-NOT-TOUCH on this "
+            + "FdHestonVanillaEngine since recently landed in CFC-d-254).")
     @Test
     public void testMonteCarloVsFdmPricing() { fail("not implemented"); }
 
