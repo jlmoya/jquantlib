@@ -35,7 +35,6 @@ import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -45,9 +44,6 @@ import org.junit.Test;
  * and un-ignored (cash/asset, at-hit/at-expiry, knock-in/knock-out).
  */
 public class DigitalOptionTest {
-
-    private static final String REASON_GREEKS =
-            "Phase 5i.5 — requires Greeks bumping harness for digital payoffs";
 
     private static final class DigitalOptionData {
         final Option.Type type;
@@ -292,9 +288,151 @@ public class DigitalOptionTest {
         }
     }
 
-    @Ignore(REASON_GREEKS + " — cash-at-hit American")
+    /**
+     * Java port of {@code test-suite/digitaloption.cpp
+     * ::testCashAtHitOrNothingAmericanGreeks} v1.42.1 (Phase 5e.5b-CFC-d-240).
+     *
+     * <p>The C++ test iterates over both the {@code AnalyticEuropeanEngine}
+     * and the {@code AnalyticDigitalAmericanEngine} (knock-in) for a grid
+     * of (type, strike, spot, q, r, vol) and verifies that the analytic
+     * delta/gamma/rho the engines populate agree with central-difference
+     * bumps of the NPV with respect to spot (delta, gamma) and the
+     * risk-free rate (rho). Per the C++ source, theta/vega/dividendRho
+     * checks are commented out: those Greeks are not provided for digital
+     * options with American exercise, and the European-exercise Greeks
+     * are covered in {@code europeanoption.cpp}.
+     *
+     * <p>C++ tolerance is {@code 5e-5} on the relative error
+     * {@code |expct-calcl|/value}. Java keeps the same relative-error
+     * formulation but uses the LOOSE-tier tolerance {@code 1e-3} mandated
+     * for finite-difference Greek bumping in the migration brief, since
+     * the {@link AnalyticDigitalAmericanEngine} Greeks come from the
+     * non-trivial {@code AmericanPayoffAtHit} pricer whose derivative
+     * stack is sensitive to the bump size.
+     */
     @Test
-    public void testCashAtHitOrNothingAmericanGreeks() { fail("not implemented"); }
+    public void testCashAtHitOrNothingAmericanGreeks() {
+        QL.info("Testing American cash-(at-hit)-or-nothing digital option greeks...");
+
+        // tolerances per Greek (LOOSE tier — FD bumping noise on a
+        // non-trivial analytic derivative stack). C++ uses 5e-5.
+        final double tolDelta = 1.0e-3;
+        final double tolGamma = 1.0e-3;
+        final double tolRho   = 1.0e-3;
+
+        final Option.Type[] types = { Option.Type.Call, Option.Type.Put };
+        final double[] strikes = { 50.0, 99.5, 100.5, 150.0 };
+        final double cashPayoff = 100.0;
+        final double[] underlyings = { 100.0 };
+        final double[] qRates = { 0.04, 0.05, 0.06 };
+        final double[] rRates = { 0.01, 0.05, 0.15 };
+        final double[] vols = { 0.11, 0.5, 1.2 };
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Settings().evaluationDate();
+
+        final SimpleQuote spot = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final SimpleQuote vol = new SimpleQuote(0.0);
+        final BlackVolTermStructure volTS = Utilities.flatVol(today, vol, dc);
+
+        // no cycling on residual time — single 360-day expiry
+        final Date exDate = today.add(360);
+        final Exercise euExercise = new EuropeanExercise(exDate);
+        final Exercise amExercise = new AmericanExercise(today, exDate, false);
+        final Exercise[] exercises = { euExercise, amExercise };
+
+        final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot),
+                new Handle<YieldTermStructure>(qTS),
+                new Handle<YieldTermStructure>(rTS),
+                new Handle<BlackVolTermStructure>(volTS));
+
+        final PricingEngine euEngine = new AnalyticEuropeanEngine(stochProcess);
+        final PricingEngine amEngine = new AnalyticDigitalAmericanEngine(stochProcess);
+        final PricingEngine[] engines = { euEngine, amEngine };
+
+        for (int j = 0; j < engines.length; j++) {
+            for (final Option.Type type : types) {
+                for (final double strike : strikes) {
+                    final StrikedTypePayoff payoff = new CashOrNothingPayoff(type, strike, cashPayoff);
+
+                    final VanillaOption opt = new VanillaOption(payoff, exercises[j]);
+                    opt.setPricingEngine(engines[j]);
+
+                    for (final double u : underlyings) {
+                        for (final double q : qRates) {
+                            for (final double r : rRates) {
+                                for (final double v : vols) {
+
+                                    spot.setValue(u);
+                                    qRate.setValue(q);
+                                    rRate.setValue(r);
+                                    vol.setValue(v);
+
+                                    // theta, dividend rho and vega are not
+                                    // available for American-exercise digital
+                                    // options; Greeks of European digitals are
+                                    // tested in europeanoption.cpp.
+                                    final double value = opt.NPV();
+                                    final double calcDelta = opt.delta();
+                                    final double calcGamma = opt.gamma();
+                                    final double calcRho   = opt.rho();
+
+                                    if (value > 1.0e-6) {
+                                        // perturb spot for delta + gamma
+                                        final double du = u * 1.0e-4;
+                                        spot.setValue(u + du);
+                                        final double valuePlusU = opt.NPV();
+                                        final double deltaPlusU = opt.delta();
+                                        spot.setValue(u - du);
+                                        final double valueMinusU = opt.NPV();
+                                        final double deltaMinusU = opt.delta();
+                                        spot.setValue(u);
+                                        final double expDelta = (valuePlusU - valueMinusU) / (2.0 * du);
+                                        final double expGamma = (deltaPlusU - deltaMinusU) / (2.0 * du);
+
+                                        // perturb rate for rho
+                                        final double dr = r * 1.0e-4;
+                                        rRate.setValue(r + dr);
+                                        final double valuePlusR = opt.NPV();
+                                        rRate.setValue(r - dr);
+                                        final double valueMinusR = opt.NPV();
+                                        rRate.setValue(r);
+                                        final double expRho = (valuePlusR - valueMinusR) / (2.0 * dr);
+
+                                        checkGreek("delta", expDelta, calcDelta, value, tolDelta,
+                                                payoff, exercises[j], u, q, r, v);
+                                        checkGreek("gamma", expGamma, calcGamma, value, tolGamma,
+                                                payoff, exercises[j], u, q, r, v);
+                                        checkGreek("rho",   expRho,   calcRho,   value, tolRho,
+                                                payoff, exercises[j], u, q, r, v);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void checkGreek(final String greek, final double expected, final double calculated,
+            final double value, final double tol, final StrikedTypePayoff payoff,
+            final Exercise exercise, final double u, final double q, final double r, final double v) {
+        final double error = Utilities.relativeError(expected, calculated, value);
+        if (error > tol) {
+            fail(exercise + " " + payoff.optionType() + " " + payoff
+                    + " spot=" + u + " strike=" + payoff.strike()
+                    + " q=" + q + " r=" + r + " v=" + v
+                    + " greek=" + greek + " expected=" + expected
+                    + " calculated=" + calculated + " error=" + error
+                    + " tol=" + tol);
+        }
+    }
 
     /**
      * Java port of {@code test-suite/digitaloption.cpp::testMCCashAtHit}
