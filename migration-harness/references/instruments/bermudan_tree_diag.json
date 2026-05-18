@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "berm_1ex": 8.617668248529641,
+        "berm_2ex": 11.046898808110544,
+        "berm_3ex": 12.190341081425066,
+        "berm_4ex": 12.722663767147466,
+        "berm_5ex": 12.906866329650406
+      },
+      "inputs": {
+        "fixture": "Phase5e.5b-CFC-d-207 diag"
+      },
+      "name": "scan"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-18T03:35:00Z",
+  "generated_by": "bermudan_tree_diag_probe",
+  "test_group": "instruments/bermudan_tree_diag"
+}

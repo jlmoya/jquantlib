@@ -147,9 +147,10 @@ public class BermudanSwaptionTest {
      * uses 1e-4 absolute; we pin tighter against the bit-aligned probe.
      *
      * <p>The tree-engine half of the cached values is split off into
-     * {@link #testCachedValuesTree}, currently {@code @Ignore}d pending
-     * a Java {@code TreeSwaptionEngine}/{@code DiscretizedSwaption}
-     * Bermudan-snapping investigation (see test-method Javadoc there).
+     * {@link #testCachedValuesTree}, currently {@code @Ignore}d after
+     * Phase 5e.5b-CFC-d-207 confirmed the divergence is upstream of
+     * {@code DiscretizedSwaption}/{@code TreeSwaptionEngine} — see
+     * that test's Javadoc for the per-step diag-probe scan.
      */
     @Test
     public void testCachedValues() {
@@ -186,18 +187,54 @@ public class BermudanSwaptionTest {
     }
 
     /**
-     * testCachedValues — tree-engine half. C++ tree results pinned to
-     * 1e-4 (their own tolerance) diverge from the Java tree on this
-     * Bermudan fixture by ~0.3-0.7 absolute (well above the
-     * configured tier). The Java {@code TreeSwaptionEngine} passes the
-     * existing European-exercise fingerprint at TIGHT
-     * ({@code TreeSwaptionEngineTest}); the divergence appears specific
-     * to the Bermudan exercise-date snapping inside
-     * {@code DiscretizedSwaption}. Tracking under Phase 5f.5 follow-up;
-     * not addressed by the OIS dependency landing.
+     * testCachedValues — tree-engine half. Java {@code TreeSwaptionEngine}
+     * diverges from C++ on the Bermudan HW fixture by ~1.4% (Java atm_tree
+     * = 13.0930 vs C++ 12.9069). Per-step Bermudan scan (see harness probe
+     * {@code instruments/bermudan_tree_diag_probe}) shows the divergence
+     * grows with exercise count:
+     *
+     * <pre>
+     *   n_ex   C++         Java        Java-C++
+     *   1      8.6177      8.6289      +0.011
+     *   2     11.0469     11.0586      +0.012
+     *   3     12.1903     12.3121      +0.122
+     *   4     12.7227     12.9088      +0.186
+     *   5     12.9069     13.0930      +0.186
+     * </pre>
+     *
+     * <p>Phase 5e.5b-CFC-d-207 investigation confirmed:
+     * <ul>
+     *   <li>{@link org.jquantlib.pricingengines.swaption.DiscretizedSwaption}
+     *       snap logic mirrors C++ v1.42.1 {@code prepareSwaptionWithSnappedDates}
+     *       exactly (snap loop, ±7d window, pre/post adjustment encoding).
+     *       For this fixture the fixed-leg snap is a no-op (exercise dates
+     *       == fixed accrual starts); only float coupons [4] and [6] snap
+     *       (Feb 21→19, Feb 20→19), and with {@code spread=0} the snapped
+     *       accrualPeriod doesn't affect the {@code N*(1-bond)} float
+     *       valuation.</li>
+     *   <li>{@link org.jquantlib.pricingengines.swaption.TreeSwaptionEngine}
+     *       mirrors C++ {@code TreeSwaptionEngine::calculate} including
+     *       {@code mandatoryTimes}, exercise-time computation, and the
+     *       {@code find_if(t >= 0)} first-exercise rollback target.</li>
+     *   <li>Even at n=1 (single-exercise = European on the swap start),
+     *       Java diverges by 0.011 absolute — the bias is upstream of
+     *       Bermudan logic, in the {@code HullWhite} tree mechanics or
+     *       {@code IborCoupon}/{@code DiscretizedSwap} interaction for the
+     *       Unadjusted/BondBasis/Euribor6M fixture.</li>
+     *   <li>{@code TreeSwaptionEngineTest} passes at TIGHT on a different
+     *       fixture (5Yx5Y, ModifiedFollowing, Thirty360.European,
+     *       Euribor3M) — the fixture-specific bias does not surface there.</li>
+     * </ul>
+     *
+     * <p>Root-cause is outside this task's allowed-modify list
+     * ({@code DiscretizedSwaption}, {@code TreeSwaptionEngine},
+     * this test, probe). Likely candidates per the scan: {@code HullWhite}
+     * tree construction or {@code IborCoupon} convention handling for
+     * Unadjusted/at-par-coupon fixtures — both DO-NOT-TOUCH for this
+     * Phase 5e.5b-CFC-d-207 work item.
      */
-    @Ignore("Phase 5f.5 — Java TreeSwaptionEngine Bermudan snapping diverges from C++; "
-          + "European fingerprint OK (see TreeSwaptionEngineTest)")
+    @Ignore("Phase 5e.5b-CFC-d-207 — root cause outside DiscretizedSwaption/"
+          + "TreeSwaptionEngine; ~1.4% bias on n_ex>=3 (see bermudan_tree_diag_probe)")
     @Test
     public void testCachedValuesTree() {
         fail("not implemented");
@@ -208,8 +245,9 @@ public class BermudanSwaptionTest {
      * 5 strike multipliers (0.5, 0.75, 1.0, 1.25, 1.5) × {FDM} = 5
      * pinned Bermudan G2 prices on 2016-09-15. Tolerance TIGHT.
      *
-     * <p>Tree half deferred — see {@link #testCachedValuesTree} for the
-     * Bermudan tree-snapping divergence Javadoc; same root cause.
+     * <p>Tree half deferred — see {@link #testCachedG2ValuesTree} and
+     * the Phase 5e.5b-CFC-d-207 root-cause notes in
+     * {@link #testCachedValuesTree}.
      */
     @Test
     public void testCachedG2Values() {
@@ -255,13 +293,20 @@ public class BermudanSwaptionTest {
     }
 
     /**
-     * testCachedG2Values — tree-engine half. Same root cause as
+     * testCachedG2Values — tree-engine half. Same root-cause family as
      * {@link #testCachedValuesTree}: Java {@code TreeSwaptionEngine}
-     * Bermudan snapping diverges from C++ on this fixture by ~0.3
-     * absolute on a ~103 notional — see that test's Javadoc.
+     * Bermudan diverges from C++ on this fixture by ~0.33 absolute on
+     * the ~103 notional [strike*=0.5] leg (Java 103.580 vs C++ 103.248).
+     *
+     * <p>Per the Phase 5e.5b-CFC-d-207 investigation
+     * (see {@link #testCachedValuesTree}), the bias is upstream of
+     * {@code DiscretizedSwaption}/{@code TreeSwaptionEngine} (which
+     * mirror C++ exactly) — almost certainly in the model tree mechanics
+     * (G2 here, HullWhite there). Out-of-scope for this work item;
+     * tracked for a future {@code ShortRateModel}-internals follow-up.
      */
-    @Ignore("Phase 5f.5 — Java TreeSwaptionEngine Bermudan snapping diverges from C++; "
-          + "see testCachedValuesTree")
+    @Ignore("Phase 5e.5b-CFC-d-207 — root cause outside DiscretizedSwaption/"
+          + "TreeSwaptionEngine (same family as testCachedValuesTree)")
     @Test
     public void testCachedG2ValuesTree() {
         fail("not implemented");
