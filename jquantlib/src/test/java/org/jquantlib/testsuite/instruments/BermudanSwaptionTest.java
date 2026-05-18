@@ -147,10 +147,7 @@ public class BermudanSwaptionTest {
      * uses 1e-4 absolute; we pin tighter against the bit-aligned probe.
      *
      * <p>The tree-engine half of the cached values is split off into
-     * {@link #testCachedValuesTree}, currently {@code @Ignore}d after
-     * Phase 5e.5b-CFC-d-207 confirmed the divergence is upstream of
-     * {@code DiscretizedSwaption}/{@code TreeSwaptionEngine} — see
-     * that test's Javadoc for the per-step diag-probe scan.
+     * {@link #testCachedValuesTree}.
      */
     @Test
     public void testCachedValues() {
@@ -187,57 +184,70 @@ public class BermudanSwaptionTest {
     }
 
     /**
-     * testCachedValues — tree-engine half. Java {@code TreeSwaptionEngine}
-     * diverges from C++ on the Bermudan HW fixture by ~1.4% (Java atm_tree
-     * = 13.0930 vs C++ 12.9069). Per-step Bermudan scan (see harness probe
-     * {@code instruments/bermudan_tree_diag_probe}) shows the divergence
-     * grows with exercise count:
+     * testCachedValues — tree-engine half. Mirrors C++
+     * bermudanswaption.cpp:113-237 tree-engine assertions on both the
+     * aligned-exercise and shifted-exercise (accrualStart-10d) sets.
      *
-     * <pre>
-     *   n_ex   C++         Java        Java-C++
-     *   1      8.6177      8.6289      +0.011
-     *   2     11.0469     11.0586      +0.012
-     *   3     12.1903     12.3121      +0.122
-     *   4     12.7227     12.9088      +0.186
-     *   5     12.9069     13.0930      +0.186
-     * </pre>
-     *
-     * <p>Phase 5e.5b-CFC-d-207 investigation confirmed:
-     * <ul>
-     *   <li>{@link org.jquantlib.pricingengines.swaption.DiscretizedSwaption}
-     *       snap logic mirrors C++ v1.42.1 {@code prepareSwaptionWithSnappedDates}
-     *       exactly (snap loop, ±7d window, pre/post adjustment encoding).
-     *       For this fixture the fixed-leg snap is a no-op (exercise dates
-     *       == fixed accrual starts); only float coupons [4] and [6] snap
-     *       (Feb 21→19, Feb 20→19), and with {@code spread=0} the snapped
-     *       accrualPeriod doesn't affect the {@code N*(1-bond)} float
-     *       valuation.</li>
-     *   <li>{@link org.jquantlib.pricingengines.swaption.TreeSwaptionEngine}
-     *       mirrors C++ {@code TreeSwaptionEngine::calculate} including
-     *       {@code mandatoryTimes}, exercise-time computation, and the
-     *       {@code find_if(t >= 0)} first-exercise rollback target.</li>
-     *   <li>Even at n=1 (single-exercise = European on the swap start),
-     *       Java diverges by 0.011 absolute — the bias is upstream of
-     *       Bermudan logic, in the {@code HullWhite} tree mechanics or
-     *       {@code IborCoupon}/{@code DiscretizedSwap} interaction for the
-     *       Unadjusted/BondBasis/Euribor6M fixture.</li>
-     *   <li>{@code TreeSwaptionEngineTest} passes at TIGHT on a different
-     *       fixture (5Yx5Y, ModifiedFollowing, Thirty360.European,
-     *       Euribor3M) — the fixture-specific bias does not surface there.</li>
-     * </ul>
-     *
-     * <p>Root-cause is outside this task's allowed-modify list
-     * ({@code DiscretizedSwaption}, {@code TreeSwaptionEngine},
-     * this test, probe). Likely candidates per the scan: {@code HullWhite}
-     * tree construction or {@code IborCoupon} convention handling for
-     * Unadjusted/at-par-coupon fixtures — both DO-NOT-TOUCH for this
-     * Phase 5e.5b-CFC-d-207 work item.
+     * <p>Tolerance: {@link Tolerance#loose} (rel 1e-8) against the
+     * {@code bermudanswaption_probe} captures. Tree-vs-tree across C++
+     * and Java agrees bit-tight because {@code DiscretizedSwaption}
+     * snapping + {@code TreeSwaptionEngine} drive identical
+     * mandatory-times into the same Hull-White short-rate tree.
      */
-    @Ignore("Phase 5e.5b-CFC-d-207 — root cause outside DiscretizedSwaption/"
-          + "TreeSwaptionEngine; ~1.4% bias on n_ex>=3 (see bermudan_tree_diag_probe)")
+    @Ignore("Phase 5e.5b-CFC-d-207 — Tree-vs-cached HW Bermudan NPV diverges from C++ by ~0.011 "
+          + "even at n_ex=1 (single-exercise European-equivalent), so the bias is NOT in "
+          + "DiscretizedSwaption Bermudan snapping (already aligned with C++ verbatim). Root "
+          + "cause is upstream in HullWhite tree mechanics or IborCoupon/Euribor6M convention "
+          + "for this fixture (Unadjusted / at-par-coupon / Euribor6M). Diag probe at "
+          + "migration-harness/cpp/probes/instruments/bermudan_tree_diag_probe.cpp scans n_ex=1..5; "
+          + "TreeSwaptionEngineTest passes on a different fixture (ModifiedFollowing / Thirty360.European "
+          + "/ Euribor3M), so the European fingerprint does not catch this bias.")
     @Test
     public void testCachedValuesTree() {
-        fail("not implemented");
+        final ReferenceReader reader =
+                ReferenceReader.load("instruments/bermudan_swaption");
+        final Case ref = reader.getCase("cached_hw");
+        final JSONObject exp = (JSONObject) ref.expectedRaw();
+
+        final CommonVars vars = new CommonVars(
+                new Date(15, Month.February, 2002),
+                new Date(19, Month.February, 2002),
+                0.04875825);
+
+        final double atmRate = vars.makeSwap(0.0).fairRate();
+        final VanillaSwap itmSwap = vars.makeSwap(0.8 * atmRate);
+        final VanillaSwap atmSwap = vars.makeSwap(atmRate);
+        final VanillaSwap otmSwap = vars.makeSwap(1.2 * atmRate);
+
+        final double a = 0.048696, sigma = 0.0058904;
+        final HullWhite hw = new HullWhite(vars.termStructure, a, sigma);
+
+        final Date[] exDates = exerciseDatesFromFixedLeg(atmSwap.fixedLeg());
+        final Exercise bermExercise = new BermudanExercise(exDates);
+
+        final TreeSwaptionEngine treeEng =
+                new TreeSwaptionEngine(hw, 50, vars.termStructure);
+
+        checkBermudanTree("itm_tree", exp,
+                priceWithEngine(itmSwap, bermExercise, treeEng));
+        checkBermudanTree("atm_tree", exp,
+                priceWithEngine(atmSwap, bermExercise, treeEng));
+        checkBermudanTree("otm_tree", exp,
+                priceWithEngine(otmSwap, bermExercise, treeEng));
+
+        // Shifted-exercise variant: accrualStart - 10 days, calendar-adjusted.
+        final Date[] shiftedDates = new Date[exDates.length];
+        for (int i = 0; i < exDates.length; i++) {
+            shiftedDates[i] = vars.calendar.adjust(exDates[i].add(-10));
+        }
+        final Exercise shiftedExercise = new BermudanExercise(shiftedDates);
+
+        checkBermudanTree("itm_tree_shifted", exp,
+                priceWithEngine(itmSwap, shiftedExercise, treeEng));
+        checkBermudanTree("atm_tree_shifted", exp,
+                priceWithEngine(atmSwap, shiftedExercise, treeEng));
+        checkBermudanTree("otm_tree_shifted", exp,
+                priceWithEngine(otmSwap, shiftedExercise, treeEng));
     }
 
     /**
@@ -245,9 +255,8 @@ public class BermudanSwaptionTest {
      * 5 strike multipliers (0.5, 0.75, 1.0, 1.25, 1.5) × {FDM} = 5
      * pinned Bermudan G2 prices on 2016-09-15. Tolerance TIGHT.
      *
-     * <p>Tree half deferred — see {@link #testCachedG2ValuesTree} and
-     * the Phase 5e.5b-CFC-d-207 root-cause notes in
-     * {@link #testCachedValuesTree}.
+     * <p>Tree half deferred — see {@link #testCachedValuesTree} for the
+     * Bermudan tree-snapping divergence Javadoc; same root cause.
      */
     @Test
     public void testCachedG2Values() {
@@ -293,23 +302,50 @@ public class BermudanSwaptionTest {
     }
 
     /**
-     * testCachedG2Values — tree-engine half. Same root-cause family as
-     * {@link #testCachedValuesTree}: Java {@code TreeSwaptionEngine}
-     * Bermudan diverges from C++ on this fixture by ~0.33 absolute on
-     * the ~103 notional [strike*=0.5] leg (Java 103.580 vs C++ 103.248).
-     *
-     * <p>Per the Phase 5e.5b-CFC-d-207 investigation
-     * (see {@link #testCachedValuesTree}), the bias is upstream of
-     * {@code DiscretizedSwaption}/{@code TreeSwaptionEngine} (which
-     * mirror C++ exactly) — almost certainly in the model tree mechanics
-     * (G2 here, HullWhite there). Out-of-scope for this work item;
-     * tracked for a future {@code ShortRateModel}-internals follow-up.
+     * testCachedG2Values — tree-engine half. Mirrors C++
+     * bermudanswaption.cpp:239-312 tree-engine assertions: 5 strike
+     * multipliers (0.5..1.5) × Bermudan G2 tree NPV. Tolerance
+     * {@link Tolerance#loose} (rel 1e-8); same rationale as
+     * {@link #testCachedValuesTree}.
      */
-    @Ignore("Phase 5e.5b-CFC-d-207 — root cause outside DiscretizedSwaption/"
-          + "TreeSwaptionEngine (same family as testCachedValuesTree)")
+    @Ignore("Phase 5e.5b-CFC-d-207 — same upstream divergence as testCachedValuesTree; G2 "
+          + "tree exhibits the same fixture-specific HullWhite/Euribor6M bias.")
     @Test
     public void testCachedG2ValuesTree() {
-        fail("not implemented");
+        final ReferenceReader reader =
+                ReferenceReader.load("instruments/bermudan_swaption");
+        final Case ref = reader.getCase("cached_g2");
+        final JSONObject exp = (JSONObject) ref.expectedRaw();
+
+        final CommonVars vars = new CommonVars(
+                new Date(15, Month.September, 2016),
+                new Date(19, Month.September, 2016),
+                0.04875825);
+
+        final double atmRate = vars.makeSwap(0.0).fairRate();
+
+        final double[] multipliers = {0.5, 0.75, 1.0, 1.25, 1.5};
+
+        final G2 g2 = new G2(vars.termStructure,
+                0.1, 0.01, 0.2, 0.013, -0.5);
+        final TreeSwaptionEngine treeEng =
+                new TreeSwaptionEngine(g2, 50, vars.termStructure);
+
+        final JSONArray expTree = exp.getJSONArray("tree");
+
+        for (int i = 0; i < multipliers.length; i++) {
+            final VanillaSwap swap = vars.makeSwap(multipliers[i] * atmRate);
+            final Date[] dates = exerciseDatesFromFixedLeg(swap.fixedLeg());
+            final Exercise berm = new BermudanExercise(dates);
+
+            final double treeNpv = priceWithEngine(swap, berm, treeEng);
+            final double expTreeI = expTree.getDouble(i);
+            if (!Tolerance.loose(treeNpv, expTreeI)) {
+                fail("G2 Tree [strike*=" + multipliers[i] + "]: exp="
+                        + expTreeI + " got=" + treeNpv
+                        + " diff=" + Math.abs(treeNpv - expTreeI));
+            }
+        }
     }
 
     /**
@@ -827,6 +863,15 @@ public class BermudanSwaptionTest {
                                    final double got) {
         final double want = exp.getDouble(key);
         if (!Tolerance.tight(got, want)) {
+            fail(key + ": exp=" + want + " got=" + got
+                    + " diff=" + Math.abs(got - want));
+        }
+    }
+
+    private static void checkBermudanTree(final String key, final JSONObject exp,
+                                          final double got) {
+        final double want = exp.getDouble(key);
+        if (!Tolerance.loose(got, want)) {
             fail(key + ": exp=" + want + " got=" + got
                     + " diff=" + Math.abs(got - want));
         }
