@@ -117,6 +117,8 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
     private final FdmSchemeDesc schemeDesc;
     private final CashDividendModel cashDividendModel;
     private final FdmQuantoHelper quantoHelper;
+    private final boolean localVol;
+    private final double illegalLocalVolOverwrite;
 
     private final OneAssetOption.ArgumentsImpl a;
     private final OneAssetOption.ResultsImpl   r;
@@ -132,7 +134,7 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
      */
     public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process) {
         this(process, null, null, 100, 100, 0, FdmSchemeDesc.Douglas(),
-                CashDividendModel.Spot);
+                CashDividendModel.Spot, false, Double.NaN);
     }
 
     /**
@@ -144,7 +146,28 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
                                        final int dampingSteps,
                                        final FdmSchemeDesc schemeDesc) {
         this(process, null, null, tGrid, xGrid, dampingSteps, schemeDesc,
-                CashDividendModel.Spot);
+                CashDividendModel.Spot, false, Double.NaN);
+    }
+
+    /**
+     * Local-vol-aware overload mirroring the C++ ctor
+     * {@code FdBlackScholesVanillaEngine(process, tGrid, xGrid, dampingSteps,
+     * schemeDesc, localVol, illegalLocalVolOverwrite)}.
+     *
+     * @param illegalLocalVolOverwrite fallback {@code sigma} substituted when
+     *        {@code process.localVolatility().localVol(t, S)} throws; pass
+     *        {@link Double#NaN} (or any negative value) to disable the fallback,
+     *        mirroring C++'s {@code -Null<Real>::value} sentinel.
+     */
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
+                                       final int tGrid,
+                                       final int xGrid,
+                                       final int dampingSteps,
+                                       final FdmSchemeDesc schemeDesc,
+                                       final boolean localVol,
+                                       final double illegalLocalVolOverwrite) {
+        this(process, null, null, tGrid, xGrid, dampingSteps, schemeDesc,
+                CashDividendModel.Spot, localVol, illegalLocalVolOverwrite);
     }
 
     /**
@@ -157,7 +180,7 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
                                        final int dampingSteps,
                                        final FdmSchemeDesc schemeDesc) {
         this(process, dividends, null, tGrid, xGrid, dampingSteps, schemeDesc,
-                CashDividendModel.Spot);
+                CashDividendModel.Spot, false, Double.NaN);
     }
 
     /**
@@ -171,7 +194,7 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
                                        final int xGrid,
                                        final int dampingSteps) {
         this(process, null, quantoHelper, tGrid, xGrid, dampingSteps,
-                FdmSchemeDesc.Douglas(), CashDividendModel.Spot);
+                FdmSchemeDesc.Douglas(), CashDividendModel.Spot, false, Double.NaN);
     }
 
     /**
@@ -184,7 +207,7 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
                                        final int dampingSteps,
                                        final FdmSchemeDesc schemeDesc) {
         this(process, null, quantoHelper, tGrid, xGrid, dampingSteps,
-                schemeDesc, CashDividendModel.Spot);
+                schemeDesc, CashDividendModel.Spot, false, Double.NaN);
     }
 
     /**
@@ -197,7 +220,7 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
                                        final int xGrid,
                                        final int dampingSteps) {
         this(process, dividends, quantoHelper, tGrid, xGrid, dampingSteps,
-                FdmSchemeDesc.Douglas(), CashDividendModel.Spot);
+                FdmSchemeDesc.Douglas(), CashDividendModel.Spot, false, Double.NaN);
     }
 
     /**
@@ -212,20 +235,26 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
                                        final FdmSchemeDesc schemeDesc,
                                        final CashDividendModel cashDividendModel) {
         this(process, dividends, null, tGrid, xGrid, dampingSteps, schemeDesc,
-                cashDividendModel);
+                cashDividendModel, false, Double.NaN);
     }
 
     /**
      * Full constructor mirroring C++ v1.42.1.
      *
-     * @param process           GBS process
-     * @param dividends         discrete cash dividends (null / empty = none)
-     * @param quantoHelper      optional FDM quanto helper (null = no quanto)
-     * @param tGrid             number of time steps
-     * @param xGrid             number of log-space grid points
-     * @param dampingSteps      number of leading implicit-Euler damping steps
-     * @param schemeDesc        FDM scheme descriptor
-     * @param cashDividendModel dividend model (only Spot supported currently)
+     * @param process                   GBS process
+     * @param dividends                 discrete cash dividends (null / empty = none)
+     * @param quantoHelper              optional FDM quanto helper (null = no quanto)
+     * @param tGrid                     number of time steps
+     * @param xGrid                     number of log-space grid points
+     * @param dampingSteps              number of leading implicit-Euler damping steps
+     * @param schemeDesc                FDM scheme descriptor
+     * @param cashDividendModel         dividend model (only Spot supported currently)
+     * @param localVol                  when {@code true} the FDM operator uses
+     *                                  {@code process.localVolatility()} instead
+     *                                  of the constant-vol forward-variance lookup
+     * @param illegalLocalVolOverwrite  fallback {@code sigma} when local-vol
+     *                                  evaluation throws; {@link Double#NaN}
+     *                                  (or any negative value) disables it
      */
     public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
                                        final DividendSchedule dividends,
@@ -234,11 +263,15 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
                                        final int xGrid,
                                        final int dampingSteps,
                                        final FdmSchemeDesc schemeDesc,
-                                       final CashDividendModel cashDividendModel) {
+                                       final CashDividendModel cashDividendModel,
+                                       final boolean localVol,
+                                       final double illegalLocalVolOverwrite) {
         super();
         QL.require(process != null, "null GBS process");
         QL.require(cashDividendModel == CashDividendModel.Spot,
                 "Escrowed dividend model is not yet supported");
+        QL.require(!(localVol && quantoHelper != null),
+                "localVol + quantoHelper combination is not yet supported");
 
         this.process          = process;
         this.dividends        = (dividends != null) ? dividends : new DividendSchedule();
@@ -248,6 +281,8 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
         this.schemeDesc       = schemeDesc;
         this.cashDividendModel = cashDividendModel;
         this.quantoHelper     = quantoHelper;
+        this.localVol         = localVol;
+        this.illegalLocalVolOverwrite = illegalLocalVolOverwrite;
 
         this.a      = (OneAssetOption.ArgumentsImpl) arguments_;
         this.r      = (OneAssetOption.ResultsImpl)   results_;
@@ -257,6 +292,21 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
         if (quantoHelper != null) {
             quantoHelper.addObserver(this);
         }
+    }
+
+    /**
+     * Back-compat full constructor pre-dating the {@code localVol} parameters.
+     */
+    public FdBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess process,
+                                       final DividendSchedule dividends,
+                                       final FdmQuantoHelper quantoHelper,
+                                       final int tGrid,
+                                       final int xGrid,
+                                       final int dampingSteps,
+                                       final FdmSchemeDesc schemeDesc,
+                                       final CashDividendModel cashDividendModel) {
+        this(process, dividends, quantoHelper, tGrid, xGrid, dampingSteps,
+                schemeDesc, cashDividendModel, false, Double.NaN);
     }
 
     // --------------------------------------------------------------------
@@ -332,7 +382,8 @@ public class FdBlackScholesVanillaEngine extends OneAssetOption.EngineImpl {
                 maturity, tGrid, dampingSteps);
 
         final FdmBlackScholesSolver solver = new FdmBlackScholesSolver(
-                effectiveProcess, payoff.strike(), solverDesc, schemeDesc);
+                effectiveProcess, payoff.strike(), solverDesc, schemeDesc,
+                localVol, illegalLocalVolOverwrite);
 
         final double spot = effectiveProcess.x0() + spotAdjustment;
 

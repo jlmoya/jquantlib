@@ -41,7 +41,6 @@
 
 package org.jquantlib.processes;
 
-import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
@@ -178,17 +177,14 @@ public class GeneralizedBlackScholesProcess extends StochasticProcess1D {
                 return localVolatility;
             }
 
-            // ok, so it's strike-dependent. Never mind.
-            if (LocalVolSurface.class.isAssignableFrom(klass)) {
-                localVolatility.linkTo(new LocalVolSurface(blackVolatility, riskFreeRate, dividendYield, x0));
-                updated = true;
-                return localVolatility;
-            }
-
-            // Note: The previous LocalVolSurface case was a catch-all condition.
-            // We decided to explicitly test the interface and throw an exception if we are not able
-            // to identify the correct interface to be used.
-            throw new LibraryException("unrecognized volatility curve"); // QA:[RG]::verified // FIXME: message
+            // ok, so it's strike-dependent. Never mind — fall back to the
+            // generic LocalVolSurface (Dupire-from-Black-vol). Matches C++
+            // v1.42.1 ql/processes/blackscholesprocess.cpp:213-217 which uses
+            // LocalVolSurface as the catch-all branch (no exception).
+            localVolatility.linkTo(new LocalVolSurface(
+                    blackVolatility, riskFreeRate, dividendYield, x0));
+            updated = true;
+            return localVolatility;
         } else
             return localVolatility;
     }

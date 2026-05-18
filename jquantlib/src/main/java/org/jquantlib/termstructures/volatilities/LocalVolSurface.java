@@ -153,9 +153,12 @@ public class LocalVolSurface extends LocalVolTermStructure {
         final YieldTermStructure rTS = riskFreeTS_.currentLink();
         final BlackVolTermStructure bTS = blackTS_.currentLink();
 
-        final double forwardValue = u.value() * ( dTS.discount(time, true) / rTS.discount(time, true) );
+        final double dr = rTS.discount(time, true);
+        final double dq = dTS.discount(time, true);
+        final double forwardValue = u.value() * (dq / dr);
 
-        // strike derivatives
+        // strike derivatives — mirrors C++ v1.42.1
+        // ql/termstructures/volatility/equityfx/localvolsurface.cpp:90-101.
         /*@Real*/ double strike;
         /*@Real*/ double strikem;
         /*@Real*/ double strikep;
@@ -163,7 +166,12 @@ public class LocalVolSurface extends LocalVolTermStructure {
         double w, wp, wm, dwdy, d2wdy2;
         strike = underlyingLevel;
         y = Math.log(strike / forwardValue);
-        dy = ((y != 0.0) ? y * 0.000001 : 0.000001);
+        // C++: dy = (|y| > 0.001) ? y*0.0001 : 0.000001 — Java port previously
+        // used the much smaller bump y*1e-6, which made the finite-difference
+        // estimate of dw/dy and d^2w/dy^2 dominated by floating-point noise
+        // for typical Black-vol surfaces. Aligning to v1.42.1 is required for
+        // Dupire-derived local vols to reproduce Black-surface European prices.
+        dy = (Math.abs(y) > 0.001) ? y * 0.0001 : 0.000001;
         strikep = strike * Math.exp(dy);
         strikem = strike / Math.exp(dy);
         w = bTS.blackVariance(time,  strike, true);
@@ -172,21 +180,41 @@ public class LocalVolSurface extends LocalVolTermStructure {
         dwdy = (wp - wm) / (2.0 * dy);
         d2wdy2 = (wp - 2.0 * w + wm) / (dy * dy);
 
-        // time derivative
+        // time derivative — mirrors C++ v1.42.1 lines 104-137.
+        // The time-derivative is evaluated along the *forward strike trajectory*
+        // K(t) = K * (dr * dq(t+dt)) / (dr(t+dt) * dq), which preserves the
+        // forward-moneyness. The Java port previously evaluated dw/dt at a
+        // fixed strike, which biases the time derivative on a smile-skewed
+        // surface and propagates into the local-vol estimate.
         /*@Time*/ final double t = time;
         /*@Time*/ double dt;
         double wpt, wmt, dwdt;
         if (t == 0.0) {
             dt = 0.0001;
-            wpt = bTS.blackVariance(/*@Time*/ (t + dt), strike, true);
-            QL.require(wpt >= w , "decreasing variance at strike"); // TODO: message
+            final double drpt = rTS.discount(t + dt, true);
+            final double dqpt = dTS.discount(t + dt, true);
+            final double strikept = strike * dr * dqpt / (drpt * dq);
+            wpt = bTS.blackVariance(t + dt, strikept, true);
+            QL.ensure(wpt >= w, "decreasing variance at strike " + strike
+                    + " between time " + t + " and time " + (t + dt));
             dwdt = (wpt - w) / dt;
         } else {
             dt = Math.min(0.0001, t / 2.0);
-            wpt = bTS.blackVariance(/*@Time*/ (t + dt), strike, true);
-            wmt = bTS.blackVariance(/*@Time*/ (t - dt), strike, true);
-            QL.ensure(wpt >= w , "decreasing variance at strike"); // TODO: message
-            QL.ensure(w >= wmt , "decreasing variance at strike"); // TODO: message
+            final double drpt = rTS.discount(t + dt, true);
+            final double drmt = rTS.discount(t - dt, true);
+            final double dqpt = dTS.discount(t + dt, true);
+            final double dqmt = dTS.discount(t - dt, true);
+
+            final double strikept = strike * dr * dqpt / (drpt * dq);
+            final double strikemt = strike * dr * dqmt / (drmt * dq);
+
+            wpt = bTS.blackVariance(t + dt, strikept, true);
+            wmt = bTS.blackVariance(t - dt, strikemt, true);
+
+            QL.ensure(wpt >= w, "decreasing variance at strike " + strike
+                    + " between time " + t + " and time " + (t + dt));
+            QL.ensure(w >= wmt, "decreasing variance at strike " + strike
+                    + " between time " + (t - dt) + " and time " + t);
             dwdt = (wpt - wmt) / (2.0 * dt);
         }
 

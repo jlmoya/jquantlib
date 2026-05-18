@@ -30,6 +30,7 @@ import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.LocalVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.time.Frequency;
@@ -47,9 +48,16 @@ import org.jquantlib.time.Frequency;
  * {@link #setTime} recomputes the time-dependent coefficients using
  * {@code r = rTS.forwardRate(t1, t2, Continuous)}, etc.
  *
+ * <h3>Local-vol branch</h3>
+ * When {@code localVol == true} the op uses {@code process.localVolatility()}
+ * to evaluate the spot-dependent variance at each grid node (mirroring the
+ * C++ {@code FdmBlackScholesOp::setTime} localVol branch). The mesher's
+ * log-space locations are exponentiated once at construction
+ * ({@code x = exp(ln S)}) and reused on every {@link #setTime} call.
+ *
  * <h3>Deviations from C++</h3>
  * <ul>
- *   <li>Local-vol and Quanto-helper branches are deferred (Phase 2m.5).</li>
+ *   <li>Quanto-helper branch is deferred (Phase 2m.5).</li>
  * </ul>
  *
  * @author Phase 2m Track A port
@@ -60,6 +68,12 @@ public class FdmBlackScholesOp implements FdmLinearOpComposite {
     private final YieldTermStructure rTS;
     private final YieldTermStructure qTS;
     private final BlackVolTermStructure volTS;
+    /** Non-null iff localVol is enabled. */
+    private final LocalVolTermStructure localVol;
+    /** Spot-space locations {@code S = exp(ln S)}; non-null iff localVol enabled. */
+    private final Array x;
+    /** Sentinel meaning "no override"; negative non-{@link Double#isNaN} value. */
+    private final double illegalLocalVolOverwrite;
     private final int direction;
     private final double strike;
 
@@ -68,6 +82,8 @@ public class FdmBlackScholesOp implements FdmLinearOpComposite {
     private final TripleBandLinearOp mapT;
 
     /**
+     * Convenience ctor (no local-vol).
+     *
      * @param mesher    1D FDM mesh (log-space)
      * @param process   GBS process (provides r, q, vol term structures)
      * @param strike    option strike used for blackForwardVariance lookup
@@ -77,12 +93,53 @@ public class FdmBlackScholesOp implements FdmLinearOpComposite {
                               final GeneralizedBlackScholesProcess process,
                               final double strike,
                               final int direction) {
+        this(mesher, process, strike, false, Double.NaN, direction);
+    }
+
+    /**
+     * Full ctor mirroring C++ {@code FdmBlackScholesOp(mesher, process, strike,
+     * localVol, illegalLocalVolOverwrite, direction)}.
+     *
+     * @param mesher                    1D FDM mesh (log-space)
+     * @param process                   GBS process (provides r, q, vol term
+     *                                  structures, and {@code localVolatility()}
+     *                                  when {@code localVol == true})
+     * @param strike                    option strike used for the constant-vol
+     *                                  branch's {@code blackForwardVariance}
+     *                                  lookup; ignored when {@code localVol == true}
+     * @param localVol                  when {@code true}, evaluate variance via
+     *                                  {@code process.localVolatility().localVol(t, S)}
+     *                                  at every grid node
+     * @param illegalLocalVolOverwrite  fallback {@code sigma} value substituted
+     *                                  whenever {@code localVol(...)} throws;
+     *                                  {@link Double#NaN} or any negative value
+     *                                  disables the fallback (i.e. the exception
+     *                                  propagates), matching C++'s sentinel
+     *                                  {@code -Null<Real>}
+     * @param direction                 mesh dimension index (0 for single-asset)
+     */
+    public FdmBlackScholesOp(final FdmMesher mesher,
+                              final GeneralizedBlackScholesProcess process,
+                              final double strike,
+                              final boolean localVol,
+                              final double illegalLocalVolOverwrite,
+                              final int direction) {
         this.mesher    = mesher;
         this.rTS       = process.riskFreeRate().currentLink();
         this.qTS       = process.dividendYield().currentLink();
         this.volTS     = process.blackVolatility().currentLink();
         this.direction = direction;
         this.strike    = strike;
+        this.illegalLocalVolOverwrite = illegalLocalVolOverwrite;
+
+        if (localVol) {
+            this.localVol = process.localVolatility().currentLink();
+            // x = exp(log-space locations) -> spot-space grid nodes
+            this.x = mesher.locations(direction).exp();
+        } else {
+            this.localVol = null;
+            this.x        = null;
+        }
 
         this.dxMap  = new FirstDerivativeOp(direction, mesher);
         this.dxxMap = new SecondDerivativeOp(direction, mesher);
@@ -114,6 +171,40 @@ public class FdmBlackScholesOp implements FdmLinearOpComposite {
                 Frequency.NoFrequency, true).rate();
 
         final int n = mesher.layout().size();
+
+        if (localVol != null) {
+            // Per-node variance from the local-vol surface, evaluated at
+            // mid-step time (0.5 * (t1 + t2)) and the spot-space grid node.
+            // Mirrors C++ FdmBlackScholesOp::setTime localVol branch.
+            final boolean haveOverride =
+                    !Double.isNaN(illegalLocalVolOverwrite) && illegalLocalVolOverwrite >= 0.0;
+            final double tMid = 0.5 * (t1 + t2);
+            final Array v = new Array(n);
+            final Array drift = new Array(n);
+            for (int i = 0; i < n; ++i) {
+                double sigma;
+                if (haveOverride) {
+                    try {
+                        sigma = localVol.localVol(tMid, x.get(i), true);
+                    } catch (final RuntimeException e) {
+                        sigma = illegalLocalVolOverwrite;
+                    }
+                } else {
+                    sigma = localVol.localVol(tMid, x.get(i), true);
+                }
+                final double sigma2 = sigma * sigma;
+                v.set(i, sigma2);
+                drift.set(i, r - q - 0.5 * sigma2);
+            }
+            final Array halfV = new Array(n);
+            for (int i = 0; i < n; ++i) {
+                halfV.set(i, 0.5 * v.get(i));
+            }
+            final Array minusR = new Array(1).fill(-r);
+            mapT.axpyb(drift, dxMap, dxxMap.mult(halfV), minusR);
+            return;
+        }
+
         final double v = volTS.blackForwardVariance(t1, t2, strike, true) / (t2 - t1);
 
         final Array drift = new Array(1).fill(r - q - 0.5 * v);

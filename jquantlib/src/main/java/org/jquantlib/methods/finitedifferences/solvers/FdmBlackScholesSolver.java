@@ -49,6 +49,8 @@ public class FdmBlackScholesSolver extends LazyObject {
     private final double strike;
     private final FdmSolverDesc solverDesc;
     private final FdmSchemeDesc schemeDesc;
+    private final boolean localVol;
+    private final double illegalLocalVolOverwrite;
 
     private Fdm1DimSolver solver;
 
@@ -58,24 +60,42 @@ public class FdmBlackScholesSolver extends LazyObject {
     public FdmBlackScholesSolver(final GeneralizedBlackScholesProcess process,
                                  final double strike,
                                  final FdmSolverDesc solverDesc) {
-        this(process, strike, solverDesc, FdmSchemeDesc.Douglas());
+        this(process, strike, solverDesc, FdmSchemeDesc.Douglas(), false, Double.NaN);
     }
 
     public FdmBlackScholesSolver(final GeneralizedBlackScholesProcess process,
                                  final double strike,
                                  final FdmSolverDesc solverDesc,
                                  final FdmSchemeDesc schemeDesc) {
+        this(process, strike, solverDesc, schemeDesc, false, Double.NaN);
+    }
+
+    /**
+     * Full ctor mirroring C++ {@code FdmBlackScholesSolver(process, strike,
+     * solverDesc, schemeDesc, localVol, illegalLocalVolOverwrite, quantoHelper)}.
+     * {@code quantoHelper} is omitted here (deferred — see
+     * {@link FdmBlackScholesSolver}'s class doc).
+     */
+    public FdmBlackScholesSolver(final GeneralizedBlackScholesProcess process,
+                                 final double strike,
+                                 final FdmSolverDesc solverDesc,
+                                 final FdmSchemeDesc schemeDesc,
+                                 final boolean localVol,
+                                 final double illegalLocalVolOverwrite) {
         this.process    = process;
         this.strike     = strike;
         this.solverDesc = solverDesc;
         this.schemeDesc = schemeDesc;
+        this.localVol   = localVol;
+        this.illegalLocalVolOverwrite = illegalLocalVolOverwrite;
         process.addObserver(this);
     }
 
     @Override
     protected void performCalculations() {
         final FdmBlackScholesOp op = new FdmBlackScholesOp(
-                solverDesc.mesher, process, strike, 0);
+                solverDesc.mesher, process, strike,
+                localVol, illegalLocalVolOverwrite, 0);
         solver = new Fdm1DimSolver(solverDesc, schemeDesc, op);
     }
 

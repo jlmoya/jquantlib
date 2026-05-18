@@ -17,6 +17,7 @@ import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
+import org.jquantlib.instruments.CashOrNothingPayoff;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
@@ -48,6 +49,7 @@ import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp.TransformationType;
 import org.jquantlib.methods.finitedifferences.schemes.DouglasScheme;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
+import org.jquantlib.methods.finitedifferences.schemes.HundsdorferScheme;
 import org.jquantlib.methods.finitedifferences.schemes.ModifiedCraigSneydScheme;
 import org.jquantlib.methods.finitedifferences.utilities.FdmHestonGreensFct;
 import org.jquantlib.methods.finitedifferences.utilities.FdmMesherIntegral;
@@ -66,7 +68,9 @@ import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.LocalVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.termstructures.volatilities.BlackVarianceSurface;
+import org.jquantlib.termstructures.volatilities.equityfx.FixedLocalVolSurface;
 import org.jquantlib.termstructures.volatilities.equityfx.NoExceptLocalVolSurface;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
@@ -758,22 +762,196 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-218 — fokkerPlanckPrice2D helper + "
-            + "createLocalVolMatrixFromProcess helper now landed (this commit), and "
-            + "HundsdorferScheme + Concentrating1dMesher multi-cPoint ctor were in "
-            + "place before. Remaining blocker: FdBlackScholesVanillaEngine "
-            + "local-vol-enabled overload — C++ test (line ~1328) uses the constructor "
-            + "FdBlackScholesVanillaEngine(lvProcess, 50, 201, 0, FdmSchemeDesc.Douglas(), "
-            + "true /*localVol*/, 0.2 /*illegalLocalVolOverwrite*/) as the reference "
-            + "engine; Java's FdBlackScholesVanillaEngine only supports Black-vol "
-            + "(no localVol flag, no illegalLocalVolOverwrite). The reference price "
-            + "evolves under Dupire local vol of the BlackVarianceSurface smile - "
-            + "AnalyticEuropeanEngine and the BS-only FDM engine both diverge from "
-            + "this reference for CashOrNothing payoffs on a smile-y surface. "
-            + "Un-ignore once the localVol-aware FdBlackScholesVanillaEngine overload "
-            + "(plus FdmBlackScholesOp localVol branch) lands.")
+    /**
+     * Java port of C++
+     * {@code testHestonFokkerPlanckFwdEquationLogLVLeverage}
+     * (test-suite/hestonslvmodel.cpp:1197). Evolves the 2-D Heston density
+     * forward through {@link FdmHestonFwdOp} with a leverage function
+     * (a {@link FixedLocalVolSurface} derived from the Dupire transform of
+     * the smooth implied-vol surface) and compares CashOrNothing-put
+     * Fokker-Planck prices against the local-vol FD engine
+     * ({@link FdBlackScholesVanillaEngine} with {@code localVol=true,
+     * illegalLocalVolOverwrite=0.2}). Tolerance 0.015 matches C++.
+     */
+    @Ignore("Phase 5e.5b-CFC-d-225 — local-vol FD engine overload "
+            + "FdBlackScholesVanillaEngine(..., localVol, illegalLocalVolOverwrite) "
+            + "has now landed (this commit) and is exercised here, but a separate "
+            + "blocker remains: SquareRootProcessRNDCalculator.stationary_invcdf "
+            + "fails with 'accuracy not reached' for the C++-test parameter set "
+            + "(theta=1.0, kappa=1.0, sigma=0.02 — 2*kappa*theta/sigma^2 = 5000, "
+            + "so the stationary non-central chi-square is extremely concentrated "
+            + "and the default Brent bracket [eps, 1-eps] x [v0/10, v0*10] cannot "
+            + "find a root for q = 0.99 / 0.01). The C++ Brent uses a wider "
+            + "stretch-based bracket. Un-ignore once that calculator's invcdf "
+            + "bracketing is widened (or replaced with an analytic chi-square "
+            + "inverse) — the localVol FD engine wiring itself is now complete "
+            + "and passes PiecewiseBlackVarianceSurfaceTest::testLocalVolFdPricingFromSabrSmiles "
+            + "to 1c tolerance.")
     @Test
-    public void testHestonFokkerPlanckFwdEquationLogLVLeverage() { fail("not implemented"); }
+    public void testHestonFokkerPlanckFwdEquationLogLVLeverage() {
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final Date todaysDate = new Date(28, Month.December, 2012);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final Date maturityDate = todaysDate.add(new Period(1, TimeUnit.Years));
+        final double maturity = dc.yearFraction(todaysDate, maturityDate);
+
+        final double s0 = 100.0;
+        final double x0 = Math.log(s0);
+        final double r  = 0.0;
+        final double q  = 0.0;
+
+        final double kappa =  1.0;
+        final double theta =  1.0;
+        final double rho   = -0.75;
+        final double sigma =  0.02;
+        final double v0    =  theta;
+
+        final TransformationType transform = TransformationType.Plain;
+
+        final DayCounter dayCounter = new Actual365Fixed();
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dayCounter));
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+
+        final int xGrid = 201;
+        final int vGrid = 401;
+        final int tGrid = 25;
+
+        final SquareRootProcessRNDCalculator rnd =
+                new SquareRootProcessRNDCalculator(v0, kappa, theta, sigma);
+
+        final double upperBound = rnd.stationary_invcdf(0.99);
+        final double lowerBound = rnd.stationary_invcdf(0.01);
+
+        final double beta = 10.0;
+        final List<CPointSpec> vCPoints = new ArrayList<CPointSpec>();
+        vCPoints.add(new CPointSpec(lowerBound, beta,       true));
+        vCPoints.add(new CPointSpec(v0,         beta / 100, true));
+        vCPoints.add(new CPointSpec(upperBound, beta,       true));
+        final Fdm1dMesher varianceMesher = new Concentrating1dMesher(
+                lowerBound, upperBound, vGrid, vCPoints, 1e-12);
+
+        final Fdm1dMesher equityMesher = new Concentrating1dMesher(
+                Math.log(2.0), Math.log(600.0), xGrid, x0 + 0.005, 0.1, true);
+
+        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(2);
+        ms.add(equityMesher);
+        ms.add(varianceMesher);
+        final FdmMesherComposite mesher = new FdmMesherComposite(ms);
+
+        // Build the implied-vol surface and the BSM process driving the
+        // leverage function. The Java helper uses Actual/365 by default;
+        // pass it through to mirror C++ which builds the surface against
+        // its dayCounter argument.
+        final SmoothImpliedVol smoothSurface = createSmoothImpliedVol(dayCounter);
+        final BlackScholesMertonProcess lvProcess = new BlackScholesMertonProcess(
+                spot, qTS, rTS,
+                new Handle<BlackVolTermStructure>(smoothSurface.surface));
+
+        // step two days using non-correlated process
+        final double eT = 2.0 / 365.0;
+
+        double v = Double.NaN;
+        double p_v = 0.0;
+        final Array p = new Array(mesher.layout().size()).fill(0.0);
+        final double bsV0 = Math.pow(
+                lvProcess.blackVolatility().currentLink().blackVol(0.0, s0, true), 2);
+
+        final SquareRootProcessRNDCalculator rndCalculator =
+                new SquareRootProcessRNDCalculator(v0, kappa, theta, sigma);
+        for (final FdmLinearOpIterator iter : mesher.layout()) {
+            final double x = mesher.location(iter, 0);
+            final double curV = mesher.location(iter, 1);
+            if (Double.isNaN(v) || curV != v) {
+                v = curV;
+                // Extreme-tail probabilities of the non-central chi-square
+                // can throw on some platforms; mirror C++ guard.
+                if (Math.abs(v - v0) < 5 * sigma * Math.sqrt(v0 * eT)) {
+                    p_v = rndCalculator.pdf(v, eT);
+                } else {
+                    p_v = 0.0;
+                }
+            }
+            final double p_x = 1.0 / Math.sqrt(2.0 * Math.PI * bsV0 * eT)
+                    * Math.exp(-0.5 * (x - x0) * (x - x0) / (bsV0 * eT));
+            p.set(iter.index(), p_v * p_x);
+        }
+        final double dt = (maturity - eT) / tGrid;
+
+        final double[] denseStrikes = {
+                2.222222222, 11.11111111, 20, 25, 30, 35, 40,
+                44.44444444, 50, 55, 60, 65, 70, 75.55555556,
+                80, 84.44444444, 88.88888889, 93.33333333, 97.77777778, 100,
+                102.2222222, 106.6666667, 111.1111111, 115.5555556, 120,
+                124.4444444, 166.6666667, 222.2222222, 444.4444444, 666.6666667
+        };
+
+        final double[] times = new double[smoothSurface.dates.length];
+        final Matrix m = createLocalVolMatrixFromProcess(
+                lvProcess, denseStrikes, smoothSurface.dates, times);
+
+        final List<Date> datesList = new ArrayList<Date>(smoothSurface.dates.length);
+        for (final Date d : smoothSurface.dates) {
+            datesList.add(d);
+        }
+        final FixedLocalVolSurface leverage = new FixedLocalVolSurface(
+                todaysDate, datesList, denseStrikes, m, dc,
+                FixedLocalVolSurface.Extrapolation.ConstantExtrapolation,
+                FixedLocalVolSurface.Extrapolation.ConstantExtrapolation);
+
+        final FdmLinearOpComposite hestonFwdOp = new FdmHestonFwdOp(
+                mesher, hestonProcess, transform, leverage);
+
+        final FdmSchemeDesc desc = FdmSchemeDesc.Hundsdorfer();
+        final HundsdorferScheme evolver =
+                new HundsdorferScheme(desc.theta, desc.mu, hestonFwdOp);
+
+        double t = dt;
+        evolver.setStep(dt);
+        for (int i = 0; i < tGrid; ++i, t += dt) {
+            evolver.step(p, t);
+        }
+
+        final Exercise exercise = new EuropeanExercise(maturityDate);
+        final FdBlackScholesVanillaEngine fdmEngine = new FdBlackScholesVanillaEngine(
+                lvProcess, 50, 201, 0, FdmSchemeDesc.Douglas(), true, 0.2);
+
+        for (int strikeI = 5; strikeI < 200; strikeI += 10) {
+            final double strike = strikeI;
+            final StrikedTypePayoff payoff = new CashOrNothingPayoff(
+                    Option.Type.Put, strike, 1.0);
+
+            final Array pd = new Array(p.size());
+            for (final FdmLinearOpIterator iter : mesher.layout()) {
+                final int idx = iter.index();
+                final double s = Math.exp(mesher.location(iter, 0));
+                pd.set(idx, payoff.get(s) * p.get(idx));
+            }
+
+            final double calculated = fokkerPlanckPrice2D(pd, mesher)
+                    * rTS.currentLink().discount(maturityDate);
+
+            final VanillaOption option = new VanillaOption(payoff, exercise);
+            option.setPricingEngine(fdmEngine);
+            final double expected = option.NPV();
+
+            final double tol = 0.015;
+            if (Math.abs(expected - calculated) > tol) {
+                fail("failed to reproduce Heston prices at"
+                        + "\n   strike      " + strike
+                        + "\n   calculated: " + calculated
+                        + "\n   expected:   " + expected
+                        + "\n   tolerance:  " + tol);
+            }
+        }
+    }
 
     /**
      * Java port of C++ helper {@code createSmoothImpliedVol}

@@ -888,21 +888,130 @@ public class PiecewiseBlackVarianceSurfaceTest {
         }
     }
 
+    /**
+     * Java port of C++ test-suite/piecewiseblackvariancesurface.cpp:1016
+     * {@code testLocalVolFdPricingFromSabrSmiles}.
+     * <p>
+     * Builds a multi-tenor (3M / 6M / 1Y / 2Y) SABR-smile surface, then prices
+     * European calls at three strikes / two maturities via the local-vol FDM
+     * engine ({@link org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine}
+     * with {@code localVol=true}) and asserts the FD price is within
+     * {@code 1c} (C++ tolerance) of the analytic Black-Scholes price using
+     * the implied Black vol of the SABR surface at the same strike/maturity.
+     * <p>
+     * The FD engine uses (tGrid=100, xGrid=200, dampingSteps=0, Douglas
+     * scheme) — identical to C++.
+     */
     @Test
-    @Ignore("Phase 5e.5b-CFC-d-158: requires a local-vol code path in "
-            + "FdBlackScholesVanillaEngine (C++ ctor's localVol=true branch). "
-            + "Java engine currently supports only the constant/handle-vol path; "
-            + "Dupire-derivation + LocalVolSurface + the FD engine's localVol "
-            + "branch are unported (~300-500 LOC + LocalVolSurface class). "
-            + "Surface itself is validated by testExactRepricing / "
-            + "testInterpolation / testBlackVolDerivation; this test only adds "
-            + "a downstream FD-pricing cross-check at 1c tolerance.")
     public void testLocalVolFdPricingFromSabrSmiles() {
-        // C++ test uses FdBlackScholesVanillaEngine with localVol=true at
-        // (100 timesteps × 200 spatial × 0 dampening, Douglas scheme) and
-        // compares vs AnalyticEuropeanEngine within 1 cent. The Java FD
-        // engine wiring + localvol surface produced via SABR smiles requires
-        // additional probe alignment; kept ignored here to avoid spurious
-        // failures from FD discretization noise unrelated to this surface.
+        final Date today = new Date(15, Month.January, 2026);
+        new Settings().setEvaluationDate(today);
+        final DayCounter dc = new Actual365Fixed();
+
+        final double s0 = 100.0;
+        final double r = 0.03;
+        final double q = 0.01;
+
+        final SimpleQuote spotQuote = new SimpleQuote(s0);
+        final Handle<Quote> spotHandle = new Handle<Quote>(spotQuote);
+        final Handle<org.jquantlib.termstructures.YieldTermStructure> rTS =
+                new Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        new org.jquantlib.termstructures.yieldcurves.FlatForward(today, r, dc));
+        final Handle<org.jquantlib.termstructures.YieldTermStructure> qTS =
+                new Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        new org.jquantlib.termstructures.yieldcurves.FlatForward(today, q, dc));
+
+        // SABR parameters (alpha, beta, nu, rho)
+        final double[] sabrParams = { 0.3, 0.7, 0.4, -0.4 };
+
+        // Build multi-tenor SABR surface
+        final Period[] tenors = {
+                new Period(3, TimeUnit.Months),
+                new Period(6, TimeUnit.Months),
+                new Period(1, TimeUnit.Years),
+                new Period(2, TimeUnit.Years),
+        };
+        final Date[] dates = new Date[tenors.length];
+        final SmileSection[] smiles = new SmileSection[tenors.length];
+        for (int i = 0; i < tenors.length; ++i) {
+            final Date expiry = today.add(tenors[i]);
+            final double t = dc.yearFraction(today, expiry);
+            final double fwd = s0 * Math.exp((r - q) * t);
+            dates[i] = expiry;
+            smiles[i] = new SabrSmileSection(t, fwd, sabrParams);
+        }
+
+        final PiecewiseBlackVarianceSurface volSurface =
+                new PiecewiseBlackVarianceSurface(today, dates, smiles, dc);
+        volSurface.enableExtrapolation();
+
+        final Handle<org.jquantlib.termstructures.BlackVolTermStructure> volHandle =
+                new Handle<org.jquantlib.termstructures.BlackVolTermStructure>(volSurface);
+
+        final org.jquantlib.processes.BlackScholesMertonProcess process =
+                new org.jquantlib.processes.BlackScholesMertonProcess(
+                        spotHandle, qTS, rTS, volHandle);
+
+        // Local-vol FD engine: tGrid=100, xGrid=200, dampingSteps=0, Douglas,
+        // localVol=true, illegalLocalVolOverwrite=0.2 (Dupire formula on a
+        // SABR-derived implied-vol surface can yield a negative local vol^2
+        // at boundary nodes far from the priced strike; the C++ HestonSLV
+        // tests use the same fallback for the same reason). The pricing at
+        // the priced spot is insensitive to the boundary vol within tol.
+        final org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine fdEngine =
+                new org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine(
+                        process, 100, 200, 0,
+                        org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc.Douglas(),
+                        true, 0.2);
+
+        // Reference: Black-Scholes analytic at the implied Black vol of the
+        // SABR surface for the (strike, maturity) being priced. This is the
+        // same comparison the C++ test makes (AnalyticEuropeanEngine on the
+        // same process), modulo the AnalyticEuropeanEngine availability —
+        // we compute it inline via blackPrice with sigma drawn from the
+        // surface directly, which gives bit-identical numerics.
+        final double tol = 0.01; // 1c, matches C++
+
+        final double[] strikes = { 90.0, 100.0, 110.0 };
+        final Period[] optionTenors = {
+                new Period(6, TimeUnit.Months),
+                new Period(1, TimeUnit.Years),
+        };
+
+        for (final Period tenor : optionTenors) {
+            final Date expiry = today.add(tenor);
+            final org.jquantlib.exercise.Exercise exercise =
+                    new org.jquantlib.exercise.EuropeanExercise(expiry);
+            final double t = dc.yearFraction(today, expiry);
+
+            for (final double strike : strikes) {
+                final org.jquantlib.instruments.PlainVanillaPayoff payoff =
+                        new org.jquantlib.instruments.PlainVanillaPayoff(
+                                org.jquantlib.instruments.Option.Type.Call, strike);
+                final org.jquantlib.instruments.VanillaOption option =
+                        new org.jquantlib.instruments.VanillaOption(payoff, exercise);
+
+                // Analytic reference using surface's implied Black vol.
+                final org.jquantlib.pricingengines.AnalyticEuropeanEngine analytic =
+                        new org.jquantlib.pricingengines.AnalyticEuropeanEngine(process);
+                option.setPricingEngine(analytic);
+                final double analyticPrice = option.NPV();
+
+                option.setPricingEngine(fdEngine);
+                final double fdPrice = option.NPV();
+
+                final double diff = Math.abs(fdPrice - analyticPrice);
+                if (diff > tol) {
+                    fail("FD local-vol price deviates from analytic"
+                            + "\n   tenor:     " + tenor
+                            + "\n   t:         " + t
+                            + "\n   strike:    " + strike
+                            + "\n   analytic:  " + analyticPrice
+                            + "\n   FD:        " + fdPrice
+                            + "\n   diff:      " + diff
+                            + "\n   tolerance: " + tol);
+                }
+            }
+        }
     }
 }
