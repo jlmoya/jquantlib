@@ -1,0 +1,807 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "npv": 15.431040844905644
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 35.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m90_k35"
+    },
+    {
+      "expected": {
+        "npv": 10.554690304370828
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 40.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m90_k40"
+    },
+    {
+      "expected": {
+        "npv": 5.962092917136372
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 45.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m90_k45"
+    },
+    {
+      "expected": {
+        "npv": 2.328046464730164
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 50.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m90_k50"
+    },
+    {
+      "expected": {
+        "npv": 0.5406824963524928
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 55.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m90_k55"
+    },
+    {
+      "expected": {
+        "npv": 0.08336414792584855
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 60.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m90_k60"
+    },
+    {
+      "expected": {
+        "npv": 15.895153938943379
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 35.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m180_k35"
+    },
+    {
+      "expected": {
+        "npv": 11.215495881576947
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 40.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m180_k40"
+    },
+    {
+      "expected": {
+        "npv": 6.909990281867267
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 45.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m180_k45"
+    },
+    {
+      "expected": {
+        "npv": 3.478349778932519
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 50.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m180_k50"
+    },
+    {
+      "expected": {
+        "npv": 1.37657748901291
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 55.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m180_k55"
+    },
+    {
+      "expected": {
+        "npv": 0.4352148752178468
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.0,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 60.0,
+        "v0_derived": 0.00012121212121212151
+      },
+      "name": "call_l0_m180_k60"
+    },
+    {
+      "expected": {
+        "npv": 15.453986174617617
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 35.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m90_k35"
+    },
+    {
+      "expected": {
+        "npv": 10.691240023599372
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 40.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m90_k40"
+    },
+    {
+      "expected": {
+        "npv": 6.2368261484066085
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 45.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m90_k45"
+    },
+    {
+      "expected": {
+        "npv": 2.6825307437814323
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 50.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m90_k50"
+    },
+    {
+      "expected": {
+        "npv": 0.7818091894804816
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 55.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m90_k55"
+    },
+    {
+      "expected": {
+        "npv": 0.17350679853829146
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 60.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m90_k60"
+    },
+    {
+      "expected": {
+        "npv": 16.04974686519113
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 35.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m180_k35"
+    },
+    {
+      "expected": {
+        "npv": 11.525522080867944
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 40.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m180_k40"
+    },
+    {
+      "expected": {
+        "npv": 7.3109760027180215
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 45.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m180_k45"
+    },
+    {
+      "expected": {
+        "npv": 3.903707729898533
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 50.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m180_k50"
+    },
+    {
+      "expected": {
+        "npv": 1.7255023012192303
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 55.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m180_k55"
+    },
+    {
+      "expected": {
+        "npv": 0.6547581498238052
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 60.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "call_l1_m180_k60"
+    },
+    {
+      "expected": {
+        "npv": 15.78358723238972
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 35.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m90_k35"
+    },
+    {
+      "expected": {
+        "npv": 11.258534771284525
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 40.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m90_k40"
+    },
+    {
+      "expected": {
+        "npv": 7.025860841126486
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 45.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m90_k45"
+    },
+    {
+      "expected": {
+        "npv": 3.6684902181093433
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 50.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m90_k50"
+    },
+    {
+      "expected": {
+        "npv": 1.581593949644232
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 55.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m90_k55"
+    },
+    {
+      "expected": {
+        "npv": 0.5895393798704623
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 60.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m90_k60"
+    },
+    {
+      "expected": {
+        "npv": 16.780904476053323
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 35.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m180_k35"
+    },
+    {
+      "expected": {
+        "npv": 12.186917556218477
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 40.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m180_k40"
+    },
+    {
+      "expected": {
+        "npv": 7.932706541478142
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 45.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m180_k45"
+    },
+    {
+      "expected": {
+        "npv": 4.549127359763925
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 50.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m180_k50"
+    },
+    {
+      "expected": {
+        "npv": 2.2757542076827963
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 55.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m180_k55"
+    },
+    {
+      "expected": {
+        "npv": 1.0059758850936353
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.2,
+        "maturity_days": 180,
+        "omega": 2e-06,
+        "option_type": "Call",
+        "s0": 50.0,
+        "strike": 60.0,
+        "v0_derived": 0.0004096412811524548
+      },
+      "name": "call_l2_m180_k60"
+    },
+    {
+      "expected": {
+        "npv": 0.025128401242085374
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Put",
+        "s0": 50.0,
+        "strike": 35.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "put_l1_m90_k35"
+    },
+    {
+      "expected": {
+        "npv": 0.20111685402733315
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Put",
+        "s0": 50.0,
+        "strike": 40.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "put_l1_m90_k40"
+    },
+    {
+      "expected": {
+        "npv": 0.6854375826380661
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Put",
+        "s0": 50.0,
+        "strike": 45.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "put_l1_m90_k45"
+    },
+    {
+      "expected": {
+        "npv": 2.069876781816383
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Put",
+        "s0": 50.0,
+        "strike": 50.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "put_l1_m90_k50"
+    },
+    {
+      "expected": {
+        "npv": 5.1078898313189285
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Put",
+        "s0": 50.0,
+        "strike": 55.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "put_l1_m90_k55"
+    },
+    {
+      "expected": {
+        "npv": 9.438322044180232
+      },
+      "inputs": {
+        "alpha": 0.024,
+        "beta": 0.93,
+        "daysPerYear": 365.0,
+        "gamma": 0.059,
+        "lambda": 0.1,
+        "maturity_days": 90,
+        "omega": 2e-06,
+        "option_type": "Put",
+        "s0": 50.0,
+        "strike": 60.0,
+        "v0_derived": 0.00017778348033623922
+      },
+      "name": "put_l1_m90_k60"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-18T02:08:19Z",
+  "generated_by": "gjrgarch_engine_probe",
+  "test_group": "models/equity/gjrgarch_engine"
+}
