@@ -24,6 +24,7 @@ package org.jquantlib.math.interpolations;
 
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.optimization.Constraint;
+import org.jquantlib.model.VolatilityType;
 
 /**
  * Java representative of C++ {@code template<class Model>} parameter used in
@@ -80,6 +81,23 @@ public interface XABRSpecs {
      * passes {@code t} directly for cleaner plumbing.
      */
     double volatility(double strike, double forward, double t, double[] params);
+
+    /**
+     * Volatility from a strike, plus the {@code addParams} (shift, etc.) and
+     * the {@link VolatilityType} carried by the parent interpolator. Mirrors
+     * C++ {@code SABRWrapper::volatility(x, volatilityType)} which routes
+     * through {@code shiftedSabrVolatility(..., shift_, volatilityType)}
+     * (sabrinterpolation.hpp lines 53-56).
+     *
+     * <p>Default delegates to the 4-arg overload so existing specs that do
+     * not honour {@code volatilityType} continue to work unchanged. SABR (and
+     * other vol-type-aware specs) override this to dispatch on {@code vt}.
+     */
+    default double volatility(final double strike, final double forward,
+            final double t, final double[] params,
+            final double[] addParams, final VolatilityType vt) {
+        return volatility(strike, forward, t, params);
+    }
 
     /** Constraint shape passed to the optimizer (typically {@code NoConstraint}). */
     Constraint constraint(double forward);

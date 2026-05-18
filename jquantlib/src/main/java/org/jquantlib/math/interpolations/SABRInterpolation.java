@@ -56,6 +56,7 @@ import org.jquantlib.math.optimization.NoConstraint;
 import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.math.transcendental.JQuantMath;
+import org.jquantlib.model.VolatilityType;
 import org.jquantlib.termstructures.volatilities.Sabr;
 
 /**
@@ -136,6 +137,42 @@ public class SABRInterpolation extends AbstractInterpolation {
             final boolean useMaxError,
             final int maxGuesses,
             final double shift) {
+        this(vx, vy, t, forward, alpha, beta, nu, rho,
+                alphaIsFixed, betaIsFixed, nuIsFixed, rhoIsFixed,
+                vegaWeighted, endCriteria, optMethod,
+                errorAccept, useMaxError, maxGuesses, shift,
+                VolatilityType.ShiftedLognormal);
+    }
+
+    /**
+     * Full-arity constructor with explicit {@link VolatilityType} —
+     * mirrors C++ v1.42.1 {@code SABRInterpolation::SABRInterpolation}
+     * (sabrinterpolation.hpp lines 152-181) including the {@code shift} and
+     * {@code volatilityType} parameters. Pass {@link VolatilityType#Normal}
+     * to calibrate against Bachelier (normal) vols; the default is
+     * {@link VolatilityType#ShiftedLognormal}.
+     */
+    public SABRInterpolation(
+            final Array vx,
+            final Array vy,
+            @Time final double t,
+            final double forward,
+            final double alpha,
+            final double beta,
+            final double nu,
+            final double rho,
+            final boolean alphaIsFixed,
+            final boolean betaIsFixed,
+            final boolean nuIsFixed,
+            final boolean rhoIsFixed,
+            final boolean vegaWeighted,
+            final EndCriteria endCriteria,
+            final OptimizationMethod optMethod,
+            final double errorAccept,
+            final boolean useMaxError,
+            final int maxGuesses,
+            final double shift,
+            final VolatilityType volatilityType) {
 
         final double[] xArr = new double[vx.size()];
         final double[] yArr = new double[vy.size()];
@@ -150,7 +187,8 @@ public class SABRInterpolation extends AbstractInterpolation {
                 xArr, yArr, t, forward, params, paramIsFixed,
                 vegaWeighted, endCriteria, optMethod,
                 errorAccept, useMaxError, maxGuesses,
-                addParams, new SABRSpecs());
+                addParams, new SABRSpecs(),
+                volatilityType);
 
         impl = new SABRInterpolationImpl(vx, vy);
     }
@@ -295,6 +333,32 @@ public class SABRInterpolation extends AbstractInterpolation {
             // not used by any current Java caller (always passed as 0.0), so
             // we route directly to sabrVolatility.
             return new Sabr().sabrVolatility(strike, forward, t,
+                    params[0], params[1], params[2], params[3]);
+        }
+
+        /**
+         * Vol-type-aware volatility dispatch. Mirrors C++
+         * {@code SABRWrapper::volatility(x, volatilityType)} (sabrinterpolation.hpp
+         * lines 53-56), which calls
+         * {@code shiftedSabrVolatility(x, forward_, t_, alpha, beta, nu, rho, shift_, volatilityType)}.
+         *
+         * <p>The caller ({@link XABRInterpolationImpl#value(double)}) has already
+         * pre-shifted {@code strike} and {@code forward} by {@code addParams[0]},
+         * so here we route to the appropriate unshifted formula based on the
+         * volatility type — {@link Sabr#unsafeSabrLogNormalVolatility} for
+         * {@link VolatilityType#ShiftedLognormal}, {@link Sabr#unsafeSabrNormalVolatility}
+         * for {@link VolatilityType#Normal}.
+         */
+        @Override
+        public double volatility(final double strike, final double forward,
+                final double t, final double[] params,
+                final double[] addParams, final VolatilityType vt) {
+            final Sabr sabr = new Sabr();
+            if (vt == VolatilityType.Normal) {
+                return sabr.unsafeSabrNormalVolatility(strike, forward, t,
+                        params[0], params[1], params[2], params[3]);
+            }
+            return sabr.unsafeSabrLogNormalVolatility(strike, forward, t,
                     params[0], params[1], params[2], params[3]);
         }
 

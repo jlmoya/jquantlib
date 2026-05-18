@@ -32,6 +32,7 @@ import org.jquantlib.math.optimization.OptimizationMethod;
 import org.jquantlib.math.optimization.Problem;
 import org.jquantlib.math.optimization.ProjectedCostFunction;
 import org.jquantlib.math.randomnumbers.HaltonRsg;
+import org.jquantlib.model.VolatilityType;
 
 /**
  * Generic XABR-style interpolation implementation, parameterized by
@@ -70,6 +71,21 @@ public class XABRInterpolationImpl<S extends XABRSpecs> extends XABRCoeffHolder<
     protected final boolean useMaxError_;
     protected final int maxGuesses_;
 
+    /**
+     * Volatility type carried by the parent interpolator (mirrors C++
+     * {@code XABRInterpolationImpl::volatilityType_} field at
+     * xabrinterpolation.hpp line 320). Defaults to {@link
+     * VolatilityType#ShiftedLognormal}; passed down to
+     * {@link XABRSpecs#volatility(double, double, double, double[], double[], VolatilityType)}
+     * by {@link #value(double)}.
+     */
+    protected final VolatilityType volatilityType_;
+
+    /**
+     * Backward-compatible constructor — defaults {@code volatilityType} to
+     * {@link VolatilityType#ShiftedLognormal} (matching C++ default arg at
+     * xabrinterpolation.hpp line 118).
+     */
     public XABRInterpolationImpl(
             final double[] xBegin, final double[] yBegin,
             final double t, final double forward,
@@ -82,10 +98,35 @@ public class XABRInterpolationImpl<S extends XABRSpecs> extends XABRCoeffHolder<
             final int maxGuesses,
             final double[] addParams,
             final S specs) {
+        this(xBegin, yBegin, t, forward, params, paramIsFixed, vegaWeighted,
+                endCriteria, optMethod, errorAccept, useMaxError, maxGuesses,
+                addParams, specs, VolatilityType.ShiftedLognormal);
+    }
+
+    /**
+     * Full-arity constructor with explicit {@link VolatilityType}. Mirrors
+     * C++ {@code XABRInterpolationImpl} ctor (xabrinterpolation.hpp lines
+     * 105-135) including the {@code volatilityType} parameter (line 118).
+     */
+    public XABRInterpolationImpl(
+            final double[] xBegin, final double[] yBegin,
+            final double t, final double forward,
+            final double[] params, final boolean[] paramIsFixed,
+            final boolean vegaWeighted,
+            final EndCriteria endCriteria,
+            final OptimizationMethod optMethod,
+            final double errorAccept,
+            final boolean useMaxError,
+            final int maxGuesses,
+            final double[] addParams,
+            final S specs,
+            final VolatilityType volatilityType) {
         super(t, forward, params, paramIsFixed, addParams, specs);
         this.xBegin_ = xBegin.clone();
         this.yBegin_ = yBegin.clone();
         this.vegaWeighted_ = vegaWeighted;
+        this.volatilityType_ = (volatilityType != null) ? volatilityType
+                : VolatilityType.ShiftedLognormal;
         // C++ semantic (xabrinterpolation.hpp lines 125-133): the caller-
         // supplied optMethod / endCriteria are used as-is; only when null do
         // we assign defaults.
@@ -226,7 +267,12 @@ public class XABRInterpolationImpl<S extends XABRSpecs> extends XABRCoeffHolder<
      */
     public double value(final double x) {
         final double shift = (addParams_ != null && addParams_.length > 0) ? addParams_[0] : 0.0;
-        return specs_.volatility(x + shift, forward_ + shift, t_, params_);
+        // Phase 5e.5b-CFC-d-262: route volatilityType_ to the specs so SABR
+        // (and other vol-type-aware specs) can dispatch to the right formula
+        // (lognormal vs Normal). Default impl in XABRSpecs delegates to the
+        // 4-arg overload, so non-aware specs are unaffected.
+        return specs_.volatility(x + shift, forward_ + shift, t_, params_,
+                addParams_, volatilityType_);
     }
 
     /** Total weighted squared error (C++ {@code interpolationSquaredError()} lines 245-255). */

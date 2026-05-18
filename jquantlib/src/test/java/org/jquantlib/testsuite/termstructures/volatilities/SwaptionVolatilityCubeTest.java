@@ -469,17 +469,32 @@ public class SwaptionVolatilityCubeTest {
      * (swaptionvolatilitycube.cpp 168-191). Builds the SABR cube against a
      * Normal-vol ATM matrix and checks ATM recovery to 7e-4.
      *
-     * <p>Currently {@code @Ignore}'d: the Java {@link
-     * org.jquantlib.math.interpolations.SABRInterpolation} only calibrates in
-     * lognormal terms (its {@code SABRSpecs.volatility} routes through the
-     * unshifted lognormal SABR formula), so calibration against a Normal-vol
-     * matrix blows past the 100 bp tolerance. Unblocking this test requires
-     * widening {@code SABRSpecs} to dispatch on the {@code volatilityType}
-     * passed through {@code addParams}, which is a separate Phase 5e.5b task
-     * tracked alongside the ZABR cube port.
+     * <p><strong>Phase 5e.5b-CFC-d-262 partial.</strong> The interpolation
+     * layer now honours the Normal volatilityType:
+     * {@link org.jquantlib.math.interpolations.SABRInterpolation} gained a
+     * {@link VolatilityType}-aware constructor overload,
+     * {@link org.jquantlib.math.interpolations.XABRInterpolationImpl} carries
+     * {@code volatilityType_} (mirroring C++ xabrinterpolation.hpp line 320),
+     * and {@code SABRSpecs.volatility(..., addParams, vt)} dispatches to
+     * {@link org.jquantlib.termstructures.volatilities.Sabr#unsafeSabrNormalVolatility}
+     * when {@code vt == Normal}. This wires the lognormal-vs-Normal switch
+     * end-to-end at the interpolation layer.
+     *
+     * <p><strong>Still {@code @Ignore}'d</strong> because the cube call site
+     * ({@code SabrSwaptionVolatilityCube.sabrCalibration}) constructs
+     * {@code SABRInterpolation} via the 17-arg ctor that defaults
+     * {@code volatilityType} to {@code ShiftedLognormal}; the cube already
+     * holds the correct {@code volatilityType_} field and uses it for the
+     * smile section, but the calibration call site still needs to be updated
+     * to pass it through (mirrors C++ sabrswaptionvolatilitycube.hpp line
+     * 464). That one-line plumb-through is intentionally deferred per the
+     * task constraint that {@code SabrSwaptionVolatilityCube.java} is
+     * read-only in this commit; flipping the call site to use the new
+     * {@link VolatilityType}-aware ctor will un-block this test.
      */
-    @Ignore("Phase 5f.5 — SABRInterpolation does not yet honour the Normal "
-            + "volatilityType in its specs (lognormal-only calibration)")
+    @Ignore("Phase 5e.5b-CFC-d-262 — interpolation honours Normal volType; "
+            + "SabrSwaptionVolatilityCube call site still passes default "
+            + "ShiftedLognormal (one-line plumb-through deferred per task)")
     @Test
     public void testSabrNormalVolatility() {
         final SwaptionVolatilityMatrix normal = buildNormalAtmMatrix();
