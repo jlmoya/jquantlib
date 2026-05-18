@@ -492,9 +492,6 @@ public class SwaptionVolatilityCubeTest {
      * read-only in this commit; flipping the call site to use the new
      * {@link VolatilityType}-aware ctor will un-block this test.
      */
-    @Ignore("Phase 5e.5b-CFC-d-262 — interpolation honours Normal volType; "
-            + "SabrSwaptionVolatilityCube call site still passes default "
-            + "ShiftedLognormal (one-line plumb-through deferred per task)")
     @Test
     public void testSabrNormalVolatility() {
         final SwaptionVolatilityMatrix normal = buildNormalAtmMatrix();

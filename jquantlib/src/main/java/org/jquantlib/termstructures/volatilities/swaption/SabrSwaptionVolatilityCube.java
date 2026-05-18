@@ -401,7 +401,8 @@ public class SabrSwaptionVolatilityCube extends SwaptionVolatilityCube {
                         isParameterFixed_[2], isParameterFixed_[3],
                         vegaWeightedSmileFit_,
                         endCriteria_, optMethod_,
-                        errorAccept_, useMaxError_, maxGuesses_, shiftTmp);
+                        errorAccept_, useMaxError_, maxGuesses_, shiftTmp,
+                        volatilityType_);
                 sabr.update();
 
                 final double rmsError = sabr.rmsError();
