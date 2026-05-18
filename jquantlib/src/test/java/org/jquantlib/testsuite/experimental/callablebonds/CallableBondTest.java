@@ -51,10 +51,12 @@ import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.DateGeneration;
 import org.jquantlib.time.Frequency;
+import org.jquantlib.time.MakeSchedule;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedStates;
 import org.junit.Ignore;
@@ -837,36 +839,94 @@ public class CallableBondTest {
      * <a href="https://github.com/lballabio/QuantLib/issues/2236">QL#2236</a>,
      * the range was ~667 bps.
      * <p>
-     * <b>Deferred</b> — the underlying primitives have all landed
-     * ({@link org.jquantlib.cashflow.FixedRateLeg#withExCouponPeriod}
-     * accepts the period/calendar/convention/eom args and threads them
-     * through to {@link org.jquantlib.cashflow.FixedRateCoupon}, and
-     * {@code OneFactorModel.ShortRateTree.setSpread} is wired so
-     * {@link CallableBond#OAS(double, Handle, DayCounter,
-     * org.jquantlib.termstructures.Compounding, Frequency)} works), but the
-     * {@link CallableFixedRateBond} ctor does <i>not</i> yet expose the
-     * five-extra-arg overload ({@code exCouponPeriod, exCouponCalendar,
-     * exCouponConvention, exCouponEndOfMonth}) that the C++ test depends on.
-     * Its internal {@link org.jquantlib.cashflow.FixedRateLeg} is built
-     * without ex-coupon, so the {@link CallableFixedRateBond#accruedAmount}
-     * never returns the negative ex-coupon values that drive the
-     * discontinuity-window check.
-     * <p>
-     * Un-ignore once {@link CallableFixedRateBond} grows the ex-coupon
-     * ctor overload that forwards to {@code FixedRateLeg.withExCouponPeriod}.
+     * Un-ignored Phase 5e.5b-CFC-d-253 — {@link CallableFixedRateBond}
+     * now exposes the five-extra-arg ctor overload
+     * ({@code exCouponPeriod, exCouponCalendar, exCouponConvention,
+     * exCouponEndOfMonth}) which threads through to
+     * {@link org.jquantlib.cashflow.FixedRateLeg#withExCouponPeriod}, so
+     * the leg-build inside the bond propagates ex-coupon to its
+     * {@link org.jquantlib.cashflow.FixedRateCoupon}s.
      */
     @Test
-    @Ignore("Phase 5e.5b: CallableFixedRateBond ctor lacks the ex-coupon "
-            + "overload (exCouponPeriod/Calendar/Convention/EOM). FixedRateLeg "
-            + "and OAS are wired, but the leg-build inside CallableFixedRateBond "
-            + "does not propagate ex-coupon to its FixedRateCoupons, so the "
-            + "ex-coupon window the C++ test sweeps is not modelled. Un-ignore "
-            + "once CallableFixedRateBond exposes the five-extra-arg ctor.")
     public void testOasContinuityThroughExCouponWindow() {
-        fail("deferred until CallableFixedRateBond exposes ex-coupon ctor "
-                + "overload (FixedRateLeg.withExCouponPeriod is ready; "
-                + "CallableFixedRateBond does not thread ex-coupon into its "
-                + "internal leg build).");
+        // Mirrors C++ test-suite/callablebonds.cpp:953-1046.
+        final Date today = new Date(31, Month.January, 2024);
+        new Settings().setEvaluationDate(today);
+
+        final int settlementDays = 0;
+        final Calendar calendar = new UnitedStates(UnitedStates.Market.NYSE);
+        final DayCounter dc = new Thirty360(Thirty360.Convention.BondBasis);
+        final BusinessDayConvention bdc = BusinessDayConvention.Unadjusted;
+        final Frequency frequency = Frequency.Quarterly;
+        final Period exCouponPeriod = new Period(14, TimeUnit.Days);
+
+        final Date issueDate = today;
+        final Date maturityDate = new Date(31, Month.January, 2029);
+        final double faceAmount = 100.0;
+        final double[] coupons = new double[] { 0.06 };
+        final double redemption = 100.0;
+
+        final Handle<YieldTermStructure> termStructure = new Handle<YieldTermStructure>(
+                new FlatForward(today, 0.04, dc));
+        final HullWhite model = new HullWhite(termStructure);
+
+        final Schedule schedule = new MakeSchedule()
+                .from(issueDate)
+                .to(maturityDate)
+                .withFrequency(frequency)
+                .withCalendar(calendar)
+                .withConvention(bdc)
+                .withTerminationDateConvention(bdc)
+                .backwards()
+                .endOfMonth(true)
+                .schedule();
+
+        // First coupon payment date after today; ex-coupon date = payment - 14d.
+        final Date firstPaymentDate = schedule.date(1);
+        final Date exCouponDate = firstPaymentDate.sub(exCouponPeriod);
+
+        // Sweep call date from 1 week before ex-coupon to 1 week after payment.
+        final Date sweepStart = exCouponDate.sub(7);
+        final Date sweepEnd   = firstPaymentDate.add(7);
+
+        final double cleanPrice = 100.0;
+        final Compounding compounding = Compounding.Compounded;
+
+        double maxOas = -Double.MAX_VALUE;
+        double minOas =  Double.MAX_VALUE;
+
+        for (Date callDate = sweepStart.clone(); callDate.le(sweepEnd);
+                callDate = callDate.add(1)) {
+            final CallabilitySchedule callSchedule = new CallabilitySchedule();
+            callSchedule.add(new Callability(
+                    new Callability.Price(redemption, Callability.Price.Type.Clean),
+                    Callability.Type.Call,
+                    callDate));
+
+            final CallableFixedRateBond bond = new CallableFixedRateBond(
+                    settlementDays, faceAmount, schedule, coupons, dc,
+                    bdc, redemption, issueDate, callSchedule,
+                    exCouponPeriod, new NullCalendar(),
+                    BusinessDayConvention.Unadjusted, false);
+            bond.setPricingEngine(new TreeCallableFixedRateBondEngine(model, 100, termStructure));
+
+            final double oas = bond.OAS(cleanPrice, termStructure, dc,
+                    compounding, frequency) * 10000.0;
+            maxOas = Math.max(maxOas, oas);
+            minOas = Math.min(minOas, oas);
+        }
+
+        final double oasRange = maxOas - minOas;
+        // OAS should be reasonably continuous through the ex-coupon window.
+        // A range of 50 bps allows for tree discretization noise; the bug
+        // produced a range of ~667 bps. Tolerance mirrors C++ exactly.
+        final double tolerance = 50.0;
+        assertTrue(
+                "OAS discontinuity across ex-coupon window: min=" + minOas
+                        + " bps, max=" + maxOas + " bps, range=" + oasRange
+                        + " bps, tolerance=" + tolerance + " bps (sweep "
+                        + sweepStart + " to " + sweepEnd + ")",
+                oasRange <= tolerance);
     }
 
     // ------------------------------------------------------------------

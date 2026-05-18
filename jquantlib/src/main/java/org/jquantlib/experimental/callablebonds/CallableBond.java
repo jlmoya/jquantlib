@@ -60,10 +60,12 @@ import org.jquantlib.time.Frequency;
  *     {@code effectiveConvexity} are implemented in terms of the engine's
  *     {@code arguments.spread} hook; tree-engine spread support is wired
  *     through {@link org.jquantlib.model.shortrate.onefactormodels.OneFactorModel.ShortRateTree#setSpread(double)}.
- * <li>The {@code tradingExCoupon} predicate does not yet exist on
- *     {@link CashFlow}; ex-coupon adjustments to the call price are therefore
- *     skipped (mirrors the C++ branch only when the cash flow does NOT trade
- *     ex-coupon).
+ * <li>Phase 5e.5b-CFC-d-253 — the {@code tradingExCoupon} ex-coupon
+ *     filter on coupon dates/amounts and the ex-coupon branch of the
+ *     Call-price clean→dirty conversion (mirroring C++
+ *     {@code callablebond.cpp:426-430} and {@code :463-464}) are now
+ *     wired so OAS stays continuous through the ex-coupon window
+ *     (see QL GitHub issue #2236).
  * </ul>
  */
 public class CallableBond extends Bond {
@@ -345,9 +347,13 @@ public class CallableBond extends Bond {
             if (cf == redemptionCf) {
                 continue;
             }
-            // Java port: tradingExCoupon predicate is not yet available on
-            // CashFlow; treat all non-occurred cash flows as in-coupon.
-            if (!cf.hasOccurred(settlement, false)) {
+            // Mirrors C++ callablebond.cpp:426-430 — exclude cashflows that
+            // either have already occurred OR are trading ex-coupon at the
+            // settlement date. Phase 5e.5b-CFC-d-253 wires the ex-coupon
+            // filter so that OAS continuity holds across the ex-coupon
+            // window (see QL GitHub issue #2236).
+            if (!cf.hasOccurred(settlement, false)
+                    && !cf.tradingExCoupon(settlement)) {
                 arguments.couponDates.add(cf.date());
                 arguments.couponAmounts.add(cf.amount());
             }
@@ -370,14 +376,26 @@ public class CallableBond extends Bond {
                        at the call date. We ignore ex-coupon conventions here
                        because the call is an issuer action governed by the
                        indenture: the holder receives the call price plus accrued
-                       from the last payment date. */
+                       from the last payment date. Using market (ex-coupon)
+                       accrued would create an inconsistency with the tree's
+                       continuation value, which includes future coupons filtered
+                       at the settlement date (see QL GitHub issue #2236). */
                     final Date callDate = c.date();
                     double callAccrued = 0.0;
                     for (final CashFlow cf : cashflows_) {
                         if (!cf.hasOccurred(callDate, false)) {
                             if (cf instanceof Coupon) {
                                 final Coupon coupon = (Coupon) cf;
-                                final double acc = coupon.accruedAmount(callDate);
+                                double acc = coupon.accruedAmount(callDate);
+                                // Mirrors C++ callablebond.cpp:463-464 — when
+                                // the call date falls in the coupon's ex-coupon
+                                // window, accruedAmount returns the *negative*
+                                // ex-coupon accrual; add back the full coupon
+                                // amount so the issuer call price stays
+                                // consistent with the tree continuation value.
+                                if (coupon.tradingExCoupon(callDate)) {
+                                    acc = coupon.amount() + acc;
+                                }
                                 callAccrued = acc / notional(callDate) * 100.0;
                             }
                             break;
