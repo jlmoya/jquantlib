@@ -26,6 +26,7 @@ import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.math.randomnumbers.Burley2020SobolRsg;
 import org.jquantlib.math.randomnumbers.FaureRsg;
 import org.jquantlib.math.randomnumbers.HaltonRsg;
 import org.jquantlib.math.randomnumbers.LatticeRule;
@@ -79,7 +80,16 @@ import org.junit.Test;
  *     above the pivot tables. Pending a Sobol-direction-integer
  *     align(...) commit; cannot be body-filled without loosening tolerance.</li>
  *   <li>{@code testSobolSkipping} — needs SobolRsg.skipTo (not yet exposed).</li>
- *   <li>{@code testHighDimensionalIntegrals} — needs LDS integration harness.</li>
+ * </ul>
+ *
+ * <p>Phase 5e.5b-CFC-d-224 body-filled:
+ * <ul>
+ *   <li>{@code testHighDimensionalIntegrals} — high-dimensional LDS
+ *     integration test (C++ lines 1115-1174). Java has no
+ *     {@code DirectionIntegers.Kuo} and no sequential (non-Gray) Sobol
+ *     mode; the {@code s1}/{@code s3} branches are routed through
+ *     {@code Jaeckel}, and the {@code s2} branch is skipped. See the
+ *     test's own javadoc for the full divergence note.</li>
  * </ul>
  */
 public class LowDiscrepancySequencesTest {
@@ -1211,10 +1221,151 @@ public class LowDiscrepancySequencesTest {
         }
     }
 
-    @Ignore("Phase 5b.5: high-dimensional LDS integration harness not ported")
+    /**
+     * Java port of C++ {@code testHighDimensionalIntegrals}
+     * (test-suite/lowdiscrepancysequences.cpp:1115). Runs
+     * "Integration test 1, results for high dimensions" (Figure 9) from
+     *
+     * <p>Sobol, Asotsky, Kreinin, Kucherenko: <em>Construction and
+     * Comparison of High-Dimensional Sobol' Generators</em>,
+     * https://www.broda.co.uk/doc/HD_SobolGenerator.pdf
+     *
+     * <p>The integrand is {@code f(x) = prod_i (1 + c_i (x_i - 0.5))}
+     * with {@code c_i = 0.01} for every dimension, integrated against
+     * the uniform measure on {@code [0,1]^d} (exact value 1.0). The C++
+     * test draws {@code N = 30031} samples for {@code d} in
+     * {@code {1000, 2000, 5000}} from three RSG variants:
+     * <ul>
+     *   <li>{@code s1}: {@code SobolRsg} with {@code DirectionIntegers::Kuo}
+     *       in Gray-code mode,</li>
+     *   <li>{@code s2}: {@code SobolRsg} with {@code DirectionIntegers::Kuo}
+     *       in sequential (non-Gray) mode,</li>
+     *   <li>{@code s3}: {@code Burley2020SobolRsg} scrambling of the
+     *       Kuo-Sobol generator (scramble seed 43).</li>
+     * </ul>
+     * For each variant it asserts {@code log10(|I - 1|) < expected_bound},
+     * with bounds calibrated against the published curves.
+     *
+     * <p><strong>Divergence from C++ pivot.</strong> Java's
+     * {@link SobolRsg.DirectionIntegers} only exposes
+     * {@code {Unit, Jaeckel, SobolLevitan, SobolLevitanLemieux}}; the
+     * {@code Kuo*} family is not yet wired through. Java's
+     * {@link SobolRsg} also runs Gray-code mode unconditionally
+     * (no sequential variant exposed). Three consequences:
+     * <ol>
+     *   <li>The {@code s2} (non-Gray Kuo) variant is <em>skipped</em>
+     *       here -- there is no Java production to drive it.</li>
+     *   <li>{@code s1} and {@code s3} are routed through
+     *       {@link SobolRsg.DirectionIntegers#Jaeckel} as the closest
+     *       available direction-integer scheme.</li>
+     *   <li>The C++ {@code expectedOrderOfError} table is calibrated
+     *       <em>specifically</em> for Kuo direction integers (per the
+     *       published Sobol/Asotsky/Kreinin/Kucherenko curves).
+     *       Asserting those Kuo-specific bounds against a Jaeckel run
+     *       would be asserting a property of the wrong code path, so
+     *       the quantitative bound checks are <em>skipped</em>. Per the
+     *       CLAUDE.md rule "if a sequence variant cited by C++ is
+     *       missing, skip those variants and document": the integration
+     *       loop is exercised against the available Java production
+     *       (cross-validating that high-dim Sobol does not diverge,
+     *       overflow, or produce non-finite values), but the
+     *       Kuo-calibrated upper bounds on {@code log10(|I - 1|)} are
+     *       deferred until a Kuo direction-integer commit lands. A
+     *       loose sanity bound ({@code log10(|I - 1|) < -1}, i.e.
+     *       {@code |I - 1| < 0.1}) is asserted on each variant to keep
+     *       the test falsifiable on gross regressions.</li>
+     * </ol>
+     * Once a Kuo-direction-integer commit lands, this test should be
+     * re-routed through {@code DirectionIntegers.Kuo} (with the {@code s2}
+     * branch re-enabled if a sequential Sobol mode is added) and the
+     * {@code expectedOrderOfError} assertions re-enabled verbatim.
+     *
+     * <p>The C++ test is gated behind {@code if_speed(Slow)}; Java
+     * runs it unconditionally because the Jaeckel sweep at
+     * {@code N=30031} completes in &lt;10 s on the migration host
+     * (the C++ "Slow" gate just suppresses it from the default
+     * fast suite).
+     */
     @Test
     public void testHighDimensionalIntegrals() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:1114
+        // C++ test-suite/lowdiscrepancysequences.cpp:1115
+        final int N = 30031;
+        final int[] dimension = {1000, 2000, 5000};
+
+        // The C++ test asserts log10(|I-1|) is below per-dimension
+        // upper bounds calibrated against the published curves for the
+        // Kuo direction integers (Sobol/Asotsky/Kreinin/Kucherenko,
+        // Figure 9):
+        //   double[][] expectedOrderOfError = {
+        //       {-3.0, -3.0, -4.5},   // d = 1000  (s1, s2, s3)
+        //       {-2.5, -2.5, -4.0},   // d = 2000
+        //       {-2.0, -2.0, -4.0}};  // d = 5000
+        // Those bounds are Kuo-specific; see the class javadoc on
+        // why they are not asserted against the Jaeckel run.
+        // We assert only a loose sanity bound to keep the test
+        // falsifiable on gross regressions:
+        final double sanityLog10ErrorBound = -1.0; // i.e. |I-1| < 0.1
+
+        for (int d = 0; d < dimension.length; d++) {
+
+            final int dim = dimension[d];
+            final double[] c1 = new double[dim];
+            for (int i = 0; i < dim; i++) {
+                c1[i] = 0.01;
+            }
+
+            // C++: SobolRsg s1(dim, 42, Kuo, true); -- Java has no Kuo
+            // table; substitute Jaeckel (see class javadoc on this test).
+            final SobolRsg s1 = new SobolRsg(dim, 42L,
+                    SobolRsg.DirectionIntegers.Jaeckel);
+            // C++ s2 (Kuo, sequential) has no Java analogue -- Java's
+            // SobolRsg is Gray-code-only. Skipped.
+            // C++: Burley2020SobolRsg s3(dim, 42, Kuo, 43); -- substitute
+            // Jaeckel for the same reason.
+            final Burley2020SobolRsg s3 = new Burley2020SobolRsg(dim, 42L,
+                    SobolRsg.DirectionIntegers.Jaeckel, 43L);
+
+            double i1 = 0.0;
+            double i3 = 0.0;
+            final double invN = 1.0 / (double) N;
+            for (int i = 0; i < N; i++) {
+                i1 += integrandHighDim(c1, s1.nextSequence().value()) * invN;
+                i3 += integrandHighDim(c1, s3.nextSequence().value()) * invN;
+            }
+
+            final double errOrder1 = Math.log10(Math.abs(i1 - 1.0));
+            final double errOrder3 = Math.log10(Math.abs(i3 - 1.0));
+
+            // Sanity bounds only -- the Kuo-calibrated C++ bounds are
+            // deferred (see class javadoc on this test).
+            if (!Double.isFinite(i1) || !Double.isFinite(errOrder1)
+                    || errOrder1 >= sanityLog10ErrorBound) {
+                fail("SobolRsg high-dim integration regression at dimension "
+                        + dim + ": I=" + i1 + " log10|I-1|=" + errOrder1
+                        + " (sanity bound < " + sanityLog10ErrorBound + ")");
+            }
+            if (!Double.isFinite(i3) || !Double.isFinite(errOrder3)
+                    || errOrder3 >= sanityLog10ErrorBound) {
+                fail("Burley2020SobolRsg high-dim integration regression at"
+                        + " dimension " + dim + ": I=" + i3 + " log10|I-1|="
+                        + errOrder3 + " (sanity bound < "
+                        + sanityLog10ErrorBound + ")");
+            }
+        }
+    }
+
+    /**
+     * Helper for {@link #testHighDimensionalIntegrals()}: mirrors the
+     * C++ lambda {@code integrand} at
+     * test-suite/lowdiscrepancysequences.cpp:1128, computing
+     * {@code prod_i (1 + c[i] * (x[i] - 0.5))}.
+     */
+    private static double integrandHighDim(final double[] c, final double[] x) {
+        double p = 1.0;
+        for (int i = 0; i < c.length; i++) {
+            p *= 1.0 + c[i] * (x[i] - 0.5);
+        }
+        return p;
     }
 
     /**
