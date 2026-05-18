@@ -17,6 +17,8 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.AmericanExercise;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
+import org.jquantlib.experimental.barrieroption.DoubleBarrierOption;
+import org.jquantlib.experimental.barrieroption.DoubleBarrierType;
 import org.jquantlib.instruments.BarrierType;
 import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.instruments.Option;
@@ -28,23 +30,25 @@ import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.methods.finitedifferences.utilities.FdmQuantoHelper;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierEngine;
 import org.jquantlib.pricingengines.quanto.QuantoBarrierEngine;
 import org.jquantlib.pricingengines.quanto.QuantoForwardPerformanceVanillaEngine;
 import org.jquantlib.pricingengines.quanto.QuantoForwardVanillaEngine;
 import org.jquantlib.pricingengines.quanto.QuantoVanillaEngine;
 import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
+import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.QuantoTermStructure;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -93,10 +97,6 @@ public class QuantoOptionTest {
     private static final String REASON_AMERICAN =
             "Phase 5i.5 — requires American FD quanto engine path "
           + "(FdBlackScholesVanillaEngine + quanto helper)";
-
-    private static final String REASON_DOUBLE_BARRIER =
-            "Phase 5i.5 — QuantoDoubleBarrierOption exists under experimental; "
-          + "in-instruments-package wrapper test deferred until promotion";
 
     /** C++ test-suite helper {@code timeToDays(Time t, Integer daysPerYear=360)}. */
     private static int timeToDays(final double t) {
@@ -1092,7 +1092,163 @@ public class QuantoOptionTest {
         }
     }
 
-    @Ignore(REASON_DOUBLE_BARRIER)
+    /** Single C++ {@code QuantoDoubleBarrierOptionData} row. */
+    private static final class QuantoDoubleBarrierOptionData {
+        final DoubleBarrierType barrierType;
+        final double barrier_lo;
+        final double barrier_hi;
+        final double rebate;
+        final Option.Type type;
+        final double s;
+        final double strike;
+        final double q;
+        final double r;
+        final double t;
+        final double v;
+        final double fxr;
+        final double fxv;
+        final double corr;
+        final double result;
+        final double tol;
+        QuantoDoubleBarrierOptionData(final DoubleBarrierType barrierType,
+                                      final double barrier_lo,
+                                      final double barrier_hi,
+                                      final double rebate,
+                                      final Option.Type type,
+                                      final double s, final double strike,
+                                      final double q, final double r,
+                                      final double t, final double v,
+                                      final double fxr, final double fxv,
+                                      final double corr,
+                                      final double result, final double tol) {
+            this.barrierType = barrierType;
+            this.barrier_lo = barrier_lo;
+            this.barrier_hi = barrier_hi;
+            this.rebate = rebate;
+            this.type = type;
+            this.s = s; this.strike = strike;
+            this.q = q; this.r = r; this.t = t; this.v = v;
+            this.fxr = fxr; this.fxv = fxv;
+            this.corr = corr;
+            this.result = result; this.tol = tol;
+        }
+    }
+
+    /**
+     * Phase 5e.5b-CFC-d-269 body-fill of C++
+     * {@code test-suite/quantooption.cpp::testDoubleBarrierValues} (v1.42.1
+     * lines 1268-1341).
+     *
+     * <p>C++ uses {@code QuantoEngine<DoubleBarrierOption,
+     * AnalyticDoubleBarrierEngine>} attached to a
+     * {@code QuantoDoubleBarrierOption}. Java has the
+     * {@link org.jquantlib.experimental.barrieroption.QuantoDoubleBarrierOption}
+     * instrument but no matching {@code QuantoDoubleBarrierEngine} port (the
+     * instrument header explicitly defers the engine to a future phase).
+     *
+     * <p>The C++ test asserts only on {@code option.NPV()} — no quanto
+     * Greeks are inspected. We therefore reproduce the engine's NPV-relevant
+     * arithmetic at the test level by wrapping {@link AnalyticDoubleBarrierEngine}
+     * around a quanto-adjusted {@link GeneralizedBlackScholesProcess}: the
+     * dividend yield is replaced by a {@link QuantoTermStructure} carrying the
+     * same correlation / fx-rate / fx-vol inputs that the C++ {@code QuantoEngine}
+     * builds internally (see {@link QuantoBarrierEngine#calculate()} for the
+     * identical recipe applied to single-barrier options). The resulting NPV is
+     * mathematically identical to what
+     * {@code QuantoEngine<DoubleBarrierOption, AnalyticDoubleBarrierEngine>}
+     * would return.
+     *
+     * <p>Tolerance: LOOSE 1.0e-4 — matches every row's tol in the C++ table.
+     */
     @Test
-    public void testDoubleBarrierValues() { fail("not implemented"); }
+    public void testDoubleBarrierValues() {
+        QL.info("Testing quanto-double-barrier option values...");
+
+        final QuantoDoubleBarrierOptionData[] values = {
+            // barrierType,                bar.lo, bar.hi, rebate,         type, spot,  strk,    q,   r,    T,  vol,  fxr,  fxv, corr, result, tol
+            new QuantoDoubleBarrierOptionData(DoubleBarrierType.KnockOut,  50.0, 150.0, 0.0, Option.Type.Call,  100.0, 100.0, 0.00, 0.1, 0.25, 0.15, 0.05, 0.2, 0.3, 3.4623, 1.0e-4),
+            new QuantoDoubleBarrierOptionData(DoubleBarrierType.KnockOut,  90.0, 110.0, 0.0, Option.Type.Call,  100.0, 100.0, 0.00, 0.1, 0.50, 0.15, 0.05, 0.2, 0.3, 0.5236, 1.0e-4),
+            new QuantoDoubleBarrierOptionData(DoubleBarrierType.KnockOut,  90.0, 110.0, 0.0, Option.Type.Put,   100.0, 100.0, 0.00, 0.1, 0.25, 0.15, 0.05, 0.2, 0.3, 1.1320, 1.0e-4),
+            new QuantoDoubleBarrierOptionData(DoubleBarrierType.KnockIn,   80.0, 120.0, 0.0, Option.Type.Call,  100.0, 102.0, 0.00, 0.1, 0.25, 0.25, 0.05, 0.2, 0.3, 2.6313, 1.0e-4),
+            new QuantoDoubleBarrierOptionData(DoubleBarrierType.KnockIn,   80.0, 120.0, 0.0, Option.Type.Call,  100.0, 102.0, 0.00, 0.1, 0.50, 0.15, 0.05, 0.2, 0.3, 1.9305, 1.0e-4)
+        };
+
+        final DayCounter dc = new Actual360();
+        final Date today = Date.todaysDate();
+
+        final SimpleQuote spot = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(today, qRate, dc));
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(today, rRate, dc));
+        final SimpleQuote vol = new SimpleQuote(0.0);
+        final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                Utilities.flatVol(today, vol, dc));
+
+        final SimpleQuote fxRate = new SimpleQuote(0.0);
+        final Handle<YieldTermStructure> fxrTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(today, fxRate, dc));
+        final SimpleQuote fxVol = new SimpleQuote(0.0);
+        final Handle<BlackVolTermStructure> fxVolTS = new Handle<BlackVolTermStructure>(
+                Utilities.flatVol(today, fxVol, dc));
+        final SimpleQuote correlation = new SimpleQuote(0.0);
+
+        final BlackScholesMertonProcess stochProcess = new BlackScholesMertonProcess(
+                new Handle<Quote>(spot), qTS, rTS, volTS);
+
+        // ATM exchange-rate level (matches QuantoBarrierEngine.calculate()).
+        final double exchangeRateATMlevel = 1.0;
+
+        for (final QuantoDoubleBarrierOptionData v : values) {
+
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(v.type, v.strike);
+            final Date exDate = today.add(timeToDays(v.t));
+            final Exercise exercise = new EuropeanExercise(exDate);
+
+            spot.setValue(v.s);
+            qRate.setValue(v.q);
+            rRate.setValue(v.r);
+            vol.setValue(v.v);
+            fxRate.setValue(v.fxr);
+            fxVol.setValue(v.fxv);
+            correlation.setValue(v.corr);
+
+            // Build the quanto-adjusted dividend term structure (identical
+            // recipe to QuantoBarrierEngine.calculate() in the production
+            // QuantoEngine pattern).
+            final QuantoTermStructure quantoTS = new QuantoTermStructure(
+                    stochProcess.dividendYield(), stochProcess.riskFreeRate(),
+                    fxrTS, stochProcess.blackVolatility(),
+                    v.strike, fxVolTS,
+                    exchangeRateATMlevel, correlation.value());
+            final Handle<YieldTermStructure> quantoDivYield =
+                    new Handle<YieldTermStructure>(quantoTS);
+
+            final GeneralizedBlackScholesProcess quantoProcess =
+                    new GeneralizedBlackScholesProcess(
+                            stochProcess.stateVariable(), quantoDivYield,
+                            stochProcess.riskFreeRate(), stochProcess.blackVolatility());
+
+            final DoubleBarrierOption option = new DoubleBarrierOption(
+                    v.barrierType, v.barrier_lo, v.barrier_hi,
+                    v.rebate, payoff, exercise);
+            option.setPricingEngine(new AnalyticDoubleBarrierEngine(quantoProcess));
+
+            final double calculated = option.NPV();
+            final double error = Math.abs(calculated - v.result);
+            if (error > v.tol) {
+                fail("failed to reproduce quanto-double-barrier option value:"
+                        + "\n    expected:   " + v.result
+                        + "\n    calculated: " + calculated
+                        + "\n    error:      " + error
+                        + "\n    tolerance:  " + v.tol
+                        + "\n    barrierType=" + v.barrierType
+                        + " bar.lo=" + v.barrier_lo + " bar.hi=" + v.barrier_hi
+                        + " type=" + v.type + " strike=" + v.strike
+                        + " s=" + v.s + " corr=" + v.corr);
+            }
+        }
+    }
 }
