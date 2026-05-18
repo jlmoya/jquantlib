@@ -20,8 +20,13 @@ import org.jquantlib.experimental.barrieroption.DoubleBarrierType;
 import org.jquantlib.instruments.CashOrNothingPayoff;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
+import org.jquantlib.model.equity.HestonModel;
+import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierBinaryEngine;
+import org.jquantlib.pricingengines.barrier.FdHestonDoubleBarrierEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
+import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -29,7 +34,9 @@ import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
-import org.junit.Ignore;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
 import org.junit.Test;
 
 /**
@@ -52,12 +59,10 @@ import org.junit.Test;
  * discretized payoff + lattice cell handling) and is deferred to
  * Phase 5e.5b-CFC-d-79.1.
  *
- * <p>{@link #testPdeDoubleBarrierWithAnalytical()} requires
- * {@code FdHestonDoubleBarrierEngine} + Heston-model wiring and is kept
- * {@code @Ignore}d as a separate carry-forward.
- *
  * <p>Tolerance: LOOSE 1e-4 — matches Haug's reported precision and the
- * C++ test-suite tolerance.
+ * C++ test-suite tolerance. The Heston-PDE cross-validation
+ * {@link #testPdeDoubleBarrierWithAnalytical()} uses LOOSE 5e-3 (matching
+ * C++ {@code testPdeDoubleBarrierWithAnalytical}).
  *
  * <p>Source: {@code test-suite/doublebinaryoption.cpp} v1.42.1 @ {@code 099987f0ca}.
  */
@@ -66,12 +71,6 @@ public class DoubleBinaryOptionTest {
     public DoubleBinaryOptionTest() {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
-
-    private static final String REASON_PDE =
-            "Phase 5e.5b-CFC-d-79.2 — testPdeDoubleBarrierWithAnalytical requires "
-          + "FdHestonDoubleBarrierEngine + HestonModel/HestonProcess infrastructure "
-          + "not yet ported. Cross-validates BS-analytic vs Heston-PDE; covered by "
-          + "the analytic-only testHaugValues for the binary engine itself.";
 
     private static final class HaugDouble {
         final DoubleBarrierType barrierType;
@@ -267,11 +266,90 @@ public class DoubleBinaryOptionTest {
         }
     }
 
-    @Ignore(REASON_PDE)
+    /**
+     * Phase 5e.5b-CFC-d-257 port of C++
+     * {@code test-suite/doublebinaryoption.cpp::testPdeDoubleBarrierWithAnalytical}.
+     *
+     * <p>Cross-validates the analytic Hui-series double-barrier-binary
+     * engine ({@link AnalyticDoubleBarrierBinaryEngine}) against the
+     * 2-factor Heston FD engine ({@link FdHestonDoubleBarrierEngine}) on a
+     * suite of one-year double-no-touch (cash-or-nothing) options. Heston
+     * volatility-of-variance is set to {@code σ=1e-4} so the SLV diffusion
+     * degenerates to plain Black-Scholes; under that limit the FD price
+     * should match the analytic price to within the PDE truncation /
+     * Hundsdorfer-ADI discretisation error.
+     *
+     * <p>Tolerance: LOOSE 5e-3 (matches C++ {@code tol = 5e-3} in
+     * {@code testPdeDoubleBarrierWithAnalytical}).
+     */
     @Test
     public void testPdeDoubleBarrierWithAnalytical() {
-        // Phase 5e.5b-CFC-d-79.2 carry-forward: needs FdHestonDoubleBarrierEngine
-        // + HestonModel/HestonProcess. The analytic Hui engine itself is fully
-        // exercised by testHaugValues above.
+        QL.info("Testing cash-or-nothing double barrier options against PDE Heston version...");
+
+        final DayCounter dc = new Actual360();
+        final Date todaysDate = new Date(30, Month.January, 2023);
+        final Date maturityDate = todaysDate.add(new Period(1, TimeUnit.Years));
+        new Settings().setEvaluationDate(todaysDate);
+
+        final SimpleQuote spotQuote = new SimpleQuote(100.0);
+        final Handle<Quote> spot = new Handle<Quote>(spotQuote);
+        final double r = 0.075;
+        final double q = 0.03;
+        final double vol = 0.4;
+
+        final double kappa = 1.0;
+        final double theta = vol * vol;
+        final double rho   = 0.0;
+        final double sigma = 1e-4;
+        final double v0    = theta;
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dc));
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+        final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+        final BlackScholesMertonProcess bsProcess = new BlackScholesMertonProcess(
+                spot, qTS, rTS,
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(todaysDate, vol, dc)));
+
+        final PricingEngine analyticEngine = new AnalyticDoubleBarrierBinaryEngine(bsProcess);
+
+        final PricingEngine fdEngine = new FdHestonDoubleBarrierEngine(
+                hestonModel, hestonProcess,
+                201, 101, 3, 0,
+                FdmSchemeDesc.Hundsdorfer());
+
+        final Exercise europeanExercise = new EuropeanExercise(maturityDate);
+
+        final double tol = 5e-3;
+        for (int i = 5; i < 18; i += 2) {
+            final double dist = 10.0 + 5.0 * i;
+            final double barrierLo = Math.max(spotQuote.value() - dist, 1e-2);
+            final double barrierHi = spotQuote.value() + dist;
+
+            final DoubleBarrierOption doubleBarrier = new DoubleBarrierOption(
+                    DoubleBarrierType.KnockOut, barrierLo, barrierHi, 0.0,
+                    new CashOrNothingPayoff(Option.Type.Call, 0.0, 1.0),
+                    europeanExercise);
+
+            doubleBarrier.setPricingEngine(analyticEngine);
+            final double bsNPV = doubleBarrier.NPV();
+
+            doubleBarrier.setPricingEngine(fdEngine);
+            final double slvNPV = doubleBarrier.NPV();
+
+            final double diff = slvNPV - bsNPV;
+            final String msg = String.format(
+                    "Failed to reproduce price difference for a Double-No-Touch option "
+                            + "between Black-Scholes and Heston SLV%n  Barrier Low: %.4f%n"
+                            + "  Barrier High: %.4f%n  BS Price: %.6f%n  SLV Price: %.6f%n"
+                            + "  diff: %.6g  tol: %.4g",
+                    barrierLo, barrierHi, bsNPV, slvNPV, diff, tol);
+            assertTrue(msg, Math.abs(diff) <= tol);
+        }
     }
 }

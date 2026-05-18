@@ -1665,13 +1665,15 @@ public class HestonSLVModelTest {
 
     /* ---- 4. Pricing checks -------------------------------------------- */
 
-    @Ignore("Phase 5e.5b-CFC-d-175 — HestonBlackVolSurface now landed (two ports: "
-            + "experimental/volatility and termstructures/volatilities/equityfx). "
-            + "Remaining blockers: FdHestonDoubleBarrierEngine (engine that accepts a "
-            + "leverage-function term structure and uses 2D Heston FDM for "
-            + "double-barrier knock-out pricing) — not in Java. Production "
-            + "DoubleBarrierBinary infrastructure is also outside the allowlist for "
-            + "Phase 5e.5b-CFC-d.")
+    @Ignore("Phase 5e.5b-CFC-d-257 — FdHestonDoubleBarrierEngine now landed; "
+            + "however the C++ test body itself does NOT use that engine — it "
+            + "compares AnalyticEuropeanEngine vs AnalyticHestonEngine vs "
+            + "FdBlackScholesVanillaEngine(localVol=true) over a strike x maturity "
+            + "grid driven by a HestonBlackVolSurface → LocalVolSurface. "
+            + "All four pricing engines + HestonBlackVolSurface + LocalVolSurface "
+            + "exist in Java, so the test is technically unblocked. Deferred to a "
+            + "follow-up body-fill (out of scope for Phase 5e.5b-CFC-d-257 which "
+            + "targets the FD double-barrier engine port itself).")
     @Test
     public void testBarrierPricingViaHestonLocalVol() { fail("not implemented"); }
 
@@ -1913,13 +1915,15 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-175 — SobolBrownianGeneratorFactory (Phase 3i Commit 5), "
-            + "AnalyticDoubleBarrierBinaryEngine, and HestonSLVMCModel.leverageFunction() "
-            + "accessor all landed. Remaining blocker: FdHestonDoubleBarrierEngine "
-            + "(2D Heston FDM engine with leverage-fct support) — not in Java; "
-            + "DoubleBarrierBinary infrastructure outside Phase 5e.5b-CFC-d allowlist. "
-            + "Also needs getFixedLocalVolFromHeston test helper "
-            + "(test-suite/hestonslvmodel.cpp:654).")
+    @Ignore("Phase 5e.5b-CFC-d-257 — FdHestonDoubleBarrierEngine now landed "
+            + "with LocalVolTermStructure leverage-fct ctor variant. Remaining "
+            + "blockers: (a) HestonSLVMCModel class — not yet ported; the C++ "
+            + "test builds its leverage surface via "
+            + "HestonSLVMCModel(...).leverageFunction(); (b) "
+            + "getFixedLocalVolFromHeston test helper "
+            + "(test-suite/hestonslvmodel.cpp:654) — not ported; (c) "
+            + "SobolBrownianGeneratorFactory (Phase 3i Commit 5) used by the "
+            + "MC leg. AnalyticDoubleBarrierBinaryEngine itself is available.")
     @Test
     public void testMoustacheGraph() { fail("not implemented"); }
 
