@@ -28,7 +28,6 @@ import org.jquantlib.QL;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
 import org.jquantlib.math.statistics.IncrementalStatistics;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -92,11 +91,6 @@ import org.junit.Test;
  * with this refined reason; a follow-up production WI is required to
  * un-ignore it.
  */
-@Ignore("Phase 5e.5b-CFC-d-220: production bug -- Java IncrementalStatistics uses "
-      + "pre-QL-1.7 naive variance accumulator; block-2 numerical-stability test "
-      + "(mu=1e8, sigma=0.1) throws 'negative variance' due to catastrophic "
-      + "cancellation. Block-1 cached values cross-validate bit-exactly. "
-      + "Un-ignore after porting boost::accumulators (Welford) online moments.")
 public class IncrementalStatisticsTest {
 
     public IncrementalStatisticsTest() {
