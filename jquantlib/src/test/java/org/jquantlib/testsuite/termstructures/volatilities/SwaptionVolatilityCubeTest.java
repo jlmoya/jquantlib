@@ -26,8 +26,10 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.SwaptionVolatilityStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.SabrSmileSection;
 import org.jquantlib.termstructures.volatilities.SmileSection;
 import org.jquantlib.termstructures.volatilities.swaption.InterpolatedSwaptionVolatilityCube;
+import org.jquantlib.termstructures.volatilities.swaption.SabrSwaptionVolatilityCube;
 import org.jquantlib.termstructures.volatilities.swaption.SpreadedSwaptionVolatility;
 import org.jquantlib.termstructures.volatilities.swaption.SwaptionVolatilityMatrix;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
@@ -369,19 +371,206 @@ public class SwaptionVolatilityCubeTest {
         }
     }
 
-    // ----- @Ignore'd cases (SABR/ZABR cubes not yet ported) -----------------
+    // ----- SABR cube body-fills ---------------------------------------------
 
-    @Ignore("Phase 5f.5 — SwaptionVolatilityCubeBySabr not ported")
-    @Test
-    public void testSabrVols() { fail("not implemented"); }
+    private static List<List<Handle<Quote>>> buildSabrParametersGuess() {
+        // alpha=0.2, beta=0.5, nu=0.4, rho=0.0 across all (option, swap) cells
+        // (matches C++ test fixture exactly).
+        final int n = CUBE_OPTION_TENORS.size() * CUBE_SWAP_TENORS.size();
+        final List<List<Handle<Quote>>> g = new ArrayList<List<Handle<Quote>>>(n);
+        for (int i = 0; i < n; ++i) {
+            final List<Handle<Quote>> row = new ArrayList<Handle<Quote>>(4);
+            row.add(new Handle<Quote>(new SimpleQuote(0.2)));
+            row.add(new Handle<Quote>(new SimpleQuote(0.5)));
+            row.add(new Handle<Quote>(new SimpleQuote(0.4)));
+            row.add(new Handle<Quote>(new SimpleQuote(0.0)));
+            g.add(row);
+        }
+        return g;
+    }
 
-    @Ignore("Phase 5f.5 — Normal-vol SABR cube not ported")
-    @Test
-    public void testSabrNormalVolatility() { fail("not implemented"); }
+    private static SwaptionVolatilityMatrix buildNormalAtmMatrix() {
+        return new SwaptionVolatilityMatrix(
+                CAL, OPT_BDC, ATM_OPTION_TENORS, ATM_SWAP_TENORS,
+                buildAtmVolsHandle(), DC, false,
+                VolatilityType.Normal, null);
+    }
 
-    @Ignore("Phase 5f.5 — SABR cube parameter exposure not ported")
+    /**
+     * Body-fill of C++ {@code testSabrVols} (swaptionvolatilitycube.cpp 235-272).
+     *
+     * <p>The SABR-fitted cube must recover ATM vols to within 3e-4 and smile
+     * spreads to within 12e-4 (both C++ tolerances kept verbatim).
+     */
     @Test
-    public void testSabrParameters() { fail("not implemented"); }
+    public void testSabrVols() {
+        final SwaptionVolatilityMatrix atm = buildAtmMatrix();
+        final Handle<SwaptionVolatilityStructure> atmHandle =
+                new Handle<SwaptionVolatilityStructure>(atm);
+        final Handle<YieldTermStructure> ts = buildFlatRate();
+        final SwapIndex swapIndexBase =
+                new EuriborSwapIsdaFixA(new Period(2, TimeUnit.Years), ts);
+        final SwapIndex shortSwapIndexBase =
+                new EuriborSwapIsdaFixA(new Period(1, TimeUnit.Years), ts);
+
+        final SabrSwaptionVolatilityCube cube =
+                new SabrSwaptionVolatilityCube(atmHandle,
+                        CUBE_OPTION_TENORS, CUBE_SWAP_TENORS,
+                        STRIKE_SPREADS, buildVolSpreadsHandle(),
+                        swapIndexBase, shortSwapIndexBase,
+                        false,
+                        buildSabrParametersGuess(),
+                        new boolean[] { false, false, false, false },
+                        true);
+
+        // ATM recovery: C++ tolerance 3e-4 (sabr fit floor).
+        final double atmTol = 3.0e-4;
+        for (final Period option : ATM_OPTION_TENORS) {
+            for (final Period swap : ATM_SWAP_TENORS) {
+                final double strike = cube.atmStrike(option, swap);
+                final double exp = atm.volatility(option, swap, strike, true);
+                final double act = cube.volatility(option, swap, strike, true);
+                final double err = Math.abs(exp - act);
+                assertTrue("SABR ATM recovery failed: option=" + option
+                        + " swap=" + swap + " err=" + err,
+                        err <= atmTol);
+            }
+        }
+
+        // Smile-spread recovery: C++ tolerance 12e-4.
+        final double smileTol = 12.0e-4;
+        for (int i = 0; i < CUBE_OPTION_TENORS.size(); ++i) {
+            for (int j = 0; j < CUBE_SWAP_TENORS.size(); ++j) {
+                for (int k = 0; k < STRIKE_SPREADS.size(); ++k) {
+                    final double atmK = cube.atmStrike(
+                            CUBE_OPTION_TENORS.get(i),
+                            CUBE_SWAP_TENORS.get(j));
+                    final double atmVol = atm.volatility(
+                            CUBE_OPTION_TENORS.get(i),
+                            CUBE_SWAP_TENORS.get(j),
+                            atmK, true);
+                    final double vol = cube.volatility(
+                            CUBE_OPTION_TENORS.get(i),
+                            CUBE_SWAP_TENORS.get(j),
+                            atmK + STRIKE_SPREADS.get(k), true);
+                    final double observedSpread = vol - atmVol;
+                    final double expectedSpread =
+                            VOL_SPREADS[i * CUBE_SWAP_TENORS.size() + j][k];
+                    assertEquals("SABR smile spread mismatch at i=" + i
+                                    + " j=" + j + " k=" + k,
+                            expectedSpread, observedSpread, smileTol);
+                }
+            }
+        }
+    }
+
+    /**
+     * Body-fill of C++ {@code testSabrNormalVolatility}
+     * (swaptionvolatilitycube.cpp 168-191). Builds the SABR cube against a
+     * Normal-vol ATM matrix and checks ATM recovery to 7e-4.
+     *
+     * <p>Currently {@code @Ignore}'d: the Java {@link
+     * org.jquantlib.math.interpolations.SABRInterpolation} only calibrates in
+     * lognormal terms (its {@code SABRSpecs.volatility} routes through the
+     * unshifted lognormal SABR formula), so calibration against a Normal-vol
+     * matrix blows past the 100 bp tolerance. Unblocking this test requires
+     * widening {@code SABRSpecs} to dispatch on the {@code volatilityType}
+     * passed through {@code addParams}, which is a separate Phase 5e.5b task
+     * tracked alongside the ZABR cube port.
+     */
+    @Ignore("Phase 5f.5 — SABRInterpolation does not yet honour the Normal "
+            + "volatilityType in its specs (lognormal-only calibration)")
+    @Test
+    public void testSabrNormalVolatility() {
+        final SwaptionVolatilityMatrix normal = buildNormalAtmMatrix();
+        final Handle<SwaptionVolatilityStructure> atmHandle =
+                new Handle<SwaptionVolatilityStructure>(normal);
+        final Handle<YieldTermStructure> ts = buildFlatRate();
+        final SwapIndex swapIndexBase =
+                new EuriborSwapIsdaFixA(new Period(2, TimeUnit.Years), ts);
+        final SwapIndex shortSwapIndexBase =
+                new EuriborSwapIsdaFixA(new Period(1, TimeUnit.Years), ts);
+
+        final SabrSwaptionVolatilityCube cube =
+                new SabrSwaptionVolatilityCube(atmHandle,
+                        CUBE_OPTION_TENORS, CUBE_SWAP_TENORS,
+                        STRIKE_SPREADS, buildVolSpreadsHandle(),
+                        swapIndexBase, shortSwapIndexBase,
+                        false,
+                        buildSabrParametersGuess(),
+                        new boolean[] { false, false, false, false },
+                        true);
+
+        final double tol = 7.0e-4;
+        for (final Period option : ATM_OPTION_TENORS) {
+            for (final Period swap : ATM_SWAP_TENORS) {
+                final double strike = cube.atmStrike(option, swap);
+                final double exp = normal.volatility(option, swap, strike, true);
+                final double act = cube.volatility(option, swap, strike, true);
+                final double err = Math.abs(exp - act);
+                assertTrue("Normal-vol SABR ATM recovery failed: option=" + option
+                        + " swap=" + swap + " err=" + err,
+                        err <= tol);
+            }
+        }
+    }
+
+    /**
+     * Body-fill of C++ {@code testSabrParameters}
+     * (swaptionvolatilitycube.cpp 491-592). At maturity=10Y the SABR
+     * parameters (alpha, beta, nu, rho) and forward at swap tenor=3Y must
+     * equal the midpoint of the 2Y and 4Y values (linear interpolation along
+     * the swap-length axis).
+     */
+    @Test
+    public void testSabrParameters() {
+        final SwaptionVolatilityMatrix atm = buildAtmMatrix();
+        final Handle<SwaptionVolatilityStructure> atmHandle =
+                new Handle<SwaptionVolatilityStructure>(atm);
+        final Handle<YieldTermStructure> ts = buildFlatRate();
+        final SwapIndex swapIndexBase =
+                new EuriborSwapIsdaFixA(new Period(2, TimeUnit.Years), ts);
+        final SwapIndex shortSwapIndexBase =
+                new EuriborSwapIsdaFixA(new Period(1, TimeUnit.Years), ts);
+
+        final SabrSwaptionVolatilityCube cube =
+                new SabrSwaptionVolatilityCube(atmHandle,
+                        CUBE_OPTION_TENORS, CUBE_SWAP_TENORS,
+                        STRIKE_SPREADS, buildVolSpreadsHandle(),
+                        swapIndexBase, shortSwapIndexBase,
+                        false,
+                        buildSabrParametersGuess(),
+                        new boolean[] { false, false, false, false },
+                        true);
+
+        final SmileSection s1 = cube.smileSection(
+                new Period(10, TimeUnit.Years), new Period(2, TimeUnit.Years));
+        final SmileSection s2 = cube.smileSection(
+                new Period(10, TimeUnit.Years), new Period(4, TimeUnit.Years));
+        final SmileSection s3 = cube.smileSection(
+                new Period(10, TimeUnit.Years), new Period(3, TimeUnit.Years));
+        assertTrue("smile sections must be SabrSmileSection",
+                s1 instanceof SabrSmileSection
+                        && s2 instanceof SabrSmileSection
+                        && s3 instanceof SabrSmileSection);
+        final SabrSmileSection sb1 = (SabrSmileSection) s1;
+        final SabrSmileSection sb2 = (SabrSmileSection) s2;
+        final SabrSmileSection sb3 = (SabrSmileSection) s3;
+
+        final double tol = 1.0e-4;
+        assertEquals("alpha interpolation",
+                0.5 * (sb1.alpha() + sb2.alpha()), sb3.alpha(), tol);
+        assertEquals("beta interpolation",
+                0.5 * (sb1.beta()  + sb2.beta()),  sb3.beta(),  tol);
+        assertEquals("nu interpolation",
+                0.5 * (sb1.nu()    + sb2.nu()),    sb3.nu(),    tol);
+        assertEquals("rho interpolation",
+                0.5 * (sb1.rho()   + sb2.rho()),   sb3.rho(),   tol);
+        assertEquals("forward interpolation",
+                0.5 * (s1.atmLevel() + s2.atmLevel()), s3.atmLevel(), tol);
+    }
+
+    // ----- @Ignore'd cases (ZABR cube not yet ported) -----------------------
 
     @Ignore("Phase 5f.5 — ZABR cube (Phase 4f experimental) not ported")
     @Test
