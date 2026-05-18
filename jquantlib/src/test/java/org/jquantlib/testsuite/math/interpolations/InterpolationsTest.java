@@ -34,13 +34,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 import org.jquantlib.QL;
+import org.jquantlib.experimental.math.LaplaceInterpolation;
+import org.jquantlib.experimental.volatility.NoArbSabrInterpolation;
 import org.jquantlib.math.BSpline;
 import org.jquantlib.math.Constants;
 import org.jquantlib.math.GaussianKernel;
 import org.jquantlib.math.KernelFunction;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.RichardsonExtrapolation;
-import org.jquantlib.experimental.math.LaplaceInterpolation;
 import org.jquantlib.math.interpolations.BicubicSplineInterpolation;
 import org.jquantlib.math.interpolations.ChebyshevInterpolation;
 import org.jquantlib.math.interpolations.CubicInterpolation;
@@ -51,9 +52,13 @@ import org.jquantlib.math.interpolations.KernelInterpolation;
 import org.jquantlib.math.interpolations.KernelInterpolation2D;
 import org.jquantlib.math.interpolations.LagrangeInterpolation;
 import org.jquantlib.math.interpolations.MixedLinearCubicInterpolation;
+import org.jquantlib.math.interpolations.SABRInterpolation;
+import org.jquantlib.math.interpolations.XABRInterpolation;
 import org.jquantlib.math.interpolations.factories.Bilinear;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.randomnumbers.HaltonRsg;
+import org.jquantlib.termstructures.volatilities.Sabr;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -742,25 +747,179 @@ public class InterpolationsTest {
                 + "(experimental.volatility package).");
     }
 
+    /**
+     * Faithful port of {@code testTransformations} (C++ interpolations.cpp
+     * lines 2080-2152). Round-trips SABR and no-arbitrage SABR parameter
+     * vectors {alpha,beta,nu,rho} through the {@code direct}/{@code inverse}
+     * unconstrained-space maps via the
+     * {@link XABRInterpolation.ParameterTransformation} hook
+     * (Phase 5e.5b-CFC-d-245).
+     *
+     * <p><b>Iteration count:</b> C++ runs 1e6 Halton samples; the Java
+     * test trims to 5000 to keep the suite snappy while still exercising a
+     * wide swath of [-25,25]^4 input space. The transformation contract is
+     * deterministic — any high-discrepancy sample produces the same
+     * round-trip identity, so a smaller sweep is sufficient for regression.
+     */
     @Test
-    @Ignore("Phase 5g.5 — needs the XABR transformations API "
-            + "(C++ ql/termstructures/volatility/sabr.hpp::sabrFlochKennedyVolatility "
-            + "+ XABRCoeffHolder<Model>::ParameterTransformation hooks). Java "
-            + "XABRCoeffHolder lacks the parameter-transform inverse used by "
-            + "testTransformations to round-trip alpha/beta/nu/rho through the "
-            + "unconstrained-space mapping. C++ interpolations.cpp testTransformations.")
-    public void testTransformations() { }
+    public void testTransformations() {
+        QL.info("Testing Sabr and no-arbitrage Sabr transformation functions...");
 
+        final double size = 25.0;   // test inputs from [-size,size]^4
+        final int sweeps = 5000;    // C++ uses 1e6; smaller keeps suite fast
+        final double tol = 1.0e-9;  // round-trip should be tight (no clamp losses)
+
+        final boolean[] fixed = { false, false, false, false };
+        final double[] params = { 0.0, 0.0, 0.0, 0.0 };
+        final double forward = 0.03;
+
+        final HaltonRsg h = new HaltonRsg(4, 42L, false, false);
+
+        final XABRInterpolation.ParameterTransformation sabrXf =
+                XABRInterpolation.parameterTransformation(
+                        new SABRInterpolation.SABRSpecs());
+        final XABRInterpolation.ParameterTransformation noarbXf =
+                XABRInterpolation.parameterTransformation(
+                        new NoArbSabrInterpolation.NoArbSabrSpecs());
+
+        final Sabr sabr = new Sabr();
+
+        for (int i = 0; i < sweeps; ++i) {
+            final double[] s = h.nextSequence().value;
+            final Array x = new Array(4);
+            for (int j = 0; j < 4; ++j) {
+                x.set(j, 2.0 * size * s[j] - size);
+            }
+
+            // --- SABR round trip ---
+            final Array ySabr = sabrXf.direct(x, fixed, params, forward);
+            // direct() must land inside the SABR feasibility region.
+            sabr.validateSabrParameters(ySabr.get(0), ySabr.get(1),
+                    ySabr.get(2), ySabr.get(3));
+            final Array zSabrInv = sabrXf.inverse(ySabr, fixed, params, forward);
+            final Array zSabr = sabrXf.direct(zSabrInv, fixed, params, forward);
+            for (int j = 0; j < 4; ++j) {
+                assertEquals("SabrInterpolation: direct(inverse(y))[" + j
+                                + "] mismatch (y=" + ySabr.get(j) + ")",
+                        ySabr.get(j), zSabr.get(j), tol);
+            }
+
+            // --- NoArbSabr round trip ---
+            final Array yNoArb = noarbXf.direct(x, fixed, params, forward);
+            // Inline NoArbSabr admissibility check (mirror C++ lines 2125-2139).
+            final double alpha = yNoArb.get(0);
+            final double beta  = yNoArb.get(1);
+            final double nu    = yNoArb.get(2);
+            final double rho   = yNoArb.get(3);
+            assertFalse("NoArbSabr beta out of bounds: " + beta,
+                    beta < org.jquantlib.experimental.volatility.NoArbSabrModel.Constants.BETA_MIN
+                 || beta > org.jquantlib.experimental.volatility.NoArbSabrModel.Constants.BETA_MAX);
+            final double sigmaI = alpha * Math.pow(forward, beta - 1.0);
+            assertFalse("NoArbSabr sigmaI out of bounds: " + sigmaI
+                            + " (alpha=" + alpha + " beta=" + beta + ")",
+                    sigmaI < org.jquantlib.experimental.volatility.NoArbSabrModel.Constants.SIGMA_I_MIN
+                 || sigmaI > org.jquantlib.experimental.volatility.NoArbSabrModel.Constants.SIGMA_I_MAX);
+            assertFalse("NoArbSabr nu out of bounds: " + nu,
+                    nu < org.jquantlib.experimental.volatility.NoArbSabrModel.Constants.NU_MIN
+                 || nu > org.jquantlib.experimental.volatility.NoArbSabrModel.Constants.NU_MAX);
+            assertFalse("NoArbSabr rho out of bounds: " + rho,
+                    rho < org.jquantlib.experimental.volatility.NoArbSabrModel.Constants.RHO_MIN
+                 || rho > org.jquantlib.experimental.volatility.NoArbSabrModel.Constants.RHO_MAX);
+
+            final Array zNoArbInv = noarbXf.inverse(yNoArb, fixed, params, forward);
+            final Array zNoArb = noarbXf.direct(zNoArbInv, fixed, params, forward);
+            for (int j = 0; j < 4; ++j) {
+                assertEquals("NoArbSabrInterpolation: direct(inverse(y))[" + j
+                                + "] mismatch (y=" + yNoArb.get(j) + ")",
+                        yNoArb.get(j), zNoArb.get(j), tol);
+            }
+        }
+    }
+
+    /**
+     * Faithful port of {@code testFlochKennedySabrIsSmoothAroundATM}
+     * (C++ interpolations.cpp lines 2154-2196) AND
+     * {@code testLeFlochKennedySabrExample} (lines 2198-2232). The C++ test
+     * suite has the Floc'h-Kennedy coverage split across two cases; the
+     * Java {@code @Ignore} marker collapsed them into a single
+     * {@code testFlochKennedySabr} bucket, so we exercise both reference
+     * checks here (Phase 5e.5b-CFC-d-245).
+     *
+     * <p>Tolerance: 1e-8 for ATM reproduction (matches C++) and 1e-5 for
+     * the smoothness sweep around ATM (matches C++).
+     */
     @Test
-    @Ignore("Phase 5g.5 — needs SabrSmileSection backed by the "
-            + "FlochKennedy SABR formula (C++ "
-            + "ql/termstructures/volatility/sabrsmilesection.{hpp,cpp} with the "
-            + "FlochKennedy approximation enum, plus "
-            + "ql/experimental/volatility/sabrvoltermstructure.hpp). The Java "
-            + "side has Hagan SABR only (SABRInterpolation / XABRSpecs). "
-            + "C++ interpolations.cpp testFlochKennedySabrIsSmoothAroundATM "
-            + "and testLeFlochKennedySabrExample.")
-    public void testFlochKennedySabr() { }
+    public void testFlochKennedySabr() {
+        QL.info("Testing FlochKennedy SABR (smoothness around ATM and "
+                + "Le Floc'h-Kennedy paper examples)...");
+
+        final Sabr sabr = new Sabr();
+
+        // --- Part 1: smoothness around ATM (C++ lines 2154-2196) ---
+        {
+            final double f0    = 1.1;
+            final double alpha = 0.35;
+            final double nu    = 1.1;
+            final double rho   = 0.25;
+            final double beta  = 0.3;
+            final double strike = f0;
+            final double t = 2.1;
+
+            final double vol = sabr.sabrFlochKennedyVolatility(
+                    strike, f0, t, alpha, beta, nu, rho);
+
+            // Reference produced by C++ v1.42.1 sabrFlochKennedyVolatility.
+            final double expected = 0.3963883944;
+            final double tol = 1.0e-8;
+            assertEquals("FlochKennedy ATM value mismatch",
+                    expected, vol, tol);
+
+            // Sweep around ATM in steps of 0.0001*strike — assert the local
+            // first-difference stays below 1e-5 (smoothness check).
+            double k = 0.996 * strike;
+            double v = sabr.sabrFlochKennedyVolatility(k, f0, t, alpha, beta, nu, rho);
+            while (k < 1.004 * strike) {
+                k += 0.0001 * strike;
+                final double vt = sabr.sabrFlochKennedyVolatility(
+                        k, f0, t, alpha, beta, nu, rho);
+                final double diff = Math.abs(v - vt);
+                if (diff > 1.0e-5) {
+                    org.junit.Assert.fail(
+                            "Sabr vol spike around ATM:"
+                            + "\n    volatility at " + (k - 0.0001 * strike) + " is " + v
+                            + "\n    volatility at " + k + " is " + vt
+                            + "\n    difference: " + diff
+                            + "\n    tolerance : " + 1.0e-5);
+                }
+                v = vt;
+            }
+        }
+
+        // --- Part 2: Le Floc'h-Kennedy paper examples (C++ lines 2198-2232) ---
+        {
+            final double f0    = 1.0;
+            final double alpha = 0.35;
+            final double nu    = 1.0;
+            final double rho   = 0.25;
+            final double beta  = 0.25;
+            final double[] strikes = { 1.0, 1.5, 0.5 };
+            final double t = 2.0;
+
+            // Reference values from F. Le Floc'h & G. Kennedy,
+            // "Explicit SABR Calibration through Simple Expansions"
+            // https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2467231
+            final double[] expected = { 0.408702473958, 0.428489933046, 0.585701651161 };
+            final double tol = 1.0e-8;
+
+            for (int i = 0; i < strikes.length; ++i) {
+                final double vol = sabr.sabrFlochKennedyVolatility(
+                        strikes[i], f0, t, alpha, beta, nu, rho);
+                assertEquals("Le Floc'h-Kennedy reference at strike "
+                                + strikes[i] + " mismatch",
+                        expected[i], vol, tol);
+            }
+        }
+    }
 
     /**
      * Faithful port of {@code testLagrangeInterpolationDerivative}
@@ -1526,12 +1685,54 @@ public class InterpolationsTest {
         }
     }
 
+    /**
+     * Faithful port of {@code testSabrSingleCases}
+     * (C++ interpolations.cpp lines 2054-2078). Calibrates SABR against a
+     * pathological short-expiry / low-forward smile that historically threw
+     * (QL 1.4) before the Halton multi-restart + parameter-transformation
+     * machinery were added; today both maxError and rmsError must come in
+     * under 1% (Phase 5e.5b-CFC-d-245).
+     *
+     * <p>Inputs (mirror C++): strikes = {0.01,0.01125,0.0125,0.01375,0.015},
+     * vols = {0.1667,0.2020,0.2785,0.3279,0.3727}, tte = 0.3833,
+     * forward = 0.011025, beta fixed = 0.25, alpha/nu/rho free.
+     */
     @Test
-    @Ignore("Phase 5g.5 — needs SABR single-case stress harness "
-            + "(C++ testSabrSingleCases uses XABRCoeffHolder<SABRSpecs>"
-            + "::ParameterTransformation and the y_->direct/inverse maps to "
-            + "exercise pathological alpha/beta/nu/rho combinations). The "
-            + "Java XABRCoeffHolder / XABRSpecs ports have no parameter-"
-            + "transform plumbing yet. C++ interpolations.cpp testSabrSingleCases.")
-    public void testSabrSingleCases() { }
+    public void testSabrSingleCases() {
+        QL.info("Testing Sabr calibration single cases...");
+
+        final double[] strikesArr = { 0.01, 0.01125, 0.0125, 0.01375, 0.0150 };
+        final double[] volsArr    = { 0.1667, 0.2020, 0.2785, 0.3279, 0.3727 };
+        final Array strikes = new Array(strikesArr);
+        final Array vols    = new Array(volsArr);
+
+        final double tte = 0.3833;
+        final double forward = 0.011025;
+
+        // C++ uses Null<Real>() for the unfixed alpha/nu/rho seeds, which the
+        // XABRCoeffHolder constructor (port: XABRCoeffHolder.java lines 100-104)
+        // recognises via Constants.NULL_REAL and routes through
+        // SABRSpecs.defaultValues(). Beta is pinned at 0.25 (C++ line 2068).
+        final SABRInterpolation s0 = new SABRInterpolation(
+                strikes, vols, tte, forward,
+                /* alpha */ Constants.NULL_REAL,
+                /* beta  */ 0.25,
+                /* nu    */ Constants.NULL_REAL,
+                /* rho   */ Constants.NULL_REAL,
+                /* alphaIsFixed */ false,
+                /* betaIsFixed  */ true,
+                /* nuIsFixed    */ false,
+                /* rhoIsFixed   */ false,
+                /* vegaWeighted */ false,
+                /* endCriteria  */ null,
+                /* optMethod    */ null);
+        s0.update();
+
+        if (s0.maxError() > 0.01 || s0.rmsError() > 0.01) {
+            org.junit.Assert.fail(
+                    "Sabr case #1 failed with max error (" + s0.maxError()
+                    + ") and rms error (" + s0.rmsError()
+                    + "), both should be < 0.01");
+        }
+    }
 }
