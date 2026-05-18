@@ -31,10 +31,13 @@ import org.jquantlib.experimental.barrieroption.DiscretizedDoubleBarrierOption;
 import org.jquantlib.experimental.barrieroption.DoubleBarrierOption;
 import org.jquantlib.experimental.barrieroption.DoubleBarrierType;
 import org.jquantlib.experimental.barrieroption.SuoWangDoubleBarrierEngine;
+import org.jquantlib.experimental.barrieroption.VannaVolgaDoubleBarrierEngine;
+import org.jquantlib.experimental.fx.DeltaVolQuote;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.methods.lattices.CoxRossRubinstein;
+import org.jquantlib.pricingengines.BlackFormula;
 import org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.quotes.Handle;
@@ -106,6 +109,10 @@ public class DoubleBarrierOptionTest {
 
     private static int timeToDays(final double t) {
         return (int) (t * 360 + 0.5);
+    }
+
+    private static int timeToDaysAct365(final double t) {
+        return (int) (t * 365 + 0.5);
     }
 
     /** Subset of Haug values exercising both KnockOut and KnockIn for the SuoWang engine. */
@@ -280,11 +287,202 @@ public class DoubleBarrierOptionTest {
         runEngineCheck("Ikeda/Kunitomo", IKEDA_VALUES, EngineKind.IKEDA);
     }
 
+    /** Vanna/Volga FX-option fixture — one row from C++ {@code testVannaVolgaDoubleBarrierValues}. */
+    private static final class VVFx {
+        final double barrierLo;
+        final double barrierHi;
+        final double rebate;
+        final Option.Type type;
+        final double strike;
+        final double s;
+        final double q;
+        final double r;
+        final double t;
+        final double vol25Put;
+        final double volAtm;
+        final double vol25Call;
+        final double v;
+        final double result;
+        final double tol;
+
+        VVFx(final double barrierLo, final double barrierHi, final double rebate,
+             final Option.Type type, final double strike, final double s, final double q, final double r,
+             final double t, final double vol25Put, final double volAtm, final double vol25Call,
+             final double v, final double result, final double tol) {
+            this.barrierLo = barrierLo;
+            this.barrierHi = barrierHi;
+            this.rebate = rebate;
+            this.type = type;
+            this.strike = strike;
+            this.s = s;
+            this.q = q;
+            this.r = r;
+            this.t = t;
+            this.vol25Put = vol25Put;
+            this.volAtm = volAtm;
+            this.vol25Call = vol25Call;
+            this.v = v;
+            this.result = result;
+            this.tol = tol;
+        }
+    }
+
+    /**
+     * FX double-barrier reference values for the Vanna/Volga engine. Faithful to
+     * {@code QuantLib::testVannaVolgaDoubleBarrierValues} (v1.42.1
+     * {@code test-suite/doublebarrieroption.cpp}). Only the KnockOut "result"
+     * is tabulated; KnockIn = vanilla(black) - KO is checked in-loop.
+     */
+    private static final VVFx[] VANNAVOLGA_VALUES = new VVFx[] {
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Call, 1.13321, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.11638, 0.14413, 1.0e-4),
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Call, 1.22687, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.10088, 0.07456, 1.0e-4),
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Call, 1.31179, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.08925, 0.02710, 1.0e-4),
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Call, 1.38843, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.08463, 0.00569, 1.0e-4),
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Call, 1.46047, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.08412, 0.00013, 1.0e-4),
+
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Put,  1.13321, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.11638, 0.00017, 1.0e-4),
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Put,  1.22687, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.10088, 0.00353, 1.0e-4),
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Put,  1.31179, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.08925, 0.02221, 1.0e-4),
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Put,  1.38843, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.08463, 0.06049, 1.0e-4),
+            new VVFx(1.1, 1.5, 0.0, Option.Type.Put,  1.46047, 1.30265, 0.0003541, 0.0033871, 1.0, 0.10087, 0.08925, 0.08463, 0.08412, 0.11103, 1.0e-4),
+
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Call, 1.06145, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.12511, 0.19981, 1.0e-4),
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Call, 1.19545, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.10890, 0.10389, 1.0e-4),
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Call, 1.32238, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.09444, 0.03555, 1.0e-4),
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Call, 1.44298, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.09197, 0.00634, 1.0e-4),
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Call, 1.56345, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.09261, 0.00000, 1.0e-4),
+
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Put,  1.06145, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.12511, 0.00000, 1.0e-4),
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Put,  1.19545, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.10890, 0.00436, 1.0e-4),
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Put,  1.32238, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.09444, 0.03173, 1.0e-4),
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Put,  1.44298, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.09197, 0.09346, 1.0e-4),
+            new VVFx(1.0, 1.6, 0.0, Option.Type.Put,  1.56345, 1.30265, 0.0009418, 0.0039788, 2.0, 0.10891, 0.09525, 0.09197, 0.09261, 0.17704, 1.0e-4),
+    };
+
+    /**
+     * Mirrors {@code QuantLib::testVannaVolgaDoubleBarrierValues} (v1.42.1).
+     * Exercises {@link VannaVolgaDoubleBarrierEngine} wrapped around the
+     * SuoWang BS double-barrier engine (tol {@code 1e-4}, matching C++) and
+     * the Ikeda/Kunitomo {@link AnalyticDoubleBarrierEngine} (tol {@code 5e-3},
+     * matching C++ {@code maxtol}).
+     */
     @Test
-    @Ignore("Phase 4e.5: VannaVolgaBarrierEngine and VannaVolgaDoubleBarrierEngine require "
-            + "DeltaVolQuote port from ql/quotes/ and experimental fxvolatility helpers.")
     public void testVannaVolgaValues() {
-        // Carry-forward: port DeltaVolQuote + VannaVolga{Barrier,DoubleBarrier}Engine.
+        QL.info("Testing double-barrier FX options against Vanna/Volga values...");
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Date(5, org.jquantlib.time.Month.March, 2013);
+        new Settings().setEvaluationDate(today);
+
+        final SimpleQuote spot = new SimpleQuote(0.0);
+        final SimpleQuote qRate = new SimpleQuote(0.0);
+        final YieldTermStructure qTS = Utilities.flatRate(today, qRate, dc);
+        final SimpleQuote rRate = new SimpleQuote(0.0);
+        final YieldTermStructure rTS = Utilities.flatRate(today, rRate, dc);
+        final SimpleQuote vol25Put = new SimpleQuote(0.0);
+        final SimpleQuote volAtm = new SimpleQuote(0.0);
+        final SimpleQuote vol25Call = new SimpleQuote(0.0);
+
+        for (final VVFx value : VANNAVOLGA_VALUES) {
+
+            for (int j = 0; j <= 1; j++) {
+                final DoubleBarrierType barrierType = (j == 0)
+                        ? DoubleBarrierType.KnockIn
+                        : DoubleBarrierType.KnockOut;
+
+                spot.setValue(value.s);
+                qRate.setValue(value.q);
+                rRate.setValue(value.r);
+                vol25Put.setValue(value.vol25Put);
+                volAtm.setValue(value.volAtm);
+                vol25Call.setValue(value.vol25Call);
+
+                final StrikedTypePayoff payoff = new PlainVanillaPayoff(value.type, value.strike);
+                final Date exDate = today.add(timeToDaysAct365(value.t));
+                final Exercise exercise = new EuropeanExercise(exDate);
+
+                final Handle<DeltaVolQuote> volAtmQuote = new Handle<DeltaVolQuote>(
+                        new DeltaVolQuote(
+                                new Handle<Quote>(volAtm),
+                                DeltaVolQuote.DeltaType.Fwd,
+                                value.t,
+                                DeltaVolQuote.AtmType.AtmDeltaNeutral));
+
+                final Handle<DeltaVolQuote> vol25PutQuote = new Handle<DeltaVolQuote>(
+                        new DeltaVolQuote(-0.25, new Handle<Quote>(vol25Put), value.t,
+                                DeltaVolQuote.DeltaType.Fwd));
+
+                final Handle<DeltaVolQuote> vol25CallQuote = new Handle<DeltaVolQuote>(
+                        new DeltaVolQuote(0.25, new Handle<Quote>(vol25Call), value.t,
+                                DeltaVolQuote.DeltaType.Fwd));
+
+                final DoubleBarrierOption opt = new DoubleBarrierOption(
+                        barrierType, value.barrierLo, value.barrierHi, value.rebate, payoff, exercise);
+
+                final double bsVanillaPrice = BlackFormula.blackFormula(value.type, value.strike,
+                        spot.value() * qTS.discount(value.t) / rTS.discount(value.t),
+                        value.v * Math.sqrt(value.t), rTS.discount(value.t));
+
+                // (1) SuoWang inner engine — C++ tol is 1e-4
+                opt.setPricingEngine(new VannaVolgaDoubleBarrierEngine(
+                        volAtmQuote, vol25PutQuote, vol25CallQuote,
+                        new Handle<Quote>(spot),
+                        new Handle<YieldTermStructure>(rTS),
+                        new Handle<YieldTermStructure>(qTS),
+                        true, bsVanillaPrice, 5,
+                        new VannaVolgaDoubleBarrierEngine.DoubleBarrierEngineFactory() {
+                            @Override
+                            public DoubleBarrierOption.EngineImpl create(
+                                    final org.jquantlib.processes.GeneralizedBlackScholesProcess p,
+                                    final int series) {
+                                return new SuoWangDoubleBarrierEngine(p, series);
+                            }
+                        }));
+
+                final double expected = (barrierType == DoubleBarrierType.KnockOut)
+                        ? value.result
+                        : bsVanillaPrice - value.result;
+
+                final double calculated = opt.NPV();
+                final double error = Math.abs(calculated - expected);
+                final String msg1 = String.format(
+                        "VannaVolga(SuoWang) %s: barrier=[%.2f,%.2f] type=%s strike=%.5f s=%.5f "
+                                + "t=%.2f volAtm=%.5f vol25Put=%.5f vol25Call=%.5f v=%.5f -> "
+                                + "expected=%.6f calculated=%.6f error=%.4g (tol=%.4g)",
+                        barrierType, value.barrierLo, value.barrierHi, value.type, value.strike,
+                        value.s, value.t, value.volAtm, value.vol25Put, value.vol25Call, value.v,
+                        expected, calculated, error, value.tol);
+                assertTrue(msg1, error <= value.tol);
+
+                // (2) AnalyticDoubleBarrierEngine (Ikeda/Kunitomo) inner — C++ maxtol is 5e-3
+                opt.setPricingEngine(new VannaVolgaDoubleBarrierEngine(
+                        volAtmQuote, vol25PutQuote, vol25CallQuote,
+                        new Handle<Quote>(spot),
+                        new Handle<YieldTermStructure>(rTS),
+                        new Handle<YieldTermStructure>(qTS),
+                        true, bsVanillaPrice, 5,
+                        new VannaVolgaDoubleBarrierEngine.DoubleBarrierEngineFactory() {
+                            @Override
+                            public DoubleBarrierOption.EngineImpl create(
+                                    final org.jquantlib.processes.GeneralizedBlackScholesProcess p,
+                                    final int series) {
+                                return new AnalyticDoubleBarrierEngine(p, series);
+                            }
+                        }));
+
+                final double calculated2 = opt.NPV();
+                final double error2 = Math.abs(calculated2 - expected);
+                final double maxtol = 5.0e-3;
+                final String msg2 = String.format(
+                        "VannaVolga(IkedaKunitomo) %s: barrier=[%.2f,%.2f] type=%s strike=%.5f s=%.5f "
+                                + "t=%.2f volAtm=%.5f vol25Put=%.5f vol25Call=%.5f v=%.5f -> "
+                                + "expected=%.6f calculated=%.6f error=%.4g (tol=%.4g)",
+                        barrierType, value.barrierLo, value.barrierHi, value.type, value.strike,
+                        value.s, value.t, value.volAtm, value.vol25Put, value.vol25Call, value.v,
+                        expected, calculated2, error2, maxtol);
+                assertTrue(msg2, error2 <= maxtol);
+            }
+        }
     }
 
     @Test
