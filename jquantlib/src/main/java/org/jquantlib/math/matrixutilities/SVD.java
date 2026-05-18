@@ -28,10 +28,13 @@ import org.jquantlib.lang.annotation.QualityAssurance.Version;
 /**
  * Singular Value Decomposition
  * <P>
- * For an m-by-n matrix A with m >= n, the singular value decomposition is an m-by-n orthogonal matrix U, an n-by-n diagonal matrix
- * S, and an n-by-n orthogonal matrix V so that A = U*S*V'.
+ * For an m-by-n matrix A with m &gt;= n, the singular value decomposition is an m-by-n orthogonal matrix U, an n-by-n diagonal
+ * matrix S, and an n-by-n orthogonal matrix V so that A = U*S*V'.
  * <P>
- * The singular values, sigma[k] = S.data[S.addr.op(k,k)], are ordered so that sigma[0] >= sigma[1] >= ... >= sigma[n-1].
+ * For wide matrices (m &lt; n) the decomposition is performed on A<sup>T</sup> and U/V are swapped on access, matching the
+ * QuantLib C++ {@code SVD} convention (svd.cpp, {@code transpose_} flag).
+ * <P>
+ * The singular values, sigma[k] = S.data[S.addr.op(k,k)], are ordered so that sigma[0] &gt;= sigma[1] &gt;= ... &gt;= sigma[n-1].
  * <P>
  * The singular value decompostion always exists, so the constructor will never fail. The matrix condition number and the effective
  * numerical rank can be computed from this decomposition.
@@ -50,6 +53,13 @@ public class SVD {
     private final Array s;
     private final int m;
     private final int n;
+    /**
+     * True when the input matrix had {@code rows() < cols()} and the algorithm
+     * was actually run on its transpose. Accessors swap {@link #U} and
+     * {@link #V} in that case so callers always observe an SVD of the original
+     * matrix. Matches QuantLib's {@code SVD::transpose_} flag (svd.cpp).
+     */
+    private final boolean transposed;
 
     //
     // public constructors
@@ -62,8 +72,19 @@ public class SVD {
      * @return Structure to access U, S and V.
      */
     public SVD(final Matrix A) {
-        this.m = A.rows();
-        this.n = A.cols();
+        // QuantLib SVD: the JAMA/TNT-derived algorithm requires rows >= cols.
+        // For wide matrices (rows < cols) decompose A^T instead and swap U
+        // and V at access time. See svd.cpp lines 60-88.
+        final Matrix Awork;
+        if (A.rows() >= A.cols()) {
+            Awork = A;
+            this.transposed = false;
+        } else {
+            Awork = A.transpose();
+            this.transposed = true;
+        }
+        this.m = Awork.rows();
+        this.n = Awork.cols();
 
         final int nu = Math.min(m, n);
 
@@ -90,16 +111,16 @@ public class SVD {
                 // Compute 2-norm of k-th column without under/overflow.
                 s.$[s.addr.op(k)] = 0;
                 for (int i = k; i < m; i++) {
-                    s.$[s.addr.op(k)] = Math.hypot(s.$[s.addr.op(k)], A.$[A.addr.op(i, k)]);
+                    s.$[s.addr.op(k)] = Math.hypot(s.$[s.addr.op(k)], Awork.$[Awork.addr.op(i, k)]);
                 }
                 if (s.$[s.addr.op(k)] != 0.0) {
-                    if (A.$[A.addr.op(k, k)] < 0.0) {
+                    if (Awork.$[Awork.addr.op(k, k)] < 0.0) {
                         s.$[s.addr.op(k)] = -s.$[s.addr.op(k)];
                     }
                     for (int i = k; i < m; i++) {
-                        A.$[A.addr.op(i, k)] /= s.$[s.addr.op(k)];
+                        Awork.$[Awork.addr.op(i, k)] /= s.$[s.addr.op(k)];
                     }
-                    A.$[A.addr.op(k, k)] += 1.0;
+                    Awork.$[Awork.addr.op(k, k)] += 1.0;
                 }
                 s.$[s.addr.op(k)] = -s.$[s.addr.op(k)];
             }
@@ -110,18 +131,18 @@ public class SVD {
 
                     double t = 0;
                     for (int i = k; i < m; i++) {
-                        t += A.$[A.addr.op(i, k)] * A.$[A.addr.op(i, j)];
+                        t += Awork.$[Awork.addr.op(i, k)] * Awork.$[Awork.addr.op(i, j)];
                     }
-                    t = -t / A.$[A.addr.op(k, k)];
+                    t = -t / Awork.$[Awork.addr.op(k, k)];
                     for (int i = k; i < m; i++) {
-                        A.$[A.addr.op(i, j)] += t * A.$[A.addr.op(i, k)];
+                        Awork.$[Awork.addr.op(i, j)] += t * Awork.$[Awork.addr.op(i, k)];
                     }
                 }
 
                 // Place the k-th row of A into e for the
                 // subsequent calculation of the row transformation.
 
-                e[j] = A.$[A.addr.op(k, j)];
+                e[j] = Awork.$[Awork.addr.op(k, j)];
             }
             if (wantu & (k < nct)) {
 
@@ -129,7 +150,7 @@ public class SVD {
                 // multiplication.
 
                 for (int i = k; i < m; i++) {
-                    U.$[U.addr.op(i, k)] = A.$[A.addr.op(i, k)];
+                    U.$[U.addr.op(i, k)] = Awork.$[Awork.addr.op(i, k)];
                 }
             }
             if (k < nrt) {
@@ -160,13 +181,13 @@ public class SVD {
                     }
                     for (int j = k + 1; j < n; j++) {
                         for (int i = k + 1; i < m; i++) {
-                            work[i] += e[j] * A.$[A.addr.op(i, j)];
+                            work[i] += e[j] * Awork.$[Awork.addr.op(i, j)];
                         }
                     }
                     for (int j = k + 1; j < n; j++) {
                         final double t = -e[j] / e[k + 1];
                         for (int i = k + 1; i < m; i++) {
-                            A.$[A.addr.op(i, j)] += t * work[i];
+                            Awork.$[Awork.addr.op(i, j)] += t * work[i];
                         }
                     }
                 }
@@ -186,13 +207,13 @@ public class SVD {
 
         int p = Math.min(n, m + 1);
         if (nct < n) {
-            s.$[nct] = A.$[A.addr.op(nct, nct)];
+            s.$[nct] = Awork.$[Awork.addr.op(nct, nct)];
         }
         if (m < p) {
             s.$[p - 1] = 0.0;
         }
         if (nrt + 1 < p) {
-            e[nrt] = A.$[A.addr.op(nrt, p - 1)];
+            e[nrt] = Awork.$[Awork.addr.op(nrt, p - 1)];
         }
         e[p - 1] = 0.0;
 
@@ -498,7 +519,7 @@ public class SVD {
      * @return U
      */
     public Matrix U() {
-        return U.clone(); // new Matrix(U,m,Math.min(m+1,n));
+        return (transposed ? V : U).clone();
     }
 
     /**
@@ -507,7 +528,7 @@ public class SVD {
      * @return V
      */
     public Matrix V() {
-        return V.clone(); // new Matrix(V,n,n);
+        return (transposed ? U : V).clone();
     }
 
     /**

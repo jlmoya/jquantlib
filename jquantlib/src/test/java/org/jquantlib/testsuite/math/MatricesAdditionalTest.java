@@ -31,7 +31,6 @@ import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.math.matrixutilities.PseudoSqrt;
 import org.jquantlib.math.matrixutilities.SparseMatrix;
 import org.jquantlib.math.randomnumbers.MersenneTwisterUniformRng;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -215,15 +214,73 @@ public class MatricesAdditionalTest {
         }
     }
 
-    @Ignore("Phase 5b.5: Java SVD reconstruction U*S*V^T diverges from A by O(1) "
-            + "even on a 3x3 PSD; investigate JAMA-port 'thin' vs 'full' convention")
+    private static Matrix M3() {
+        // C++ matrices.cpp:95 — M3 is 3x4 (wide).
+        return new Matrix(new double[][] {
+                { 1, 2, 3, 4 },
+                { 2, 0, 2, 1 },
+                { 0, 1, 0, 0 }
+        });
+    }
+
+    private static Matrix M4() {
+        // C++ matrices.cpp:99 — M4 is 4x3 (tall).
+        return new Matrix(new double[][] {
+                { 1,  2, 400  },
+                { 2,  0,   1  },
+                { 30, 2,   0  },
+                { 2,  0,   1.05 }
+        });
+    }
+
     @Test
     public void testSVD() {
-        // C++ test-suite/matrices.cpp:213 — verify SVD U*S*V'==A and U/V
-        // orthogonality across M1..M4. Java SVD currently produces a
-        // mathematically valid but C++-incompatible decomposition (likely
-        // sign flips or column-permutation across U vs V); reconstruction
-        // norm fails by O(1) on M1. Phase 5b.5 align needed before assertion.
+        QL.info("Testing singular value decomposition...");
+        // C++ test-suite/matrices.cpp:213 — verify SVD U*S*V^T == A and U/V
+        // orthogonality across M1..M4 (square, wide, tall). Aligned with the
+        // C++ implementation: when rows < cols, SVD decomposes A^T internally
+        // and swaps U/V on access (matches QuantLib SVD::transpose_).
+        final double tol = 1.0e-12;
+        final Matrix[] testMatrices = { M1(), M2(), M3(), M4() };
+
+        for (final Matrix A : testMatrices) {
+            final org.jquantlib.math.matrixutilities.SVD svd =
+                    new org.jquantlib.math.matrixutilities.SVD(A.clone());
+            final Matrix U = svd.U();
+            final Array s = svd.singularValues();
+            final Matrix S = svd.S();
+            final Matrix V = svd.V();
+
+            // S consistent with the singular-value array.
+            for (int i = 0; i < S.rows(); i++) {
+                if (S.get(i, i) != s.get(i)) {
+                    fail("S not consistent with s at index " + i);
+                }
+            }
+
+            // U is orthogonal: U^T * U == I.
+            final Matrix UtU = U.transpose().mul(U);
+            final Matrix Iu = new Identity(UtU.rows());
+            if (norm(UtU.sub(Iu)) > tol) {
+                fail("U not orthogonal (norm of U^T*U - I = "
+                        + norm(UtU.sub(Iu)) + ")");
+            }
+
+            // V is orthogonal: V^T * V == I.
+            final Matrix VtV = V.transpose().mul(V);
+            final Matrix Iv = new Identity(VtV.rows());
+            if (norm(VtV.sub(Iv)) > tol) {
+                fail("V not orthogonal (norm of V^T*V - I = "
+                        + norm(VtV.sub(Iv)) + ")");
+            }
+
+            // Reconstruction: U * S * V^T ~ A.
+            final Matrix recon = U.mul(S).mul(V.transpose());
+            if (norm(recon.sub(A)) > tol) {
+                fail("Product does not recover A (norm of U*S*V^T - A = "
+                        + norm(recon.sub(A)) + ")");
+            }
+        }
     }
 
     @Test
