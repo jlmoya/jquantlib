@@ -57,6 +57,19 @@ public class FdmHestonSolver extends LazyObject {
 
     private Fdm2DimSolver solver;
 
+    /**
+     * Two-argument convenience constructor.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code FdmHestonSolver(Handle<HestonProcess>,
+     * FdmSolverDesc)} which defaults {@code schemeDesc} to
+     * {@link FdmSchemeDesc#Hundsdorfer()} and {@code mixingFactor} to
+     * {@code 1.0}.
+     */
+    public FdmHestonSolver(final HestonProcess process,
+                           final FdmSolverDesc solverDesc) {
+        this(process, solverDesc, FdmSchemeDesc.Hundsdorfer(), 1.0);
+    }
+
     public FdmHestonSolver(final HestonProcess process,
                            final FdmSolverDesc solverDesc,
                            final FdmSchemeDesc schemeDesc) {
@@ -122,5 +135,44 @@ public class FdmHestonSolver extends LazyObject {
     public double thetaAt(final double s, final double v) {
         calculate();
         return solver.thetaAt(JQuantMath.log(s), v);
+    }
+
+    /**
+     * Mean-variance delta at {@code (s, v)} — delta with respect to the
+     * mean-reverting variance factor.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code FdmHestonSolver::meanVarianceDeltaAt}:
+     * {@code deltaAt(s, v) + alpha * derivativeY(log s, v)} with
+     * {@code alpha = rho * sigma / s}. Accounts for the instantaneous
+     * correlation between the equity log-return and the variance factor
+     * in the Heston SDE — the chain rule adds a {@code rho * sigma / s}
+     * cross-term coming from the variance-direction spline derivative.
+     */
+    public double meanVarianceDeltaAt(final double s, final double v) {
+        calculate();
+        final double rho   = process.rho().currentLink().value();
+        final double sigma = process.sigma().currentLink().value();
+        final double alpha = rho * sigma / s;
+        return deltaAt(s, v) + alpha * solver.derivativeY(JQuantMath.log(s), v);
+    }
+
+    /**
+     * Mean-variance gamma at {@code (s, v)} — second derivative wrt spot
+     * with the variance cross-term included.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code FdmHestonSolver::meanVarianceGammaAt}:
+     * {@code gammaAt(s, v) + derivativeYY(x, v) * alpha^2
+     *        + 2 * derivativeXY(x, v) * alpha / s} with
+     * {@code x = log s} and {@code alpha = rho * sigma / s}.
+     */
+    public double meanVarianceGammaAt(final double s, final double v) {
+        calculate();
+        final double x     = JQuantMath.log(s);
+        final double rho   = process.rho().currentLink().value();
+        final double sigma = process.sigma().currentLink().value();
+        final double alpha = rho * sigma / s;
+        return gammaAt(s, v)
+                + solver.derivativeYY(x, v) * alpha * alpha
+                + 2.0 * solver.derivativeXY(x, v) * alpha / s;
     }
 }

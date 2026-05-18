@@ -28,7 +28,6 @@ import org.jquantlib.methods.finitedifferences.operators.FirstDerivativeOp;
 import org.jquantlib.methods.finitedifferences.operators.SecondDerivativeOp;
 import org.jquantlib.methods.finitedifferences.operators.SecondOrderMixedDerivativeOp;
 import org.jquantlib.methods.finitedifferences.operators.TripleBandLinearOp;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -833,20 +832,190 @@ public class FdmLinearOpTest {
     /** {@code testFdmHestonExpress} — Java port of v1.42.1
      * {@code test-suite/fdmlinearop.cpp::testFdmHestonExpress}.
      *
-     * <p>Phase 5e.5b-CFC-d-56: <b>PARTIAL</b>. Requires
-     * {@code FdmHestonExpressCondition}, {@code ExpressPayoff} (local test
-     * helper class in C++), and {@code FdmHestonSolver.meanVarianceDeltaAt}
-     * / {@code meanVarianceGammaAt} — none of which are yet ported.
-     * Body-fill deferred until these production classes land.
+     * <p>Phase 5e.5b-CFC-d-239: body-filled.  Prices a 1-year express
+     * certificate under the Heston model with two semi-annual observation
+     * dates and a single 6-month dividend.  The certificate redeems early
+     * at 108 if the underlying is above the 100 trigger on an observation
+     * date; otherwise it pays a vanilla terminal payoff
+     * ({@code (s >= 100) ? 108 : 100} minus a down-and-in put with
+     * strike 100, barrier 75).
+     *
+     * <p>The local helper classes from the C++ test are reproduced here:
+     * {@link ExpressPayoff} (test-local — non-vanilla payoff) and
+     * {@link org.jquantlib.experimental.finitedifferences.FdmHestonExpressCondition}
+     * (production knock-out step condition).
+     *
+     * <p>Tolerance tier: <b>loose</b> 1e-3 — C++ verbatim ({@code 0.01}
+     * for NPV, {@code 0.001} for delta/gamma/meanVariance*).  Reference
+     * values are the C++ test expectations (which themselves are
+     * cross-validated against a MC reference inside the C++ test-suite).
      */
-    @Ignore("Phase 5e.5b-CFC-d-157: requires (1) FdmHestonExpressCondition "
-            + "(production class — knock-out step condition), (2) FdmDividendHandler "
-            + "step condition, (3) ExpressPayoff (test-local C++ helper class), and "
-            + "(4) FdmHestonSolver.{valueAt,meanVarianceDeltaAt,meanVarianceGammaAt} "
-            + "API — none ported. Substantial body-fill (~150 LOC + 4 production classes).")
     @Test
     public void testFdmHestonExpress() {
-        fail("not implemented");
+        final int[] dim = { 200, 100 };
+
+        final org.jquantlib.methods.finitedifferences.operators.FdmLinearOpLayout index =
+                new org.jquantlib.methods.finitedifferences.operators.FdmLinearOpLayout(dim);
+
+        // Uniform mesh: log-spot ∈ [3.8, log(220)], variance ∈ [0, 1].
+        final double[][] boundaries = {
+                { 3.8, Math.log(220.0) },
+                { 0.0, 1.0 }
+        };
+        final FdmMesher mesher = uniformMesher(dim, boundaries);
+
+        final org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote> s0 =
+                new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(
+                        new org.jquantlib.quotes.SimpleQuote(100.0));
+
+        final org.jquantlib.daycounters.DayCounter dc =
+                new org.jquantlib.daycounters.Actual365Fixed();
+        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> rTS =
+                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        org.jquantlib.testsuite.util.Utilities.flatRate(0.05, dc));
+        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> qTS =
+                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(
+                        org.jquantlib.testsuite.util.Utilities.flatRate(0.0, dc));
+
+        final org.jquantlib.processes.HestonProcess hestonProcess =
+                new org.jquantlib.processes.HestonProcess(
+                        rTS, qTS, s0, 0.04, 2.5, 0.04, 0.66, -0.8);
+
+        // C++ declares an exerciseDate (28-March-2005) but never uses it —
+        // solverDesc.maturity is hard-coded to 1.0.  Match that.
+        final org.jquantlib.time.Date evaluationDate = new org.jquantlib.time.Date(
+                28, org.jquantlib.time.Month.March, 2004);
+        new org.jquantlib.Settings().setEvaluationDate(evaluationDate);
+        // (rTS / qTS were built relative to the global evaluationDate via
+        //  flatRate(rate, dc) — same pattern as testFdmHestonHullWhiteOp.)
+
+        final double[] triggerLevels = { 100.0, 100.0 };
+        final double[] redemptions   = { 108.0, 108.0 };
+        final double[] exerciseTimes = { 0.333, 0.666 };
+
+        final org.jquantlib.instruments.DividendSchedule dividendSchedule =
+                new org.jquantlib.instruments.DividendSchedule();
+        dividendSchedule.add(new org.jquantlib.cashflow.FixedDividend(
+                2.5,
+                evaluationDate.add(new org.jquantlib.time.Period(
+                        6, org.jquantlib.time.TimeUnit.Months))));
+
+        final org.jquantlib.time.Date refDate = rTS.currentLink().referenceDate();
+        final org.jquantlib.daycounters.DayCounter rDc = rTS.currentLink().dayCounter();
+        final org.jquantlib.methods.finitedifferences.utilities.FdmDividendHandler dividendCondition =
+                new org.jquantlib.methods.finitedifferences.utilities.FdmDividendHandler(
+                        dividendSchedule, mesher, refDate, rDc, 0);
+
+        final org.jquantlib.methods.finitedifferences.StepCondition<Array> expressCondition =
+                new org.jquantlib.experimental.finitedifferences.FdmHestonExpressCondition(
+                        redemptions, triggerLevels, exerciseTimes, mesher);
+
+        // Stopping times = (exerciseTimes ∪ dividendTimes), conditions
+        // applied in order (expressCondition, dividendCondition).
+        final List<List<Double>> stoppingTimes = new ArrayList<List<Double>>();
+        final List<Double> exTimes = new ArrayList<Double>();
+        for (final double t : exerciseTimes) {
+            exTimes.add(t);
+        }
+        stoppingTimes.add(exTimes);
+        stoppingTimes.add(new ArrayList<Double>(dividendCondition.dividendTimes()));
+
+        final org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite.Conditions conditions =
+                new org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite.Conditions();
+        conditions.add(expressCondition);
+        conditions.add(dividendCondition);
+
+        final org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite condition =
+                new org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite(
+                        stoppingTimes, conditions);
+
+        final org.jquantlib.instruments.Payoff payoff = new ExpressPayoff();
+        final org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator calculator =
+                new org.jquantlib.methods.finitedifferences.utilities.FdmLogInnerValue(
+                        payoff, mesher, 0);
+
+        final org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet bcSet =
+                new org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet();
+        final org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc solverDesc =
+                new org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc(
+                        mesher, bcSet, condition, calculator,
+                        1.0 /* maturity */, 50 /* tGrid */, 0 /* dampingSteps */);
+
+        final org.jquantlib.methods.finitedifferences.solvers.FdmHestonSolver solver =
+                new org.jquantlib.methods.finitedifferences.solvers.FdmHestonSolver(
+                        hestonProcess, solverDesc);
+
+        final double s  = s0.currentLink().value();
+        final double v0 = 0.04;
+
+        // Tolerances — loose (C++ verbatim).
+        final double tolNpv   = 0.01;
+        final double tolGreek = 0.001;
+
+        final double npv = solver.valueAt(s, v0);
+        if (Math.abs(npv - 101.027) > tolNpv) {
+            fail("Error in calculating PV for Heston Express Certificate"
+                    + "\n  calculated: " + npv
+                    + "\n  expected:   " + 101.027
+                    + "\n  diff:       " + Math.abs(npv - 101.027)
+                    + "\n  tolerance:  " + tolNpv);
+        }
+
+        final double delta = solver.deltaAt(s, v0);
+        if (Math.abs(delta - 0.4181) > tolGreek) {
+            fail("Error in calculating Delta for Heston Express Certificate"
+                    + "\n  calculated: " + delta
+                    + "\n  expected:   " + 0.4181
+                    + "\n  diff:       " + Math.abs(delta - 0.4181)
+                    + "\n  tolerance:  " + tolGreek);
+        }
+
+        final double gamma = solver.gammaAt(s, v0);
+        if (Math.abs(gamma + 0.0400) > tolGreek) {
+            fail("Error in calculating Gamma for Heston Express Certificate"
+                    + "\n  calculated: " + gamma
+                    + "\n  expected:   " + (-0.0400)
+                    + "\n  diff:       " + Math.abs(gamma + 0.0400)
+                    + "\n  tolerance:  " + tolGreek);
+        }
+
+        final double mvDelta = solver.meanVarianceDeltaAt(s, v0);
+        if (Math.abs(mvDelta - 0.6602) > tolGreek) {
+            fail("Error in calculating mean variance Delta for Heston Express Certificate"
+                    + "\n  calculated: " + mvDelta
+                    + "\n  expected:   " + 0.6602
+                    + "\n  diff:       " + Math.abs(mvDelta - 0.6602)
+                    + "\n  tolerance:  " + tolGreek);
+        }
+
+        final double mvGamma = solver.meanVarianceGammaAt(s, v0);
+        if (Math.abs(mvGamma + 0.0316) > tolGreek) {
+            fail("Error in calculating mean variance Gamma for Heston Express Certificate"
+                    + "\n  calculated: " + mvGamma
+                    + "\n  expected:   " + (-0.0316)
+                    + "\n  diff:       " + Math.abs(mvGamma + 0.0316)
+                    + "\n  tolerance:  " + tolGreek);
+        }
+    }
+
+    /**
+     * {@code ExpressPayoff} — Java port of the test-local C++ helper class
+     * from {@code test-suite/fdmlinearop.cpp} lines 118-127.
+     * <p>
+     * Payoff: {@code ((s >= 100) ? 108 : 100) - ((s <= 75) ? (100 - s) : 0)}
+     * — a digital-cash payoff at 108/100 trigger combined with a
+     * down-and-in put struck at 100 with barrier 75.
+     */
+    private static final class ExpressPayoff extends org.jquantlib.instruments.Payoff {
+        @Override
+        public String name()        { return "ExpressPayoff"; }
+        @Override
+        public String description() { return "ExpressPayoff"; }
+        @Override
+        public double get(final double s) {
+            return ((s >= 100.0) ? 108.0 : 100.0)
+                 - ((s <=  75.0) ? (100.0 - s) : 0.0);
+        }
     }
 
     /** {@code testFdmHestonHullWhiteOp} — Java port of v1.42.1
