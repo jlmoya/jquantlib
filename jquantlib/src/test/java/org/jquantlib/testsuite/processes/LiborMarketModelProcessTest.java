@@ -9,6 +9,7 @@ package org.jquantlib.testsuite.processes;
 
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.Settings;
@@ -19,9 +20,17 @@ import org.jquantlib.indexes.Euribor1Y;
 import org.jquantlib.indexes.Euribor6M;
 import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.legacy.libormarkets.LfmHullWhiteParameterization;
+import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
+import org.jquantlib.math.randomnumbers.LowDiscrepancy;
+import org.jquantlib.math.randomnumbers.SobolRsg;
+import org.jquantlib.math.statistics.GeneralStatistics;
+import org.jquantlib.methods.montecarlo.MultiPath;
+import org.jquantlib.methods.montecarlo.MultiPathGenerator;
+import org.jquantlib.methods.montecarlo.Sample;
 import org.jquantlib.processes.LfmCovarianceParameterization;
 import org.jquantlib.processes.LiborForwardModelProcess;
 import org.jquantlib.quotes.RelinkableHandle;
@@ -34,28 +43,30 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.TimeGrid;
 import org.jquantlib.time.TimeUnit;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Java port of {@code test-suite/libormarketmodelprocess.cpp} v1.42.1
  * (327 LOC, 3 test cases).
  *
- * <p>Status (Phase 5e.5b-CFC-d-138):
+ * <p>Status (Phase 5e.5b-CFC-d-228):
  * <ul>
- *   <li>{@code testInitialisation} — <strong>body-filled</strong>. Exercises
+ *   <li>{@code testInitialisation} — body-filled. Exercises
  *       {@link LiborForwardModelProcess#nextIndexReset(double)} as a
  *       std::upper_bound search on the fixing-time vector for every fixing
  *       index across a 5-year sweep of evaluation dates.</li>
- *   <li>{@code testLambdaBootstrapping} — <strong>body-filled</strong>.
- *       Verifies the {@link LfmHullWhiteParameterization} bootstrap reproduces
- *       the expected lambda sequence from C++
+ *   <li>{@code testLambdaBootstrapping} — body-filled. Verifies the
+ *       {@link LfmHullWhiteParameterization} bootstrap reproduces the
+ *       expected lambda sequence from C++
  *       test-suite/libormarketmodelprocess.cpp lines 148-191 to 1e-10
  *       tolerance.</li>
- *   <li>{@code testMonteCarloCapletPricing} — still deferred: the C++ test
- *       uses {@code LowDiscrepancy} (Sobol) RSG; the Java mirror would need
- *       {@code GenericLowDiscrepancy} wired into {@link
- *       org.jquantlib.methods.montecarlo.MultiPathGenerator}.</li>
+ *   <li>{@code testMonteCarloCapletPricing} — body-filled. Wires
+ *       {@link LowDiscrepancy} (Sobol + inverse normal CDF) into a
+ *       {@link MultiPathGenerator} and prices a strip of caplets and
+ *       ratchet caps under both the 1-factor and 3-factor LFM, comparing
+ *       the Monte-Carlo NPVs against C++ cached expectations within the
+ *       generator's reported {@code errorEstimate()} tolerance (plus a
+ *       1e-5 reference error for the ratchet leg, matching C++).</li>
  * </ul>
  *
  * <p>Source: {@code test-suite/libormarketmodelprocess.cpp} v1.42.1 @
@@ -113,21 +124,37 @@ public class LiborMarketModelProcessTest {
                 new ActualActual(ActualActual.Convention.ISDA));
     }
 
-    /** Mirror of C++ {@code makeProcess(volaComp = Matrix())} (lines 87-104).
-     *  The single-factor branch (used by testLambdaBootstrapping) leaves the
-     *  correlation matrix empty so {@link LfmHullWhiteParameterization}
-     *  defaults to {@code factors=1} and an all-ones sqrtCorr. */
+    /** Mirror of C++ {@code makeProcess(volaComp = Matrix())} single-factor
+     *  (lines 87-104). The single-factor branch (used by
+     *  testLambdaBootstrapping) leaves the correlation matrix empty so
+     *  {@link LfmHullWhiteParameterization} defaults to {@code factors=1} and
+     *  an all-ones sqrtCorr. */
     private static LiborForwardModelProcess makeProcess() {
+        return makeProcess(null);
+    }
+
+    /** Mirror of C++ {@code makeProcess(const Matrix& volaComp)}
+     *  (lines 87-104). When {@code volaComp} is non-null/non-empty,
+     *  factors = volaComp.columns() and the correlation matrix is
+     *  {@code volaComp * transpose(volaComp)}. */
+    private static LiborForwardModelProcess makeProcess(final Matrix volaComp) {
+        final boolean hasVolaComp = (volaComp != null) && !volaComp.empty();
+        final int factors = hasVolaComp ? volaComp.columns() : 1;
+
         final IborIndex index = makeIndex();
         final LiborForwardModelProcess process =
                 new LiborForwardModelProcess(LEN, index);
+
+        final Matrix correlation = hasVolaComp
+                ? volaComp.mul(volaComp.transpose())
+                : null;
 
         final LfmCovarianceParameterization fct =
                 new LfmHullWhiteParameterization(
                         process,
                         makeCapVolCurve(new Settings().evaluationDate()),
-                        /* correlation */ null,
-                        /* factors */ 1);
+                        correlation,
+                        factors);
         process.setCovarParam(fct);
         return process;
     }
@@ -252,8 +279,197 @@ public class LiborMarketModelProcessTest {
         }
     }
 
-    @Ignore("Phase 5f.5 — LFM MC caplet pricing pipeline needs Sobol-based "
-            + "LowDiscrepancy RSG factory wired into MultiPathGenerator")
+    /**
+     * Mirror of C++ BOOST_AUTO_TEST_CASE(testMonteCarloCapletPricing)
+     * (test-suite/libormarketmodelprocess.cpp:193-323).
+     *
+     * <p>Pipeline:
+     * <ol>
+     *   <li>Build a 9x3 vola-component matrix (Hull-White factor loadings,
+     *       hard-coded values from C++ source, lines 199-207).</li>
+     *   <li>Construct a 1-factor and a 3-factor {@link
+     *       LiborForwardModelProcess} via {@link #makeProcess(Matrix)}.</li>
+     *   <li>Build a {@link TimeGrid} with 12 intermediate steps over the
+     *       fixing-times vector and locate each fixing within the grid.</li>
+     *   <li>Wire {@link LowDiscrepancy#makeSequenceGenerator(int, long)}
+     *       (Sobol + inverse normal CDF, seed=42) into a
+     *       {@link MultiPathGenerator}, with dimension {@code factors *
+     *       (grid.size()-1)}.</li>
+     *   <li>Draw {@code nrTrails} (250 000 in C++) MultiPaths, extract
+     *       LIBOR rates at each fixing date, price caplets (cap rate 4%)
+     *       and ratchet caps (previous + 25bp), accumulate into
+     *       {@link GeneralStatistics}.</li>
+     *   <li>Compare MC mean against C++ cached expectations within the
+     *       generator-reported {@code errorEstimate()} (plus 1e-5 reference
+     *       error for the ratchet leg).</li>
+     * </ol>
+     */
     @Test
-    public void testMonteCarloCapletPricing() { fail("not implemented"); }
+    public void testMonteCarloCapletPricing() {
+        // factor loadings from C++ test (lines 199-207) - Hull-White
+        // article, orthogonal-eigenvector normalisation.
+        final double[] compValues = {
+                0.85549771,  0.46707264,  0.22353259,
+                0.91915359,  0.37716089,  0.11360610,
+                0.96438280,  0.26413316, -0.01412414,
+                0.97939148,  0.13492952, -0.15028753,
+                0.95970595, -0.00000000, -0.28100621,
+                0.97939148, -0.13492952, -0.15028753,
+                0.96438280, -0.26413316, -0.01412414,
+                0.91915359, -0.37716089,  0.11360610,
+                0.85549771, -0.46707264,  0.22353259
+        };
+        final Matrix volaComp = new Matrix(9, 3);
+        for (int i = 0; i < 9; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                volaComp.set(i, j, compValues[i * 3 + j]);
+            }
+        }
+
+        final LiborForwardModelProcess process1 = makeProcess();
+        final LiborForwardModelProcess process2 = makeProcess(volaComp);
+
+        final List<Double> tmp = process1.fixingTimes();
+        final TimeGrid grid = new TimeGrid(tmp, 12);
+
+        // location[i] = index in grid of fixing-time tmp[i].
+        final int[] location = new int[tmp.size()];
+        for (int i = 0; i < tmp.size(); ++i) {
+            location[i] = -1;
+            for (int g = 0; g < grid.size(); ++g) {
+                if (grid.get(g) == tmp.get(i).doubleValue()) {
+                    location[i] = g;
+                    break;
+                }
+            }
+            if (location[i] < 0) {
+                fail("fixing time " + tmp.get(i)
+                        + " not found in TimeGrid (i=" + i + ")");
+            }
+        }
+
+        // C++: LowDiscrepancy::rsg_type = InverseCumulativeRsg<SobolRsg,
+        //                                  InverseCumulativeNormal>
+        // make_sequence_generator(dimension = factors * (grid.size()-1),
+        //                         seed = 42).
+        final long seed = 42L;
+        final InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal> rsg1 =
+                LowDiscrepancy.makeSequenceGenerator(
+                        process1.factors() * (grid.size() - 1), seed);
+        final InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal> rsg2 =
+                LowDiscrepancy.makeSequenceGenerator(
+                        process2.factors() * (grid.size() - 1), seed);
+
+        final MultiPathGenerator<InverseCumulativeRsg<SobolRsg,
+                InverseCumulativeNormal>> generator1 =
+                new MultiPathGenerator<InverseCumulativeRsg<SobolRsg,
+                        InverseCumulativeNormal>>(process1, grid, rsg1, false);
+        final MultiPathGenerator<InverseCumulativeRsg<SobolRsg,
+                InverseCumulativeNormal>> generator2 =
+                new MultiPathGenerator<InverseCumulativeRsg<SobolRsg,
+                        InverseCumulativeNormal>>(process2, grid, rsg2, false);
+
+        // C++ runs nrTrails = 250 000. We honour that to keep the MC error
+        // bars (errorEstimate()) tight enough to match the C++ cached
+        // expectations within their reported tolerance.
+        final int nrTrails = 250000;
+        final List<GeneralStatistics> stat1 = new ArrayList<GeneralStatistics>(process1.size());
+        final List<GeneralStatistics> stat2 = new ArrayList<GeneralStatistics>(process2.size());
+        final List<GeneralStatistics> stat3 = new ArrayList<GeneralStatistics>(process2.size() - 1);
+        for (int j = 0; j < process1.size(); ++j) {
+            stat1.add(new GeneralStatistics());
+        }
+        for (int j = 0; j < process2.size(); ++j) {
+            stat2.add(new GeneralStatistics());
+        }
+        for (int j = 0; j < process2.size() - 1; ++j) {
+            stat3.add(new GeneralStatistics());
+        }
+
+        for (int trial = 0; trial < nrTrails; ++trial) {
+            final Sample<MultiPath> path1 = generator1.next();
+            final Sample<MultiPath> path2 = generator2.next();
+
+            final double[] rates1 = new double[LEN];
+            final double[] rates2 = new double[LEN];
+            for (int j = 0; j < process1.size(); ++j) {
+                rates1[j] = path1.value().get(j).get(location[j]);
+                rates2[j] = path2.value().get(j).get(location[j]);
+            }
+
+            final double[] dis1 = process1.discountBond(rates1);
+            final double[] dis2 = process2.discountBond(rates2);
+
+            for (int k = 0; k < process1.size(); ++k) {
+                final double accrualPeriod = process1.accrualEndTimes().get(k)
+                                           - process1.accrualStartTimes().get(k);
+                // caplet payoff, cap rate at 4%
+                final double payoff1 = Math.max(rates1[k] - 0.04, 0.0) * accrualPeriod;
+                final double payoff2 = Math.max(rates2[k] - 0.04, 0.0) * accrualPeriod;
+                stat1.get(k).add(dis1[k] * payoff1);
+                stat2.get(k).add(dis2[k] * payoff2);
+
+                if (k != 0) {
+                    // ratchet cap payoff
+                    final double payoff3 = Math.max(
+                            rates2[k] - (rates2[k - 1] + 0.0025), 0.0)
+                            * accrualPeriod;
+                    stat3.get(k - 1).add(dis2[k] * payoff3);
+                }
+            }
+        }
+
+        // C++ cached expectations (lines 276-283).
+        final double[] capletNpv = {
+                0.000000000000, 0.000002841629, 0.002533279333,
+                0.009577143571, 0.017746502618, 0.025216116835,
+                0.031608230268, 0.036645683881, 0.039792254012,
+                0.041829864365
+        };
+        final double[] ratchetNpv = {
+                0.0082644895, 0.0082754754, 0.0082159966,
+                0.0082982822, 0.0083803357, 0.0084366961,
+                0.0084173270, 0.0081803406, 0.0079533814
+        };
+
+        for (int k = 0; k < process1.size(); ++k) {
+            final double calculated1 = stat1.get(k).mean();
+            final double tolerance1  = stat1.get(k).errorEstimate();
+            final double expected    = capletNpv[k];
+
+            if (Math.abs(calculated1 - expected) > tolerance1) {
+                fail("Failed to reproduce expected caplet NPV (1-factor)"
+                        + "\n    k:          " + k
+                        + "\n    calculated: " + calculated1
+                        + "\n    error int:  " + tolerance1
+                        + "\n    expected:   " + expected);
+            }
+
+            final double calculated2 = stat2.get(k).mean();
+            final double tolerance2  = stat2.get(k).errorEstimate();
+
+            if (Math.abs(calculated2 - expected) > tolerance2) {
+                fail("Failed to reproduce expected caplet NPV (3-factor)"
+                        + "\n    k:          " + k
+                        + "\n    calculated: " + calculated2
+                        + "\n    error int:  " + tolerance2
+                        + "\n    expected:   " + expected);
+            }
+
+            if (k != 0) {
+                final double calculated3 = stat3.get(k - 1).mean();
+                final double tolerance3  = stat3.get(k - 1).errorEstimate();
+                final double refError    = 1e-5; // 1e-5 error bars on the reference
+                final double expectedRat = ratchetNpv[k - 1];
+
+                if (Math.abs(calculated3 - expectedRat) > tolerance3 + refError) {
+                    fail("Failed to reproduce expected ratchet NPV"
+                            + "\n    k:          " + k
+                            + "\n    calculated: " + calculated3
+                            + "\n    error int:  " + (tolerance3 + refError)
+                            + "\n    expected:   " + expectedRat);
+                }
+            }
+        }
+    }
 }
