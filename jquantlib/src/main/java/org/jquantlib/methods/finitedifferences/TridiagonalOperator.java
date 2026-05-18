@@ -209,52 +209,107 @@ public class TridiagonalOperator implements Operator {
 //		low.div(a);
 //		return new TridiagonalOperator(low, mid, high);
 //	}
-//
-//	/**
-//	 * Solve linear system with SOR approach
-//	 */
-//    @Override
-//	public final Array SOR(final Array rhs, int tol) {
-//		if (rhs.length != size())
-//			throw new IllegalStateException("rhs has the wrong size");
-//
-//		// initial guess
-//		Array result = rhs;
-//
-//		// solve tridiagonal system with SOR technique
-//		int sorIteration, i;
-//		double omega = 1.5;
-//		double err = 2.0 * tol;
-//		double temp;
-//		for (sorIteration = 0; err > tol; sorIteration++) {
-//			if (sorIteration > 100000) {
-//				throw new IllegalStateException("tolerance (" + tol
-//						+ ") not reached in " + sorIteration + " iterations. "
-//						+ "The error still is " + err);
-//			}
-//
-//			temp = omega * (rhs.first() - upperDiagonal.first() * result.get(1) - diagonal.first() * result.first()) / diagonal.first();
-//			err = temp * temp;
-//			result.set(0, result.first() + temp);
-//
-//			for (i = 1; i < size() - 1; i++) {
-//				temp = omega
-//						* (rhs.get(i) - upperDiagonal.get(i)
-//								* result.get(i + 1) - diagonal.get(i)
-//								* result.get(i) - lowerDiagonal.get(i - 1)
-//								* result.get(i - 1)) / diagonal.get(i);
-//				err += temp * temp;
-//				result.set(i, result.get(i) + temp);
-//			}
-//
-//			temp = omega * (rhs.get(i) - diagonal.get(i) * result.get(i) - lowerDiagonal.get(i - 1) * result.get(i - 1)) / diagonal.get(i);
-//			err += temp * temp;
-//			result.set(i, result.get(i) + temp);
-//		}
-//
-//		return result;
-//
-//	}
+    /**
+     * Solve linear system with SOR (Successive Over-Relaxation) approach.
+     * <p>
+     * Java port of QuantLib v1.42.1
+     * {@code ql/methods/finitedifferences/tridiagonaloperator.cpp}
+     * {@code Array TridiagonalOperator::SOR(const Array& rhs, Real tol) const}.
+     * Uses fixed relaxation factor omega=1.5 and iteration cap 100000 (mirrors
+     * C++ exactly).
+     */
+    public final Array SOR(final Array rhs, final double tol) {
+        if (size() == 0) {
+            throw new IllegalStateException("uninitialized TridiagonalOperator");
+        }
+        if (rhs.size() != size()) {
+            throw new IllegalStateException("rhs vector of size " + rhs.size()
+                    + " instead of " + size());
+        }
+
+        // initial guess: clone rhs so caller's rhs is not mutated
+        // (C++ uses `Array result = rhs;` which is a value-copy)
+        final Array result = rhs.clone();
+
+        // solve tridiagonal system with SOR technique
+        final double omega = 1.5;
+        double err = 2.0 * tol;
+        double temp;
+        int i = 0;
+        for (int sorIteration = 0; err > tol; ++sorIteration) {
+            if (sorIteration >= 100000) {
+                throw new IllegalStateException("tolerance (" + tol
+                        + ") not reached in " + sorIteration + " iterations. "
+                        + "The error still is " + err);
+            }
+
+            temp = omega * (rhs.first()
+                    - upperDiagonal.first() * result.get(1)
+                    - diagonal.first()      * result.first()) / diagonal.first();
+            err = temp * temp;
+            result.set(0, result.first() + temp);
+
+            for (i = 1; i < size() - 1; ++i) {
+                temp = omega * (rhs.get(i)
+                        - upperDiagonal.get(i)   * result.get(i + 1)
+                        - diagonal.get(i)        * result.get(i)
+                        - lowerDiagonal.get(i - 1) * result.get(i - 1)) / diagonal.get(i);
+                err += temp * temp;
+                result.set(i, result.get(i) + temp);
+            }
+
+            // i == size() - 1 here (last row)
+            temp = omega * (rhs.get(i)
+                    - diagonal.get(i)        * result.get(i)
+                    - lowerDiagonal.get(i - 1) * result.get(i - 1)) / diagonal.get(i);
+            err += temp * temp;
+            result.set(i, result.get(i) + temp);
+        }
+
+        return result;
+    }
+
+    /**
+     * Solve linear system for a given right-hand side, writing into the
+     * supplied {@code result} array (no allocation).
+     * <p>
+     * Java port of QuantLib v1.42.1 {@code void TridiagonalOperator::solveFor(
+     * const Array& rhs, Array& result) const}. As in C++, {@code rhs} and
+     * {@code result} may alias (the same Array); in that case {@code rhs} is
+     * effectively overwritten.
+     */
+    public final void solveFor(final Array rhs, final Array result) {
+        if (size() == 0) {
+            throw new IllegalStateException("uninitialized TridiagonalOperator");
+        }
+        if (rhs.size() != size()) {
+            throw new IllegalStateException("rhs vector of size " + rhs.size()
+                    + " instead of " + size());
+        }
+
+        final Array tmp = new Array(size());
+
+        double bet = diagonal.first();
+        if (bet == 0.0) {
+            throw new IllegalStateException("diagonal's first element ("
+                    + bet + ") cannot be close to zero");
+        }
+        result.set(0, rhs.first() / bet);
+        int j;
+        for (j = 1; j <= size() - 1; ++j) {
+            tmp.set(j, upperDiagonal.get(j - 1) / bet);
+            bet = diagonal.get(j) - lowerDiagonal.get(j - 1) * tmp.get(j);
+            if (bet == 0.0) {
+                throw new IllegalStateException("division by zero");
+            }
+            result.set(j, (rhs.get(j) - lowerDiagonal.get(j - 1) * result.get(j - 1)) / bet);
+        }
+        // cannot be j>=0 with Size j
+        for (j = size() - 2; j > 0; --j) {
+            result.set(j, result.get(j) - tmp.get(j + 1) * result.get(j + 1));
+        }
+        result.set(0, result.first() - tmp.get(1) * result.get(1));
+    }
 
 	/**
 	 * Identity instance
