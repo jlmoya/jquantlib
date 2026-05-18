@@ -62,11 +62,6 @@ public class BrownianBridgeTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase Body-Fill-2: body-filled, but still fails with cov max-error ~0.54 "
-            + "(C++ tolerance is 2.5e-4). The Bug-Fix #3 SequenceStatistics aliasing fix "
-            + "is necessary but not sufficient — divergence appears to come from another "
-            + "layer (likely Sobol/InverseCumulativeNormal/BrownianBridge interaction "
-            + "between Java and C++ v1.42.1). Body retained for future debugging.")
     @Test
     public void testVariates() {
         // Java port of QuantLib v1.42.1 test-suite/brownianbridge.cpp::testVariates.
