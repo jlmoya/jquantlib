@@ -36,7 +36,6 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.calendars.NullCalendar;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -53,13 +52,11 @@ import org.junit.Test;
  *       EndB1) across spot / strike / cover-event-date grids.
  *   <li>{@link #testAnalyticEnginePutOption()} — 20 reference cases
  *       (put, UpOut, EndB1).
- * </ul>
- *
- * <p><strong>Carry-forward to Phase 5k.5</strong>:
- * <ul>
- *   <li>testPutCallSymmetry — symmetry across barrier types is unimplemented;
- *       awaiting a comprehensive review of which {@link PartialBarrier} values
- *       in Java map to {@code PartialBarrier::Start} in C++.
+ *   <li>{@link #testPutCallSymmetry()} — Phase 5e.5b-CFC-d Round-3
+ *       un-ignore: the C++ test uses only {@code PartialBarrier::EndB1}
+ *       (which Java has as {@link PartialBarrier#EndB1}). 10 cases
+ *       cross-validating Bjerksund-Stensland-style put-call symmetry across
+ *       DownOut/UpOut pairings.
  * </ul>
  *
  * <p>Source: {@code test-suite/partialtimebarrieroption.cpp} v1.42.1
@@ -70,11 +67,6 @@ public class PartialTimeBarrierOptionTest {
     public PartialTimeBarrierOptionTest() {
         QL.info("::::: " + getClass().getSimpleName() + " :::::");
     }
-
-    private static final String REASON_SYMMETRY =
-            "Phase 5k.5 — partial-time barrier put-call symmetry needs "
-          + "comprehensive review of how Java {@link PartialBarrier} maps to "
-          + "C++ PartialBarrier::Start (Java has Start / EndB1 / EndB2 only).";
 
     /** Single C++ {@code TestCase} row. */
     private static final class TestCase {
@@ -92,11 +84,11 @@ public class PartialTimeBarrierOptionTest {
         }
     }
 
-    private GeneralizedBlackScholesProcess makeBSMProcess(
-            final Date today, final SimpleQuote spot,
+    private static GeneralizedBlackScholesProcess makeBSMProcess(
+            final Date today, final SimpleQuote spotQuote,
             final double q, final double r, final double v,
             final DayCounter dc) {
-        final Handle<? extends Quote> spotH = new Handle<SimpleQuote>(spot);
+        final Handle<Quote> spotH = new Handle<Quote>(spotQuote);
         final Calendar cal = new NullCalendar();
         final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
                 new FlatForward(today, q, dc, Compounding.Continuous, Frequency.Annual));
@@ -255,7 +247,149 @@ public class PartialTimeBarrierOptionTest {
         assertTrue("testAnalyticEnginePutOption passed " + cases.length + " cases", true);
     }
 
-    @Ignore(REASON_SYMMETRY)
+    /**
+     * Single PutCall-symmetry test row.
+     */
+    private static final class SymmetryCase {
+        final double callStrike;
+        final double callBarrier;
+        final BarrierType callType;
+        final double putStrike;
+        final double putBarrier;
+        final int days;
+        final BarrierType putType;
+
+        SymmetryCase(final double callStrike, final double callBarrier,
+                     final BarrierType callType,
+                     final double putStrike, final double putBarrier,
+                     final int days, final BarrierType putType) {
+            this.callStrike = callStrike;
+            this.callBarrier = callBarrier;
+            this.callType = callType;
+            this.putStrike = putStrike;
+            this.putBarrier = putBarrier;
+            this.days = days;
+            this.putType = putType;
+        }
+    }
+
+    /**
+     * Port of C++ {@code partialtimebarrieroption.cpp::testPutCallSymmetry}
+     * (lines 230-324, v1.42.1).
+     *
+     * <p>Cross-validates the partial-time barrier put-call symmetry
+     * relation P = (Kp/S) * C, where Kp is the put strike, S the spot,
+     * and C the symmetric-pair call NPV. Uses {@link PartialBarrier#EndB1}
+     * (the only enum value the C++ test exercises).
+     *
+     * <p>Phase 5e.5b-CFC-d Round-3 un-ignore: the original
+     * {@code REASON_SYMMETRY} reason text was inaccurate — Java's
+     * {@link PartialBarrier} has all three values (Start, EndB1, EndB2),
+     * and the C++ test only exercises {@code EndB1}.
+     */
     @Test
-    public void testPutCallSymmetry() { fail("not implemented"); }
+    public void testPutCallSymmetry() {
+        QL.info("Testing put-call symmetry for the partial-time barrier option...");
+
+        final Date today = new Date(15, Month.January, 2026);
+        new Settings().setEvaluationDate(today);
+
+        final DayCounter dc = new Actual360();
+        final Date maturity = today.add(360);
+        final Exercise exercise = new EuropeanExercise(maturity);
+        final double r = 0.01;
+        final double q = 0.0;
+        final double rebate = 0.0;
+        final double spotPrice = 100.0;
+        final double v = 0.25;
+
+        final Calendar cal = new NullCalendar();
+
+        final SimpleQuote spot = new SimpleQuote();
+        final Handle<Quote> underlying = new Handle<Quote>(spot);
+
+        // Call leg uses (q, r); put leg swaps to (r, q).
+        final Handle<YieldTermStructure> dividendTSCall = new Handle<YieldTermStructure>(
+                new FlatForward(today, q, dc, Compounding.Continuous, Frequency.Annual));
+        final Handle<YieldTermStructure> riskFreeTSCall = new Handle<YieldTermStructure>(
+                new FlatForward(today, r, dc, Compounding.Continuous, Frequency.Annual));
+        final Handle<YieldTermStructure> dividendTSPut = new Handle<YieldTermStructure>(
+                new FlatForward(today, r, dc, Compounding.Continuous, Frequency.Annual));
+        final Handle<YieldTermStructure> riskFreeTSPut = new Handle<YieldTermStructure>(
+                new FlatForward(today, q, dc, Compounding.Continuous, Frequency.Annual));
+        final Handle<BlackVolTermStructure> blackVolTS = new Handle<BlackVolTermStructure>(
+                new BlackConstantVol(today, cal, v, dc));
+
+        final GeneralizedBlackScholesProcess callProcess =
+                new GeneralizedBlackScholesProcess(underlying,
+                        dividendTSCall, riskFreeTSCall, blackVolTS);
+        final GeneralizedBlackScholesProcess putProcess =
+                new GeneralizedBlackScholesProcess(underlying,
+                        dividendTSPut, riskFreeTSPut, blackVolTS);
+        final AnalyticPartialTimeBarrierOptionEngine callEngine =
+                new AnalyticPartialTimeBarrierOptionEngine(callProcess);
+        final AnalyticPartialTimeBarrierOptionEngine putEngine =
+                new AnalyticPartialTimeBarrierOptionEngine(putProcess);
+
+        final SymmetryCase[] cases = new SymmetryCase[] {
+            new SymmetryCase(105.2631, 95.2380, BarrierType.DownOut,
+                             95.0,    105.0,   1,   BarrierType.UpOut),
+            new SymmetryCase(105.2631, 95.2380, BarrierType.DownOut,
+                             95.0,    105.0,   90,  BarrierType.UpOut),
+            new SymmetryCase(105.2631, 95.2380, BarrierType.DownOut,
+                             95.0,    105.0,   180, BarrierType.UpOut),
+            new SymmetryCase(105.2631, 95.2380, BarrierType.DownOut,
+                             95.0,    105.0,   270, BarrierType.UpOut),
+            new SymmetryCase(105.2631, 95.2380, BarrierType.DownOut,
+                             95.0,    105.0,   359, BarrierType.UpOut),
+
+            new SymmetryCase(110.0,   120.0,   BarrierType.UpOut,
+                             90.9090, 83.3333, 1,   BarrierType.DownOut),
+            new SymmetryCase(110.0,   120.0,   BarrierType.UpOut,
+                             90.9090, 83.3333, 90,  BarrierType.DownOut),
+            new SymmetryCase(110.0,   120.0,   BarrierType.UpOut,
+                             90.9090, 83.3333, 180, BarrierType.DownOut),
+            new SymmetryCase(110.0,   120.0,   BarrierType.UpOut,
+                             90.9090, 83.3333, 270, BarrierType.DownOut),
+            new SymmetryCase(110.0,   120.0,   BarrierType.UpOut,
+                             90.9090, 83.3333, 359, BarrierType.DownOut)
+        };
+
+        final double tolerance = 1e-4;
+        for (final SymmetryCase c : cases) {
+            final Date coverEventDate = today.add(c.days);
+
+            final StrikedTypePayoff putPayoff =
+                    new PlainVanillaPayoff(Option.Type.Put, c.putStrike);
+            final PartialTimeBarrierOption putOption =
+                    new PartialTimeBarrierOption(c.putType, PartialBarrier.EndB1,
+                            c.putBarrier, rebate, coverEventDate, putPayoff, exercise);
+            putOption.setPricingEngine(putEngine);
+
+            final StrikedTypePayoff callPayoff =
+                    new PlainVanillaPayoff(Option.Type.Call, c.callStrike);
+            final PartialTimeBarrierOption callOption =
+                    new PartialTimeBarrierOption(c.callType, PartialBarrier.EndB1,
+                            c.callBarrier, rebate, coverEventDate, callPayoff, exercise);
+            callOption.setPricingEngine(callEngine);
+
+            spot.setValue(spotPrice);
+            final double putValue = putOption.NPV();
+            final double callValue = callOption.NPV();
+            final double callAmount = c.putStrike / spotPrice;
+            final double error = Math.abs(putValue - callAmount * callValue);
+            if (error > tolerance) {
+                fail("Failed to reproduce put-call symmetry for the partial-time barrier options"
+                        + "\n    days:        " + c.days
+                        + "\n    putType:     " + c.putType
+                        + "\n    callType:    " + c.callType
+                        + "\n    putValue:    " + putValue
+                        + "\n    callValue:   " + callValue
+                        + "\n    callAmount:  " + callAmount
+                        + "\n    error:       " + error
+                        + "\n    tolerance:   " + tolerance);
+            }
+        }
+        assertTrue("testPutCallSymmetry passed " + cases.length + " cases", true);
+    }
 }
