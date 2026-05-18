@@ -22,10 +22,29 @@
 
 package org.jquantlib.testsuite.patterns;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.indexes.Euribor;
+import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.optionlet.StrippedOptionlet;
+import org.jquantlib.termstructures.volatilities.optionlet.StrippedOptionletAdapter;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.time.BusinessDayConvention;
+import org.jquantlib.time.Date;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.ObservableSettings;
 import org.jquantlib.util.Observer;
@@ -162,11 +181,88 @@ public class ObservableTest {
     public void testMultiThreadingGlobalSettings() {
     }
 
-    @Ignore("Phase 5a.5 carry-forward - Observer.deepUpdate() is now present but "
-            + "the test body wiring requires StrippedOptionletAdapter + IborIndex + "
-            + "FlatForward composition; full port deferred.")
+    /**
+     * Java port of C++ v1.42.1 {@code testDeepUpdate} (test-suite/observable.cpp).
+     *
+     * <p>Exercises {@link Observer#deepUpdate()} cascading through a
+     * {@link StrippedOptionletAdapter} backed by a {@link StrippedOptionlet}
+     * whose vol matrix references a single shared {@link SimpleQuote}.
+     *
+     * <p>Under {@code ObservableSettings.disableUpdates(true)} (deferred mode),
+     * the quote's {@code setValue} fires no notification. The adapter caches
+     * the initial vol value; {@code update()} invalidates only the adapter's
+     * cache (not the underlying {@code StrippedOptionlet}'s own cache, which
+     * keeps the stale value); only {@code deepUpdate()} cascades through and
+     * forces a re-read of the underlying quotes.
+     *
+     * <p>Mirrors {@code Real v1 = 0.20, v2 = 0.20, v3 = 0.20, v4 = 0.21}.
+     */
     @Test
     public void testDeepUpdate() {
+        QL.info("Testing deep update of observers...");
+
+        final Date refDate = new Settings().evaluationDate();
+
+        ObservableSettings.instance().disableUpdates(true);
+        try {
+            // FlatForward(settlementDays=0, NullCalendar(), 0.02, Actual365Fixed())
+            final FlatForward flatForward = new FlatForward(
+                    0, new NullCalendar(), 0.02, new Actual365Fixed());
+            final Handle<YieldTermStructure> yts =
+                    new Handle<YieldTermStructure>(flatForward);
+            // Euribor(3*Months, yts) — mirrors C++ ext::make_shared<Euribor>(3*Months, yts).
+            final IborIndex ibor = new Euribor(new Period(3, TimeUnit.Months), yts);
+            final SimpleQuote q = new SimpleQuote(0.20);
+            final Handle<Quote> qHandle = new Handle<Quote>(q);
+
+            // strikes = {0.01, 0.02}
+            final List<Double> strikes = new ArrayList<Double>(2);
+            strikes.add(0.01);
+            strikes.add(0.02);
+
+            // dates = {refDate + 90, refDate + 180}
+            final List<Date> dates = new ArrayList<Date>(2);
+            dates.add(refDate.add(90));
+            dates.add(refDate.add(180));
+
+            // 2x2 vol-quote matrix, all rows hold the same shared quote.
+            final List<List<Handle<? extends Quote>>> quotes =
+                    new ArrayList<List<Handle<? extends Quote>>>(2);
+            for (int i = 0; i < 2; ++i) {
+                final List<Handle<? extends Quote>> row =
+                        new ArrayList<Handle<? extends Quote>>(2);
+                row.add(qHandle);
+                row.add(qHandle);
+                quotes.add(row);
+            }
+
+            final StrippedOptionlet stripped = StrippedOptionlet.ofUniformStrikes(
+                    0, new NullCalendar(), BusinessDayConvention.Unadjusted,
+                    ibor, dates, strikes, quotes, new Actual365Fixed());
+
+            final StrippedOptionletAdapter vol = new StrippedOptionletAdapter(stripped);
+
+            final Date queryDate = refDate.add(100);
+            final double v1 = vol.volatility(queryDate, 0.01);
+            q.setValue(0.21);
+            final double v2 = vol.volatility(queryDate, 0.01);
+            vol.update();
+            final double v3 = vol.volatility(queryDate, 0.01);
+            vol.deepUpdate();
+            final double v4 = vol.volatility(queryDate, 0.01);
+
+            // QL_CHECK_CLOSE(v?, expected, 1E-10): boost relative-percent tolerance,
+            // so the absolute tolerance is 1E-10 * 0.01 = 1E-12. We use a slightly
+            // looser absolute tolerance — still tight tier — to absorb cubic
+            // smile-section interpolation slack.
+            final double tol = 1.0E-12;
+            assertEquals("v1 (initial cached vol)", 0.20, v1, tol);
+            assertEquals("v2 (deferred quote update; cache unchanged)", 0.20, v2, tol);
+            assertEquals("v3 (adapter.update() does not cascade)", 0.20, v3, tol);
+            assertEquals("v4 (deepUpdate() forces re-read from quote)", 0.21, v4, tol);
+        } finally {
+            ObservableSettings.instance().enableUpdates();
+        }
     }
 
     /**
