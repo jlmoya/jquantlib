@@ -22,6 +22,7 @@
 package org.jquantlib.methods.finitedifferences.meshers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.jquantlib.math.Ops;
@@ -139,11 +140,29 @@ public class FdmHestonVarianceMesher extends Fdm1dMesher {
         }
 
         if (!ok) {
-            // fallback: uniform mesh
+            // fallback: uniform mesh.  Phase 5e.5b-CFC-d-213 widening:
+            // the literal C++ fallback bound (max(v0+4*vol, mean+4*vol),
+            // lower symmetric) collapses to a sub-1e-5 window when
+            // mixSigma is tiny (e.g. degenerate-Heston sigma_v=1e-6 used
+            // by testFdmHestonHullWhiteEngine) which makes the FD
+            // operator's variance-direction discretization unstable
+            // (1/dv^2 ~ 1e10+).  Widen the fallback to at least
+            // {@code max(theta + 4*stddev, 1.5*v0)} as anticipated in
+            // the test's pre-existing carry-forward note.  This is a
+            // Java-only divergence from C++ v1.42.1: C++'s
+            // InverseNonCentralCumulativeChiSquare implementation
+            // converges at very large df/ncp where Java's throws, so
+            // C++ rarely enters this fallback in the first place.
             final double vol        = mixSigma * Math.sqrt(theta / (2.0 * kappa));
             final double mean       = theta;
-            final double upperBound = Math.max(v0 + 4.0 * vol, mean + 4.0 * vol);
-            final double lowerBound = Math.max(0.0, Math.min(v0 - 4.0 * vol, mean - 4.0 * vol));
+            final double upperBoundRaw =
+                    Math.max(v0 + 4.0 * vol, mean + 4.0 * vol);
+            final double lowerBoundRaw =
+                    Math.max(0.0, Math.min(v0 - 4.0 * vol, mean - 4.0 * vol));
+            final double upperBound =
+                    Math.max(upperBoundRaw, 2.0 * v0);
+            final double lowerBound =
+                    Math.max(0.0, Math.min(lowerBoundRaw, 0.5 * v0));
             for (int i = 0; i < size; ++i) {
                 pGrid[i] = i / (size - 1.0);
                 vGrid[i] = lowerBound + i * (upperBound - lowerBound) / (size - 1.0);
@@ -154,10 +173,16 @@ public class FdmHestonVarianceMesher extends Fdm1dMesher {
         final double skewHint = (kappa != 0.0)
                 ? Math.max(1.0, mixSigma / kappa) : 1.0;
 
-        // Sort pGrid (should already be sorted, but ensure)
-        // Build arrays for interpolation
+        // Sort pGrid for use with LinearInterpolation. pGrid comes out of the
+        // bucket-averaging step (sorted by v, then averaged) — for moderate /
+        // large vol-of-vol the probability column is roughly monotone in v,
+        // but for small vol-of-vol or degenerate (sigma~1e-6) parameters the
+        // bucket-averaged p column can have ties / mild non-monotonicities
+        // that trip LinearInterpolation's "unsorted values on array X" guard.
+        // Mirrors C++ fdmhestonvariancemesher.cpp line 125
+        // (std::sort(pGrid.begin(), pGrid.end())).
         final double[] pSorted = pGrid.clone();
-        // pGrid is already sorted (from sorted grid or linspace)
+        Arrays.sort(pSorted);
 
         final double pFront = pSorted[0];
         final double pBack  = pSorted[size - 1];
@@ -190,7 +215,11 @@ public class FdmHestonVarianceMesher extends Fdm1dMesher {
         }
         this.volaEstimate = estimate;
 
-        // Pin v0 to nearest grid point
+        // Pin v0 to nearest grid point (mirrors C++ lines 130-138). When v0
+        // falls inside the chi-square-derived mesh, snap the nearer of the
+        // two bracketing grid points to v0 so that downstream interpolants
+        // hit a mesh node rather than extrapolating.
+        boolean pinned = false;
         for (int i = 1; i < size; ++i) {
             if (vGrid[i - 1] <= v0 && vGrid[i] >= v0) {
                 if (Math.abs(vGrid[i - 1] - v0) < Math.abs(vGrid[i] - v0)) {
@@ -198,7 +227,27 @@ public class FdmHestonVarianceMesher extends Fdm1dMesher {
                 } else {
                     vGrid[i] = v0;
                 }
+                pinned = true;
                 break;
+            }
+        }
+        // Phase 5e.5b-CFC-d-213: Edge case beyond C++ pin coverage.  For
+        // small vol-of-vol (sigma~1e-3 or smaller) the non-central
+        // chi-square is sharply peaked at v0 and the per-slice
+        // {@code qMax = max(v0, ...)} guarantees v0 is the upper bound of
+        // each slice — but bucket averaging across {@code size*tAvgSteps}
+        // (v, p) pairs leaves the last bucket's mean strictly below v0.
+        // C++'s pin loop above then misses (vGrid[size-1] < v0), v0 is
+        // outside the mesh, and Fdm2DimSolver's BicubicSpline rejects the
+        // v0 evaluation as extrapolation.  Snap the nearest end-point to
+        // v0 in this case so the mesh always contains the evaluation point.
+        // Symmetric fallback for v0 below vGrid[0] is preserved for safety,
+        // though that branch is not hit by any current Heston test.
+        if (!pinned) {
+            if (v0 > vGrid[size - 1]) {
+                vGrid[size - 1] = v0;
+            } else if (v0 < vGrid[0]) {
+                vGrid[0] = v0;
             }
         }
 

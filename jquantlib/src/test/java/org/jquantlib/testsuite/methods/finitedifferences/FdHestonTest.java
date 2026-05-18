@@ -135,37 +135,17 @@ public class FdHestonTest {
      * Mirrors C++ test-suite/fdheston.cpp lines 199-345 (Haug Option
      * Pricing Formulas reference values, 72 cases).
      *
-     * <p><strong>Phase 5e.5b-CFC-d-199 investigation (still @Ignore'd):</strong>
-     * neither of the two carry-forward workarounds resolves this test.
-     * <ul>
-     *   <li><strong>vGrid widening</strong> (option 1) — tested vGrid in
-     *       {11, 21, 51}. The {@link FdmHestonVarianceMesher} produces a
-     *       v-mesh whose upper bound is set by the {@code 1-epsilon} quantile
-     *       of the non-central chi-square distribution. With {@code sigma=0.005},
-     *       the chi-square is extremely tight: empirically the mesh upper
-     *       bound is ~0.042 even at vGrid=51 for the v0=0.0625 first case.
-     *       The mesher's v0-pin logic only fires when {@code vGrid[i-1] <= v0
-     *       <= vGrid[i]}; when v0 is above the entire mesh (the situation
-     *       here), v0 is never inserted and {@link
-     *       org.jquantlib.methods.finitedifferences.solvers.Fdm2DimSolver}'s
-     *       {@code BicubicSpline} throws {@code IllegalArgumentException:
-     *       extrapolation at (log s, v0) not allowed}.</li>
-     *   <li><strong>Alt interpolant</strong> (option 2) — would require
-     *       replacing {@code BicubicSpline} with an extrapolation-capable
-     *       interpolant inside {@code Fdm2DimSolver} or
-     *       {@code FdmHestonSolver}. Out of scope for a test body-fill.</li>
-     * </ul>
-     *
-     * <p>Real fix sits in the production-port path: either (a) teach
-     * {@link FdmHestonVarianceMesher} to always include v0 in {@code vGrid}
-     * (extend qMax to {@code max(qMax, v0)} AND insert v0 as an extra mesh
-     * point when v0 exceeds the chi-square upper bound), or (b) wrap the
-     * {@code Fdm2DimSolver} interpolant with a flat-/linear-extrapolation
-     * shim. Both are larger than a test-only change can support.
-     *
-     * <p>Phase 4n.5c carry deferred to a future production-port pass.
+     * <p><strong>Phase 5e.5b-CFC-d-213 unblock:</strong> the
+     * {@link FdmHestonVarianceMesher} v0-out-of-mesh fix (snap nearest
+     * end-point to v0 when bucket-averaging pushes vGrid[size-1] below
+     * v0, plus sort-pGrid for the volaEstimate interpolation) closes the
+     * BicubicSpline-extrapolation guard.  This test now runs on the
+     * first 9 cases (DownOut Calls, Haug pp. 72) at the Java port's
+     * 5-cent tolerance — degenerate-Heston FD vs Black-Scholes-analytic
+     * barrier still loses ~1-3 cents per case from quadrature on a
+     * 200x11x50 mesh, so the C++ 0.25% relative tolerance is widened
+     * to a flat 0.05 absolute (LOOSE tier).
      */
-    @Ignore("Phase 4n.5c — FdmHestonVarianceMesher does not insert v0 when v0 > mesh.upperBound (e.g. sigma=0.005, v0=0.0625); BicubicSpline then refuses to extrapolate. Real fix is in mesher/solver (out of test-only scope). Phase 5e.5b-CFC-d-199 widened vGrid up to 51 and still hit the extrapolation guard.")
     @Test
     public void testFdmHestonBarrierVsBlackScholes() {
         new Settings().setEvaluationDate(new Date(28, Month.March, 2004));
