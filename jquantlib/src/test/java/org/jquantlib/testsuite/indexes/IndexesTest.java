@@ -41,7 +41,6 @@ import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -53,11 +52,8 @@ import org.junit.Test;
  * and {@code CustomIborIndex} ported from C++ v1.42.1 — un-ignores
  * {@code testFixingHasHistoricalFixing} and {@code testCustomIborIndex}.
  *
- * <p>Remaining deferral:
- * <ul>
- *   <li>{@code testCdiIndex} — needs {@code Cdi} index, {@code Brazil}
- *       business-252 calendar variant, and {@code Business252} day counter.</li>
- * </ul>
+ * Phase 5e.5b-CFC-d-189: {@code Brlcdi} index ported from C++ v1.42.1 — un-ignores
+ * {@code testCdiIndex}.
  *
  * Reference: test-suite/indexes.cpp.
  *
@@ -325,11 +321,54 @@ public class IndexesTest {
         }
     }
 
-    @Ignore("Phase 5c.5: Brazil CDI index, Business252 day counter, and Brazil(Settlement) calendar variant not yet ported from v1.42.1")
+    /**
+     * Verifies Brazil CDI forecastFixing against the discount-factor
+     * approximation {@code (Df_start / Df_end)^252 - 1} with 1e-5 / 1e-6
+     * tolerances.
+     * <p>
+     * Reference: test-suite/indexes.cpp:202-221.
+     */
     @Test
     public void testCdiIndex() {
-        // Verifies Brazil CDI forecastFixing against the discount-factor
-        // approximation (1+r)^252 - 1 with 1e-5 / 1e-6 tolerances.
-        // Reference: test-suite/indexes.cpp:202-221.
+        QL.info("Testing Brazil CDI forecastFixing...");
+
+        final Date today = new org.jquantlib.Settings().evaluationDate().clone();
+
+        final org.jquantlib.quotes.SimpleQuote flatRate =
+                new org.jquantlib.quotes.SimpleQuote(0.05);
+        final org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote> rateHandle =
+                new org.jquantlib.quotes.Handle<org.jquantlib.quotes.Quote>(flatRate);
+
+        final org.jquantlib.termstructures.YieldTermStructure flatFwd =
+                new org.jquantlib.termstructures.yieldcurves.FlatForward(
+                        today, rateHandle,
+                        new org.jquantlib.daycounters.Business252());
+        final org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure> ts =
+                new org.jquantlib.quotes.Handle<org.jquantlib.termstructures.YieldTermStructure>(flatFwd);
+
+        final org.jquantlib.indexes.ibor.Brlcdi cdi =
+                new org.jquantlib.indexes.ibor.Brlcdi(ts);
+
+        final org.jquantlib.time.calendars.Brazil settlement =
+                new org.jquantlib.time.calendars.Brazil(
+                        org.jquantlib.time.calendars.Brazil.Market.SETTLEMENT);
+        final Date testFixingDate = settlement.advance(
+                today, new Period(1, TimeUnit.Months));
+
+        final double forecast = cdi.fixing(testFixingDate, true);
+
+        final double discountStart = ts.currentLink().discount(testFixingDate);
+        final Date endDate = settlement.advance(
+                testFixingDate, new Period(1, TimeUnit.Days));
+        final double discountEnd = ts.currentLink().discount(endDate);
+
+        final double approx = Math.pow(discountStart / discountEnd, 252.0) - 1.0;
+
+        assertTrue("discrepancy in fixing forecast computation: |0.05127 - "
+                + forecast + "| >= 1e-5",
+                Math.abs(0.05127 - forecast) < 1.0e-5);
+        assertTrue("discrepancy in fixing forecast computation with approximation: |"
+                + approx + " - " + forecast + "| >= 1e-6",
+                Math.abs(approx - forecast) < 1.0e-6);
     }
 }

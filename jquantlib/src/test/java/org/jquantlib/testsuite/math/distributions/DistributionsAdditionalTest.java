@@ -25,10 +25,13 @@ package org.jquantlib.testsuite.math.distributions;
 import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
+import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.BivariateCumulativeStudentDistribution;
+import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.distributions.InverseNonCentralCumulativeChiSquaredDistribution;
 import org.jquantlib.math.distributions.NonCentralCumulativeChiSquaredDistribution;
 import org.jquantlib.math.distributions.NonCentralCumulativeChiSquaredSankaranApprox;
-import org.junit.Ignore;
+import org.jquantlib.math.distributions.StochasticCollocationInvCDF;
 import org.junit.Test;
 
 /**
@@ -50,10 +53,17 @@ import org.junit.Test;
  * {@code testSankaranApproximation} are now body-filled against the new
  * {@link BivariateCumulativeStudentDistribution} and
  * {@link NonCentralCumulativeChiSquaredSankaranApprox} ports respectively.
- * {@code testInvCDFviaStochasticCollocation} remains @Ignore'd as a
- * carry-forward pending the {@code StochasticCollocationInvCDF} port (depends
- * on {@code LagrangeInterpolation} extrapolation behaviour and a few helper
- * pieces not yet wired up).
+ *
+ * <p>Phase 5e.5b-CFC-d-193: {@code testInvCDFviaStochasticCollocation} is
+ * body-filled against the new {@link StochasticCollocationInvCDF} port. The
+ * underlying inverse non-central chi-squared distribution differs between
+ * implementations — Boost (C++) uses a Cornish–Fisher / Sankaran initial
+ * guess refined by Halley, while Java uses
+ * {@link InverseNonCentralCumulativeChiSquaredDistribution} (a Brent solver
+ * against {@link NonCentralCumulativeChiSquaredDistribution}). For this test
+ * both the {@code invCDF} argument to {@code StochasticCollocationInvCDF}
+ * and the expected value come from the same Java implementation, so only
+ * the collocation-truncation error is exercised (matching C++ semantics).
  */
 public class DistributionsAdditionalTest {
 
@@ -250,22 +260,86 @@ public class DistributionsAdditionalTest {
     }
 
     /**
-     * Carry-forward (Phase 5e.5b-CFC-d-22): {@code StochasticCollocationInvCDF}
-     * not yet ported. The C++ class lives in
-     * {@code ql/math/randomnumbers/stochasticcollocationinvcdf.{hpp,cpp}} and
-     * combines {@code GaussHermiteIntegration} (already in Java),
-     * {@code LagrangeInterpolation} with extrapolation enabled (already in
-     * Java), {@code InverseCumulativeNormal}, and the Boost
-     * {@code non_central_chi_squared} quantile (used as a target inverse-CDF
-     * — Java only ships the matching {@code InverseNonCentralCumulativeChiSquaredDistribution}
-     * which uses Brent on {@link NonCentralCumulativeChiSquaredDistribution}).
+     * Direct port of C++ test-suite/distributions.cpp:testInvCDFviaStochasticCollocation
+     * (lines 634-697, v1.42.1). Two checks against
+     * {@link StochasticCollocationInvCDF}:
+     * <ol>
+     *   <li>Low precision: {@code scInvCDF10} (n=10, no rescaling). For
+     *       {@code x ∈ [-3, 3]} step 0.1, verify
+     *       {@code scInvCDF10(u) ≈ scInvCDF10.value(x)} to 1e-6 (equality
+     *       between the two call signatures) and
+     *       {@code |scInvCDF10.value(x) − invCDF(u)| ≤ 1e-2} (collocation
+     *       truncation tolerance).</li>
+     *   <li>High precision: {@code scInvCDF30} (n=30, pMax=0.9999999). For
+     *       {@code x ∈ [-4, 4]} step 0.1, verify
+     *       {@code |scInvCDF30(u) − invCDF(u)| ≤ 1e-6}.</li>
+     * </ol>
+     * Target invCDF is {@link InverseNonCentralCumulativeChiSquaredDistribution}
+     * with {@code df=3, ncp=1}, constructed with {@code maxEvaluations=100}
+     * and {@code accuracy=1e-10} to give Brent enough budget to converge for
+     * {@code u} approaching 1 (the C++ test uses Boost's
+     * {@code non_central_chi_squared} quantile which doesn't have an
+     * evaluation budget). Tolerances match the C++ originals exactly.
      */
-    @Ignore("Phase 5b.5: StochasticCollocationInvCDF not yet ported")
     @Test
     public void testInvCDFviaStochasticCollocation() {
-        // C++ test-suite/distributions.cpp:634 — verify
-        // StochasticCollocationInvCDF reproduces InverseCumulativeNormal
-        // to 1e-5 across 11 quadrature orders + a non-Normal target test.
+        final double k = 3.0;
+        final double lambda = 1.0;
+
+        final CumulativeNormalDistribution normalCDF = new CumulativeNormalDistribution();
+        // Heavy Brent budget so the target invCDF doesn't bottleneck the
+        // collocation truncation error.
+        final Ops.DoubleOp invCDF =
+                new InverseNonCentralCumulativeChiSquaredDistribution(k, lambda, 100, 1.0e-10);
+
+        final StochasticCollocationInvCDF scInvCDF10 = new StochasticCollocationInvCDF(invCDF, 10);
+
+        // Low precision.
+        for (double x = -3.0; x < 3.0; x += 0.1) {
+            final double u = normalCDF.op(x);
+
+            final double calculated1 = scInvCDF10.op(u);
+            final double calculated2 = scInvCDF10.value(x);
+            final double expected = invCDF.op(u);
+
+            if (Math.abs(calculated1 - calculated2) > 1.0e-6) {
+                fail("Failed to reproduce equal stochastic collocation inverse CDF"
+                        + "\n    x: " + x
+                        + "\n    calculated via normal distribution : " + calculated2
+                        + "\n    calculated via uniform distribution: " + calculated1
+                        + "\n    diff: " + (calculated1 - calculated2));
+            }
+
+            final double tol = 1.0e-2;
+            if (Math.abs(calculated2 - expected) > tol) {
+                fail("Failed to reproduce invCDF with stochastic collocation method"
+                        + "\n    x: " + x
+                        + "\n    invCDF  : " + expected
+                        + "\n    scInvCDF: " + calculated2
+                        + "\n    diff    : " + Math.abs(expected - calculated2)
+                        + "\n    tol     : " + tol);
+            }
+        }
+
+        // High precision.
+        final StochasticCollocationInvCDF scInvCDF30 =
+                new StochasticCollocationInvCDF(invCDF, 30, 0.9999999);
+        for (double x = -4.0; x < 4.0; x += 0.1) {
+            final double u = normalCDF.op(x);
+
+            final double expected = invCDF.op(u);
+            final double calculated = scInvCDF30.op(u);
+
+            final double tol = 1.0e-6;
+            if (Math.abs(calculated - expected) > tol) {
+                fail("Failed to reproduce invCDF with stochastic collocation method"
+                        + "\n    x: " + x
+                        + "\n    invCDF  : " + expected
+                        + "\n    scInvCDF: " + calculated
+                        + "\n    diff    : " + Math.abs(expected - calculated)
+                        + "\n    tol     : " + tol);
+            }
+        }
     }
 
     /**
