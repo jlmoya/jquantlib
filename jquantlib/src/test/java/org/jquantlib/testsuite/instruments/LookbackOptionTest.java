@@ -7,7 +7,7 @@
 package org.jquantlib.testsuite.instruments;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertTrue;
 
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual360;
@@ -23,10 +23,12 @@ import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.TypePayoff;
+import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.lookback.AnalyticContinuousFixedLookbackEngine;
 import org.jquantlib.pricingengines.lookback.AnalyticContinuousFloatingLookbackEngine;
 import org.jquantlib.pricingengines.lookback.AnalyticContinuousPartialFixedLookbackEngine;
 import org.jquantlib.pricingengines.lookback.AnalyticContinuousPartialFloatingLookbackEngine;
+import org.jquantlib.pricingengines.lookback.MakeMCLookbackEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -40,7 +42,6 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.calendars.NullCalendar;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -278,7 +279,113 @@ public class LookbackOptionTest {
         }
     }
 
-    @Ignore("Phase 5i.5b — requires MCLookbackEngine port (MC continuous lookback engine)")
+    /**
+     * Phase 5e.5b-CFC-d-183 body-fill: port of C++ test-suite
+     * {@code testMonteCarloLookback} (lookbackoptions.cpp:488).
+     *
+     * <p>Cross-validates the four MC lookback engines against their
+     * analytic counterparts: with antithetic variates and a fixed
+     * seed=1, each MC NPV must converge to the analytic NPV within the
+     * C++ test's tolerance of {@code 0.1} (absolute).
+     */
     @Test
-    public void testMonteCarloLookback() { fail("not implemented"); }
+    public void testMonteCarloLookback() {
+        final double tolerance = 0.1;
+        final DayCounter dc = new Actual360();
+        final Date today = today();
+
+        final double strike = 90.0;
+        final double t = 1.0;
+        final double t1 = 0.25;
+
+        final Date exDate = today.add(timeToDays(t));
+        final Exercise exercise = new EuropeanExercise(exDate);
+
+        // C++ uses spot=100, q=0, r=0.06, vol=0.1 (Black-Scholes-Merton).
+        final BlackScholesMertonProcess process = makeProcess(today, 100.0, 0.0, 0.06, 0.1, dc);
+
+        final Option.Type[] types = { Option.Type.Call, Option.Type.Put };
+
+        for (final Option.Type type : types) {
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(type, strike);
+
+            // ---- Partial Fixed ----
+            final Date lookbackStart = today.add(timeToDays(t1));
+            final ContinuousPartialFixedLookbackOption partialFixed =
+                    new ContinuousPartialFixedLookbackOption(lookbackStart, payoff, exercise);
+            partialFixed.setPricingEngine(
+                    new AnalyticContinuousPartialFixedLookbackEngine(process));
+            final double pfAnalytical = partialFixed.NPV();
+            final PricingEngine pfMcEngine = MakeMCLookbackEngine.partialFixed(process)
+                    .withSteps(2000)
+                    .withAntitheticVariate()
+                    .withSeed(1L)
+                    .withAbsoluteTolerance(tolerance)
+                    .value();
+            partialFixed.setPricingEngine(pfMcEngine);
+            final double pfMc = partialFixed.NPV();
+            assertTrue("Partial Fixed type=" + type
+                    + " analytical=" + pfAnalytical + " mc=" + pfMc,
+                    Math.abs(pfAnalytical - pfMc) <= tolerance);
+
+            // ---- Fixed ----
+            final double minMax = 100.0;
+            final ContinuousFixedLookbackOption fixed =
+                    new ContinuousFixedLookbackOption(minMax, payoff, exercise);
+            fixed.setPricingEngine(new AnalyticContinuousFixedLookbackEngine(process));
+            final double fAnalytical = fixed.NPV();
+            final PricingEngine fMcEngine = MakeMCLookbackEngine.fixed(process)
+                    .withSteps(2000)
+                    .withAntitheticVariate()
+                    .withSeed(1L)
+                    .withAbsoluteTolerance(tolerance)
+                    .value();
+            fixed.setPricingEngine(fMcEngine);
+            final double fMc = fixed.NPV();
+            assertTrue("Fixed type=" + type
+                    + " analytical=" + fAnalytical + " mc=" + fMc,
+                    Math.abs(fAnalytical - fMc) <= tolerance);
+
+            // ---- Partial Floating ----
+            final double lambda = 1.0;
+            final Date lookbackEnd = today.add(timeToDays(t1));
+            final TypePayoff floatingPayoff = new FloatingTypePayoff(type);
+            final ContinuousPartialFloatingLookbackOption partialFloating =
+                    new ContinuousPartialFloatingLookbackOption(minMax, lambda, lookbackEnd,
+                            floatingPayoff, exercise);
+            partialFloating.setPricingEngine(
+                    new AnalyticContinuousPartialFloatingLookbackEngine(process));
+            final double pflAnalytical = partialFloating.NPV();
+            final PricingEngine pflMcEngine = MakeMCLookbackEngine.partialFloating(process)
+                    .withSteps(2000)
+                    .withAntitheticVariate()
+                    .withSeed(1L)
+                    .withAbsoluteTolerance(tolerance)
+                    .value();
+            partialFloating.setPricingEngine(pflMcEngine);
+            final double pflMc = partialFloating.NPV();
+            assertTrue("Partial Floating type=" + type
+                    + " analytical=" + pflAnalytical + " mc=" + pflMc,
+                    Math.abs(pflAnalytical - pflMc) <= tolerance);
+
+            // ---- Floating ----
+            final ContinuousFloatingLookbackOption floating =
+                    new ContinuousFloatingLookbackOption(minMax, floatingPayoff, exercise);
+            floating.setPricingEngine(new AnalyticContinuousFloatingLookbackEngine(process));
+            final double flAnalytical = floating.NPV();
+            final PricingEngine flMcEngine = MakeMCLookbackEngine.floating(process)
+                    .withSteps(2000)
+                    .withAntitheticVariate()
+                    .withSeed(1L)
+                    .withAbsoluteTolerance(tolerance)
+                    .value();
+            floating.setPricingEngine(flMcEngine);
+            final double flMc = floating.NPV();
+            assertTrue("Floating type=" + type
+                    + " analytical=" + flAnalytical + " mc=" + flMc,
+                    Math.abs(flAnalytical - flMc) <= tolerance);
+        }
+        // Silence unused-warning on the per-test pre-existing TOL constant.
+        assertEquals(1.0e-4, TOL, 0.0);
+    }
 }
