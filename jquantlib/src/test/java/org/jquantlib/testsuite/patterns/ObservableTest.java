@@ -31,20 +31,26 @@ import java.util.List;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual365Fixed;
+import org.jquantlib.daycounters.ActualActual;
+import org.jquantlib.indexes.CPI;
 import org.jquantlib.indexes.Euribor;
 import org.jquantlib.indexes.IborIndex;
+import org.jquantlib.indexes.inflation.EUHICPXT;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.inflation.ZeroCouponInflationSwapHelper;
 import org.jquantlib.termstructures.volatilities.optionlet.StrippedOptionlet;
 import org.jquantlib.termstructures.volatilities.optionlet.StrippedOptionletAdapter;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.NullCalendar;
+import org.jquantlib.time.calendars.Target;
 import org.jquantlib.util.Observable;
 import org.jquantlib.util.ObservableSettings;
 import org.jquantlib.util.Observer;
@@ -327,11 +333,75 @@ public class ObservableTest {
         int getUpdates() { return updates; }
     }
 
-    @Ignore("Phase 5a.5 carry-forward - testDeferredObserverLifetime requires "
-            + "ZeroCouponInflationSwapHelper+Settings interplay and is GC-dependent. "
-            + "Lifetime semantics are exercised indirectly by inflation curve tests.")
+    /**
+     * Faithful port of C++ {@code testDeferredObserverLifetime}
+     * (observable.cpp:403-415, v1.42.1).
+     *
+     * <p>This is a lifetime-semantics smoke test. The C++ test was added
+     * to verify that toggling
+     * {@link ObservableSettings#disableUpdates(boolean) disableUpdates(true)}
+     * and then {@link ObservableSettings#enableUpdates()} around a
+     * change to {@link Settings#evaluationDate} does not crash when a
+     * {@link ZeroCouponInflationSwapHelper} (which observes evaluation
+     * date) is the deferred observer being drained on
+     * {@code enableUpdates()}. The C++ failure mode was a use-after-free
+     * on the helper when the observable-settings deferred-updates queue
+     * fired after the helper had been destroyed; the C++ fix tracks
+     * helper lifetime via {@code weak_ptr} inside the deferred queue.
+     *
+     * <p>Java port: {@link ZeroCouponInflationSwapHelper} is GC-managed,
+     * but the deferred-updates path is still exercised end-to-end —
+     * the test passes if the construct / disable / setEvaluationDate /
+     * enable sequence runs to completion without throwing.
+     *
+     * <p>Phase 5e.5b-CFC-d-209 — un-ignored after
+     * {@link ZeroCouponInflationSwapHelper} landed
+     * (Phase 5e.5b-CFC-d-204).
+     */
     @Test
     public void testDeferredObserverLifetime() {
+        QL.info("Testing deferred-observer lifetime for "
+              + "ZeroCouponInflationSwapHelper...");
+
+        final Settings settings = new Settings();
+        final Date today = new Date(24, Month.December, 2025);
+        final Date savedEvalDate = settings.evaluationDate();
+        try {
+            settings.setEvaluationDate(today);
+            final Handle<Quote> quote =
+                    new Handle<Quote>(new SimpleQuote(0.02));
+
+            // Construct the helper — registers as an observer of
+            // {@code Settings.evaluationDate} and {@code quote}.
+            // We retain a reference for the duration of the test to
+            // mirror C++ shared_ptr semantics.
+            final ZeroCouponInflationSwapHelper zciHelper =
+                    new ZeroCouponInflationSwapHelper(
+                            quote,
+                            new Period(3, TimeUnit.Months),
+                            new Date(29, Month.December, 2026),
+                            new Target(),
+                            BusinessDayConvention.ModifiedFollowing,
+                            new ActualActual(ActualActual.Convention.ISDA),
+                            new EUHICPXT(false),
+                            CPI.InterpolationType.Flat);
+
+            // Defer + bump evaluation date + drain. Must not throw.
+            ObservableSettings.instance().disableUpdates(true);
+            settings.setEvaluationDate(new Date(29, Month.December, 2025));
+            ObservableSettings.instance().enableUpdates();
+
+            // Reference the helper after the deferred drain to prevent
+            // the JVM from collecting it mid-drain (mirrors the C++
+            // contract that the observer must be alive when the deferred
+            // queue fires).
+            if (zciHelper == null) {
+                fail("helper unexpectedly null");
+            }
+        } finally {
+            settings.setEvaluationDate(savedEvalDate);
+            ObservableSettings.instance().enableUpdates();
+        }
     }
 
     /** Suppress unused warning for {@link Observable} import. */
