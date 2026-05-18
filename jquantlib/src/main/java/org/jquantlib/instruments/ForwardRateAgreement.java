@@ -102,7 +102,7 @@ public class ForwardRateAgreement extends Forward {
 
 
     //
-    // public constructor
+    // public constructors
     //
 
     public ForwardRateAgreement(
@@ -130,11 +130,11 @@ public class ForwardRateAgreement extends Forward {
         this.notional = notionalAmount;
         this.index = index;
 
-        // do I adjust this ?
-        // valueDate_ = calendar_.adjust(valueDate_,businessDayConvention_);
-        final Date fixingDate = calendar.advance (valueDate, -1 * settlementDays, TimeUnit.Days);
-
-        forwardRate = new InterestRate(index.fixing(fixingDate), index.dayCounter(), Compounding.Simple, Frequency.Once);
+        // align(instruments.ForwardRateAgreement): match C++ v1.42.1 — defer the
+        // index.fixing() call to performCalculations(). The constructor must NOT
+        // dereference the discount/forecasting curve, so that an FRA can be
+        // constructed before its curve handle is linked (see
+        // test-suite/forwardrateagreement.cpp::testConstructionWithoutACurve).
         this.strikeForwardRate = new InterestRate(strikeForwardRate, index.dayCounter(), Compounding.Simple, Frequency.Once);
         final double strike = notional * this.strikeForwardRate.compoundFactor(valueDate, maturityDate);
         payoff = new ForwardTypePayoff(fraType, strike);
@@ -144,6 +144,55 @@ public class ForwardRateAgreement extends Forward {
         underlyingIncome = 0.0;
 
         index.addObserver (this);
+    }
+
+
+    /**
+     * Curve-less / maturity-from-index constructor.
+     * <p>
+     * Mirrors the C++ v1.42.1 {@code ForwardRateAgreement(index, valueDate,
+     * type, strike, notional, discountCurve)} overload — maturity date is
+     * inferred from {@code index.maturityDate(valueDate)}.
+     */
+    public ForwardRateAgreement(
+            final IborIndex index,
+            final Date valueDate,
+            final Position type,
+            final double strikeForwardRate,
+            final double notionalAmount,
+            final Handle<YieldTermStructure> discountCurve) {
+        this (valueDate, index.maturityDate(valueDate), type, strikeForwardRate, notionalAmount, index, discountCurve);
+    }
+
+    /**
+     * Curve-less / maturity-from-index constructor with empty discount curve.
+     * <p>
+     * Mirrors the C++ v1.42.1 default-argument form (empty discount curve).
+     */
+    public ForwardRateAgreement(
+            final IborIndex index,
+            final Date valueDate,
+            final Position type,
+            final double strikeForwardRate,
+            final double notionalAmount) {
+        this (valueDate, index.maturityDate(valueDate), type, strikeForwardRate, notionalAmount, index, new Handle<YieldTermStructure>());
+    }
+
+    /**
+     * Curve-less constructor with explicit maturity date.
+     * <p>
+     * Mirrors the C++ v1.42.1 {@code ForwardRateAgreement(index, valueDate,
+     * maturityDate, type, strike, notional, discountCurve)} overload.
+     */
+    public ForwardRateAgreement(
+            final IborIndex index,
+            final Date valueDate,
+            final Date maturityDate,
+            final Position type,
+            final double strikeForwardRate,
+            final double notionalAmount,
+            final Handle<YieldTermStructure> discountCurve) {
+        this (valueDate, maturityDate, type, strikeForwardRate, notionalAmount, index, discountCurve);
     }
 
     @Override
