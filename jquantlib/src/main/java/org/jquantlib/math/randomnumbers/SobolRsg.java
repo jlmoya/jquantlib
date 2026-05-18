@@ -1432,17 +1432,50 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
         final long[] degree = new long[this.dimensionality];
         final long[] ppmt   = new long[this.dimensionality];
 
+        // Phase 5e.5b-CFC-d-177 align: C++ sobolrsg.cpp:78499-78541 picks
+        // the {@code AltPrimitivePolynomials} table for the first
+        // {@code maxAltDegree==52} dimensions whenever the direction-
+        // integer scheme is Kuo*, SobolLevitan, or SobolLevitanLemieux,
+        // then continues with the full {@code PrimitivePolynomials} table.
+        // {@code currentDegree} and {@code index} are persistent across the
+        // hand-off — when the Alt loop ends at {@code k==52}, the full
+        // loop resumes with whatever (degree,index) were left over.
+        final boolean useAltPolynomials = (direction == DirectionIntegers.SobolLevitan)
+                || (direction == DirectionIntegers.SobolLevitanLemieux);
+        final int altDegree = useAltPolynomials
+                ? (int) PrimitivePolynomials.ALT_MAX_DIM
+                : 0;
+
         // degree 0 is not used
-        ppmt[0]=0;
-        degree[0]=0;
-        for (int k=1, index=0, currentDegree=1; k < this.dimensionality; k++, index++) {
-            ppmt[k] = pp.get(currentDegree - 1, index);
-            if (ppmt[k] == -1) {
-                ++currentDegree;
-                index = 0;
-                ppmt[k] = pp.get(currentDegree - 1, index);
+        ppmt[0] = 0;
+        degree[0] = 0;
+        {
+            int kInit = 1;
+            int index = 0;
+            int currentDegree = 1;
+
+            // Alt polynomial loop (dims 1..min(dim,52)-1)
+            final int altLimit = Math.min(this.dimensionality, altDegree);
+            for (; kInit < altLimit; kInit++, index++) {
+                ppmt[kInit] = PrimitivePolynomials.getAlt(currentDegree - 1, index);
+                if (ppmt[kInit] == -1) {
+                    ++currentDegree;
+                    index = 0;
+                    ppmt[kInit] = PrimitivePolynomials.getAlt(currentDegree - 1, index);
+                }
+                degree[kInit] = currentDegree;
             }
-            degree[k] = currentDegree;
+
+            // Full polynomial loop (dims max(1,52)..dim-1)
+            for (; kInit < this.dimensionality; kInit++, index++) {
+                ppmt[kInit] = pp.get(currentDegree - 1, index);
+                if (ppmt[kInit] == -1) {
+                    ++currentDegree;
+                    index = 0;
+                    ppmt[kInit] = pp.get(currentDegree - 1, index);
+                }
+                degree[kInit] = currentDegree;
+            }
         }
 
 

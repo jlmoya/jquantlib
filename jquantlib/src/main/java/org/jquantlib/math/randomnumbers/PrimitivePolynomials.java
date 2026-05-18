@@ -243,6 +243,65 @@ public class PrimitivePolynomials {
 
 
     //
+    // Alternative primitive polynomials (Phase 5e.5b-CFC-d-177 port)
+    //
+    // Port of the {@code AltPrimitivePolynomials} table embedded in C++
+    // {@code QuantLib/ql/math/randomnumbers/sobolrsg.cpp} (v1.42.1, file-
+    // scope anonymous namespace, lines 35-106). C++ defines
+    // {@code N_ALT_MAX_DEGREE == 8} and {@code maxAltDegree == 52}; the
+    // table covers degrees 1..8 with a hand-picked subset of primitive
+    // polynomials whose first {@code maxAltDegree==52} entries are used
+    // by the Kuo, Kuo2, Kuo3, SobolLevitan, and SobolLevitanLemieux
+    // direction-integer schemes.
+    //
+    // Encoding matches {@link #get(int,int)}: trailing {@code -1}
+    // terminates each degree row. Indexing is zero-based with
+    // {@code i} = (degree - 1), {@code j} = position within that
+    // degree's list.
+
+    /** {@code N_ALT_MAX_DEGREE} in C++ sobolrsg.cpp:94. */
+    public static final int N_ALT_MAX_DEGREE = 8;
+
+    /** {@code maxAltDegree} in C++ sobolrsg.cpp:35 — number of
+     *  dimensions for which the alternate table replaces the full
+     *  {@link #get(int,int)} table.
+     */
+    public static final long ALT_MAX_DIM = 52L;
+
+    private static final long[][] ALT_PRIMITIVE_POLYNOMIALS = {
+            /* degree 1: x+1 (1)(1) */
+            { 0L, -1L },
+            /* degree 2: x^2+x+1 (1)1(1) */
+            { 1L, -1L },
+            /* degree 3 */
+            { 1L, 2L, -1L },
+            /* degree 4 */
+            { 1L, 4L, -1L },
+            /* degree 5 */
+            { 2L, 13L, 7L, 14L, 11L, 4L, -1L },
+            /* degree 6 */
+            { 1L, 16L, 13L, 22L, 19L, 25L, -1L },
+            /* degree 7 */
+            { 1L, 32L, 4L, 8L, 7L, 56L, 14L, 28L,
+              19L, 50L, 21L, 42L, 31L, 62L, 37L, 41L,
+              55L, 59L, -1L },
+            /* degree 8 */
+            { 14L, 56L, 21L, 22L, 38L, 47L, 49L, 50L, 52L,
+              67L, 70L, 84L, 97L, 103L, 115L, 122L, -1L }
+    };
+
+    /**
+     * Returns the alternate primitive polynomial at {@code (degreeMinus1, j)},
+     * mirroring {@code AltPrimitivePolynomials[degreeMinus1][j]} from C++
+     * sobolrsg.cpp:96-106. Used by {@link SobolRsg} when the direction-
+     * integer scheme is Kuo*, SobolLevitan, or SobolLevitanLemieux.
+     */
+    public static long getAlt(final int degreeMinus1, final int j) {
+        return ALT_PRIMITIVE_POLYNOMIALS[degreeMinus1][j];
+    }
+
+
+    //
     // private methods
     //
 

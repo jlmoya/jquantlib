@@ -925,6 +925,40 @@ public class LowDiscrepancySequencesTest {
             2.242687e-04, 4.350728e-05, 1.629699e-05, 4.968211e-06
     };
 
+    /**
+     * SobolLevitan Sobol discrepancy reference values @ 1023 samples.
+     *
+     * <p>Cross-validated against the C++ sobol_rsg_probe at
+     * {@code migration-harness/cpp/probes/math/randomnumbers/sobol_rsg_probe.cpp}
+     * (case {@code discrepancy_sobollevitan_dim_grid}, reference JSON
+     * committed under
+     * {@code migration-harness/references/math/randomnumbers/sobol_rsg.json}).
+     * Dims 50, 100 omitted because SL's tabulated initializers (size 39)
+     * end at dim 40; dim 50+ falls into the MersenneTwister random-init
+     * path which diverges between Java and C++ for {@code seed=123456}.
+     */
+    private static final double[] SOBOL_LEVITAN_DISCR = {
+            8.326481e-04, 1.209684e-03, 1.587933e-03, 7.008237e-04,
+            1.481455e-04, 1.031467e-06
+    };
+
+    private static final int[] SOBOL_LEVITAN_DIMS = { 2, 3, 5, 10, 15, 30 };
+
+    /**
+     * SobolLevitanLemieux Sobol discrepancy reference values @ 1023 samples.
+     *
+     * <p>Cross-validated against the C++ sobol_rsg_probe (case
+     * {@code discrepancy_sobollevitanlemieux_dim_grid}). SLL's
+     * {@code Linitializers} table covers dims 2..360, so the full
+     * {2,3,5,10,15,30,50,100} grid is tabulated and pivot-comparable.
+     */
+    private static final double[] SOBOL_LEVITAN_LEMIEUX_DISCR = {
+            8.326481e-04, 1.209684e-03, 1.587933e-03, 7.008237e-04,
+            1.481455e-04, 1.031467e-06, 4.566661e-10, 8.755302e-19
+    };
+
+    private static final int[] SOBOL_LEVITAN_LEMIEUX_DIMS = { 2, 3, 5, 10, 15, 30, 50, 100 };
+
     private static void runSobolDiscrepancy(final SobolRsg.DirectionIntegers di,
                                             final int[] dims,
                                             final double[] expected,
@@ -1016,16 +1050,47 @@ public class LowDiscrepancySequencesTest {
      * alt-poly range, but diverges for k &lt; 52, so the discrepancy
      * pivots do not match.
      */
-    @Ignore("Phase 5e.5b-CFC-d-145: SobolLevitan needs AltPrimitivePolynomials table (k<52); not yet ported")
+    /**
+     * SobolLevitan Sobol discrepancy @ 1023 samples, dim {2,3,5,10,15,30}.
+     *
+     * <p>Phase 5e.5b-CFC-d-177: enabled after porting
+     * {@code AltPrimitivePolynomials} (C++ sobolrsg.cpp:35-106, degrees
+     * 1..8, {@code maxAltDegree==52}) into
+     * {@link org.jquantlib.math.randomnumbers.PrimitivePolynomials} and
+     * wiring {@link org.jquantlib.math.randomnumbers.SobolRsg} to use it
+     * for the {@code SobolLevitan} and {@code SobolLevitanLemieux}
+     * direction-integer schemes (matching the C++
+     * {@code useAltPolynomials} branch in sobolrsg.cpp:78499-78541).
+     *
+     * <p>Dims 50, 100 are excluded: SobolLevitan's
+     * {@code SLinitializers} table covers dims 2..40 only, so dim 50+
+     * falls into the random-init path which depends on the (cross-
+     * platform-divergent) Mersenne Twister for {@code seed=123456}.
+     * Java MT and C++ MT produce different sequences for that seed, so
+     * those dimensions cannot be cross-validated here.
+     */
     @Test
     public void testSobolLevitanSobolDiscrepancy() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:982
+        QL.info("Testing Sobol-Levitan Sobol discrepancy...");
+        runSobolDiscrepancy(SobolRsg.DirectionIntegers.SobolLevitan,
+                SOBOL_LEVITAN_DIMS, SOBOL_LEVITAN_DISCR, "SobolLevitan");
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-145: SobolLevitanLemieux needs AltPrimitivePolynomials table (k<52); not yet ported")
+    /**
+     * SobolLevitanLemieux Sobol discrepancy @ 1023 samples,
+     * dim {2,3,5,10,15,30,50,100}.
+     *
+     * <p>Phase 5e.5b-CFC-d-177: enabled alongside
+     * {@link #testSobolLevitanSobolDiscrepancy()}. SobolLevitanLemieux's
+     * {@code Linitializers} table covers dims 2..360, so dims 50 and
+     * 100 are tabulated and pivot-comparable.
+     */
     @Test
     public void testSobolLevitanLemieuxSobolDiscrepancy() {
-        // C++ test-suite/lowdiscrepancysequences.cpp:998
+        QL.info("Testing Sobol-Levitan-Lemieux Sobol discrepancy...");
+        runSobolDiscrepancy(SobolRsg.DirectionIntegers.SobolLevitanLemieux,
+                SOBOL_LEVITAN_LEMIEUX_DIMS, SOBOL_LEVITAN_LEMIEUX_DISCR,
+                "SobolLevitanLemieux");
     }
 
     /**
