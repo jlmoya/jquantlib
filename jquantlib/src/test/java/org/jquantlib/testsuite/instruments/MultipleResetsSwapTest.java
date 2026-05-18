@@ -8,6 +8,9 @@ package org.jquantlib.testsuite.instruments;
 
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.RateAveraging;
@@ -18,9 +21,17 @@ import org.jquantlib.indexes.IborIndex;
 import org.jquantlib.instruments.MakeMultipleResetsSwap;
 import org.jquantlib.instruments.MultipleResetsSwap;
 import org.jquantlib.instruments.VanillaSwap;
+import org.jquantlib.math.interpolations.factories.LogLinear;
 import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.RelinkableHandle;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.IterativeBootstrap;
+import org.jquantlib.termstructures.RateHelper;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.yieldcurves.Discount;
+import org.jquantlib.termstructures.yieldcurves.MultipleResetsSwapRateHelper;
+import org.jquantlib.termstructures.yieldcurves.PiecewiseYieldCurve;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
@@ -28,7 +39,6 @@ import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -46,20 +56,17 @@ import org.junit.Test;
  * {@link MakeMultipleResetsSwap} (Phase 5d.5-MR port) end-to-end against
  * a flat 5% Euribor3M curve.
  *
- * <p>{@code testRateHelper} remains deferred (Phase 5d.5-MR-RH carry):
- * Java does not yet have a {@code MultipleResetsSwapRateHelper} or the
- * {@code PiecewiseYieldCurve<Discount, LogLinear>} / multi-helper
- * bootstrap pipeline the C++ test exercises.
+ * <p><strong>Phase 5e.5b-CFC-d-186 body-fill (2026-05-17)</strong>:
+ * {@link #testRateHelper()} is now bodied, exercising the newly-ported
+ * {@link MultipleResetsSwapRateHelper} together with
+ * {@link PiecewiseYieldCurve}&lt;{@link Discount}, {@link LogLinear}&gt; —
+ * a flat 5% input curve must bootstrap back to a flat 5% output curve
+ * (round-trip consistency at 1Y / 2Y / 3Y pillars).
  *
  * <p>Source: {@code test-suite/multipleresetsswap.cpp} v1.42.1 @
  * {@code 099987f0ca}.
  */
 public class MultipleResetsSwapTest {
-
-    private static final String REASON_RH =
-            "Phase 5d.5-MR-RH carry: requires MultipleResetsSwapRateHelper "
-          + "(no Java equivalent yet) and PiecewiseYieldCurve<Discount, "
-          + "LogLinear> bootstrap pipeline.";
 
     /**
      * Mirrors C++ {@code multipleresetsswap.cpp::CommonVars}.
@@ -194,7 +201,73 @@ public class MultipleResetsSwapTest {
         }
     }
 
-    @Ignore(REASON_RH)
+    /**
+     * Port of C++ {@code multipleresetsswap.cpp::testRateHelper}.
+     *
+     * <p>Builds a {@link PiecewiseYieldCurve}&lt;{@link Discount},
+     * {@link LogLinear}&gt; from
+     * {@link MultipleResetsSwapRateHelper}s quoting a flat 5% input rate at
+     * 1Y / 2Y / 3Y tenors; verifies that the bootstrapped curve, when
+     * re-fed through fresh check-swaps, produces fair rates within
+     * {@code 1.0e-6} of the original input.
+     *
+     * <p>The C++ test uses tolerance {@code 1.0e-6} (loose, but
+     * appropriate for a bootstrapped curve evaluated through the
+     * forward-Ibor-fixings of a multiple-resets swap — not a tight
+     * analytic identity).
+     */
     @Test
-    public void testRateHelper() { fail("not implemented"); }
+    public void testRateHelper() {
+        QL.info("Testing bootstrapping using multiple-resets swap helpers...");
+
+        final CommonVars vars = new CommonVars();
+
+        // Build a flat curve from multiple-resets swap quotes at 1Y, 2Y, 3Y.
+        // A flat 5% input should bootstrap to a flat 5% output.
+        final double inputRate = 0.05;
+        final Period[] tenors = {
+                new Period(1, TimeUnit.Years),
+                new Period(2, TimeUnit.Years),
+                new Period(3, TimeUnit.Years)
+        };
+
+        final List<RateHelper> helpers = new ArrayList<RateHelper>();
+        for (final Period tenor : tenors) {
+            helpers.add(new MultipleResetsSwapRateHelper(
+                    0, tenor,
+                    new Handle<Quote>(new SimpleQuote(inputRate)),
+                    vars.euribor3m, 2));
+        }
+        final RateHelper[] helperArray = helpers.toArray(new RateHelper[0]);
+
+        final PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap> curve =
+                new PiecewiseYieldCurve<Discount, LogLinear, IterativeBootstrap>(
+                        Discount.class, LogLinear.class, IterativeBootstrap.class,
+                        vars.today, helperArray, vars.dayCount);
+
+        final RelinkableHandle<YieldTermStructure> bootstrapped =
+                new RelinkableHandle<YieldTermStructure>();
+        bootstrapped.linkTo(curve);
+        final IborIndex indexOnCurve = new Euribor3M(bootstrapped);
+        indexOnCurve.addFixing(new Date(11, Month.January, 2024), 0.05);
+
+        final double tolerance = 1.0e-6;
+        for (final Period tenor : tenors) {
+            final MultipleResetsSwap check = new MakeMultipleResetsSwap(
+                    tenor, indexOnCurve, 2)
+                    .withFixedRate(0.0)
+                    .withSettlementDays(0)
+                    .withNominal(1.0e6)
+                    .withDiscountingTermStructure(bootstrapped)
+                    .value();
+            final double implied = check.fairRate();
+            if (Math.abs(implied - inputRate) > tolerance) {
+                fail("tenor=" + tenor + ": bootstrapped fair rate does not "
+                        + "match input quote: implied=" + implied
+                        + " input=" + inputRate
+                        + " diff=" + (implied - inputRate)
+                        + " tol=" + tolerance);
+            }
+        }
+    }
 }
