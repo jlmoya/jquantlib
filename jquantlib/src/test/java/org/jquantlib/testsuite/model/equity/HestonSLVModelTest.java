@@ -56,9 +56,19 @@ import org.jquantlib.methods.finitedifferences.schemes.ModifiedCraigSneydScheme;
 import org.jquantlib.methods.finitedifferences.utilities.FdmHestonGreensFct;
 import org.jquantlib.methods.finitedifferences.utilities.FdmMesherIntegral;
 import org.jquantlib.methods.finitedifferences.utilities.SquareRootProcessRNDCalculator;
+import org.jquantlib.experimental.barrieroption.DoubleBarrierOption;
+import org.jquantlib.experimental.barrieroption.DoubleBarrierType;
 import org.jquantlib.experimental.models.HestonSLVFDMModel;
 import org.jquantlib.experimental.models.HestonSLVFokkerPlanckFdmParams;
+import org.jquantlib.experimental.models.HestonSLVMCModel;
+import org.jquantlib.math.randomnumbers.SobolRsg;
+import org.jquantlib.methods.finitedifferences.utilities.LocalVolRNDCalculator;
 import org.jquantlib.model.equity.HestonModel;
+import org.jquantlib.model.marketmodels.BrownianGeneratorFactory;
+import org.jquantlib.model.marketmodels.browniangenerators.SobolBrownianGenerator;
+import org.jquantlib.model.marketmodels.browniangenerators.SobolBrownianGeneratorFactory;
+import org.jquantlib.pricingengines.barrier.AnalyticDoubleBarrierBinaryEngine;
+import org.jquantlib.pricingengines.barrier.FdHestonDoubleBarrierEngine;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
@@ -83,6 +93,7 @@ import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeGrid;
 import org.jquantlib.time.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -319,6 +330,107 @@ public class HestonSLVModelTest {
             public double op(final double v) { return spline.op(v, true); }
         };
         return new GaussLobattoIntegral(maxIterations, 1.0e-6).op(f, x.first(), x.last());
+    }
+
+    /**
+     * Java port of C++ test helper {@code getFixedLocalVolFromHeston}
+     * (test-suite/hestonslvmodel.cpp:654).
+     *
+     * <p>Builds a {@link HestonBlackVolSurface} from the supplied Heston model,
+     * wraps it in a {@link NoExceptLocalVolSurface} (fallback vol =
+     * {@code sqrt(theta)}), drives a {@link LocalVolRNDCalculator} on the
+     * supplied {@link TimeGrid} to derive per-time strike vectors from the
+     * Fokker-Planck-evolved spot densities, samples the local-vol surface on
+     * that strike-x-time grid, and returns a {@link FixedLocalVolSurface}
+     * fitted to the samples.
+     *
+     * <p><strong>C++ vs Java parity note.</strong> C++ constructs
+     * {@code HestonBlackVolSurface(..., AnalyticHestonEngine::AndersenPiterbarg,
+     * Integration::gaussLaguerre(32))}. The Java {@link AnalyticHestonEngine}
+     * port only implements the {@link
+     * AnalyticHestonEngine.ComplexLogFormula#Gatheral} complex-log formula;
+     * passing other enum values is accepted by the engine constructor but
+     * silently falls back to Gatheral pricing. We use Gatheral explicitly
+     * here for clarity. The Gauss-Laguerre order is kept at 32 to match C++.
+     *
+     * @param hestonModel calibrated Heston model whose process supplies the
+     *                    spot, risk-free and dividend curves
+     * @param timeGrid    Fokker-Planck time grid driving the
+     *                    {@link LocalVolRNDCalculator}
+     * @return a {@link FixedLocalVolSurface} on {@code timeGrid.size() - 1}
+     *         time slices, with per-slice strike vectors derived from the
+     *         RND-calculator meshers (no temporal extrapolation needed beyond
+     *         the supplied grid)
+     */
+    private static LocalVolTermStructure getFixedLocalVolFromHeston(
+            final HestonModel hestonModel,
+            final TimeGrid timeGrid) {
+
+        final Handle<BlackVolTermStructure> trueImpliedVolSurf =
+                new Handle<BlackVolTermStructure>(
+                        new HestonBlackVolSurface(hestonModel,
+                                AnalyticHestonEngine.ComplexLogFormula.Gatheral,
+                                AnalyticHestonEngine.Integration.gaussLaguerre(32)));
+
+        final HestonProcess hestonProcess = hestonModel.process();
+
+        final LocalVolTermStructure localVol = new NoExceptLocalVolSurface(
+                trueImpliedVolSurf,
+                hestonProcess.riskFreeRate(),
+                hestonProcess.dividendYield(),
+                hestonProcess.s0(),
+                Math.sqrt(hestonProcess.theta().currentLink().value()));
+
+        final LocalVolRNDCalculator localVolRND = new LocalVolRNDCalculator(
+                hestonProcess.s0().currentLink(),
+                hestonProcess.riskFreeRate().currentLink(),
+                hestonProcess.dividendYield().currentLink(),
+                localVol,
+                timeGrid,
+                /*xGrid*/ 101,
+                /*x0Density*/ 0.1,
+                /*localVolProbEps*/ 1.0e-6,
+                /*maxIter*/ 10000);
+
+        final List<double[]> strikes = new ArrayList<double[]>(timeGrid.size() - 1);
+        for (int i = 1; i < timeGrid.size(); ++i) {
+            final double t = timeGrid.at(i);
+            final Fdm1dMesher fdm1dMesher = localVolRND.mesher(t);
+
+            final double[] logStrikes = fdm1dMesher.locations();
+            final double[] strikeSlice = new double[logStrikes.length];
+            for (int j = 0; j < logStrikes.length; ++j) {
+                strikeSlice[j] = Math.exp(logStrikes[j]);
+            }
+            strikes.add(strikeSlice);
+        }
+
+        final int nStrikes = strikes.get(0).length;
+        final int nTimes = timeGrid.size() - 1;
+        final Matrix localVolMatrix = new Matrix(nStrikes, nTimes);
+        for (int i = 1; i < timeGrid.size(); ++i) {
+            final double t = timeGrid.at(i);
+            final double[] strikeSlice = strikes.get(i - 1);
+            for (int j = 0; j < nStrikes; ++j) {
+                final double s = strikeSlice[j];
+                localVolMatrix.set(j, i - 1, localVol.localVol(t, s, true));
+            }
+        }
+
+        final Date todaysDate =
+                hestonProcess.riskFreeRate().currentLink().referenceDate();
+        final DayCounter dc =
+                hestonProcess.riskFreeRate().currentLink().dayCounter();
+
+        final double[] expiries = new double[nTimes];
+        for (int i = 0; i < nTimes; ++i) {
+            expiries[i] = timeGrid.at(i + 1);
+        }
+
+        return new FixedLocalVolSurface(
+                todaysDate, expiries, strikes, localVolMatrix, dc,
+                FixedLocalVolSurface.Extrapolation.ConstantExtrapolation,
+                FixedLocalVolSurface.Extrapolation.ConstantExtrapolation);
     }
 
     /* ---- 1. Fokker-Planck forward PDE -------------------------------- */
@@ -2058,18 +2170,204 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-268 refinement: JoeKuoD7 direction integers "
-            + "(prior blocker (i) — Phase 5e.5b-CFC-d-268) are NOW LANDED and "
-            + "wired through SobolRsg.DirectionIntegers.JoeKuoD7 + "
-            + "SobolBrownianGeneratorFactory. Remaining blocker: "
-            + "getFixedLocalVolFromHeston test helper "
-            + "(test-suite/hestonslvmodel.cpp:654) — not yet ported to Java. "
-            + "Other infra (HestonSLVMCModel, SobolBrownianGeneratorFactory, "
-            + "FdHestonDoubleBarrierEngine + leverage-fct ctor — CFC-d-257, "
-            + "AnalyticDoubleBarrierBinaryEngine) is all available. Un-ignore "
-            + "once getFixedLocalVolFromHeston lands.")
+    /**
+     * Java port of C++ {@code testMoustacheGraph}
+     * (test-suite/hestonslvmodel.cpp:2259). Prices a set of double-no-touch
+     * (cash-or-nothing knock-out) options under both a Black-Scholes flat-vol
+     * world ({@link AnalyticDoubleBarrierBinaryEngine}) and a calibrated
+     * Heston Stochastic-Local-Vol model
+     * ({@link FdHestonDoubleBarrierEngine} driven by a leverage function from
+     * {@link HestonSLVMCModel}). The price difference SLV - BS forms a
+     * characteristic "moustache" shape as a function of the barrier distance
+     * from spot.
+     *
+     * <p>Reference: figure 8.8 in Iain J. Clark, "Foreign Exchange Option
+     * Pricing: A Practitioner's Guide", and Klaus Spanderen's blog post
+     * <a href="https://hpcquantlib.wordpress.com/2016/01/10/monte-carlo-calibration-of-the-heston-stochastic-local-volatiltiy-model/">
+     * Monte Carlo calibration of the Heston SLV model</a>.
+     *
+     * <p>Phase 5e.5b-CFC-d-270 landed the
+     * {@link #getFixedLocalVolFromHeston(HestonModel, TimeGrid)} test helper
+     * (test-suite/hestonslvmodel.cpp:654) and the test body. Tolerance is
+     * the LOOSE tier (5e-3 absolute, tighter than C++'s {@code 1e-2}) for
+     * the discovered SLV-vs-BS price differences once the underlying
+     * calibration plumbing yields a finite leverage matrix.
+     *
+     * <p><strong>Remaining blocker (CFC-d-270 discovery):</strong> the
+     * {@link HestonSLVMCModel} MC calibration loop in
+     * {@link org.jquantlib.experimental.models.HestonSLVMCModel#performCalculations()}
+     * produces NaN leverage entries for the Moustache parameter set
+     * ({@code s0=100, kappa=1.0, theta=0.06, rho=-0.8, sigma=0.8*0.9, v0=0.09},
+     * weekly time grid, 100 bins, 20000 paths). Feeding those NaN entries
+     * into {@link FdHestonDoubleBarrierEngine} via
+     * {@link org.jquantlib.methods.finitedifferences.operators.FdmHestonOp}
+     * propagates NaN through the 2-D solver, so
+     * {@code doubleBarrier.NPV()} on the FD engine raises
+     * {@code LibraryException: NPV not provided}. The proximate cause is the
+     * per-bin estimator {@code L = sqrt(lv^2 / sum)} (HestonSLVMCModel:249)
+     * which divides by a near-zero mean variance for some bins under the
+     * QE+log evolve scheme. Fix scope is the calibration loop (clamp /
+     * fallback when {@code sum < eps}), not this test.
+     */
+    @Ignore("Phase 5e.5b-CFC-d-270 — getFixedLocalVolFromHeston test helper is "
+            + "ported and the test body is body-filled (and binary-equivalent "
+            + "to C++ test-suite/hestonslvmodel.cpp:2259). New blocker "
+            + "discovered: HestonSLVMCModel.performCalculations produces NaN "
+            + "leverage entries for the Moustache parameter set "
+            + "(s0=100, kappa=1, theta=0.06, sigma=0.72, rho=-0.8, v0=0.09, "
+            + "weekly grid, 100 bins, 20000 paths). The per-bin estimator "
+            + "L = sqrt(lv^2 / sum) (HestonSLVMCModel.java:249) divides by a "
+            + "near-zero mean variance for the noisy extreme bins. Those NaN "
+            + "leverage cells propagate through FdmHestonOp into the 2-D FD "
+            + "solver, so doubleBarrier.NPV() on the FD engine throws "
+            + "LibraryException(\"NPV not provided\"). Fix scope: clamp / "
+            + "fallback in the calibration loop (next phase, separate WI).")
     @Test
-    public void testMoustacheGraph() { fail("not implemented"); }
+    public void testMoustacheGraph() {
+        QL.info("Testing double no touch pricing with SLV and mixing "
+                + "(C++ test-suite/hestonslvmodel.cpp:2259)...");
+
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final Date todaysDate = new Date(5, Month.January, 2016);
+        final Date maturityDate = todaysDate.add(new Period(1, TimeUnit.Years));
+        new Settings().setEvaluationDate(todaysDate);
+
+        final double s0 = 100.0;
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final double r = 0.02;
+        final double q = 0.01;
+
+        // Parameters of the "calibrated" Heston model.
+        final double kappa =  1.0;
+        final double theta =  0.06;
+        final double rho   = -0.8;
+        final double sigma =  0.8;
+        final double v0    =  0.09;
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dc));
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+        final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+        final Exercise europeanExercise = new EuropeanExercise(maturityDate);
+
+        // ATM European call → implied vol against a flat-vol BSM with
+        // sqrt(theta) as the initial seed.
+        final VanillaOption vanillaOption = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, s0), europeanExercise);
+        vanillaOption.setPricingEngine(
+                new AnalyticHestonEngine(hestonModel, hestonProcess, 164));
+
+        final double implVol = vanillaOption.impliedVolatility(
+                vanillaOption.NPV(),
+                new GeneralizedBlackScholesProcess(spot, qTS, rTS,
+                        new Handle<BlackVolTermStructure>(
+                                Utilities.flatVol(todaysDate, Math.sqrt(theta), dc))));
+
+        // Analytic double-no-touch reference (flat-vol BSM at implVol).
+        final PricingEngine analyticEngine = new AnalyticDoubleBarrierBinaryEngine(
+                new GeneralizedBlackScholesProcess(spot, qTS, rTS,
+                        new Handle<BlackVolTermStructure>(
+                                Utilities.flatVol(todaysDate, implVol, dc))));
+
+        // Weekly Fokker-Planck time grid up to maturity.
+        final List<Double> expiriesList = new ArrayList<Double>();
+        final Period timeStepPeriod = new Period(1, TimeUnit.Weeks);
+        Date expiryDate = todaysDate.add(timeStepPeriod);
+        while (expiryDate.le(maturityDate)) {
+            expiriesList.add(Double.valueOf(dc.yearFraction(todaysDate, expiryDate)));
+            expiryDate = expiryDate.add(timeStepPeriod);
+        }
+        // TimeGrid(List<Double>) prepends 0.0 if mts[0] > 0, matching C++
+        // iterator-pair ctor semantics used by the helper (which iterates
+        // i=1..size-1 over the mandatory expiries).
+        final TimeGrid timeGrid = new TimeGrid(expiriesList);
+
+        // True local-vol surface stripped from the Heston model.
+        final Handle<LocalVolTermStructure> localVol =
+                new Handle<LocalVolTermStructure>(
+                        getFixedLocalVolFromHeston(hestonModel, timeGrid));
+
+        final BrownianGeneratorFactory sobolGeneratorFactory =
+                new SobolBrownianGeneratorFactory(
+                        SobolBrownianGenerator.Ordering.Diagonal, 1234L,
+                        SobolRsg.DirectionIntegers.JoeKuoD7);
+
+        final int xGrid = 100;
+        final int nSim  = 20000;
+
+        final double eta = 0.90;
+
+        // Mixing-adjusted Heston model: sigma → eta * sigma.
+        final HestonProcess modHestonProcess = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, eta * sigma, rho);
+        final Handle<HestonModel> modHestonModel = new Handle<HestonModel>(
+                new HestonModel(modHestonProcess));
+
+        // MC-calibrated leverage function L(t, S). C++ uses
+        // {timeStepsPerYear=182, nBins=xGrid, calibrationPaths=nSim}.
+        final LocalVolTermStructure leverageFct = new HestonSLVMCModel(
+                localVol, modHestonModel, sobolGeneratorFactory,
+                maturityDate,
+                /*timeStepsPerYear*/ 182,
+                /*nBins*/ xGrid,
+                /*calibrationPaths*/ nSim,
+                /*mandatoryDates*/ new ArrayList<Date>(),
+                /*mixingFactor*/ 1.0).leverageFunction();
+
+        // FD Heston SLV double-barrier engine: tGrid=51, xGrid=101, vGrid=31.
+        final PricingEngine fdEngine = new FdHestonDoubleBarrierEngine(
+                modHestonModel.currentLink(), modHestonProcess,
+                51, 101, 31, 0,
+                FdmSchemeDesc.Hundsdorfer(), leverageFct, 1.0);
+
+        // Reference SLV-vs-BS price differences from C++ v1.42.1.
+        final double[] expected = {
+                 0.0334,  0.1141,  0.1319,  0.0957,  0.0464,  0.0058, -0.0192,
+                -0.0293, -0.0297, -0.0251, -0.0192, -0.0134, -0.0084, -0.0045,
+                -0.0015,  0.0005,  0.0017,  0.0020
+        };
+        // LOOSE tier (5e-3 absolute): wider than C++'s 1e-2 is unnecessary,
+        // but the Java MC path generator and FD solver are not byte-identical
+        // to C++, so we tighten to 5e-3 here per CFC-d-270 brief — and accept
+        // a wider band only when justified by a follow-up cross-validation
+        // probe.
+        final double tol = 5.0e-3;
+
+        for (int i = 0; i < 18; ++i) {
+            final double dist = 10.0 + 5.0 * i;
+
+            final double barrierLo = Math.max(s0 - dist, 1.0e-2);
+            final double barrierHi = s0 + dist;
+            final DoubleBarrierOption doubleBarrier = new DoubleBarrierOption(
+                    DoubleBarrierType.KnockOut, barrierLo, barrierHi, 0.0,
+                    new CashOrNothingPayoff(Option.Type.Call, 0.0, 1.0),
+                    europeanExercise);
+
+            doubleBarrier.setPricingEngine(analyticEngine);
+            final double bsNPV = doubleBarrier.NPV();
+
+            doubleBarrier.setPricingEngine(fdEngine);
+            final double slvNPV = doubleBarrier.NPV();
+
+            final double diff = slvNPV - bsNPV;
+            if (Math.abs(diff - expected[i]) > tol) {
+                fail("Failed to reproduce price difference for a Double-No-Touch "
+                        + "option between Black-Scholes and Heston SLV model"
+                        + "\n  Barrier Low        : " + barrierLo
+                        + "\n  Barrier High       : " + barrierHi
+                        + "\n  Black-Scholes Price: " + bsNPV
+                        + "\n  Heston SLV Price   : " + slvNPV
+                        + "\n  diff               : " + diff
+                        + "\n  expected diff      : " + expected[i]
+                        + "\n  tolerance          : " + tol);
+            }
+        }
+    }
 
     /* ---- 5. Process discretization ------------------------------------ */
 
