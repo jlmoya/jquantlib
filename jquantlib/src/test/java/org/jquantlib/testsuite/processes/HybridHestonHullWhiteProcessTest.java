@@ -129,9 +129,14 @@ import org.junit.Test;
  */
 public class HybridHestonHullWhiteProcessTest {
 
-    private static final String REASON =
-            "Phase 5h.5 — requires HybridHestonHullWhiteProcess + analytic / MC HHW engines "
-            + "(Phase 2m / 4n carry-forward; only FdHestonHullWhite-stack exists in Java).";
+    // The Phase 5h.5 carry-forward REASON ("requires HybridHestonHullWhiteProcess
+    // + analytic / MC HHW engines") was made stale by the landing of
+    // HybridHestonHullWhiteProcess, AnalyticBSMHullWhiteEngine,
+    // AnalyticHestonHullWhiteEngine, AnalyticH1HWEngine, and
+    // MCHestonHullWhiteEngine. The three remaining @Ignore'd tests each
+    // carry their own per-test reason inline (Phase 5e.5b-CFC-d-209
+    // refinement) — see the @Ignore annotations on testCallableEquityPricing,
+    // testFdmHestonHullWhiteEngine, testBsmHullWhitePricing below.
 
     private static final String REASON_SLOW =
             "Phase 5h.5 + slow — requires HHW calibration loop and @Tag(\"slow\") "
@@ -782,7 +787,16 @@ public class HybridHestonHullWhiteProcessTest {
         }
     }
 
-    @Ignore(REASON)
+    @Ignore("Phase 5e.5b-CFC-d-209: HybridHestonHullWhiteProcess + numeraire() are "
+            + "ported, but C++ testCallableEquityPricing uses Date::todaysDate() "
+            + "for the evaluation date, making the cached expected = 0.938 "
+            + "non-reproducible across machines. The 40k-path MC also depends on "
+            + "the equity / variance / short-rate factor sequencing inside C++ "
+            + "MultiPathGenerator (PseudoRandom::rsg_type), which Java's "
+            + "MultiPathGenerator may sequence differently for non-trivial process "
+            + "size, so even with a pinned date the seed=42 fingerprint will not "
+            + "round-trip without a probe-derived expected. Defer until probe "
+            + "regenerates expected on a pinned date.")
     @Test
     public void testCallableEquityPricing() { fail("not implemented"); }
 
@@ -902,11 +916,24 @@ public class HybridHestonHullWhiteProcessTest {
      * The cross-validation intent is still covered by the existing
      * {@code FdHestonHullWhiteVanillaEngineTest} fingerprint test.
      */
-    @Ignore(REASON)
+    @Ignore("Phase 5e.5b-CFC-d-209: FdHestonHullWhiteVanillaEngine is ported, but "
+            + "the Java FdmHestonVarianceMesher collapses its variance grid too "
+            + "tightly around theta at small sigma_v (1e-6) and rejects the v0=0.09 "
+            + "evaluation as extrapolation — same mesher carry-forward described "
+            + "in testSpatialDiscretizatinError's per-scheme skip-list. Re-enabling "
+            + "requires the variance mesher to widen the domain to at least "
+            + "max(theta+4*stddev, 1.5*v0). Cross-validation intent is currently "
+            + "covered by FdHestonHullWhiteVanillaEngineTest fingerprint test.")
     @Test
     public void testFdmHestonHullWhiteEngine() { fail("not implemented"); }
 
-    @Ignore(REASON)
+    @Ignore("Phase 5e.5b-CFC-d-209: AnalyticBSMHullWhiteEngine + "
+            + "FdHestonHullWhiteVanillaEngine both ported, but the Java FD engine "
+            + "lacks (a) the controlVariate parameter, and "
+            + "(b) enableMultipleStrikesCaching(strikes). Without caching the C++ "
+            + "13-strike sweep per (scheme, CV-on/off) becomes a 65-FD-solve sweep "
+            + "per scheme — slow enough to warrant @Tag(\"slow\") gating, which is "
+            + "not yet set up (Phase 5 META D8).")
     @Test
     public void testBsmHullWhitePricing() { fail("not implemented"); }
 
