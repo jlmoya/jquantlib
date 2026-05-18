@@ -22,9 +22,11 @@
 package org.jquantlib.pricingengines.vanilla;
 
 import org.jquantlib.QL;
+import org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess;
 import org.jquantlib.pricingengines.McSimulation;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.processes.HestonProcess;
+import org.jquantlib.processes.StochasticProcess;
 
 /**
  * Fluent builder for {@link MCEuropeanHestonEngine}.
@@ -32,18 +34,23 @@ import org.jquantlib.processes.HestonProcess;
  * <p>Java port of QuantLib v1.42.1 {@code MakeMCEuropeanHestonEngine}
  * (ql/pricingengines/vanilla/mceuropeanhestonengine.hpp). The C++ class
  * is a template parameterised by an {@code RNG} traits type (PseudoRandom
- * or LowDiscrepancy) and a {@code Statistics} accumulator; the underlying
+ * or LowDiscrepancy), a {@code Statistics} accumulator, and a process
+ * type {@code P} (default {@code HestonProcess}). The underlying
  * Java {@link MCEuropeanHestonEngine} is specialised for the
  * Mersenne-Twister + InverseCumulativeNormal Pseudo-Random combination
- * only (see {@code MCEuropeanHestonEngine} JavaDoc for the rationale).
+ * only (see {@code MCEuropeanHestonEngine} JavaDoc for the rationale);
+ * the {@code P} axis is exposed via overloaded constructors and accepts
+ * {@link HestonProcess} (or subclass, e.g. {@code BatesProcess}) or
+ * {@link HestonStochasticLocalVolProcess}.
  *
- * <p>Phase 5e.5b-CFC-d-129 port.
+ * <p>Phase 5e.5b-CFC-d-129 port; HestonSLVProcess overload added in
+ * Phase 5e.5b-CFC-d-235.
  *
  * @see MCEuropeanHestonEngine
  */
 public class MakeMCEuropeanHestonEngine {
 
-    private final HestonProcess process_;
+    private final StochasticProcess process_;
     private boolean antithetic_ = false;
     private int steps_ = McSimulation.NULL_SAMPLES;
     private int stepsPerYear_ = McSimulation.NULL_SAMPLES;
@@ -54,6 +61,16 @@ public class MakeMCEuropeanHestonEngine {
 
     public MakeMCEuropeanHestonEngine(final HestonProcess process) {
         QL.require(process != null, "null Heston process");
+        this.process_ = process;
+    }
+
+    /**
+     * SLV overload — mirrors C++
+     * {@code MakeMCEuropeanHestonEngine<..., P=HestonSLVProcess>}
+     * (test-suite/hestonslvmodel.cpp::testMonteCarloVsFdmPricing).
+     */
+    public MakeMCEuropeanHestonEngine(final HestonStochasticLocalVolProcess process) {
+        QL.require(process != null, "null Heston-SLV process");
         this.process_ = process;
     }
 
@@ -113,14 +130,19 @@ public class MakeMCEuropeanHestonEngine {
         QL.require(steps_ != McSimulation.NULL_SAMPLES
                 || stepsPerYear_ != McSimulation.NULL_SAMPLES,
                 "no time steps provided");
-        return new MCEuropeanHestonEngine(
-                process_,
-                steps_,
-                stepsPerYear_,
-                antithetic_,
-                samples_,
-                tolerance_,
-                maxSamples_,
-                seed_);
+        if (process_ instanceof HestonProcess) {
+            return new MCEuropeanHestonEngine(
+                    (HestonProcess) process_,
+                    steps_, stepsPerYear_, antithetic_,
+                    samples_, tolerance_, maxSamples_, seed_);
+        }
+        if (process_ instanceof HestonStochasticLocalVolProcess) {
+            return new MCEuropeanHestonEngine(
+                    (HestonStochasticLocalVolProcess) process_,
+                    steps_, stepsPerYear_, antithetic_,
+                    samples_, tolerance_, maxSamples_, seed_);
+        }
+        throw new IllegalStateException(
+                "unsupported process type: " + process_.getClass().getName());
     }
 }

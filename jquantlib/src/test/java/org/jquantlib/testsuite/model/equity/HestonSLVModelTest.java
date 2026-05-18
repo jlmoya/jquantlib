@@ -11,6 +11,7 @@ import static org.junit.Assert.fail;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.ActualActual;
@@ -151,9 +152,13 @@ import org.junit.Test;
  *       (Java engine is pure Heston);</li>
  *   <li>{@code FdHestonDoubleBarrierEngine} (2D Heston FDM engine with
  *       leverage-fct support) — not in Java;</li>
- *   <li>{@code MakeMCEuropeanHestonEngine} variant templated on
- *       {@code HestonSLVProcess} (Java's accepts only {@code HestonProcess};
- *       {@code HestonStochasticLocalVolProcess} is a sibling, not subclass);</li>
+ *   <li><s>{@code MakeMCEuropeanHestonEngine} variant templated on
+ *       {@code HestonSLVProcess}</s> — landed Phase 5e.5b-CFC-d-235
+ *       (overloaded ctor on
+ *       {@link org.jquantlib.pricingengines.vanilla.MCEuropeanHestonEngine}
+ *       + {@link org.jquantlib.pricingengines.vanilla.MakeMCEuropeanHestonEngine}
+ *       accepting
+ *       {@link org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess});</li>
  *   <li>{@code LocalVolSurface.localVolImpl} re-alignment to v1.42.1
  *       (denser strike-perturbation stencil + non-forward-aware time derivative
  *       in current Java) — blocks
@@ -1512,9 +1517,18 @@ public class HestonSLVModelTest {
     @Test
     public void testLocalVolsvSLVPropDensity() { fail("not implemented"); }
 
-    @Ignore("Phase 5h.5-SLV-c slow — needs MakeMCEuropeanHestonEngine variant "
-            + "templated on HestonSLVProcess (Java MCEuropeanHestonEngine accepts only "
-            + "HestonProcess; HestonStochasticLocalVolProcess is a sibling class, not subclass).")
+    @Ignore("Phase 5e.5b-CFC-d-235 — MakeMCEuropeanHestonEngine + MCEuropeanHestonEngine "
+            + "now accept HestonStochasticLocalVolProcess (Java sibling of HestonSLVProcess) "
+            + "via overloaded constructors. Remaining blockers: "
+            + "(a) FdHestonVanillaEngine ctor variant that accepts a LocalVolTermStructure "
+            + "leverage-fct argument — Java's engine is pure Heston (see Limitations javadoc "
+            + "in FdHestonVanillaEngine.java line 66); C++ uses it as the FDM reference for "
+            + "the calibration-quality check (test-suite/hestonslvmodel.cpp:2035); "
+            + "(b) HestonStochasticLocalVolProcess.evolve() port discrepancy — manual "
+            + "integration with constant Brownian and leverage=1 yields terminal S=0.0 "
+            + "(see testMonteCarloHestonSLVEnginePathGen probe); the QE+martingale-log-S body "
+            + "needs realignment vs. C++ ql/processes/hestonslvprocess.cpp::evolve. Both "
+            + "blockers out of scope for the Phase 5e.5b-CFC-d allowlist.")
     @Test
     public void testMonteCarloCalibration() { fail("not implemented"); }
 
@@ -1530,11 +1544,133 @@ public class HestonSLVModelTest {
     @Test
     public void testBarrierPricingViaHestonLocalVol() { fail("not implemented"); }
 
-    @Ignore("Phase 5h.5-SLV-c slow — needs MakeMCEuropeanHestonEngine[HestonSLVProcess] "
-            + "and FdHestonVanillaEngine ctor with leverage-fct argument (Java engine is "
-            + "Heston-only); LocalConstantVol exists.")
+    @Ignore("Phase 5e.5b-CFC-d-235 — MakeMCEuropeanHestonEngine[HestonSLVProcess] now "
+            + "available (overloaded ctor on the existing builder; same engine class "
+            + "specialised by instance-type dispatch). Remaining blockers: "
+            + "(a) FdHestonVanillaEngine ctor variant with LocalVolTermStructure "
+            + "leverage-fct argument — Java's engine is pure Heston "
+            + "(test-suite/hestonslvmodel.cpp:1905,1920); "
+            + "(b) HestonStochasticLocalVolProcess.evolve() port discrepancy (see "
+            + "testMonteCarloHestonSLVEnginePathGen probe — terminal S=0.0 under constant "
+            + "Brownian + leverage=1, indicating a sign or cumulant-correction mismatch "
+            + "vs. C++ ql/processes/hestonslvprocess.cpp). LocalConstantVol exists. Both "
+            + "blockers out of scope for the Phase 5e.5b-CFC-d allowlist.")
     @Test
     public void testMonteCarloVsFdmPricing() { fail("not implemented"); }
+
+    /**
+     * Phase 5e.5b-CFC-d-235 smoke probe for the MC SLV engine generalisation —
+     * covers the MC half of {@code testMonteCarloVsFdmPricing} without
+     * depending on {@code FdHestonVanillaEngine}'s missing leverage-fct
+     * ctor variant.
+     *
+     * <p>Strategy: drive
+     * {@link org.jquantlib.pricingengines.vanilla.MCEuropeanHestonEngine}
+     * with a {@link org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess}
+     * whose leverage function is identically 1.0
+     * ({@link org.jquantlib.termstructures.volatilities.LocalConstantVol}
+     * {@code = 1.0}). With unit leverage the SLV diffusion mathematically
+     * collapses to the bare Heston dynamics, so the MC price should agree
+     * with {@link AnalyticHestonEngine} within the MC standard-error band.
+     *
+     * <p>This is a constructor + dispatch test, not a calibration-quality
+     * test. It uses the same Heston parameters as C++
+     * {@code testMonteCarloVsFdmPricing} (s0=100, r=0.05, q=0.02, kappa=2.0,
+     * theta=0.18, rho=-0.75, sigma=0.8, v0=0.19) but a smaller sample
+     * count (2000) and fewer steps/year (50).
+     *
+     * <p>Source counterpart: {@code test-suite/hestonslvmodel.cpp:1860}
+     * (lines 1894-1903 — the MC-engine construction with
+     * {@code HestonSLVProcess}).
+     */
+    @Ignore("Phase 5e.5b-CFC-d-235 — MCEuropeanHestonEngine + "
+            + "MakeMCEuropeanHestonEngine now accept HestonStochasticLocalVolProcess "
+            + "(compile + ctor verified); but a manual integration of "
+            + "HestonStochasticLocalVolProcess.evolve() with constant Brownian and "
+            + "leverage=1 produces terminal S=0.0, indicating a port bug in the "
+            + "QE+martingale-log-S body vs. C++ ql/processes/hestonslvprocess.cpp::evolve. "
+            + "Un-ignore once HestonStochasticLocalVolProcess.evolve() is re-aligned "
+            + "to v1.42.1 — process is read-only for the current allowlist.")
+    @Test
+    public void testMonteCarloHestonSLVEnginePathGen() {
+        QL.info("Testing MCEuropeanHestonEngine accepts "
+                + "HestonStochasticLocalVolProcess (constant-leverage smoke)...");
+
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final Date todaysDate = new Date(5, Month.December, 2015);
+        new Settings().setEvaluationDate(todaysDate);
+        final Date exerciseDate = todaysDate.add(new Period(1, TimeUnit.Years));
+
+        final double s0 = 100.0;
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final double r = 0.05;
+        final double q = 0.02;
+        final double kappa = 2.0;
+        final double theta = 0.18;
+        final double rho   = -0.75;
+        final double sigma = 0.8;
+        final double v0    = 0.19;
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dc));
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+        final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+        // Leverage L(t,S) = 1 identically -> SLV collapses to Heston.
+        final LocalVolTermStructure leverageFct =
+                new org.jquantlib.termstructures.volatilities.LocalConstantVol(
+                        todaysDate, 1.0, dc);
+
+        final org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess slvProcess =
+                new org.jquantlib.experimental.processes.HestonStochasticLocalVolProcess(
+                        hestonProcess, leverageFct);
+
+        // Build MC SLV engine via the new MakeMCEuropeanHestonEngine
+        // HestonSLVProcess overload. Antithetic OFF so the path generator
+        // exercises the full SLV evolve() (not the antithetic-mirror path).
+        final PricingEngine mcEngine =
+                new org.jquantlib.pricingengines.vanilla.MakeMCEuropeanHestonEngine(slvProcess)
+                        .withStepsPerYear(50)
+                        .withSamples(2000)
+                        .withSeed(1234L)
+                        .value();
+
+        // Reference: closed-form Heston via AnalyticHestonEngine.
+        final PricingEngine refEngine = new AnalyticHestonEngine(hestonModel, hestonProcess, 144);
+
+        final Exercise exercise = new EuropeanExercise(exerciseDate);
+
+        final double[] strikes = { 90.0, 100.0, 110.0 };
+        for (final double strike : strikes) {
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(Option.Type.Call, strike);
+            final VanillaOption option = new VanillaOption(payoff, exercise);
+
+            option.setPricingEngine(refEngine);
+            final double refNPV = option.NPV();
+
+            option.setPricingEngine(mcEngine);
+            final double mcNPV = option.NPV();
+            final double mcError = option.errorEstimate();
+
+            // MC tolerance: 3 sigma + a small floor for the SLV-specific
+            // QE+log evolve scheme bias relative to bare-Heston FullTruncation.
+            final double tol = Math.max(3.0 * mcError, 0.5);
+            if (Math.abs(mcNPV - refNPV) > tol) {
+                fail("MC SLV(leverage=1) engine price diverges from AnalyticHeston "
+                        + "beyond MC band:"
+                        + "\n  strike   : " + strike
+                        + "\n  MC NPV   : " + mcNPV
+                        + "\n  AHE NPV  : " + refNPV
+                        + "\n  diff     : " + Math.abs(mcNPV - refNPV)
+                        + "\n  MC error : " + mcError
+                        + "\n  tol      : " + tol);
+            }
+        }
+    }
 
     @Ignore("Phase 5e.5b-CFC-d-175 — SobolBrownianGeneratorFactory (Phase 3i Commit 5), "
             + "AnalyticDoubleBarrierBinaryEngine, and HestonSLVMCModel.leverageFunction() "
