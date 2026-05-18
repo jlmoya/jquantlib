@@ -1054,12 +1054,6 @@ public class HestonSLVModelTest {
      * time derivative skews {@code dwdt} when {@code r != q}. Un-ignore
      * once {@code LocalVolSurface.localVolImpl} is re-aligned to v1.42.1.
      */
-    @Ignore("Phase 5e.5b-CFC-d-150 — production BlackVarianceSurface bugs fixed; "
-            + "body-fill landed but 38/84 mesher sub-cases miss the C++ tol=0.05 "
-            + "by 0.05-0.34. Residual traces to LocalVolSurface.localVolImpl "
-            + "divergence from C++ (denser strike-perturbation stencil + "
-            + "non-forward-aware time derivative). Un-ignore once LocalVolSurface "
-            + "is re-aligned to v1.42.1.")
     @Test
     public void testBlackScholesFokkerPlanckFwdEquationLocalVol() {
         final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
