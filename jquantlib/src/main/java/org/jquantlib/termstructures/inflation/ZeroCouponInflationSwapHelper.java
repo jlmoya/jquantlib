@@ -113,6 +113,18 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
      */
     private ZeroInflationIndex ziiClone;
 
+    /**
+     * Optional nominal-yield-curve handle supplied via the deprecated v1.39
+     * constructor overload ({@code inflationhelpers.cpp:72-85}). When non-null
+     * the discounting swap engine wired in
+     * {@link #setTermStructure(ZeroInflationTermStructure)} uses this curve
+     * instead of the internal flat-zero default. Equal discount factors on
+     * the two legs cancel when computing the fair rate so the choice of
+     * nominal curve has no effect on the bootstrap result; we preserve the
+     * handle only for API parity with C++.
+     */
+    private final Handle<YieldTermStructure> nominalTermStructure;
+
     //
     // public constructors
     //
@@ -244,7 +256,69 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
             final CPI.InterpolationType observationInterpolation,
             final Pillar.Choice pillar,
             final Date customPillarDate) {
+        this(quote, swapObsLag, startDate, endDate, calendar, paymentConvention,
+             dayCounter, zii, observationInterpolation, pillar, customPillarDate,
+             /*nominalTermStructure*/ null);
+    }
+
+    /**
+     * Deprecated v1.39 overload — wraps the v1.42.1 constructor with an
+     * explicit nominal-yield-curve handle. Mirrors C++ v1.42.1
+     * {@code ZeroCouponInflationSwapHelper(quote, lag, maturity, cal, bdc, dc,
+     * zii, obsInterp, nominalTermStructure)}
+     * ({@code inflationhelpers.cpp:72-85}; declared {@code [[deprecated]]} at
+     * {@code inflationhelpers.hpp:67-77}).
+     *
+     * <p>The nominal curve is wired into the internal
+     * {@code DiscountingSwapEngine} by
+     * {@link #setTermStructure(ZeroInflationTermStructure)}. The equal discount
+     * factors on the two ZCIIS legs cancel when computing the fair rate so
+     * the choice of nominal curve has no effect on the bootstrap; we accept
+     * it only for API parity with C++.
+     *
+     * @deprecated Use the overload that does not take a nominal curve.
+     */
+    @Deprecated
+    public ZeroCouponInflationSwapHelper(
+            final Handle<Quote> quote,
+            final Period swapObsLag,
+            final Date maturity,
+            final Calendar calendar,
+            final BusinessDayConvention paymentConvention,
+            final DayCounter dayCounter,
+            final ZeroInflationIndex zii,
+            final CPI.InterpolationType observationInterpolation,
+            final Handle<YieldTermStructure> nominalTermStructure) {
+        this(quote, swapObsLag, /*startDate*/ null, maturity, calendar,
+             paymentConvention, dayCounter, zii, observationInterpolation,
+             Pillar.Choice.LastRelevantDate, /*customPillarDate*/ null,
+             nominalTermStructure);
+    }
+
+    /**
+     * Full constructor — mirrors the private C++ constructor at
+     * {@code inflationhelpers.hpp:101-113} (used by all public ctors). Accepts
+     * an optional nominal yield curve.
+     *
+     * @param nominalTermStructure optional nominal yield curve handle; may be
+     *                             {@code null} for the v1.42.1 default of an
+     *                             internal flat-zero curve.
+     */
+    private ZeroCouponInflationSwapHelper(
+            final Handle<Quote> quote,
+            final Period swapObsLag,
+            final Date startDate,
+            final Date endDate,
+            final Calendar calendar,
+            final BusinessDayConvention paymentConvention,
+            final DayCounter dayCounter,
+            final ZeroInflationIndex zii,
+            final CPI.InterpolationType observationInterpolation,
+            final Pillar.Choice pillar,
+            final Date customPillarDate,
+            final Handle<YieldTermStructure> nominalTermStructure) {
         super(quote);
+        this.nominalTermStructure = nominalTermStructure;
         this.swapObsLag = swapObsLag;
         // Preserve "user-supplied or default" semantics: the C++ helper uses
         // startDate_ == Date() as the sentinel for "use evaluationDate" and the
@@ -357,7 +431,8 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
      * <p>On each call we (a) record the curve, (b) clone the helper's index
      * with a Handle pointing at the curve, and (c) build a fresh
      * {@link ZeroCouponInflationSwap} priced through a
-     * {@link DiscountingSwapEngine} backed by a flat-zero nominal curve.
+     * {@link DiscountingSwapEngine} backed by a flat-zero nominal curve
+     * (or the caller-supplied nominal curve when present).
      */
     @Override
     public void setTermStructure(final ZeroInflationTermStructure ts) {
@@ -391,16 +466,22 @@ public class ZeroCouponInflationSwapHelper extends BootstrapHelper<ZeroInflation
                 swapObsLag,
                 observationInterpolation);
 
-        // Nominal discount curve: flat zero, matches C++
-        // FlatForward(0, NullCalendar(), 0.0, dayCounter)
-        // (inflationhelpers.cpp:48 and :69). When computing the fair rate the
-        // equal discount factors on the two legs cancel, so any nominal curve
-        // gives the same fair rate.
-        final FlatForward nominalCurve = new FlatForward(
-                ts.referenceDate(), 0.0, dayCounter,
-                Compounding.Continuous, Frequency.Annual);
-        final Handle<YieldTermStructure> nominalHandle =
-                new Handle<YieldTermStructure>(nominalCurve);
+        // Nominal discount curve: when the caller supplied one via the
+        // deprecated v1.39 overload (inflationhelpers.cpp:72-85), use it.
+        // Otherwise fall back to a flat-zero internal curve matching C++
+        // FlatForward(0, NullCalendar(), 0.0, dayCounter) (inflationhelpers
+        // .cpp:48 and :69). The equal discount factors on the two legs cancel
+        // when computing the fair rate, so any nominal curve gives the same
+        // fair rate; we honour the caller's choice purely for API parity.
+        final Handle<YieldTermStructure> nominalHandle;
+        if (this.nominalTermStructure != null && !this.nominalTermStructure.empty()) {
+            nominalHandle = this.nominalTermStructure;
+        } else {
+            final FlatForward nominalCurve = new FlatForward(
+                    ts.referenceDate(), 0.0, dayCounter,
+                    Compounding.Continuous, Frequency.Annual);
+            nominalHandle = new Handle<YieldTermStructure>(nominalCurve);
+        }
         this.zciis.setPricingEngine(new DiscountingSwapEngine(nominalHandle));
     }
 
