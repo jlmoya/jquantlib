@@ -89,7 +89,6 @@ import org.jquantlib.time.calendars.JointCalendar;
 import org.jquantlib.time.calendars.JointCalendar.JointCalendarRule;
 import org.jquantlib.time.calendars.Target;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -656,27 +655,10 @@ public class PiecewiseYieldCurveTest {
 	  }
 
     
-	@Ignore("Phase Bug-Fix-Curve: matches C++ v1.42.1 (test-suite/piecewiseyieldcurve.cpp:656 — `//Unstable BOOST_AUTO_TEST_CASE(testLogCubicDiscountConsistency)`). LogCubic+Discount is intrinsically unstable per QuantLib project itself; the cubic spline overshoots when extended pillar-by-pillar so the iteration loop oscillates rather than converges (Java sees ~0.005 residual vs required 1e-12, even with maxIterations=100 matching C++). C++ commented this test out and never resurrected it. Phase Bug-Fix-3 fixed two IterativeBootstrap bugs (silent QL.error catch + inverted global() condition) and Phase Bug-Fix-Curve made minValueAfter/maxValueAfter pillar-aware (matching C++); but this combo remains intrinsically unstable.")
-	@Test
-	public void testLogCubicDiscountConsistency() {
-
-		QL.info("Testing consistency of piecewise-log-cubic discount curve...");
-
-	    final CommonVars vars = new CommonVars();
-
-	    testCurveConsistency(
-	    	Discount.class, LogCubic.class, IterativeBootstrap.class,
-	        vars,
-	        new LogCubic(CubicInterpolation.DerivativeApprox.Spline, true,
-	                     CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0,
-	                     CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0));
-//	    testBMACurveConsistency(
-//		    Discount.class, LogCubic.class, IterativeBootstrap.class,
-//	        vars,
-//	        new LogCubic(CubicInterpolation.DerivativeApprox.Spline, true,
-//	                     CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0,
-//	                     CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0));
-	}
+	// testLogCubicDiscountConsistency removed: mirrors C++ v1.42.1
+	// test-suite/piecewiseyieldcurve.cpp:656 — `//Unstable BOOST_AUTO_TEST_CASE(testLogCubicDiscountConsistency)`.
+	// LogCubic+Discount is intrinsically unstable per upstream QuantLib; C++ commented this test out and never
+	// resurrected it. Deleted in JQuantLib to match upstream removal (Phase 5e.5b-CFC-d-198).
 
 	@Test
 	public void testLogLinearDiscountConsistency() {
@@ -765,27 +747,10 @@ public class PiecewiseYieldCurveTest {
 	    testBMACurveConsistency(ForwardRate.class, BackwardFlat.class, IterativeBootstrap.class, vars);
 	}
 
-	@Ignore("Phase Bug-Fix-Curve: matches C++ v1.42.1 (test-suite/piecewiseyieldcurve.cpp:748 — `//Unstable BOOST_AUTO_TEST_CASE(testSplineForwardConsistency)`). Cubic spline + ForwardRate is genuinely numerically unstable per QuantLib project itself; the cubic spline overshoots when extended pillar-by-pillar so the bracket [-maxRate,+maxRate] (or pillar-aware [min(data)/2, max(data)*2]) does not contain the root for the long-pillar instruments. C++ commented this test out and never resurrected it. Phase Bug-Fix-Curve fixed minValueAfter/maxValueAfter to be pillar-aware (matching C++), but this combo remains intrinsically unstable.")
-	@Test
-	public void testSplineForwardConsistency() {
-
-	    QL.info("Testing consistency of piecewise-cubic forward-rate curve...");
-
-	    final CommonVars vars = new CommonVars();
-
-	    testCurveConsistency(
-	    				ForwardRate.class, Cubic.class, IterativeBootstrap.class,
-	                    vars,
-	                    new Cubic(CubicInterpolation.DerivativeApprox.Spline, true,
-	                         CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0,
-	                         CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0));
-	    testBMACurveConsistency(
-				ForwardRate.class, Cubic.class, IterativeBootstrap.class,
-                vars,
-                new Cubic(CubicInterpolation.DerivativeApprox.Spline, true,
-                     CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0,
-                     CubicInterpolation.BoundaryCondition.SecondDerivative, 0.0));
-	}
+	// testSplineForwardConsistency removed: mirrors C++ v1.42.1
+	// test-suite/piecewiseyieldcurve.cpp:748 — `//Unstable BOOST_AUTO_TEST_CASE(testSplineForwardConsistency)`.
+	// Cubic spline + ForwardRate is intrinsically unstable per upstream QuantLib; C++ commented this test out and
+	// never resurrected it. Deleted in JQuantLib to match upstream removal (Phase 5e.5b-CFC-d-198).
 
 //	@Ignore
 //	@Test
