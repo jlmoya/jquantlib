@@ -56,17 +56,22 @@ import org.junit.Test;
  * (445 LOC, 6 test cases).
  *
  * <p>Cached HullWhite + ExtendedCoxIngersollRoss test cases body-filled in
- * Phase 5e.5b-CFC-d-37. The two cases that depend on infrastructure not yet
- * present in the Java port stay {@code @Ignore}d:
+ * Phase 5e.5b-CFC-d-37. The two cases that originally depended on
+ * infrastructure not yet present in the Java port have since been
+ * unblocked and are now active:
  * <ul>
- *   <li>{@link #testCachedHullWhiteFixedReversion} — requires a
- *       {@code HullWhite::FixedReversion} projection argument to
- *       {@code CalibratedModel.calibrate}; Java's single calibrate overload
- *       does not yet accept a {@code Projection}.</li>
- *   <li>{@link #testSwaps} — requires {@code DiscountCurve} (interpolated
- *       discount-factor yield curve) and {@code TreeVanillaSwapEngine}; both
- *       are unported in Java.</li>
+ *   <li>{@link #testCachedHullWhiteFixedReversion} — un-ignored in
+ *       Phase 5e.5b-CFC-d-201 once the projection-aware
+ *       {@code CalibratedModel.calibrate(..., fixParameters)} overload
+ *       landed (matching C++ {@code HullWhite::FixedReversion}
+ *       semantics).</li>
+ *   <li>{@link #testSwaps} — un-ignored in Phase 5e.5b-CFC-d-231
+ *       once {@code DiscountCurve} (interpolated discount-factor yield
+ *       curve) and {@link org.jquantlib.pricingengines.swap.TreeVanillaSwapEngine}
+ *       both landed.</li>
  * </ul>
+ *
+ * <p>All 6 cases now run unconditionally on the standard JUnit profile.
  *
  * <p>Source: {@code test-suite/shortratemodels.cpp} v1.42.1 @
  * {@code 099987f0ca}.
