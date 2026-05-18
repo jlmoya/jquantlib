@@ -603,8 +603,48 @@ public class CapFloorTest {
         }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-CF-1: MakeCapFloor now ported (commit c1e9cb84); "
-            + "needs cached NPVs regenerated from C++ v1.42.1 (probe candidate).")
+    /**
+     * Mirrors C++ capfloor.cpp testCachedValue (lines 536-578).
+     *
+     * <p>Builds a 20Y Euribor6M cap (strike 0.07, vol 0.20) and floor
+     * (strike 0.03, vol 0.20) priced with {@link BlackCapFloorEngine} on
+     * an evaluation date of 14-Mar-2002 with a flat 5% Actual/360 curve
+     * referenced at the hard-coded settlement 18-Mar-2002. The C++ probe
+     * {@code capfloor_cached_value_probe.cpp} (reference JSON:
+     * {@code references/instruments/capfloor_cached_value.json},
+     * Phase 5e.5b-CFC-d-222) captures the C++ v1.42.1 par-coupon values:
+     * <pre>
+     *   capNPV   = 6.875700267315598
+     *   floorNPV = 2.6581292795945015
+     * </pre>
+     *
+     * <p><b>Body-fill blocked by structural divergence.</b> When the body
+     * was implemented (commit attempt under Phase 5e.5b-CFC-d-222), the
+     * Java engine returned {@code capNPV = 6.871705355889598} — a deviation
+     * of {@code 3.99e-3} from the C++ reference, three orders of magnitude
+     * wider than the tight {@code 1e-12} tolerance and even outside the
+     * loose {@code 1e-8} tier. This is the same divergence already
+     * documented on the sibling {@link #testCachedValueFromOptionLets}
+     * (which therefore asserts only the structural invariant
+     * {@code sum(optionletsPrice) == NPV}, not the C++ cached value).
+     *
+     * <p>Root cause is upstream of {@link org.jquantlib.instruments.MakeCapFloor}
+     * (which was confirmed aligned with C++ v1.42.1 in commit c1e9cb84) and
+     * of {@link BlackCapFloorEngine}: it is in the IborLeg construction
+     * path — specifically Java's IborCoupon fixing/accrual semantics —
+     * and not in any class this test touches. Per CLAUDE.md tolerance
+     * policy ("Never loosen tolerance to force green"), the test stays
+     * {@code @Ignore}'d with the refined reason below until the upstream
+     * IborCoupon divergence is fixed (separate work item).
+     */
+    @Ignore("Phase 5e.5b-CFC-d-222: probe-captured C++ ref values "
+            + "(capNPV=6.875700267315598, floorNPV=2.6581292795945015, "
+            + "references/instruments/capfloor_cached_value.json). Java engine "
+            + "diverges by ~3.99e-3 on cap NPV (calculated 6.871705355889598) — "
+            + "same structural IborCoupon-fixing divergence flagged on the "
+            + "sibling testCachedValueFromOptionLets. MakeCapFloor and "
+            + "BlackCapFloorEngine are not implicated; root cause is upstream "
+            + "in IborLeg/IborCoupon. Blocked on upstream alignment.")
     @Test
     public void testCachedValue() {
     }
