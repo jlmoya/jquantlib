@@ -132,8 +132,17 @@ public class BasketOptionTest {
           + "(depends on per-asset LocalVolTermStructure wiring)";
 
     private static final String REASON_FDM_AMERICAN =
-            "Phase 5k.5b — requires FdmAmericanBasketEngine "
-          + "(early-exercise FD basket engine)";
+            "Phase 5k.5b — both C++ tests (testFdmAmericanBasketOptions, "
+          + "testAccurateAmericanBasketOptions) drive the basket through "
+          + "QuantLib v1.42.1's FdndimBlackScholesVanillaEngine (n-dim FD "
+          + "engine), not a separate FdmAmericanBasketEngine class. The "
+          + "n-dim engine's dependency stack — FdmWienerOp, FdmNdimSolver<N> "
+          + "(template-dispatched on dimension via MultiCubicSpline<N>), "
+          + "VectorBsmProcessExtractor, getCovariance — is not yet ported "
+          + "to Java. MultiCubicSpline<N> in particular is a non-trivial "
+          + "N-dim template recursion that requires its own port. Scope is "
+          + "~1000–1500 LOC of FDM infrastructure across 5 files; defer to "
+          + "the dedicated FdndimBlackScholesVanillaEngine port task";
 
     private static final String REASON_BSM_BASKET =
             "Phase 5k.5b — requires SingleFactorBsmBasketEngine "
