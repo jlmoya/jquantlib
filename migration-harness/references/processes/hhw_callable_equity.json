@@ -1,0 +1,55 @@
+{
+  "cases": [
+    {
+      "expected": {
+        "errorEstimate": 0.00042552027071075885,
+        "mean": 0.9378175807693316
+      },
+      "inputs": {
+        "antithetic": true,
+        "daycounter": "Actual365Fixed",
+        "heston_kappa": 1.0,
+        "heston_rho": 0.0,
+        "heston_sigma": 0.0001,
+        "heston_theta": 0.0576,
+        "heston_v0": 0.0625,
+        "hw_a": 0.00883,
+        "hw_fwd_measure_t": 8.005479452054795,
+        "hw_sigma": 0.00526,
+        "joint_rho_eqr": -0.4,
+        "maturity_years": 7,
+        "nrTrails": 40000,
+        "qRate": 0.04,
+        "rRate": 0.04,
+        "redemption": [
+          1.07,
+          1.1,
+          1.13,
+          1.16,
+          1.19,
+          1.22,
+          1.25
+        ],
+        "seed": 42,
+        "spot": 100.0,
+        "times": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0
+        ],
+        "today": "2026-07-15"
+      },
+      "name": "giese_autocallable_seed42_40k"
+    }
+  ],
+  "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
+  "cpp_version": "1.42.1",
+  "generated_at": "2026-05-18T14:09:30Z",
+  "generated_by": "hhw_callable_equity_probe",
+  "test_group": "processes/hhw_callable_equity"
+}
