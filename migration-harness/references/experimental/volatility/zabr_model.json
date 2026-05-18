@@ -334,6 +334,54 @@
     },
     {
       "expected": {
+        "full_fd_price": [
+          0.008653790045125103,
+          0.006051587709325595,
+          0.004104638843956837
+        ]
+      },
+      "inputs": {
+        "alpha": 0.08,
+        "beta": 0.7,
+        "expiry": 5.0,
+        "forward": 0.03,
+        "gamma": 1.0,
+        "nu": 0.2,
+        "rho": -0.3,
+        "strikes": [
+          0.025,
+          0.03,
+          0.035
+        ]
+      },
+      "name": "full_fd_price_gamma1"
+    },
+    {
+      "expected": {
+        "full_fd_price": [
+          0.008660296630302626,
+          0.006057160119220244,
+          0.004108321334891698
+        ]
+      },
+      "inputs": {
+        "alpha": 0.08,
+        "beta": 0.7,
+        "expiry": 5.0,
+        "forward": 0.03,
+        "gamma": 0.75,
+        "nu": 0.2,
+        "rho": -0.3,
+        "strikes": [
+          0.025,
+          0.03,
+          0.035
+        ]
+      },
+      "name": "full_fd_price_gamma075"
+    },
+    {
+      "expected": {
         "lognormal_vol": [
           0.14008955482442184,
           0.09949144000632247,
@@ -391,7 +439,7 @@
   ],
   "cpp_commit": "099987f0ca2c11c505dc4348cdb9ce01a598e1e5",
   "cpp_version": "1.42.1",
-  "generated_at": "2026-05-10T02:42:45Z",
+  "generated_at": "2026-05-18T04:12:19Z",
   "generated_by": "experimental/volatility/zabr_model_probe",
   "test_group": "experimental/volatility/zabr_model"
 }

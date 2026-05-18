@@ -239,10 +239,14 @@ public class ZabrModelCrossValidationTest {
      * test. Tolerance LOOSE_FD (5e-3) is appropriate — full-FD has the
      * same step-conditioning + tridiagonal solve roundoff as Dupire FD.
      */
+    /**
+     * Phase 5e.5b-CFC-d-209: un-ignored after regenerating
+     * {@code zabr_model.json} via
+     * {@code migration-harness/generate-references.sh zabr_model_probe}.
+     * The {@code full_fd_price_gamma1} / {@code full_fd_price_gamma075}
+     * cases are now present in the reference JSON.
+     */
     @Test
-    @Ignore("Phase 4f.5d carry-forward: zabr_model.json refs need regeneration "
-            + "with new full_fd_price_* cases (added to probe in Phase 4f.5c). "
-            + "Re-run migration-harness/generate-references.sh zabr_model_probe.")
     public void fullFdPrice_gamma1_full_fd_loose() {
         final List<String> failures = new ArrayList<>();
         for (final String name : new String[] {
