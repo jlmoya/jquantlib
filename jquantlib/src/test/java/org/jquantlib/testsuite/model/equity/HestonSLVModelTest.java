@@ -486,22 +486,23 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-175 — FdmHestonGreensFct.{Gaussian,ZeroCorrelation} "
-            + "now landed (FdmHestonGreensFct.Algorithm enum has all 3 paths) and "
-            + "HundsdorferScheme is in main source. Remaining blockers: "
-            + "Concentrating1dMesher multi-cPoint variant (vector<tuple<Real,Real,bool>> "
-            + "ctor — current Java only has single-cPoint ctor) + 2D fokkerPlanckPrice2D "
-            + "test helper (the C++ helper at line 200 of hestonslvmodel.cpp evolves a "
-            + "Dirac density on the 2D log-spot/variance mesh and integrates against a "
-            + "BicubicSpline-interpolated payoff surface).")
+    @Ignore("Phase 5e.5b-CFC-d-217 — FdmHestonGreensFct.{Gaussian,ZeroCorrelation}, "
+            + "HundsdorferScheme, and the Concentrating1dMesher multi-cPoint variant "
+            + "(vector<tuple<Real,Real,bool>> ctor — landed Phase 5e.5b-CFC-d-216 as "
+            + "Concentrating1dMesher(start,end,size,List<CPointSpec>[,tol])) are all "
+            + "in place. Remaining blocker: 2D fokkerPlanckPrice2D test helper (the C++ "
+            + "helper at line 200 of hestonslvmodel.cpp evolves a Dirac density on the "
+            + "2D log-spot/variance mesh and integrates against a BicubicSpline-interpolated "
+            + "payoff surface).")
     @Test
     public void testHestonFokkerPlanckFwdEquation() { fail("not implemented"); }
 
-    @Ignore("Phase 5e.5b-CFC-d-175 — HundsdorferScheme now landed. Remaining blockers: "
-            + "Concentrating1dMesher multi-cPoint variant + 2D fokkerPlanckPrice2D test "
-            + "helper + createLocalVolMatrixFromProcess test helper (C++ line ~533: takes "
-            + "a HestonProcess, builds a 2D vol matrix on a strikes x times grid via "
-            + "FdHestonVanillaEngine pricing).")
+    @Ignore("Phase 5e.5b-CFC-d-217 — HundsdorferScheme and the Concentrating1dMesher "
+            + "multi-cPoint variant (landed Phase 5e.5b-CFC-d-216) are in place. "
+            + "Remaining blockers: 2D fokkerPlanckPrice2D test helper + "
+            + "createLocalVolMatrixFromProcess test helper (C++ line ~454: takes a "
+            + "BlackScholesMertonProcess and builds a 2D vol matrix on a strikes x times "
+            + "grid via Dupire-evolved local volatilities).")
     @Test
     public void testHestonFokkerPlanckFwdEquationLogLVLeverage() { fail("not implemented"); }
 
