@@ -814,8 +814,7 @@ public class FdHestonTest {
     /**
      * {@code testSpuriousOscillations} — verifies which ADI schemes produce
      * spurious oscillations on a low-vol Heston PDE for an ATM European
-     * call. Mirrors C++ test-suite/fdheston.cpp lines 870-944. Currently
-     * @Ignore'd on the Java port — see Javadoc note below.
+     * call. Mirrors C++ test-suite/fdheston.cpp lines 870-944.
      * <p>
      * Expected oscillation behaviour by scheme (from C++ source):
      * <ul>
@@ -824,7 +823,7 @@ public class FdHestonTest {
      * </ul>
      * Detection: max gamma-difference in [99..101] step-0.1 above 0.01 ⇒ oscillating.
      * <p>
-     * <strong>Phase 4n.5d — un-ignored:</strong>
+     * <strong>Phase 4n.5d — body-filled (active):</strong>
      * {@link FdmHestonSolver#gammaAt(double, double)} now uses the analytic
      * monotonic-cubic spline second derivative via
      * {@link org.jquantlib.methods.finitedifferences.solvers.Fdm2DimSolver#derivativeXX}
