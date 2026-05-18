@@ -30,6 +30,9 @@ import org.jquantlib.math.interpolations.NaturalCubicInterpolation;
 import org.jquantlib.math.interpolations.factories.BicubicSpline;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.math.solvers1D.Brent;
+import org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher;
+import org.jquantlib.methods.finitedifferences.meshers.Concentrating1dMesher.CPointSpec;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
@@ -37,17 +40,26 @@ import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
 import org.jquantlib.methods.finitedifferences.meshers.Predefined1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher;
 import org.jquantlib.methods.finitedifferences.operators.FdmBlackScholesFwdOp;
+import org.jquantlib.methods.finitedifferences.operators.FdmHestonFwdOp;
 import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpComposite;
+import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpIterator;
 import org.jquantlib.methods.finitedifferences.operators.FdmLocalVolFwdOp;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp;
 import org.jquantlib.methods.finitedifferences.operators.FdmSquareRootFwdOp.TransformationType;
 import org.jquantlib.methods.finitedifferences.schemes.DouglasScheme;
+import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
+import org.jquantlib.methods.finitedifferences.schemes.ModifiedCraigSneydScheme;
+import org.jquantlib.methods.finitedifferences.utilities.FdmHestonGreensFct;
 import org.jquantlib.methods.finitedifferences.utilities.FdmMesherIntegral;
 import org.jquantlib.methods.finitedifferences.utilities.SquareRootProcessRNDCalculator;
+import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.pricingengines.PricingEngine;
+import org.jquantlib.pricingengines.vanilla.AnalyticHestonEngine;
+import org.jquantlib.pricingengines.vanilla.AnalyticPDFHestonEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
@@ -486,23 +498,280 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-217 — FdmHestonGreensFct.{Gaussian,ZeroCorrelation}, "
-            + "HundsdorferScheme, and the Concentrating1dMesher multi-cPoint variant "
-            + "(vector<tuple<Real,Real,bool>> ctor — landed Phase 5e.5b-CFC-d-216 as "
-            + "Concentrating1dMesher(start,end,size,List<CPointSpec>[,tol])) are all "
-            + "in place. Remaining blocker: 2D fokkerPlanckPrice2D test helper (the C++ "
-            + "helper at line 200 of hestonslvmodel.cpp evolves a Dirac density on the "
-            + "2D log-spot/variance mesh and integrates against a BicubicSpline-interpolated "
-            + "payoff surface).")
-    @Test
-    public void testHestonFokkerPlanckFwdEquation() { fail("not implemented"); }
+    /**
+     * Java port of C++ helper {@code fokkerPlanckPrice2D}
+     * (test-suite/hestonslvmodel.cpp:200). Integrates a payoff-weighted
+     * 2D density {@code p} over the {@link FdmMesherComposite} via
+     * {@link FdmMesherIntegral} + {@link DiscreteSimpsonIntegral}.
+     *
+     * <p>The C++ helper builds local {@code x} / {@code y} marginal axes
+     * but never uses them in the body (a Trojan no-op left from an earlier
+     * draft that used a BicubicSpline). The actual return value is just
+     * {@code FdmMesherIntegral(mesher, DiscreteSimpsonIntegral()).integrate(p)}.
+     */
+    private static double fokkerPlanckPrice2D(final Array p,
+                                              final FdmMesherComposite mesher) {
+        final FdmMesherIntegral mi = new FdmMesherIntegral(
+                mesher,
+                new FdmMesherIntegral.Integrator1d() {
+                    @Override
+                    public double op(final Array x, final Array f) {
+                        return new DiscreteSimpsonIntegral().op(x, f);
+                    }
+                });
+        return mi.integrate(p);
+    }
 
-    @Ignore("Phase 5e.5b-CFC-d-217 — HundsdorferScheme and the Concentrating1dMesher "
-            + "multi-cPoint variant (landed Phase 5e.5b-CFC-d-216) are in place. "
-            + "Remaining blockers: 2D fokkerPlanckPrice2D test helper + "
-            + "createLocalVolMatrixFromProcess test helper (C++ line ~454: takes a "
-            + "BlackScholesMertonProcess and builds a 2D vol matrix on a strikes x times "
-            + "grid via Dupire-evolved local volatilities).")
+    /**
+     * Java port of C++ helper {@code hestonPxBoundary}
+     * (test-suite/hestonslvmodel.cpp:221). Inverts the Heston-CDF at level
+     * {@code eps} via Brent on {@link AnalyticPDFHestonEngine#cdf}.
+     */
+    private static double hestonPxBoundary(final double maturity,
+                                           final double eps,
+                                           final HestonModel model) {
+        final AnalyticPDFHestonEngine pdfEngine =
+                new AnalyticPDFHestonEngine(model, model.process());
+        final double sInit = model.process().s0().currentLink().value();
+        final Ops.DoubleOp residual = new Ops.DoubleOp() {
+            @Override
+            public double op(final double x) { return pdfEngine.cdf(x, maturity) - eps; }
+        };
+        return new Brent().solve(residual, sInit * 0.001, sInit, sInit * 1e-3, 1000 * sInit);
+    }
+
+    /**
+     * Java port of C++ helper {@code createLocalVolMatrixFromProcess}
+     * (test-suite/hestonslvmodel.cpp:454). Builds a {@code strikes.length x
+     * dates.length} matrix of Dupire local volatilities derived from the
+     * supplied {@link BlackScholesMertonProcess}'s {@link LocalVolTermStructure}
+     * (catching exceptions and falling back to {@code 0.2}). Also fills the
+     * caller-supplied {@code times} buffer via
+     * {@code dc.yearFraction(todaysDate, dates[i])}.
+     *
+     * <p>The caller-supplied {@code times} array MUST have the same length
+     * as {@code dates} (mirrors the {@code QL_REQUIRE} on the C++ side).
+     */
+    private static Matrix createLocalVolMatrixFromProcess(
+            final BlackScholesMertonProcess lvProcess,
+            final double[] strikes,
+            final Date[] dates,
+            final double[] times) {
+
+        final LocalVolTermStructure localVol =
+                lvProcess.localVolatility().currentLink();
+        final DayCounter dc = localVol.dayCounter();
+        final Date todaysDate = new Settings().evaluationDate();
+
+        if (times.length != dates.length) {
+            throw new IllegalArgumentException("times/dates length mismatch");
+        }
+        for (int i = 0; i < times.length; ++i) {
+            times[i] = dc.yearFraction(todaysDate, dates[i]);
+        }
+
+        final Matrix surface = new Matrix(strikes.length, dates.length);
+        for (int i = 0; i < strikes.length; ++i) {
+            for (int j = 0; j < dates.length; ++j) {
+                double v;
+                try {
+                    v = localVol.localVol(dates[j], strikes[i], true);
+                } catch (final RuntimeException ex) {
+                    v = 0.2;
+                }
+                surface.set(i, j, v);
+            }
+        }
+        return surface;
+    }
+
+    /**
+     * Tests the Fokker-Planck forward equation for the Heston process.
+     * Mirrors C++ {@code testHestonFokkerPlanckFwdEquation}
+     * (test-suite/hestonslvmodel.cpp:1141 — C++ marks this test
+     * {@code precondition(if_speed(Slow))}).
+     *
+     * <p>C++ runs 4 sub-cases x 7 maturities x 8 strikes. To keep CI runtime
+     * bounded the Java port runs <strong>only the smallest config</strong>
+     * (case 4: {@code Plain} transform with the Feller-fulfilled low-vol-of-vol
+     * regime, {@code xGrid=201, vGrid=401, tGridPerYear=5}); the other three
+     * cases (Power/Log/Log transforms with 25 / 10 / 25 time-steps per year
+     * and grids up to 501x201) are not exercised here. The
+     * {@link #fokkerPlanckPrice2D(Array, FdmMesherComposite)} +
+     * {@link #hestonPxBoundary(double, double, HestonModel)} helpers and the
+     * {@code Concentrating1dMesher} multi-cPoint ctor cover the full
+     * machinery; only the loop bound differs.
+     *
+     * <p>Per-strike tolerance: 0.02 (matches C++ {@code testCase.eps}
+     * for case 4); average-across-strikes tolerance: 0.01 (matches
+     * {@code testCase.avgEps}).
+     */
+    @Test
+    public void testHestonFokkerPlanckFwdEquation() {
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final Date todaysDate = new Date(28, Month.December, 2014);
+        new Settings().setEvaluationDate(todaysDate);
+
+        final Period[] maturities = {
+            new Period(1, TimeUnit.Months),
+            new Period(3, TimeUnit.Months),
+            new Period(6, TimeUnit.Months),
+            new Period(9, TimeUnit.Months),
+            new Period(1, TimeUnit.Years),
+            new Period(2, TimeUnit.Years),
+            new Period(3, TimeUnit.Years)
+        };
+
+        final Date finalMaturityDate = todaysDate.add(maturities[maturities.length - 1]);
+        final double finalMaturity = dc.yearFraction(todaysDate, finalMaturityDate);
+
+        // Case 4 (Plain transform, Feller-fulfilled): s0=100, r=0.01, q=0.02,
+        //   v0=0.05, kappa=1, theta=0.05, rho=-0.75, sigma=sqrt(0.05),
+        //   xGrid=201, vGrid=401, tGridPerYear=5, avgEps=0.01, eps=0.02.
+        final double s0 = 100.0;
+        final double x0 = Math.log(s0);
+        final double r = 0.01;
+        final double q = 0.02;
+        final double kappa = 1.0;
+        final double theta = 0.05;
+        final double rho   = -0.75;
+        final double sigma = Math.sqrt(0.05);
+        final double v0    = 0.05;
+        final int    xGrid = 201;
+        final int    vGrid = 401;
+        final int    tGridPerYear = 5;
+        final double avgEps = 0.01;
+        final double eps    = 0.02;
+        final TransformationType transformationType = TransformationType.Plain;
+
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dc));
+
+        final HestonProcess process = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+        final HestonModel model = new HestonModel(process);
+        final PricingEngine engine = new AnalyticHestonEngine(model, process, 144);
+
+        // Variance mesher: Plain transform -> cPoints = {lowerBound, v0Center}.
+        final SquareRootProcessRNDCalculator rnd =
+                new SquareRootProcessRNDCalculator(v0, kappa, theta, sigma);
+        final double vUpperBound = rnd.stationary_invcdf(0.9995);
+        final double vLowerBound = rnd.stationary_invcdf(1e-5);
+        final List<CPointSpec> vCPoints = new ArrayList<CPointSpec>();
+        vCPoints.add(new CPointSpec(vLowerBound, 0.0001, false));
+        vCPoints.add(new CPointSpec(v0,          0.1,    true));
+        final Fdm1dMesher varianceMesher =
+                new Concentrating1dMesher(vLowerBound, vUpperBound, vGrid, vCPoints, 1e-12);
+
+        // Spot mesher: bracketed by inverse-Heston-CDF on [sEps, 1-sEps].
+        final double sEps = 1e-4;
+        final double sLowerBound = Math.log(hestonPxBoundary(finalMaturity, sEps, model));
+        final double sUpperBound = Math.log(hestonPxBoundary(finalMaturity, 1.0 - sEps, model));
+        final Fdm1dMesher spotMesher = new Concentrating1dMesher(
+                sLowerBound, sUpperBound, xGrid, x0, 0.1, true);
+
+        final List<Fdm1dMesher> ms = new ArrayList<Fdm1dMesher>(2);
+        ms.add(spotMesher);
+        ms.add(varianceMesher);
+        final FdmMesherComposite mesher = new FdmMesherComposite(ms);
+
+        final FdmLinearOpComposite hestonFwdOp =
+                new FdmHestonFwdOp(mesher, process, transformationType);
+
+        final FdmSchemeDesc desc = FdmSchemeDesc.ModifiedCraigSneyd();
+        final ModifiedCraigSneydScheme evolver =
+                new ModifiedCraigSneydScheme(desc.theta, desc.mu, hestonFwdOp);
+
+        // Step one day using the non-correlated process.
+        final double eT = 1.0 / 365.0;
+        Array p = new FdmHestonGreensFct(mesher, process, transformationType)
+                .get(eT, FdmHestonGreensFct.Algorithm.Gaussian);
+
+        final double[] strikes = { 50, 80, 90, 100, 110, 120, 150, 200 };
+
+        double t = eT;
+        for (final Period maturity : maturities) {
+            final Date nextMaturityDate = todaysDate.add(maturity);
+            final double nextMaturityTime = dc.yearFraction(todaysDate, nextMaturityDate);
+
+            final double dt = (nextMaturityTime - t) / tGridPerYear;
+            evolver.setStep(dt);
+
+            for (int i = 0; i < tGridPerYear; ++i, t += dt) {
+                evolver.step(p, t + dt);
+            }
+
+            double avg = 0.0;
+            for (final double strike : strikes) {
+                final StrikedTypePayoff payoff = new PlainVanillaPayoff(
+                        (strike > s0) ? Option.Type.Call : Option.Type.Put, strike);
+
+                final Array pd = new Array(p.size());
+                for (final FdmLinearOpIterator iter : mesher.layout()) {
+                    final int idx = iter.index();
+                    final double s = Math.exp(mesher.location(iter, 0));
+                    pd.set(idx, payoff.get(s) * p.get(idx));
+                }
+
+                final double calculated = fokkerPlanckPrice2D(pd, mesher)
+                        * rTS.currentLink().discount(nextMaturityDate);
+
+                final Exercise exercise = new EuropeanExercise(nextMaturityDate);
+                final VanillaOption option = new VanillaOption(payoff, exercise);
+                option.setPricingEngine(engine);
+                final double expected = option.NPV();
+
+                final double absDiff = Math.abs(expected - calculated);
+                final double relDiff = absDiff / Math.max(1e-16, expected);
+                final double diff = Math.min(absDiff, relDiff);
+                avg += diff;
+
+                if (diff > eps) {
+                    fail("failed to reproduce Heston SLV prices at"
+                            + "\n   strike      " + strike
+                            + "\n   kappa       " + kappa
+                            + "\n   theta       " + theta
+                            + "\n   rho         " + rho
+                            + "\n   sigma       " + sigma
+                            + "\n   v0          " + v0
+                            + "\n   transform   " + transformationType
+                            + "\n   calculated: " + calculated
+                            + "\n   expected:   " + expected
+                            + "\n   tolerance:  " + eps);
+                }
+            }
+            avg /= strikes.length;
+            if (avg > avgEps) {
+                fail("failed to reproduce Heston SLV prices on average at"
+                        + "\n   kappa       " + kappa
+                        + "\n   theta       " + theta
+                        + "\n   rho         " + rho
+                        + "\n   sigma       " + sigma
+                        + "\n   v0          " + v0
+                        + "\n   transform   " + transformationType
+                        + "\n   average diff: " + avg
+                        + "\n   tolerance:    " + avgEps);
+            }
+        }
+    }
+
+    @Ignore("Phase 5e.5b-CFC-d-218 — fokkerPlanckPrice2D helper + "
+            + "createLocalVolMatrixFromProcess helper now landed (this commit), and "
+            + "HundsdorferScheme + Concentrating1dMesher multi-cPoint ctor were in "
+            + "place before. Remaining blocker: FdBlackScholesVanillaEngine "
+            + "local-vol-enabled overload — C++ test (line ~1328) uses the constructor "
+            + "FdBlackScholesVanillaEngine(lvProcess, 50, 201, 0, FdmSchemeDesc.Douglas(), "
+            + "true /*localVol*/, 0.2 /*illegalLocalVolOverwrite*/) as the reference "
+            + "engine; Java's FdBlackScholesVanillaEngine only supports Black-vol "
+            + "(no localVol flag, no illegalLocalVolOverwrite). The reference price "
+            + "evolves under Dupire local vol of the BlackVarianceSurface smile - "
+            + "AnalyticEuropeanEngine and the BS-only FDM engine both diverge from "
+            + "this reference for CashOrNothing payoffs on a smile-y surface. "
+            + "Un-ignore once the localVol-aware FdBlackScholesVanillaEngine overload "
+            + "(plus FdmBlackScholesOp localVol branch) lands.")
     @Test
     public void testHestonFokkerPlanckFwdEquationLogLVLeverage() { fail("not implemented"); }
 
