@@ -23,10 +23,10 @@ package org.jquantlib.methods.finitedifferences.utilities;
 
 import org.jquantlib.QL;
 import org.jquantlib.math.Constants;
-import org.jquantlib.math.distributions.InverseNonCentralCumulativeChiSquaredDistribution;
 import org.jquantlib.math.distributions.NonCentralCumulativeChiSquaredDistribution;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.distributions.GammaDistribution;
+import org.jquantlib.math.distributions.GammaFunction;
 import org.jquantlib.math.solvers1D.Brent;
 import org.jquantlib.math.transcendental.JQuantMath;
 
@@ -41,12 +41,16 @@ import org.jquantlib.math.transcendental.JQuantMath;
  * {@code ql/methods/finitedifferences/utilities/cevrndcalculator.{hpp,cpp}}.
  *
  * <p>The CDF uses the JQuantLib
- * {@link NonCentralCumulativeChiSquaredDistribution} which mirrors C++'s
- * {@code boost::math::cdf(non_central_chi_squared(df, ncp), x)}.
- * The quantile (inverse CDF) uses
- * {@link InverseNonCentralCumulativeChiSquaredDistribution} when
- * {@code delta >= 2}, and Sankaran approximation + Brent refinement
- * when {@code delta < 2}.
+ * {@link NonCentralCumulativeChiSquaredDistribution} for the
+ * {@code delta < 2} branch and an internal right-tail-accurate survival
+ * computation (Poisson mixture of regularised upper incomplete gammas,
+ * mirroring Boost's {@code non_central_chi_squared} kernel) for the
+ * {@code delta >= 2} branch — the latter is necessary because the
+ * AS-275 series form saturates to 1.0 in the far right tail where the
+ * CEV CDF is small and {@code 1 - cdf} would lose all precision.
+ * The quantile (inverse CDF) uses Sankaran approximation + Brent
+ * refinement when {@code delta < 2} and a direct survival-function
+ * inversion when {@code delta >= 2}.
  *
  * @author Phase 2m Track C port
  */
@@ -129,8 +133,12 @@ public class CEVRNDCalculator {
                     2.0 - delta_, y / t).op(x0_ / t);
         } else {
             // C++: 1 - cdf(chi2(delta, x0_/t), y/t)
-            return 1.0 - new NonCentralCumulativeChiSquaredDistribution(
-                    delta_, x0_ / t).op(y / t);
+            // We compute the survival function directly via the Poisson-mixture
+            // form so that the result is accurate in the right tail (where the
+            // direct CDF saturates to 1.0 and 1 - cdf loses all precision).
+            // Mirrors Boost's non_central_chi_squared "Method 4" — which is
+            // what v1.42.1's C++ CEVRNDCalculator actually uses (boost::math::cdf).
+            return nccsSurvival(delta_, x0_ / t, y / t);
         }
     }
 
@@ -161,9 +169,17 @@ public class CEVRNDCalculator {
 
         } else {
             // C++: x = t * quantile(chi2(delta, x0_/t), 1-q)
-            final double chi2Val = new InverseNonCentralCumulativeChiSquaredDistribution(
-                    delta_, x0_ / t, 100, 1e-8).op(1.0 - q);
-            return invX(t * chi2Val);
+            //
+            // Java's InverseNonCentralCumulativeChiSquaredDistribution uses
+            // Brent over the forward CDF, which saturates to 1.0 in the right
+            // tail and so cannot resolve survival levels below ~1e-12.  We
+            // instead invert the survival function directly: find y such that
+            // nccsSurvival(delta, x0/t, y) = q. The bracket starts from
+            // df + ncp (the C++ "guess_") and doubles right until the survival
+            // value drops below q; Brent then narrows the bracket.
+            final double ncp = x0_ / t;
+            final double yQuantile = nccsSurvivalInverse(delta_, ncp, q);
+            return invX(t * yQuantile);
         }
     }
 
@@ -217,5 +233,225 @@ public class CEVRNDCalculator {
 
     private static double squared(final double x) {
         return x * x;
+    }
+
+    // --- non-central chi-squared survival function (right-tail accurate) ---
+    //
+    // Computes 1 - F_NCCS(x; df, ncp) via the Poisson mixture
+    //
+    //   1 - F(x; df, ncp) = sum_{k=0}^inf  Pois(k; lambda) * Q_central(df/2 + k, x/2)
+    //
+    // where lambda = ncp/2 and Q_central(a, z) = 1 - P_central(a, z) is the
+    // regularised upper incomplete gamma.  Each Q term is bounded in [0,1]
+    // and small in the right tail, so the sum is computed without
+    // catastrophic cancellation.  The series is summed outward from the
+    // Poisson mode k0 = floor(lambda) for fast convergence — mirroring
+    // Boost's {@code non_central_chi_square_q} kernel and v1.42.1
+    // {@code boost::math::cdf(non_central_chi_squared(df, ncp), x)} which is
+    // what the C++ CEVRNDCalculator calls under the hood.
+
+    private double nccsSurvival(final double df, final double ncp, final double x) {
+        if (x <= 0.0) {
+            return 1.0;
+        }
+        final double lambda = 0.5 * ncp;
+        final double x2 = 0.5 * x;
+        final double n2 = 0.5 * df;
+        final long k0 = (long) Math.floor(lambda);
+
+        // Poisson PMF at k0:  e^{-lambda} lambda^{k0} / k0!  (log-space to
+        // avoid over/underflow when lambda is large).
+        final GammaFunction gammaFn = new GammaFunction();
+        double pois = Math.exp(-lambda + k0 * Math.log(lambda) - gammaFn.logValue(k0 + 1.0));
+        if (pois == 0.0 || !Double.isFinite(pois)) {
+            // Fallback: the Poisson weight underflowed; fall back to the
+            // straight 1 - cdf evaluation.  Loses tail precision but is
+            // still safer than a NaN.
+            return 1.0 - new NonCentralCumulativeChiSquaredDistribution(df, ncp).op(x);
+        }
+        double poisb = pois;
+
+        final double errtol = Constants.QL_EPSILON;
+        final long maxIter = 100000L;
+
+        double sum = 0.0;
+        // Forward sweep i = k0, k0+1, ...  until the term is negligible
+        // relative to the accumulated sum.  Q is advanced via
+        //   Q(a+1, z) = Q(a, z) + z^a e^{-z} / Gamma(a+1)
+        //             = Q(a, z) + pdfGamma(a + 1, z).
+        // After processing index i and advancing pois to k = i+1, we add
+        // pdfGamma(n2 + i + 1, x2) so q becomes Q(n2 + (i+1), x2).
+        double q = gammaQ(n2 + k0, x2);
+        for (long i = k0; ; i++) {
+            final double term = pois * q;
+            sum += term;
+            if (i - k0 > 0 && term < errtol * sum) {
+                break;
+            }
+            QL.require(i - k0 < maxIter,
+                    "non-central chi-squared survival series did not converge (forward)");
+            // Advance Poisson weight: P(k+1) = P(k) * lambda/(k+1)
+            pois *= lambda / (i + 1);
+            // Advance Q to new a = n2 + (i+1):
+            q += pdfGamma(n2 + i + 1, x2);
+        }
+        // Backward sweep i = k0-1, ..., 0.  Q decrements via
+        //   Q(a-1, z) = Q(a, z) - z^{a-1} e^{-z} / Gamma(a)
+        //             = Q(a, z) - pdfGamma(a, z).
+        // Going from a = n2 + (i+1) down to a = n2 + i, we subtract
+        // pdfGamma(n2 + i + 1, x2).
+        double qb = gammaQ(n2 + k0, x2);
+        for (long i = k0 - 1; i >= 0; i--) {
+            // Reverse Poisson recurrence: P(k-1) = P(k) * k/lambda
+            poisb *= (i + 1) / lambda;
+            // Reverse Q recurrence — strip the contribution from the higher
+            // a value (n2 + i + 1) to step down to (n2 + i).
+            qb -= pdfGamma(n2 + i + 1, x2);
+            if (qb < 0.0) {
+                qb = 0.0;
+            }
+            final double term = poisb * qb;
+            sum += term;
+            if (term < errtol * sum) {
+                break;
+            }
+        }
+        // Clamp to [0, 1] to guard against tiny round-off above 1.0.
+        if (sum < 0.0) {
+            return 0.0;
+        }
+        if (sum > 1.0) {
+            return 1.0;
+        }
+        return sum;
+    }
+
+    /**
+     * Invert the survival function: returns y such that
+     * {@code nccsSurvival(df, ncp, y) = q}.  Uses an expanding upper bracket
+     * starting from {@code df + ncp} followed by Brent.
+     */
+    private double nccsSurvivalInverse(final double df, final double ncp, final double q) {
+        // q in [0, 1]. q==1 → y=0; q==0 → y=+inf.
+        if (q >= 1.0) {
+            return 0.0;
+        }
+        if (q <= 0.0) {
+            return Constants.QL_MAX_REAL;
+        }
+        // Bracket: survival is monotone decreasing in y, so we want
+        // y_lo with survival(y_lo) > q and y_hi with survival(y_hi) < q.
+        double yLo = df + ncp;          // mean of NCCS
+        double sLo = nccsSurvival(df, ncp, yLo);
+        // Expand left if survival(yLo) < q (i.e., quantile is < mean).
+        int evals = 60;
+        while (sLo < q && evals > 0) {
+            yLo *= 0.5;
+            sLo = nccsSurvival(df, ncp, yLo);
+            evals--;
+        }
+        double yHi = (yLo > df + ncp) ? yLo * 2.0 : (df + ncp) * 2.0;
+        double sHi = nccsSurvival(df, ncp, yHi);
+        evals = 60;
+        while (sHi > q && evals > 0) {
+            yHi *= 2.0;
+            sHi = nccsSurvival(df, ncp, yHi);
+            evals--;
+        }
+        if (sLo < q) {
+            // Could not bracket on the low side; return a fallback near 0.
+            yLo = Math.max(1e-12, yLo);
+        }
+
+        final Brent brent = new Brent();
+        brent.setMaxEvaluations(100);
+        return brent.solve(
+                y -> nccsSurvival(df, ncp, y) - q,
+                1.0e-10, 0.5 * (yLo + yHi), yLo, yHi);
+    }
+
+    /**
+     * Regularised upper incomplete gamma Q(a, x) = 1 - P(a, x).  Computed
+     * tail-safe: continued-fraction (Numerical Recipes gcf, mirroring
+     * v1.42.1 {@code GammaDistribution} branch) for x &gt; a — where Q is
+     * small and the series for P would otherwise cancel — and the series
+     * 1 - P(a,x) otherwise.  Both branches avoid the catastrophic
+     * cancellation of {@code 1.0 - GammaDistribution(a).op(x)}.
+     *
+     * <p>Iteration limit raised to 20000 to handle the large-{@code a}
+     * regime (a ~ 700-800) encountered in the CEV survival Poisson mixture
+     * when ncp is large.
+     */
+    private double gammaQ(final double a, final double x) {
+        if (x <= 0.0) {
+            return 1.0;
+        }
+        if (a <= 0.0) {
+            return 0.0;
+        }
+        final GammaFunction gammaFn = new GammaFunction();
+        final double gln = gammaFn.logValue(a);
+        final int maxIter = 20000;
+
+        if (x > a) {
+            // Continued-fraction (Lentz, NR §6.2)
+            double b = x + 1.0 - a;
+            double c = 1.0 / Constants.QL_EPSILON;
+            double d = 1.0 / b;
+            double h = d;
+            for (int n = 1; n <= maxIter; n++) {
+                final double an = -1.0 * n * (n - a);
+                b += 2.0;
+                d = an * d + b;
+                if (Math.abs(d) < Constants.QL_EPSILON) {
+                    d = Constants.QL_EPSILON;
+                }
+                c = b + an / c;
+                if (Math.abs(c) < Constants.QL_EPSILON) {
+                    c = Constants.QL_EPSILON;
+                }
+                d = 1.0 / d;
+                final double del = d * c;
+                h *= del;
+                if (Math.abs(del - 1.0) < Constants.QL_EPSILON) {
+                    return h * Math.exp(-x + a * Math.log(x) - gln);
+                }
+            }
+            // Last-resort fallback — should not be reached for the test regime.
+            return Math.max(0.0, 1.0 - new GammaDistribution(a).op(x));
+        } else {
+            // Series for P(a, x): Q = 1 - P.  In this branch x <= a so P > 1/2
+            // for moderate-to-large a, but the series still converges fine
+            // and the (1 - P) subtraction is acceptable for the precision
+            // we need in the survival sum (~1e-15 relative cancellation
+            // per term, swamped by the per-term Poisson weight).
+            double ap = a;
+            double del = 1.0 / a;
+            double sum = del;
+            for (int n = 1; n <= maxIter; n++) {
+                ap += 1.0;
+                del *= x / ap;
+                sum += del;
+                if (Math.abs(del) < Math.abs(sum) * Constants.QL_EPSILON) {
+                    final double p = sum * Math.exp(-x + a * Math.log(x) - gln);
+                    return Math.max(0.0, 1.0 - p);
+                }
+            }
+            return Math.max(0.0, 1.0 - new GammaDistribution(a).op(x));
+        }
+    }
+
+    /**
+     * gamma_p_derivative(a, x) = x^(a-1) exp(-x) / Gamma(a) — the gamma PDF
+     * building block used to step Q(a, x) → Q(a±1, x).  Log-space evaluation
+     * to avoid intermediate over/underflow for large a or x.
+     */
+    private double pdfGamma(final double a, final double x) {
+        if (x <= 0.0 || a <= 0.0) {
+            return 0.0;
+        }
+        final GammaFunction gammaFn = new GammaFunction();
+        final double logTerm = (a - 1.0) * Math.log(x) - x - gammaFn.logValue(a);
+        return Math.exp(logTerm);
     }
 }

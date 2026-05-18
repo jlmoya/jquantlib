@@ -40,7 +40,6 @@ import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.TimeGrid;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -93,9 +92,11 @@ import org.junit.Test;
  *       port (production work, deferred).</li>
  *   <li>{@code testBlackScholesWithSkew} — needs HestonBlackVolSurface +
  *       NoExceptLocalVolSurface ports (production work, Phase 5h.5-RND-d).</li>
- *   <li>{@code testCEVCDF} — body-filled but @Ignore'd; CEVRNDCalculator
- *       round-trip at beta=1.25 has accuracy issue at large ncp ~1472
- *       (production-fix work, separate commit).</li>
+ *   <li>{@code testCEVCDF} — body-filled and active.  Phase 5e.5b-CFC-d-234
+ *       added a right-tail-accurate survival path inside
+ *       {@code CEVRNDCalculator} (Poisson mixture of upper-gamma Q values,
+ *       mirroring Boost's non_central_chi_squared kernel) so the round-trip
+ *       resolves at large ncp ~1472.</li>
  * </ul>
  *
  * <p>Each ported calculator also has its own dedicated Test class
@@ -658,20 +659,14 @@ public class RiskNeutralDensityCalculatorTest {
      * is actually tested — the {@code beta = 0.45} entry is dead code).
      * We mirror that behaviour exactly to preserve cross-validation.
      *
-     * <p>Status: ignored. The Java {@link CEVRNDCalculator} produces a
-     * round-trip error of order 0.78 (calculated 0.52 vs expected 1.30) at
-     * beta = 1.25, alpha = 0.1, x = 1.3 — symptomatic of either an
-     * implementation issue in the delta &gt;= 2 branch or insufficient
-     * precision in {@code InverseNonCentralCumulativeChiSquaredDistribution}
-     * at large {@code ncp} (~1472 in this fixture). Phase 5h.5-RND-b
-     * carry-forward (separate diagnostic + targeted CEVRNDCalculator fix).
+     * <p>Phase 5e.5b-CFC-d-234 fix: replaced the {@code 1 - NCCS.cdf}
+     * subtraction (which saturates to 0 in the right tail because the
+     * AS-275 series rounds the CDF up to 1.0) with a direct survival-function
+     * computation inside {@link CEVRNDCalculator}.  The new path mirrors
+     * Boost's {@code non_central_chi_squared} kernel — Poisson mixture of
+     * upper-incomplete-gamma Q values — which is what the C++
+     * {@code CEVRNDCalculator::cdf} calls via {@code boost::math::cdf}.
      */
-    @Ignore("Phase 5h.5-RND-c: still fails after 5h.5-SLV-d exact NCCS PDF — "
-            + "CEVRNDCalculator round-trip at beta=1.25 produces calculated=0.520747 vs expected=1.3 "
-            + "(error ~0.78). Either invX/X are wrong for delta>=2, or "
-            + "InverseNonCentralCumulativeChiSquaredDistribution loses precision at ncp~1472. "
-            + "5h.5-SLV-d only fixed conditional pdf, not invcdf at large ncp. "
-            + "Defer to a targeted fix commit.")
     @Test
     public void testCEVCDF() {
         final double f0 = 2.1;
