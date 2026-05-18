@@ -123,6 +123,52 @@ int main() {
                 json{{"directionIntegers", "Unit"}, {"seed", 123456}},
                 json{{"grid", runDiscrepancyGrid(SobolRsg::Unit)}});
 
+    // ----- (7) JoeKuoD7 dim=33, first 15 samples -----
+    // Phase 5e.5b-CFC-d-268: cross-validate the Java JoeKuoD7 port.
+    {
+        const Size dim = 33;
+        const int N = 15;
+        SobolRsg rsg(dim, 0UL, SobolRsg::JoeKuoD7, /*useGrayCode*/ true);
+        json sequence = json::array();
+        for (int i = 0; i < N; ++i) {
+            const auto& s = rsg.nextSequence();
+            json row = json::array();
+            for (Size d = 0; d < dim; ++d) row.push_back(s.value[d]);
+            sequence.push_back(row);
+        }
+        out.addCase("joekuod7_dim33_first15",
+                    json{{"dimensionality", dim}, {"count", N},
+                         {"directionIntegers", "JoeKuoD7"},
+                         {"useGrayCode", true}},
+                    json{{"sequence", sequence}});
+    }
+
+    // ----- (8) JoeKuoD7 dim=1899 (max), first 3 samples -----
+    // Exercises the full tabulated range — last dim picks up the
+    // 1899-th row of JoeKuoD7initializers.
+    {
+        const Size dim = 1899;
+        const int N = 3;
+        SobolRsg rsg(dim, 0UL, SobolRsg::JoeKuoD7, /*useGrayCode*/ true);
+        json sequence = json::array();
+        for (int i = 0; i < N; ++i) {
+            const auto& s = rsg.nextSequence();
+            json row = json::array();
+            for (Size d = 0; d < dim; ++d) row.push_back(s.value[d]);
+            sequence.push_back(row);
+        }
+        out.addCase("joekuod7_dim1899_first3",
+                    json{{"dimensionality", dim}, {"count", N},
+                         {"directionIntegers", "JoeKuoD7"},
+                         {"useGrayCode", true}},
+                    json{{"sequence", sequence}});
+    }
+
+    // ----- (9) JoeKuoD7 discrepancy grid -----
+    out.addCase("discrepancy_joekuod7_dim_grid",
+                json{{"directionIntegers", "JoeKuoD7"}, {"seed", 123456}},
+                json{{"grid", runDiscrepancyGrid(SobolRsg::JoeKuoD7)}});
+
     out.write();
     return 0;
 }

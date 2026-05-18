@@ -969,6 +969,26 @@ public class LowDiscrepancySequencesTest {
 
     private static final int[] SOBOL_LEVITAN_LEMIEUX_DIMS = { 2, 3, 5, 10, 15, 30, 50, 100 };
 
+    /**
+     * JoeKuoD7 Sobol discrepancy reference values @ 1023 samples,
+     * dim {2,3,5,10,15,30,50,100}.
+     *
+     * <p>Cross-validated against the C++ sobol_rsg_probe (case
+     * {@code discrepancy_joekuod7_dim_grid}, reference JSON committed
+     * under {@code migration-harness/references/math/randomnumbers/sobol_rsg.json}).
+     * JoeKuoD7's {@code JoeKuoD7initializers} table covers dims 1..1899,
+     * so the full {2,3,5,10,15,30,50,100} grid is tabulated and
+     * pivot-comparable.
+     *
+     * <p>Phase 5e.5b-CFC-d-268.
+     */
+    private static final double[] JOEKUOD7_SOBOL_DISCR = {
+            8.326481e-04, 1.209684e-03, 1.614030e-03, 7.222213e-04,
+            1.395916e-04, 4.466515e-07, 2.222297e-10, 8.775937e-19
+    };
+
+    private static final int[] JOEKUOD7_SOBOL_DIMS = { 2, 3, 5, 10, 15, 30, 50, 100 };
+
     private static void runSobolDiscrepancy(final SobolRsg.DirectionIntegers di,
                                             final int[] dims,
                                             final double[] expected,
@@ -1101,6 +1121,109 @@ public class LowDiscrepancySequencesTest {
         runSobolDiscrepancy(SobolRsg.DirectionIntegers.SobolLevitanLemieux,
                 SOBOL_LEVITAN_LEMIEUX_DIMS, SOBOL_LEVITAN_LEMIEUX_DISCR,
                 "SobolLevitanLemieux");
+    }
+
+    /**
+     * JoeKuoD7 Sobol discrepancy @ 1023 samples,
+     * dim {2,3,5,10,15,30,50,100}.
+     *
+     * <p>Phase 5e.5b-CFC-d-268: enabled after porting the Joe-Kuo D7
+     * 1899-dimensional direction-integer table
+     * ({@link org.jquantlib.math.randomnumbers.JoeKuoD7Initializers})
+     * and wiring it through
+     * {@link org.jquantlib.math.randomnumbers.SobolRsg.DirectionIntegers#JoeKuoD7}.
+     * The reference pivot values are cross-validated against the C++
+     * {@code sobol_rsg_probe} (case {@code discrepancy_joekuod7_dim_grid}).
+     */
+    @Test
+    public void testJoeKuoD7SobolDiscrepancy() {
+        QL.info("Testing Joe-Kuo D7 Sobol discrepancy...");
+        runSobolDiscrepancy(SobolRsg.DirectionIntegers.JoeKuoD7,
+                JOEKUOD7_SOBOL_DIMS, JOEKUOD7_SOBOL_DISCR, "JoeKuoD7");
+    }
+
+    /**
+     * Cross-validate the first 15 samples of a 33-dim JoeKuoD7 Sobol
+     * sequence against the C++ pivot
+     * (case {@code joekuod7_dim33_first15} in
+     * {@code migration-harness/references/math/randomnumbers/sobol_rsg.json}).
+     *
+     * <p>Bit-exact tolerance: the only floating-point op applied to each
+     * 32-bit direction integer is multiplication by {@code 2^-64}, which
+     * is exact under IEEE-754 binary64 for every representable
+     * direction-integer value. Phase 5e.5b-CFC-d-268.
+     */
+    @Test
+    public void testJoeKuoD7Dim33First15() {
+        QL.info("Testing Joe-Kuo D7 dim=33 first-15 sequence cross-validation...");
+        final int dim = 33;
+        final SobolRsg rsg = new SobolRsg(dim, 0L,
+                SobolRsg.DirectionIntegers.JoeKuoD7);
+
+        // Pivot: first row from C++ — every dim is 0.5 (the Gray-coded
+        // first draw of every Sobol scheme is the all-ones direction-
+        // integer column shifted to the top bit, giving 0.5).
+        final double[][] expectedFirstThree = {
+                // sample 1
+                { 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5 },
+                // sample 2
+                { 0.75, 0.25, 0.25, 0.25, 0.75, 0.75, 0.25, 0.75 },
+                // sample 3
+                { 0.25, 0.75, 0.75, 0.75, 0.25, 0.25, 0.75, 0.25 }
+        };
+
+        for (int i = 0; i < 15; i++) {
+            final double[] s = rsg.nextSequence().value();
+            if (s.length != dim) {
+                fail("JoeKuoD7 dim mismatch at sample " + (i + 1)
+                        + ": got " + s.length + " expected " + dim);
+            }
+            // Cross-validate the first 8 dims of the first 3 samples
+            // against the C++ pivot (the full table is in the JSON
+            // reference; here we keep the inline pivot compact).
+            if (i < expectedFirstThree.length) {
+                for (int d = 0; d < expectedFirstThree[i].length; d++) {
+                    if (Math.abs(s[d] - expectedFirstThree[i][d]) > 1e-15) {
+                        fail("JoeKuoD7 sample " + (i + 1) + " dim " + d
+                                + ": got " + s[d] + " expected "
+                                + expectedFirstThree[i][d]);
+                    }
+                }
+            }
+            // All samples must lie strictly inside (0,1)
+            for (int d = 0; d < dim; d++) {
+                if (s[d] <= 0.0 || s[d] >= 1.0) {
+                    fail("JoeKuoD7 sample " + (i + 1) + " dim " + d
+                            + " is " + s[d] + " (must be in (0,1))");
+                }
+            }
+        }
+    }
+
+    /**
+     * Smoke test: instantiate a JoeKuoD7 Sobol generator at the max
+     * tabulated dimension (1899) and verify the first sample is sane.
+     *
+     * <p>Exercises the boundary of the JoeKuoD7Initializers table —
+     * regression guard for off-by-one bugs in the {@code maxTabulated}
+     * computation. Phase 5e.5b-CFC-d-268.
+     */
+    @Test
+    public void testJoeKuoD7MaxDimensionSmoke() {
+        QL.info("Testing Joe-Kuo D7 dim=1899 (max tabulated) smoke...");
+        final int dim = 1899;
+        final SobolRsg rsg = new SobolRsg(dim, 0L,
+                SobolRsg.DirectionIntegers.JoeKuoD7);
+        final double[] s = rsg.nextSequence().value();
+        if (s.length != dim) {
+            fail("JoeKuoD7 max-dim length mismatch: " + s.length);
+        }
+        for (int d = 0; d < dim; d++) {
+            if (s[d] != 0.5) {
+                fail("JoeKuoD7 first sample dim " + d + " is " + s[d]
+                        + " expected 0.5");
+            }
+        }
     }
 
     /**

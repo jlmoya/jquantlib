@@ -1650,18 +1650,28 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-266 refinement: prior infrastructure blockers "
-            + "(MakeMCEuropeanHestonEngine[HestonSLVProcess], "
-            + "HestonStochasticLocalVolProcess.evolve, FdHestonVanillaEngine "
-            + "leverage-fct ctor) are ALL landed (CFC-d-235, 238, 254). "
-            + "HestonSLVMCModel is also ported. Remaining blocker: the C++ "
-            + "test (test-suite/hestonslvmodel.cpp:1964 line 2008) uses "
-            + "SobolRsg::JoeKuoD7 direction integers which Java's SobolRsg "
-            + "does not yet implement (only Unit, Jaeckel, SobolLevitan, "
-            + "SobolLevitanLemieux are available). Falling back to Jaeckel "
-            + "would change RNG-dependent calibration-quality numbers and "
-            + "violate the cross-validation discipline. Un-ignore once "
-            + "JoeKuoD7 direction-integers are ported (separate WI on SobolRsg).")
+    @Ignore("Phase 5e.5b-CFC-d-268 refinement: the JoeKuoD7 RNG-path blocker "
+            + "is RESOLVED (Phase 5e.5b-CFC-d-268 ported the 1899-dim "
+            + "JoeKuoD7 direction-integer table and wired "
+            + "SobolRsg.DirectionIntegers.JoeKuoD7 through "
+            + "SobolBrownianGeneratorFactory). Body-fill probe executed "
+            + "with reduced sample count (nSim=4_000 vs C++ 40_000) and "
+            + "produced an average calibration quality factor of ~396 bp "
+            + "against the C++ tolerance of 7.5 bp — even with a 10x "
+            + "tolerance relaxation for the 10x sample reduction the "
+            + "quality factor is ~5x over budget. Running the full C++ "
+            + "configuration (40_000 paths × 91 steps/year × 201 bins) "
+            + "in Java is expected to take several minutes per invocation "
+            + "and would exceed the default Surefire budget. Per CLAUDE.md "
+            + "'never loosen tolerance to force green', the body-fill is "
+            + "reverted until either (a) the production HestonSLVMCModel "
+            + "calibration loop is optimised for Java MC throughput so "
+            + "the full C++ nSim runs in a sane wall-clock time, or "
+            + "(b) the test is gated behind a Slow-suite profile "
+            + "(QL_SLOW_TESTS) where the full C++ configuration can run "
+            + "without budget pressure. Probe results captured here for "
+            + "reference; un-ignore in a follow-up WI once one of those "
+            + "two paths is taken.")
     @Test
     public void testMonteCarloCalibration() { fail("not implemented"); }
 
@@ -2048,18 +2058,16 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-266 refinement: most blockers now landed: "
-            + "(a) HestonSLVMCModel — ported (org.jquantlib.experimental.models); "
-            + "(b) SobolBrownianGeneratorFactory — ported "
-            + "(org.jquantlib.model.marketmodels.browniangenerators); "
-            + "(c) FdHestonDoubleBarrierEngine + leverage-fct ctor — landed (CFC-d-257); "
-            + "(d) AnalyticDoubleBarrierBinaryEngine — available. Remaining blockers: "
-            + "(i) the test relies on SobolRsg::JoeKuoD7 direction integers via "
-            + "the SobolBrownianGeneratorFactory; Java SobolRsg only implements "
-            + "Unit/Jaeckel/SobolLevitan/SobolLevitanLemieux (same blocker as "
-            + "testMonteCarloCalibration); (ii) getFixedLocalVolFromHeston test "
-            + "helper (test-suite/hestonslvmodel.cpp:654) — not yet ported to Java. "
-            + "Un-ignore once JoeKuoD7 + the test-helper land.")
+    @Ignore("Phase 5e.5b-CFC-d-268 refinement: JoeKuoD7 direction integers "
+            + "(prior blocker (i) — Phase 5e.5b-CFC-d-268) are NOW LANDED and "
+            + "wired through SobolRsg.DirectionIntegers.JoeKuoD7 + "
+            + "SobolBrownianGeneratorFactory. Remaining blocker: "
+            + "getFixedLocalVolFromHeston test helper "
+            + "(test-suite/hestonslvmodel.cpp:654) — not yet ported to Java. "
+            + "Other infra (HestonSLVMCModel, SobolBrownianGeneratorFactory, "
+            + "FdHestonDoubleBarrierEngine + leverage-fct ctor — CFC-d-257, "
+            + "AnalyticDoubleBarrierBinaryEngine) is all available. Un-ignore "
+            + "once getFixedLocalVolFromHeston lands.")
     @Test
     public void testMoustacheGraph() { fail("not implemented"); }
 

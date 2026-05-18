@@ -1352,7 +1352,12 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
     // public enums
     //
     public enum DirectionIntegers {
-        Unit, Jaeckel, SobolLevitan, SobolLevitanLemieux
+        Unit, Jaeckel, SobolLevitan, SobolLevitanLemieux,
+        /**
+         * Joe-Kuo D7 free direction integers (1899 dimensions). See
+         * {@link JoeKuoD7Initializers} for the table. Phase 5e.5b-CFC-d-268.
+         */
+        JoeKuoD7
     }
 
 
@@ -1555,6 +1560,31 @@ public class SobolRsg implements UniformRandomSequenceGenerator {
                     directionIntegers[k][j] = Linitializers[k - 1][j];
                     directionIntegers[k][j] <<= (BITS - j - 1);
                     j++;
+                }
+            }
+            break;
+        case JoeKuoD7:
+            // Phase 5e.5b-CFC-d-268: C++ sobolrsg.cpp:78637 — maxTabulated
+            // is the count of dim pointers in JoeKuoD7initializers (1899)
+            // + 1 = 1900. Per the C++ comment "// maxTabulated=1898" the
+            // count is off-by-one in the comment, not the code; the
+            // sizeof/sizeof formula evaluates to 1899+1=1900 and the
+            // loop iterates k=1..min(dim,1900)-1, i.e. up through dim
+            // 1899. Java mirrors that exactly via INITIALIZERS.length+1.
+            //
+            // JoeKuoD7 does NOT use alt polynomials (C++ useAltPolynomials
+            // is only set for Kuo*, SobolLevitan, SobolLevitanLemieux —
+            // see sobolrsg.cpp:78500-78502), so the primitive-polynomial
+            // initialization above flows through the full-table branch
+            // for every dimension (matching C++ behavior).
+            maxTabulated = JoeKuoD7Initializers.INITIALIZERS.length + 1;
+            for (int k = 1; k < Math.min(this.dimensionality, maxTabulated); k++) {
+                final int[] row = JoeKuoD7Initializers.INITIALIZERS[k - 1];
+                // Trailing-zero sentinel from C++ is dropped in the Java
+                // encoding: iterate over the explicit row length.
+                for (int j = 0; j < row.length; j++) {
+                    directionIntegers[k][j] = row[j];
+                    directionIntegers[k][j] <<= (BITS - j - 1);
                 }
             }
             break;
