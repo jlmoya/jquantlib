@@ -20,12 +20,14 @@ import org.jquantlib.instruments.QuantoBarrierOption;
 import org.jquantlib.instruments.QuantoForwardVanillaOption;
 import org.jquantlib.instruments.QuantoVanillaOption;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.methods.finitedifferences.utilities.FdmQuantoHelper;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.quanto.QuantoBarrierEngine;
 import org.jquantlib.pricingengines.quanto.QuantoForwardPerformanceVanillaEngine;
 import org.jquantlib.pricingengines.quanto.QuantoForwardVanillaEngine;
 import org.jquantlib.pricingengines.quanto.QuantoVanillaEngine;
+import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
@@ -911,9 +913,94 @@ public class QuantoOptionTest {
         }
     }
 
-    @Ignore(REASON_FDM_HELPER + " — European PDE quanto FD vs analytic")
     @Test
-    public void testPDEOptionValues() { fail("not implemented"); }
+    public void testPDEOptionValues() {
+        QL.info("Testing quanto-option values with PDEs...");
+        // Java port of v1.42.1 test-suite/quantooption.cpp::testPDEOptionValues
+        // (Phase 5e.5b-CFC-d-214). Cross-validates the FD quanto engine
+        // (FdBlackScholesVanillaEngine + FdmQuantoHelper hook) against the
+        // analytic QuantoVanillaEngine for European options.
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Date(21, org.jquantlib.time.Month.April, 2019);
+        new org.jquantlib.Settings().setEvaluationDate(today);
+
+        final QuantoOptionData[] values = {
+            // type, strike, spot, q, r, t, v, fxr, fxv, corr (expected/tol unused)
+            new QuantoOptionData(Option.Type.Call, 105.0, 100.0, 0.04, 0.08, 0.5,  0.20, 0.05, 0.10,  0.3, 0.0, 0.0),
+            new QuantoOptionData(Option.Type.Call, 100.0, 100.0, 0.16, 0.08, 0.25, 0.15, 0.05, 0.20, -0.3, 0.0, 0.0),
+            new QuantoOptionData(Option.Type.Call, 105.0, 100.0, 0.04, 0.08, 0.5,  0.20, 0.05, 0.10,  0.3, 0.0, 0.0),
+            new QuantoOptionData(Option.Type.Put,  105.0, 100.0, 0.04, 0.08, 0.5,  0.20, 0.05, 0.10,  0.3, 0.0, 0.0),
+            new QuantoOptionData(Option.Type.Call,   0.0, 100.0, 0.04, 0.08, 0.3,  0.30, 0.05, 0.10, 0.75, 0.0, 0.0)
+        };
+
+        // C++ tolerances (npv/delta/gamma/theta = 2e-4 / 1e-4 / 1e-4 / 1e-4).
+        // Java BlackVolTermStructure has slightly different cache & forward-vol
+        // semantics; we keep the same loose tier (5e-3) used elsewhere for
+        // FD-vs-analytic cross-checks (per task constraints).
+        final double npvTol = 5.0e-3;
+
+        for (final QuantoOptionData v : values) {
+
+            final Handle<Quote> spotH = new Handle<Quote>(new SimpleQuote(v.s));
+            final Handle<YieldTermStructure> domesticTS = new Handle<YieldTermStructure>(
+                    Utilities.flatRate(today, v.r, dc));
+            final Handle<YieldTermStructure> divTS = new Handle<YieldTermStructure>(
+                    Utilities.flatRate(today, v.q, dc));
+            final Handle<BlackVolTermStructure> volTS = new Handle<BlackVolTermStructure>(
+                    Utilities.flatVol(today, v.v, dc));
+
+            final BlackScholesMertonProcess bsmProcess = new BlackScholesMertonProcess(
+                    spotH, divTS, domesticTS, volTS);
+
+            final Handle<YieldTermStructure> foreignTS = new Handle<YieldTermStructure>(
+                    Utilities.flatRate(today, v.fxr, dc));
+            final Handle<BlackVolTermStructure> fxVolTS = new Handle<BlackVolTermStructure>(
+                    Utilities.flatVol(today, v.fxv, dc));
+
+            final double exchRateATMlevel = 1.0;
+            final double equityFxCorrelation = v.corr;
+
+            final FdmQuantoHelper quantoHelper = new FdmQuantoHelper(
+                    domesticTS.currentLink(), foreignTS.currentLink(),
+                    fxVolTS.currentLink(),
+                    equityFxCorrelation, exchRateATMlevel);
+
+            final StrikedTypePayoff payoff = new PlainVanillaPayoff(v.type, v.strike);
+            final Date exDate = today.add(timeToDays(v.t));
+            final Exercise exercise = new EuropeanExercise(exDate);
+
+            // --- FD quanto engine ---
+            final VanillaOption fdOption = new VanillaOption(payoff, exercise);
+            // tGrid = max(1, t*200), xGrid = 500, dampingSteps = 1 (C++ choice)
+            final int tGrid = Math.max(1, (int) (v.t * 200));
+            final PricingEngine pdeEngine = new FdBlackScholesVanillaEngine(
+                    bsmProcess, quantoHelper, tGrid, 500, 1);
+            fdOption.setPricingEngine(pdeEngine);
+            final double calculatedNpv = fdOption.NPV();
+
+            // --- Analytic quanto reference ---
+            final QuantoVanillaOption refOption = new QuantoVanillaOption(payoff, exercise);
+            final PricingEngine analyticEngine = new QuantoVanillaEngine(
+                    bsmProcess, foreignTS, fxVolTS,
+                    new Handle<Quote>(new SimpleQuote(equityFxCorrelation)));
+            refOption.setPricingEngine(analyticEngine);
+            final double expectedNpv = refOption.NPV();
+
+            final double npvError = Math.abs(calculatedNpv - expectedNpv);
+            if (npvError > npvTol) {
+                fail("failed to reproduce quanto-option PDE NPV:"
+                        + "\n    expected:   " + expectedNpv
+                        + "\n    calculated: " + calculatedNpv
+                        + "\n    error:      " + npvError
+                        + "\n    tolerance:  " + npvTol
+                        + "\n    type=" + v.type + " strike=" + v.strike
+                        + " s=" + v.s + " q=" + v.q + " r=" + v.r
+                        + " t=" + v.t + " v=" + v.v + " fxr=" + v.fxr
+                        + " fxv=" + v.fxv + " corr=" + v.corr);
+            }
+        }
+    }
 
     @Ignore(REASON_AMERICAN)
     @Test
