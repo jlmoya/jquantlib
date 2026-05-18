@@ -28,6 +28,7 @@ import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.instruments.DiscretizedAsset;
 import org.jquantlib.instruments.DiscretizedDiscountBond;
 import org.jquantlib.instruments.VanillaSwap;
+import org.jquantlib.math.Constants;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.time.Date;
 
@@ -67,6 +68,8 @@ public class DiscretizedSwap extends DiscretizedAsset {
     }
 
     private final VanillaSwap swap_;
+    private final VanillaSwap.Type type_;
+    private final double nominal_;
     private final double[] fixedResetTimes_;
     private final double[] fixedPayTimes_;
     private final double[] fixedCoupons_;
@@ -117,6 +120,8 @@ public class DiscretizedSwap extends DiscretizedAsset {
             final List<Date> snappedFloatingResetDates) {
         super();
         this.swap_ = swap;
+        this.type_ = swap.type();
+        this.nominal_ = swap.nominal();
         final Leg fixedLeg = swap.fixedLeg();
         final Leg floatingLeg = swap.floatingLeg();
         QL.require(fixedCouponAdjustments.length == fixedLeg.size(),
@@ -212,9 +217,102 @@ public class DiscretizedSwap extends DiscretizedAsset {
     }
 
     /**
+     * Arguments-based constructor mirroring C++ v1.42.1
+     * {@code DiscretizedSwap(const VanillaSwap::arguments&, const Date&, const DayCounter&)}
+     * verbatim. Used by {@link org.jquantlib.pricingengines.swap.TreeVanillaSwapEngine}
+     * which only sees {@code arguments_} (no live {@link VanillaSwap} handle).
+     *
+     * <p>Populates {@link #underlyingSwap()} with {@code null}; callers that
+     * need the underlying swap (e.g. {@link org.jquantlib.pricingengines.swaption.DiscretizedSwaption})
+     * must continue to use the swap-based ctor.
+     *
+     * <p>Java port deviations from C++ v1.42.1:
+     * <ul>
+     * <li>{@code Settings.includeTodaysCashFlows} is C++17 {@code optional};
+     *     the Java port assumes {@code true} (matches the common case in the
+     *     C++ test suite), mirroring the swap-based ctor above.
+     * </ul>
+     */
+    public DiscretizedSwap(final VanillaSwap.ArgumentsImpl args,
+            final Date referenceDate, final DayCounter dayCounter) {
+        super();
+        this.swap_ = null;
+        this.type_ = args.type;
+        this.nominal_ = args.nominal;
+
+        final boolean includeTodaysCashFlows = true;
+
+        final int nFixed = args.fixedResetDates.size();
+        QL.require(args.fixedPayDates.size() == nFixed,
+                "fixed reset/pay date size mismatch");
+        QL.require(args.fixedCoupons.size() == nFixed,
+                "fixed coupon size mismatch");
+        this.fixedResetTimes_ = new double[nFixed];
+        this.fixedPayTimes_ = new double[nFixed];
+        this.fixedCoupons_ = new double[nFixed];
+        this.fixedCouponAdjustments_ = new CouponAdjustment[nFixed];
+        this.fixedResetTimeIsInPast_ = new boolean[nFixed];
+        for (int i = 0; i < nFixed; i++) {
+            final double resetTime = dayCounter.yearFraction(referenceDate,
+                    args.fixedResetDates.get(i));
+            final double payTime = dayCounter.yearFraction(referenceDate,
+                    args.fixedPayDates.get(i));
+            fixedResetTimes_[i] = resetTime;
+            fixedPayTimes_[i] = payTime;
+            fixedCoupons_[i] = args.fixedCoupons.get(i);
+            final boolean inPast = isResetTimeInPast(resetTime, payTime,
+                    includeTodaysCashFlows);
+            fixedResetTimeIsInPast_[i] = inPast;
+            fixedCouponAdjustments_[i] = inPast
+                    ? CouponAdjustment.post : CouponAdjustment.pre;
+        }
+
+        final int nFloat = args.floatingResetDates.size();
+        QL.require(args.floatingPayDates.size() == nFloat,
+                "floating reset/pay date size mismatch");
+        QL.require(args.floatingAccrualTimes.size() == nFloat,
+                "floating accrual times size mismatch");
+        QL.require(args.floatingSpreads.size() == nFloat,
+                "floating spreads size mismatch");
+        QL.require(args.floatingCoupons.size() == nFloat,
+                "floating coupons size mismatch");
+        this.floatingResetTimes_ = new double[nFloat];
+        this.floatingPayTimes_ = new double[nFloat];
+        this.floatingAccrualTimes_ = new double[nFloat];
+        this.floatingSpreads_ = new double[nFloat];
+        this.floatingCoupons_ = new double[nFloat];
+        this.floatingCouponAdjustments_ = new CouponAdjustment[nFloat];
+        this.floatingResetTimeIsInPast_ = new boolean[nFloat];
+        for (int i = 0; i < nFloat; i++) {
+            final double resetTime = dayCounter.yearFraction(referenceDate,
+                    args.floatingResetDates.get(i));
+            final double payTime = dayCounter.yearFraction(referenceDate,
+                    args.floatingPayDates.get(i));
+            floatingResetTimes_[i] = resetTime;
+            floatingPayTimes_[i] = payTime;
+            floatingAccrualTimes_[i] = args.floatingAccrualTimes.get(i);
+            floatingSpreads_[i] = args.floatingSpreads.get(i);
+            // Pre-fixed coupons come through as a populated amount; forward-
+            // starting periods may be sentinel NULL_REAL. Treat NULL_REAL as
+            // NaN so postAdjustValuesImpl's "current floating coupon not given"
+            // require fires for in-past resets that weren't fixed.
+            final double amt = args.floatingCoupons.get(i);
+            floatingCoupons_[i] = (amt == Constants.NULL_REAL) ? Double.NaN : amt;
+            final boolean inPast = isResetTimeInPast(resetTime, payTime,
+                    includeTodaysCashFlows);
+            floatingResetTimeIsInPast_[i] = inPast;
+            floatingCouponAdjustments_[i] = inPast
+                    ? CouponAdjustment.post : CouponAdjustment.pre;
+        }
+    }
+
+    /**
      * @return the underlying {@link VanillaSwap} held by this discretized
-     *     asset. Surface used by {@code DiscretizedSwaption} to read the
-     *     swap's terminal pay date after snapping.
+     *     asset, or {@code null} when this instance was built from
+     *     {@code VanillaSwap.ArgumentsImpl} (arguments-only path used by
+     *     {@link org.jquantlib.pricingengines.swap.TreeVanillaSwapEngine}).
+     *     Surface used by {@code DiscretizedSwaption} to read the swap's
+     *     terminal pay date after snapping.
      */
     public VanillaSwap underlyingSwap() {
         return swap_;
@@ -292,7 +390,7 @@ public class DiscretizedSwap extends DiscretizedAsset {
             final double t = fixedPayTimes_[i];
             if (fixedResetTimeIsInPast_[i] && isOnTime(t)) {
                 final double coupon = fixedCoupons_[i];
-                if (swap_.type() == VanillaSwap.Type.Payer) {
+                if (type_ == VanillaSwap.Type.Payer) {
                     for (int j = 0; j < values_.size(); j++) {
                         values_.set(j, values_.get(j) - coupon);
                     }
@@ -310,7 +408,7 @@ public class DiscretizedSwap extends DiscretizedAsset {
             if (floatingResetTimeIsInPast_[i] && isOnTime(t)) {
                 final double coupon = floatingCoupons_[i];
                 QL.require(!Double.isNaN(coupon), "current floating coupon not given");
-                if (swap_.type() == VanillaSwap.Type.Payer) {
+                if (type_ == VanillaSwap.Type.Payer) {
                     for (int j = 0; j < values_.size(); j++) {
                         values_.set(j, values_.get(j) + coupon);
                     }
@@ -346,7 +444,7 @@ public class DiscretizedSwap extends DiscretizedAsset {
 
         final double fixedCoupon = fixedCoupons_[i];
         final Array bv = bond.values();
-        if (swap_.type() == VanillaSwap.Type.Payer) {
+        if (type_ == VanillaSwap.Type.Payer) {
             for (int j = 0; j < values_.size(); j++) {
                 values_.set(j, values_.get(j) - fixedCoupon * bv.get(j));
             }
@@ -362,12 +460,12 @@ public class DiscretizedSwap extends DiscretizedAsset {
         bond.initialize(method(), floatingPayTimes_[i]);
         bond.rollback(time);
 
-        final double nominal = swap_.nominal();
+        final double nominal = nominal_;
         final double T = floatingAccrualTimes_[i];
         final double spread = floatingSpreads_[i];
         final double accruedSpread = nominal * T * spread;
         final Array bv = bond.values();
-        if (swap_.type() == VanillaSwap.Type.Payer) {
+        if (type_ == VanillaSwap.Type.Payer) {
             for (int j = 0; j < values_.size(); j++) {
                 final double coupon = nominal * (1.0 - bv.get(j))
                         + accruedSpread * bv.get(j);
