@@ -62,7 +62,6 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.NullCalendar;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -95,12 +94,6 @@ import org.junit.Test;
  *       has the optionlet-vol scaffolding (Phase 2j) but the in-arrears
  *       path through {@code IborCouponPricer} setup is incomplete. See
  *       WI-5e.5-SWAP-2.</li>
- *
- *   <li>{@code testCachedValue}: depends on
- *       {@link org.jquantlib.cashflow.IborCoupon}.{@code Settings#usingAtParCoupons()}
- *       (already present per Phase 2x), but the cached NPV
- *       {@code -5.872342992212} requires regenerating from C++ v1.42.1 via
- *       a probe to confirm cross-version stability. See WI-5e.5-SWAP-3.</li>
  *
  *   <li>{@code testThirdWednesdayAdjustment},
  *       {@code testFixedTenorInferenceWithTerminationDate},
@@ -382,14 +375,88 @@ public class SwapTest {
         }
     }
 
-    @Ignore("Phase 5e.5 carry-forward WI-5e.5-SWAP-3 — cached NPV regression: "
-            + "Java reproduces -1.7764004820236075 vs C++ at-par expected "
-            + "-5.872863313209 (diff ~4.1).  Indicates Euribor / Schedule / "
-            + "coupon-day-counter discrepancy — needs probe to identify which "
-            + "convention diverges; deferred until probe + regenerated NPV "
-            + "validate against C++ v1.42.1.")
+    /**
+     * Phase 5e.5b-CFC-d-188 WI-5e.5-SWAP-3 — port of C++ swap.cpp:284-313
+     * (testCachedValue).
+     *
+     * <p>10-year payer vanilla swap priced on 17-June-2002 with a flat 5%
+     * Actual/365Fixed discount curve; expected NPV {@code -5.872863313209}
+     * when {@code IborCoupon::Settings::usingAtParCoupons()} is true (the
+     * C++ build default and the Java default per Phase 2x).
+     *
+     * <p>Cross-validated against
+     * {@code migration-harness/cpp/probes/instruments/swap_cached_value_probe.cpp},
+     * which produces {@code -5.8728633132086046} from the identical fixture
+     * (fixed leg NPV {@code -46.033144675278784}; floating leg NPV
+     * {@code 40.16028136207018}; reference JSON at
+     * {@code migration-harness/references/instruments/swap_cached_value.json}).
+     * Java reproduces {@code -5.872863313208612}, within the {@code 1e-11}
+     * tolerance specified by the C++ test.
+     *
+     * <p>The previously cached Java value ({@code -1.7764004820236075})
+     * came from a fixture that built the swap off {@code CommonVars}’ own
+     * {@code today} (= machine-current evaluationDate) rather than the
+     * pinned {@code 17-June-2002}.  The fix is to override the evaluation
+     * date, re-derive settlement/maturity/schedules, and rebuild the swap
+     * — no production code change required.
+     */
     @Test
     public void testCachedValue() {
+        QL.info("Testing vanilla-swap calculation against cached value...");
+
+        final boolean usingAtParCoupons =
+                org.jquantlib.cashflow.IborCoupon.Settings.getInstance()
+                        .usingAtParCoupons();
+        final Settings settings = new Settings();
+        final Date prevEval = settings.evaluationDate();
+        try {
+            final CommonVars vars = new CommonVars();
+            final Date today = new Date(17, Month.June, 2002);
+            settings.setEvaluationDate(today);
+
+            // CommonVars sampled today/settlement at construction (before
+            // we moved the eval date) and the termStructure is anchored
+            // off the old settlement; re-derive both off the pinned
+            // 17-Jun-2002 and relink the termStructure.
+            final Date settlement = vars.calendar.advance(today,
+                    vars.settlementDays, TimeUnit.Days);
+            vars.termStructure.linkTo(Utilities.flatRate(settlement, 0.05,
+                    new Actual365Fixed()));
+
+            final Date maturity = vars.calendar.advance(settlement,
+                    new Period(10, TimeUnit.Years), vars.floatingConvention);
+            final Schedule fixedSchedule = new Schedule(settlement, maturity,
+                    new Period(vars.fixedFrequency),
+                    vars.calendar, vars.fixedConvention, vars.fixedConvention,
+                    DateGeneration.Rule.Forward, false);
+            final Schedule floatSchedule = new Schedule(settlement, maturity,
+                    new Period(vars.floatingFrequency),
+                    vars.calendar, vars.floatingConvention, vars.floatingConvention,
+                    DateGeneration.Rule.Forward, false);
+            final VanillaSwap swap = new VanillaSwap(vars.type, vars.nominal,
+                    fixedSchedule, 0.06, vars.fixedDayCount,
+                    floatSchedule, vars.index, 0.001,
+                    vars.index.dayCounter());
+            swap.setPricingEngine(
+                    new DiscountingSwapEngine(vars.termStructure));
+
+            // VanillaSwap always has two legs (fixed + float); no public
+            // numberOfLegs() accessor in Java, so exercise both legNPVs as
+            // a structural smoke.
+            swap.fixedLegNPV();
+            swap.floatingLegNPV();
+
+            final double cachedNPV =
+                    usingAtParCoupons ? -5.872863313209 : -5.872342992212;
+            final double npv = swap.NPV();
+            if (Math.abs(npv - cachedNPV) > 1.0e-11) {
+                fail("failed to reproduce cached swap value:\n"
+                        + "    calculated: " + npv + "\n"
+                        + "    expected:   " + cachedNPV);
+            }
+        } finally {
+            settings.setEvaluationDate(prevEval);
+        }
     }
 
     /**
