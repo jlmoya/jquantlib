@@ -26,12 +26,15 @@ import org.jquantlib.QL;
 import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.instruments.OneAssetOption;
 import org.jquantlib.instruments.StrikedTypePayoff;
+import org.jquantlib.math.transcendental.JQuantMath;
 import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmBlackScholesMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmHestonVarianceMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
+import org.jquantlib.methods.finitedifferences.operators.FdmHestonOp;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
+import org.jquantlib.methods.finitedifferences.solvers.Fdm2DimSolver;
 import org.jquantlib.methods.finitedifferences.solvers.FdmHestonSolver;
 import org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc;
 import org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite;
@@ -40,6 +43,7 @@ import org.jquantlib.methods.finitedifferences.utilities.FdmLogInnerValue;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.GenericModelEngine;
 import org.jquantlib.processes.HestonProcess;
+import org.jquantlib.termstructures.LocalVolTermStructure;
 
 /**
  * Finite-differences Heston vanilla option engine.
@@ -63,8 +67,17 @@ import org.jquantlib.processes.HestonProcess;
  * <h3>Limitations vs. C++ v1.42.1</h3>
  * <ul>
  *   <li>{@code FdmQuantoHelper} not yet ported — quanto-adjustment path omitted.</li>
- *   <li>{@code LocalVolTermStructure} leverage function not yet ported — pure-Heston only.</li>
- *   <li>Multiple-strikes caching ({@code enableMultipleStrikesCaching}) not implemented.</li>
+ *   <li>{@code LocalVolTermStructure} leverage function <em>is</em> supported
+ *       (Phase 5e.5b-CFC-d-254) via the
+ *       {@link #FdHestonVanillaEngine(HestonModel, HestonProcess, DividendSchedule,
+ *       int, int, int, int, FdmSchemeDesc, double, LocalVolTermStructure)}
+ *       overload. When non-null, the engine sidesteps the cached
+ *       {@link FdmHestonSolver} construction and assembles a fresh
+ *       {@link Fdm2DimSolver} with an {@link FdmHestonOp} that carries the
+ *       leverage surface. When null, the standard {@link FdmHestonSolver}
+ *       path is used (binary-equivalent to the pre-port behaviour).</li>
+ *   <li>Multiple-strikes caching ({@code enableMultipleStrikesCaching}) not implemented
+ *       — requires the unported {@code FdmBlackScholesMultiStrikeMesher}.</li>
  *   <li>The Java {@link HestonModel} does not expose {@code .process()},
  *       so the engine takes the model and process as separate constructor
  *       arguments (matching {@link FdHestonHullWhiteVanillaEngine}).</li>
@@ -82,12 +95,13 @@ public class FdHestonVanillaEngine
     private final int tGrid, xGrid, vGrid, dampingSteps;
     private final FdmSchemeDesc schemeDesc;
     private final double mixingFactor;
+    private final LocalVolTermStructure leverageFct;
 
     /** Convenience constructor — all C++ defaults, no dividends. */
     public FdHestonVanillaEngine(final HestonModel hestonModel,
                                  final HestonProcess hestonProcess) {
         this(hestonModel, hestonProcess, null,
-                100, 100, 50, 0, FdmSchemeDesc.Hundsdorfer(), 1.0);
+                100, 100, 50, 0, FdmSchemeDesc.Hundsdorfer(), 1.0, null);
     }
 
     /** Convenience constructor — explicit grid + scheme, no dividends. */
@@ -99,10 +113,10 @@ public class FdHestonVanillaEngine
                                  final int dampingSteps,
                                  final FdmSchemeDesc schemeDesc) {
         this(hestonModel, hestonProcess, null,
-                tGrid, xGrid, vGrid, dampingSteps, schemeDesc, 1.0);
+                tGrid, xGrid, vGrid, dampingSteps, schemeDesc, 1.0, null);
     }
 
-    /** Full constructor — explicit grid + dividends + mixing. */
+    /** Full constructor — explicit grid + dividends + mixing, no leverage. */
     public FdHestonVanillaEngine(final HestonModel hestonModel,
                                  final HestonProcess hestonProcess,
                                  final DividendSchedule dividends,
@@ -112,6 +126,37 @@ public class FdHestonVanillaEngine
                                  final int dampingSteps,
                                  final FdmSchemeDesc schemeDesc,
                                  final double mixingFactor) {
+        this(hestonModel, hestonProcess, dividends,
+                tGrid, xGrid, vGrid, dampingSteps, schemeDesc, mixingFactor, null);
+    }
+
+    /**
+     * Full constructor — explicit grid + dividends + mixing + optional
+     * leverage function {@code L(t, S)} for Heston-SLV pricing.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code FdHestonVanillaEngine(model, dividends,
+     * tGrid, xGrid, vGrid, dampingSteps, schemeDesc, leverageFct, mixingFactor)}.
+     * <p>
+     * When {@code leverageFct} is {@code null} the engine takes the standard
+     * {@link FdmHestonSolver} path (binary-equivalent to the pre-port
+     * behaviour). When non-null, a bespoke {@link Fdm2DimSolver} with an
+     * {@link FdmHestonOp} that carries the leverage surface is assembled
+     * inline (since {@link FdmHestonSolver} does not yet expose the
+     * leverage-fct knob).
+     *
+     * @param leverageFct {@code L(t, S)} surface, or {@code null} for pure
+     *                    Heston (no SLV)
+     */
+    public FdHestonVanillaEngine(final HestonModel hestonModel,
+                                 final HestonProcess hestonProcess,
+                                 final DividendSchedule dividends,
+                                 final int tGrid,
+                                 final int xGrid,
+                                 final int vGrid,
+                                 final int dampingSteps,
+                                 final FdmSchemeDesc schemeDesc,
+                                 final double mixingFactor,
+                                 final LocalVolTermStructure leverageFct) {
         super(hestonModel,
               new OneAssetOption.ArgumentsImpl(),
               new OneAssetOption.ResultsImpl());
@@ -126,6 +171,7 @@ public class FdHestonVanillaEngine
         this.dampingSteps  = dampingSteps;
         this.schemeDesc    = schemeDesc;
         this.mixingFactor  = mixingFactor;
+        this.leverageFct   = leverageFct;
     }
 
     /**
@@ -185,16 +231,37 @@ public class FdHestonVanillaEngine
     @Override
     public void calculate() {
         final FdmSolverDesc solverDesc = getSolverDesc();
-        final FdmHestonSolver solver = new FdmHestonSolver(
-                hestonProcess, solverDesc, schemeDesc, mixingFactor);
 
         final double spot = hestonProcess.s0().currentLink().value();
         final double v0   = hestonProcess.v0().currentLink().value();
 
         final OneAssetOption.ResultsImpl r = (OneAssetOption.ResultsImpl) results_;
-        r.value             = solver.valueAt(spot, v0);
-        r.greeks().delta    = solver.deltaAt(spot, v0);
-        r.greeks().gamma    = solver.gammaAt(spot, v0);
-        r.greeks().theta    = solver.thetaAt(spot, v0);
+
+        if (leverageFct == null) {
+            // Pure-Heston path — defer to FdmHestonSolver (handles caching,
+            // analytic Greeks). Binary-equivalent to the pre-port behaviour.
+            final FdmHestonSolver solver = new FdmHestonSolver(
+                    hestonProcess, solverDesc, schemeDesc, mixingFactor);
+            r.value             = solver.valueAt(spot, v0);
+            r.greeks().delta    = solver.deltaAt(spot, v0);
+            r.greeks().gamma    = solver.gammaAt(spot, v0);
+            r.greeks().theta    = solver.thetaAt(spot, v0);
+        } else {
+            // Heston-SLV path — assemble a bespoke Fdm2DimSolver with an
+            // FdmHestonOp that carries the leverage surface. FdmHestonSolver
+            // does not yet expose the leverage-fct knob, so the engine
+            // performs the spot↔log-spot chain-rule conversions inline
+            // (mirroring FdmHestonSolver.valueAt/deltaAt/gammaAt/thetaAt).
+            final FdmHestonOp op = new FdmHestonOp(
+                    solverDesc.mesher, hestonProcess, mixingFactor, leverageFct);
+            final Fdm2DimSolver solver =
+                    new Fdm2DimSolver(solverDesc, schemeDesc, op);
+            final double x = JQuantMath.log(spot);
+            r.value          = solver.interpolateAt(x, v0);
+            r.greeks().delta = solver.derivativeX(x, v0) / spot;
+            r.greeks().gamma = (solver.derivativeXX(x, v0) - solver.derivativeX(x, v0))
+                                / (spot * spot);
+            r.greeks().theta = solver.thetaAt(x, v0);
+        }
     }
 }

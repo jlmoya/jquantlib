@@ -6,6 +6,7 @@
  */
 package org.jquantlib.testsuite.model.equity;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
@@ -72,6 +73,7 @@ import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.LocalVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
+import org.jquantlib.pricingengines.vanilla.FdHestonVanillaEngine;
 import org.jquantlib.termstructures.volatilities.BlackVarianceSurface;
 import org.jquantlib.termstructures.volatilities.equityfx.FixedLocalVolSurface;
 import org.jquantlib.termstructures.volatilities.equityfx.NoExceptLocalVolSurface;
@@ -1648,16 +1650,16 @@ public class HestonSLVModelTest {
 
     @Ignore("Phase 5e.5b-CFC-d-235 — MakeMCEuropeanHestonEngine + MCEuropeanHestonEngine "
             + "now accept HestonStochasticLocalVolProcess (Java sibling of HestonSLVProcess) "
-            + "via overloaded constructors. Remaining blockers: "
-            + "(a) FdHestonVanillaEngine ctor variant that accepts a LocalVolTermStructure "
-            + "leverage-fct argument — Java's engine is pure Heston (see Limitations javadoc "
-            + "in FdHestonVanillaEngine.java line 66); C++ uses it as the FDM reference for "
-            + "the calibration-quality check (test-suite/hestonslvmodel.cpp:2035); "
-            + "(b) HestonStochasticLocalVolProcess.evolve() port discrepancy — manual "
+            + "via overloaded constructors. Phase 5e.5b-CFC-d-254 — FdHestonVanillaEngine "
+            + "now exposes a LocalVolTermStructure leverage-fct ctor variant "
+            + "(plumb-through validated by testFdHestonVanillaEngineLeverageFctCtorSmoke); "
+            + "the engine can serve as the FDM reference for the calibration-quality "
+            + "check (test-suite/hestonslvmodel.cpp:2035). Remaining blocker: "
+            + "HestonStochasticLocalVolProcess.evolve() port discrepancy — manual "
             + "integration with constant Brownian and leverage=1 yields terminal S=0.0 "
             + "(see testMonteCarloHestonSLVEnginePathGen probe); the QE+martingale-log-S body "
-            + "needs realignment vs. C++ ql/processes/hestonslvprocess.cpp::evolve. Both "
-            + "blockers out of scope for the Phase 5e.5b-CFC-d allowlist.")
+            + "needs realignment vs. C++ ql/processes/hestonslvprocess.cpp::evolve. "
+            + "Blocker out of scope for the Phase 5e.5b-CFC-d allowlist.")
     @Test
     public void testMonteCarloCalibration() { fail("not implemented"); }
 
@@ -1675,15 +1677,16 @@ public class HestonSLVModelTest {
 
     @Ignore("Phase 5e.5b-CFC-d-235 — MakeMCEuropeanHestonEngine[HestonSLVProcess] now "
             + "available (overloaded ctor on the existing builder; same engine class "
-            + "specialised by instance-type dispatch). Remaining blockers: "
-            + "(a) FdHestonVanillaEngine ctor variant with LocalVolTermStructure "
-            + "leverage-fct argument — Java's engine is pure Heston "
-            + "(test-suite/hestonslvmodel.cpp:1905,1920); "
-            + "(b) HestonStochasticLocalVolProcess.evolve() port discrepancy (see "
-            + "testMonteCarloHestonSLVEnginePathGen probe — terminal S=0.0 under constant "
-            + "Brownian + leverage=1, indicating a sign or cumulant-correction mismatch "
-            + "vs. C++ ql/processes/hestonslvprocess.cpp). LocalConstantVol exists. Both "
-            + "blockers out of scope for the Phase 5e.5b-CFC-d allowlist.")
+            + "specialised by instance-type dispatch). Phase 5e.5b-CFC-d-254 — "
+            + "FdHestonVanillaEngine now exposes a LocalVolTermStructure leverage-fct "
+            + "ctor variant (test-suite/hestonslvmodel.cpp:1905,1920; plumb-through "
+            + "validated by testFdHestonVanillaEngineLeverageFctCtorSmoke). "
+            + "Remaining blocker: HestonStochasticLocalVolProcess.evolve() port "
+            + "discrepancy (see testMonteCarloHestonSLVEnginePathGen probe — "
+            + "terminal S=0.0 under constant Brownian + leverage=1, indicating a "
+            + "sign or cumulant-correction mismatch vs. C++ "
+            + "ql/processes/hestonslvprocess.cpp). LocalConstantVol exists. "
+            + "Blocker out of scope for the Phase 5e.5b-CFC-d allowlist.")
     @Test
     public void testMonteCarloVsFdmPricing() { fail("not implemented"); }
 
@@ -1793,6 +1796,123 @@ public class HestonSLVModelTest {
         }
     }
 
+    /**
+     * Phase 5e.5b-CFC-d-254 smoke probe for the new
+     * {@link FdHestonVanillaEngine} ctor that accepts a
+     * {@link LocalVolTermStructure} leverage function.
+     *
+     * <p>Strategy: drive two FD-Heston engines on the same Heston process,
+     * one with {@code leverageFct = null} (pure-Heston path → existing
+     * {@link org.jquantlib.methods.finitedifferences.solvers.FdmHestonSolver})
+     * and one with {@code leverageFct = LocalConstantVol(1.0)} (new
+     * leverage path → bespoke {@link
+     * org.jquantlib.methods.finitedifferences.solvers.Fdm2DimSolver} with
+     * an {@link
+     * org.jquantlib.methods.finitedifferences.operators.FdmHestonOp}
+     * carrying L≡1). With unit leverage the SLV PDE mathematically
+     * collapses to the bare Heston PDE, so the two engines must produce
+     * the same NPV / delta / gamma / theta to within FD-grid noise.
+     *
+     * <p>This is a constructor + plumb-through test — it proves the new
+     * leverage-fct branch in {@link
+     * org.jquantlib.methods.finitedifferences.operators.FdmHestonOp.FdmHestonEquityPart#setTime(double, double)}
+     * does not perturb the pure-Heston dynamics when L≡1. Tolerance is
+     * the LOOSE tier (1e-3 relative) per the Phase 5e.5b-CFC-d-254 brief.
+     *
+     * <p>Source counterpart: C++ {@code FdHestonVanillaEngine} variants
+     * with {@code leverageFct} in
+     * {@code ql/pricingengines/vanilla/fdhestonvanillaengine.{hpp,cpp}};
+     * test-suite/hestonslvmodel.cpp:1905,1920 (the
+     * {@code testMonteCarloVsFdmPricing} reference engine — still gated
+     * upstream by the {@code HestonStochasticLocalVolProcess.evolve()}
+     * blocker, hence the smoke is split out here as a constructor test).
+     */
+    @Test
+    public void testFdHestonVanillaEngineLeverageFctCtorSmoke() {
+        QL.info("Testing FdHestonVanillaEngine(leverageFct) ctor "
+                + "with L=1 reproduces pure-Heston FD price...");
+
+        final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
+        final Date todaysDate = new Date(5, Month.December, 2015);
+        new Settings().setEvaluationDate(todaysDate);
+        final Date exerciseDate = todaysDate.add(new Period(1, TimeUnit.Years));
+
+        final double s0 = 100.0;
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final double r = 0.05;
+        final double q = 0.02;
+        final double kappa = 2.0;
+        final double theta = 0.18;
+        final double rho   = -0.75;
+        final double sigma = 0.8;
+        final double v0    = 0.19;
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dc));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dc));
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+        final HestonModel hestonModel = new HestonModel(hestonProcess);
+
+        // Leverage L(t,S) = 1 identically -> SLV PDE collapses to pure Heston.
+        final LocalVolTermStructure leverageFct =
+                new org.jquantlib.termstructures.volatilities.LocalConstantVol(
+                        todaysDate, 1.0, dc);
+
+        // Same grid for both engines so any difference traces to the
+        // leverage-fct plumb-through, not to the mesher.
+        final int tGrid = 30;
+        final int xGrid = 100;
+        final int vGrid = 50;
+        final int damp  = 0;
+
+        final FdHestonVanillaEngine pureEngine = new FdHestonVanillaEngine(
+                hestonModel, hestonProcess, null,
+                tGrid, xGrid, vGrid, damp,
+                FdmSchemeDesc.Hundsdorfer(), 1.0, null);
+        final FdHestonVanillaEngine slvEngine  = new FdHestonVanillaEngine(
+                hestonModel, hestonProcess, null,
+                tGrid, xGrid, vGrid, damp,
+                FdmSchemeDesc.Hundsdorfer(), 1.0, leverageFct);
+
+        final Exercise exercise = new EuropeanExercise(exerciseDate);
+        final double[] strikes = { 90.0, 100.0, 110.0 };
+        final double tolRel = 1.0e-3; // LOOSE tier per Phase 5e.5b-CFC-d-254
+
+        for (final double strike : strikes) {
+            final StrikedTypePayoff payoff =
+                    new PlainVanillaPayoff(Option.Type.Call, strike);
+            final VanillaOption option = new VanillaOption(payoff, exercise);
+
+            option.setPricingEngine(pureEngine);
+            final double npvPure   = option.NPV();
+            final double dPure     = option.delta();
+            final double gPure     = option.gamma();
+            final double tPure     = option.theta();
+
+            option.setPricingEngine(slvEngine);
+            final double npvSlv    = option.NPV();
+            final double dSlv      = option.delta();
+            final double gSlv      = option.gamma();
+            final double tSlv      = option.theta();
+
+            final double abs = Math.max(1.0e-6, tolRel * Math.abs(npvPure));
+            assertEquals("FD-Heston leverage=1 NPV must match pure-Heston (strike="
+                    + strike + ")", npvPure, npvSlv, abs);
+            assertEquals("FD-Heston leverage=1 delta must match pure-Heston (strike="
+                    + strike + ")", dPure, dSlv,
+                    Math.max(1.0e-6, tolRel * Math.abs(dPure)));
+            assertEquals("FD-Heston leverage=1 gamma must match pure-Heston (strike="
+                    + strike + ")", gPure, gSlv,
+                    Math.max(1.0e-6, tolRel * Math.abs(gPure)));
+            assertEquals("FD-Heston leverage=1 theta must match pure-Heston (strike="
+                    + strike + ")", tPure, tSlv,
+                    Math.max(1.0e-6, tolRel * Math.abs(tPure)));
+        }
+    }
+
     @Ignore("Phase 5e.5b-CFC-d-175 — SobolBrownianGeneratorFactory (Phase 3i Commit 5), "
             + "AnalyticDoubleBarrierBinaryEngine, and HestonSLVMCModel.leverageFunction() "
             + "accessor all landed. Remaining blocker: FdHestonDoubleBarrierEngine "
@@ -1809,11 +1929,13 @@ public class HestonSLVModelTest {
             + "cross-validated against C++ v1.42.1), HestonBlackVolSurface, "
             + "NoExceptLocalVolSurface, LocalVolRNDCalculator, and FixedLocalVolSurface "
             + "all landed; HestonStochasticLocalVolProcess (Java name for C++ "
-            + "HestonSLVProcess) exposes apply(), drift(), and diffusion(). Remaining "
-            + "blocker: FdHestonVanillaEngine ctor variant that accepts a "
-            + "LocalVolTermStructure leverage-function argument — Java's engine is pure "
-            + "Heston (see Limitations javadoc in FdHestonVanillaEngine.java line 66). "
-            + "Also needs getFixedLocalVolFromHeston test helper.")
+            + "HestonSLVProcess) exposes apply(), drift(), and diffusion(). "
+            + "Phase 5e.5b-CFC-d-254 — FdHestonVanillaEngine now exposes a "
+            + "LocalVolTermStructure leverage-function ctor variant "
+            + "(see Limitations javadoc in FdHestonVanillaEngine.java; "
+            + "plumb-through validated by testFdHestonVanillaEngineLeverageFctCtorSmoke). "
+            + "Remaining blocker: getFixedLocalVolFromHeston test helper "
+            + "(test-suite/hestonslvmodel.cpp:654) — not in Java.")
     @Test
     public void testDiffusionAndDriftSlvProcess() { fail("not implemented"); }
 }
