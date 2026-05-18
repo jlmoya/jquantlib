@@ -26,6 +26,7 @@ import org.jquantlib.QL;
 import org.jquantlib.math.Ops;
 import org.jquantlib.math.distributions.GammaDistribution;
 import org.jquantlib.math.distributions.GammaFunction;
+import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.distributions.InverseNonCentralCumulativeChiSquaredDistribution;
 import org.jquantlib.math.distributions.NonCentralCumulativeChiSquaredDistribution;
 import org.jquantlib.math.solvers1D.Brent;
@@ -127,17 +128,50 @@ public class SquareRootProcessRNDCalculator extends RiskNeutralDensityCalculator
     }
 
     /**
-     * Stationary inverse CDF (Brent root-finding on stationary_cdf).
+     * Stationary inverse CDF (Brent root-finding on stationary_cdf, with a
+     * Wilson-Hilferty asymptotic branch for high-Feller cases).
      *
      * <p>C++ uses {@code boost::math::gamma_p_inv}; JQuantLib has no native
-     * inverse-incomplete-gamma helper, so we fall back to a Brent root finder
-     * with explicit bracket expansion (theta is the gamma mean; CDF is
-     * monotonically increasing on (0, +inf)).
+     * inverse-incomplete-gamma helper. The default path falls back to a Brent
+     * root finder with explicit bracket expansion (theta is the gamma mean;
+     * CDF is monotonically increasing on (0, +inf)).
+     *
+     * <p>For high {@code alpha = df/2} (i.e. high Feller coefficient
+     * {@code 2*kappa*theta/sigma^2 = 2*alpha}), the JQuantLib
+     * {@link GammaDistribution} does not converge in its 100-iteration
+     * series / continued-fraction budget — it throws "accuracy not reached"
+     * inside Brent before a root can be located. The stationary gamma is
+     * asymptotically normal with mean {@code theta} and variance
+     * {@code theta^2 / alpha}; the Wilson-Hilferty transform refines the
+     * normal approximation via a cube-root mapping of the underlying
+     * chi-square variate {@code X ~ chi^2(2*alpha)} (here
+     * {@code V = X / (2*beta)}, so {@code V/theta = (X/(2*alpha))}). The
+     * inverse Wilson-Hilferty formula
+     * {@code v_q ≈ theta * (1 - 1/(9*alpha) + z_q / sqrt(9*alpha))^3}
+     * has relative error {@code O(alpha^{-3/2})} — for alpha=2500
+     * (the {@code testHestonFokkerPlanckFwdEquationLogLVLeverage}
+     * parameter set: theta=1.0, kappa=1.0, sigma=0.02, Feller=5000) the
+     * error is ~{@code 1e-7} on values near 1.0, comfortably inside the
+     * {@code 1e-5} LOOSE invcdf tier used elsewhere here. The threshold
+     * {@code alpha >= 100} keeps the small-Feller cases (the
+     * {@link org.jquantlib.testsuite.methods.finitedifferences.utilities.SquareRootProcessRNDCalculatorTest}
+     * parameter set, alpha ≈ 0.44) on the original Brent path where the
+     * native GammaDistribution converges and an exact root is recoverable.
      */
     public double stationary_invcdf(final double q) {
         QL.require(q > 0.0 && q < 1.0, "q must be in (0, 1)");
         final double alpha = 0.5 * df_;
-        final double beta  = alpha / theta_;
+
+        // Wilson-Hilferty branch for high-alpha (Brent + GammaDistribution
+        // would otherwise throw "accuracy not reached" before convergence).
+        if (alpha >= 100.0) {
+            final double z = new InverseCumulativeNormal().op(q);
+            final double h = 1.0 / (9.0 * alpha);
+            final double tWH = 1.0 - h + z * Math.sqrt(h);
+            return theta_ * tWH * tWH * tWH;
+        }
+
+        final double beta = alpha / theta_;
         final GammaDistribution gd = new GammaDistribution(alpha);
 
         final Ops.DoubleOp f = new Ops.DoubleOp() {

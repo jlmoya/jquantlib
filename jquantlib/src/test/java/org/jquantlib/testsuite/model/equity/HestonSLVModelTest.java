@@ -773,20 +773,6 @@ public class HestonSLVModelTest {
      * ({@link FdBlackScholesVanillaEngine} with {@code localVol=true,
      * illegalLocalVolOverwrite=0.2}). Tolerance 0.015 matches C++.
      */
-    @Ignore("Phase 5e.5b-CFC-d-225 — local-vol FD engine overload "
-            + "FdBlackScholesVanillaEngine(..., localVol, illegalLocalVolOverwrite) "
-            + "has now landed (this commit) and is exercised here, but a separate "
-            + "blocker remains: SquareRootProcessRNDCalculator.stationary_invcdf "
-            + "fails with 'accuracy not reached' for the C++-test parameter set "
-            + "(theta=1.0, kappa=1.0, sigma=0.02 — 2*kappa*theta/sigma^2 = 5000, "
-            + "so the stationary non-central chi-square is extremely concentrated "
-            + "and the default Brent bracket [eps, 1-eps] x [v0/10, v0*10] cannot "
-            + "find a root for q = 0.99 / 0.01). The C++ Brent uses a wider "
-            + "stretch-based bracket. Un-ignore once that calculator's invcdf "
-            + "bracketing is widened (or replaced with an analytic chi-square "
-            + "inverse) — the localVol FD engine wiring itself is now complete "
-            + "and passes PiecewiseBlackVarianceSurfaceTest::testLocalVolFdPricingFromSabrSmiles "
-            + "to 1c tolerance.")
     @Test
     public void testHestonFokkerPlanckFwdEquationLogLVLeverage() {
         final DayCounter dc = new ActualActual(ActualActual.Convention.ISDA);
