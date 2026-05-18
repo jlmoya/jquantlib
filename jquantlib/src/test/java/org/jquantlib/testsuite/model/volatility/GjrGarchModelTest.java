@@ -35,7 +35,9 @@ import java.util.List;
 
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.ActualActual;
+import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.Option;
@@ -43,7 +45,15 @@ import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.StrikedTypePayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.math.distributions.CumulativeNormalDistribution;
+import org.jquantlib.math.interpolations.factories.Linear;
+import org.jquantlib.math.optimization.EndCriteria;
+import org.jquantlib.math.optimization.NoConstraint;
+import org.jquantlib.math.optimization.Simplex;
+import org.jquantlib.model.BlackCalibrationHelper;
+import org.jquantlib.model.BlackCalibrationHelper.CalibrationErrorType;
+import org.jquantlib.model.CalibrationHelper;
 import org.jquantlib.model.equity.GjrGarchModel;
+import org.jquantlib.model.equity.HestonModelHelper;
 import org.jquantlib.pricingengines.McSimulation;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.vanilla.AnalyticGJRGARCHEngine;
@@ -54,9 +64,13 @@ import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.termstructures.yieldcurves.FlatForward;
+import org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve;
+import org.jquantlib.time.Calendar;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
-import org.junit.Ignore;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
+import org.jquantlib.time.calendars.Target;
 import org.junit.Test;
 
 /**
@@ -279,12 +293,141 @@ public class GjrGarchModelTest {
         }
     }
 
+    /**
+     * Faithful port of C++ {@code testDAXCalibration}
+     * (gjrgarchmodel.cpp:200-306, v1.42.1).
+     *
+     * <p>Calibrates a {@link GjrGarchModel} (via the inherited
+     * {@link org.jquantlib.model.CalibratedModel#calibrate(java.util.List,
+     * org.jquantlib.math.optimization.OptimizationMethod,
+     * org.jquantlib.math.optimization.EndCriteria,
+     * org.jquantlib.math.optimization.Constraint, double[])} entry
+     * point) to a 7-strike x 3-maturity sub-grid of DAX option quotes
+     * via {@link Simplex} with the C++ EndCriteria
+     * ({@code 400, 40, 1e-8, 1e-8, 1e-8}). Calibration helpers are
+     * {@link HestonModelHelper} instances driven by the
+     * {@link AnalyticGJRGARCHEngine}; the SSE of
+     * {@code 100 * calibrationError()} across all helpers must stay
+     * below the C++ pass threshold of {@code 15}.
+     *
+     * <p>The C++ test annotates this case as
+     * {@code if_speed(Fast)}; on JVM with the Java port's Edgeworth
+     * Analytic engine + Simplex optimiser the inner-loop pricing
+     * dominates the runtime (single-digit seconds), so we do not
+     * gate this with {@code @Tag("slow")} here.
+     *
+     * <p>Phase 5e.5b-CFC-d-209 — un-ignored once
+     * {@link InterpolatedZeroCurve}, {@link HestonModelHelper},
+     * {@link Simplex}, {@link EndCriteria}, and
+     * {@link GjrGarchModel} (via {@code CalibratedModel.calibrate})
+     * all became available in the Java port.
+     */
     @Test
-    @Ignore("Phase 5g.5 — full GjrGarchModel.calibrate(Simplex, EndCriteria) "
-            + "loop deferred. HestonModelHelper exists, but Simplex-based "
-            + "calibration with 400-iter EndCriteria across 21 BlackCalibrationHelpers "
-            + "is a separate WI; see C++ gjrgarchmodel.cpp testDAXCalibration.")
     public void testDAXCalibration() {
-        // Deferred — will land with the calibration smoke-test WI.
+        QL.info("Testing GJR-GARCH model calibration using DAX volatility data...");
+
+        final Date settlementDate = new Date(5, Month.July, 2002);
+        new Settings().setEvaluationDate(settlementDate);
+
+        final DayCounter dayCounter = new Actual365Fixed();
+        final Calendar calendar = new Target();
+
+        final int[] t = { 13, 41, 75, 165, 256, 345, 524, 703 };
+        final double[] r = { 0.0357, 0.0349, 0.0341, 0.0355,
+                             0.0359, 0.0368, 0.0386, 0.0401 };
+
+        final Date[] dates = new Date[1 + t.length];
+        final double[] rates = new double[1 + t.length];
+        dates[0] = settlementDate;
+        rates[0] = 0.0357;
+        for (int i = 0; i < t.length; ++i) {
+            dates[i + 1] = settlementDate.add(t[i]);
+            rates[i + 1] = r[i];
+        }
+
+        final Handle<YieldTermStructure> riskFreeTS =
+                new Handle<YieldTermStructure>(
+                        new InterpolatedZeroCurve<Linear>(
+                                Linear.class, dates, rates, dayCounter));
+
+        final Handle<YieldTermStructure> dividendTS =
+                new Handle<YieldTermStructure>(
+                        new FlatForward(settlementDate, 0.0, dayCounter));
+
+        final double[] v = {
+            0.6625,0.4875,0.4204,0.3667,0.3431,0.3267,0.3121,0.3121,
+            0.6007,0.4543,0.3967,0.3511,0.3279,0.3154,0.2984,0.2921,
+            0.5084,0.4221,0.3718,0.3327,0.3155,0.3027,0.2919,0.2889,
+            0.4541,0.3869,0.3492,0.3149,0.2963,0.2926,0.2819,0.2800,
+            0.4060,0.3607,0.3330,0.2999,0.2887,0.2811,0.2751,0.2775,
+            0.3726,0.3396,0.3108,0.2781,0.2788,0.2722,0.2661,0.2686,
+            0.3550,0.3277,0.3012,0.2781,0.2781,0.2661,0.2661,0.2681,
+            0.3428,0.3209,0.2958,0.2740,0.2688,0.2627,0.2580,0.2620,
+            0.3302,0.3062,0.2799,0.2631,0.2573,0.2533,0.2504,0.2544,
+            0.3343,0.2959,0.2705,0.2540,0.2504,0.2464,0.2448,0.2462,
+            0.3460,0.2845,0.2624,0.2463,0.2425,0.2385,0.2373,0.2422,
+            0.3857,0.2860,0.2578,0.2399,0.2357,0.2327,0.2312,0.2351,
+            0.3976,0.2860,0.2607,0.2356,0.2297,0.2268,0.2241,0.2320
+        };
+
+        final SimpleQuote s0SQ = new SimpleQuote(4468.17);
+        final Handle<Quote> s0 = new Handle<Quote>(s0SQ);
+        final double[] strike = { 3400, 3600, 3800, 4000, 4200, 4400,
+                                  4500, 4600, 4800, 5000, 5200, 5400, 5600 };
+
+        final double omega = 2.0e-6;
+        final double alpha = 0.024;
+        final double beta = 0.93;
+        final double gamma = 0.059;
+        final double lambda = 0.1;
+        final double daysPerYear = 365.0;
+        final double N = new CumulativeNormalDistribution().op(lambda);
+        final double m1 = beta + (alpha + gamma * N) * (1.0 + lambda * lambda)
+                + gamma * lambda * Math.exp(-lambda * lambda / 2.0)
+                / Math.sqrt(2.0 * Math.PI);
+        final double v0 = omega / (1.0 - m1);
+
+        final GjrGarchProcess process = new GjrGarchProcess(
+                riskFreeTS, dividendTS, s0,
+                v0, omega, alpha, beta, gamma, lambda, daysPerYear);
+        final GjrGarchModel model = new GjrGarchModel(process);
+
+        final PricingEngine engine = new AnalyticGJRGARCHEngine(model);
+
+        // C++ loops s in [3,10) and m in [0,3) → 7 strikes x 3 maturities.
+        final List<CalibrationHelper> options = new ArrayList<CalibrationHelper>();
+        for (int s = 3; s < 10; ++s) {
+            for (int m = 0; m < 3; ++m) {
+                final Handle<Quote> vol = new Handle<Quote>(
+                        new SimpleQuote(v[s * 8 + m]));
+                // C++ "round to weeks" — Period((t[m]+3)/7, Weeks).
+                final Period maturity = new Period(
+                        (t[m] + 3) / 7, TimeUnit.Weeks);
+                final BlackCalibrationHelper option = new HestonModelHelper(
+                        maturity, calendar,
+                        s0SQ.value(), strike[s], vol,
+                        riskFreeTS, dividendTS,
+                        CalibrationErrorType.ImpliedVolError);
+                option.setPricingEngine(engine);
+                options.add(option);
+            }
+        }
+
+        final Simplex om = new Simplex(0.05);
+        model.calibrate(options, om,
+                new EndCriteria(400, 40, 1.0e-8, 1.0e-8, 1.0e-8),
+                new NoConstraint(), null);
+
+        double sse = 0;
+        for (final CalibrationHelper option : options) {
+            final double diff = option.calibrationError() * 100.0;
+            sse += diff * diff;
+        }
+        final double maxExpected = 15.0;
+        if (sse > maxExpected) {
+            fail("Failed to reproduce calibration error"
+                    + "\n    calculated: " + sse
+                    + "\n    expected:  < " + maxExpected);
+        }
     }
 }
