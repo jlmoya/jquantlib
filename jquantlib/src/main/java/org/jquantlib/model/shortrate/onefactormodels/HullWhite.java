@@ -164,6 +164,29 @@ public class HullWhite extends Vasicek implements TermStructureConsistentModel {
     }
 
     /**
+     * Projection mask that freezes the mean-reversion {@code a} parameter
+     * while leaving {@code sigma} free for calibration.
+     *
+     * <p>Faithful port of QuantLib C++ v1.42.1
+     * {@code HullWhite::FixedReversion()} (see
+     * {@code ql/models/shortrate/onefactormodels/hullwhite.hpp}). Returns a
+     * 2-element {@code boolean[]} (the HullWhite calibration parameter vector
+     * is {@code [a, sigma]} — {@code b} and {@code lambda} are
+     * {@code NullParameter}s with size 0 and contribute nothing to
+     * {@link org.jquantlib.model.CalibratedModel#params()}): index 0
+     * ({@code a}) is fixed, index 1 ({@code sigma}) is free.
+     *
+     * <p>Pass to the projection-aware {@code CalibratedModel.calibrate}
+     * overload as the {@code fixParameters} argument.
+     */
+    public static boolean[] FixedReversion() {
+        final boolean[] c = new boolean[2];
+        c[0] = true;
+        c[1] = false;
+        return c;
+    }
+
+    /**
      *  Futures convexity bias (i.e., the difference between
      *  futures implied rate and forward rate) calculated as in
      *  <p>

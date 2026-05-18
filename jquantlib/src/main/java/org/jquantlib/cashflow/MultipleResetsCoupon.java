@@ -109,12 +109,39 @@ public class MultipleResetsCoupon extends FloatingRateCoupon {
             final Date refPeriodStart,
             final Date refPeriodEnd,
             final DayCounter dayCounter) {
-        // C++ FloatingRateCoupon(paymentDate, nominal, resetSchedule.front(),
-        //   resetSchedule.back(), fixingDays, index, gearing, couponSpread,
-        //   refPeriodStart, refPeriodEnd, dayCounter, false, exCouponDate)
-        // Java port currently lacks an exCouponDate parameter on
-        // FloatingRateCoupon, so we drop it (Phase 5d.5-MR carry: align
-        // FloatingRateCoupon with the C++ ex-coupon-date signature).
+        this(paymentDate, nominal, resetSchedule, fixingDays, index,
+             gearing, couponSpread, rateSpread,
+             refPeriodStart, refPeriodEnd, dayCounter,
+             /* exCouponDate */ new Date());
+    }
+
+    /**
+     * Construct a multiple-reset coupon with an ex-coupon date.
+     *
+     * <p>Mirrors C++ v1.42.1 {@code MultipleResetsCoupon::MultipleResetsCoupon}
+     * full signature (ql/cashflows/multipleresetscoupon.cpp:30-46). The Java
+     * {@link FloatingRateCoupon} ctor does not yet thread {@code exCouponDate}
+     * (Phase 5d.5-MR carry-forward); we set the inherited
+     * {@link Coupon#exCouponDate_} field directly to mirror the C++ effect of
+     * {@code FloatingRateCoupon(..., false, exCouponDate)} which forwards to
+     * {@code Coupon(..., exCouponDate)}.
+     *
+     * @param exCouponDate ex-coupon date; pass a default-construed
+     *                     {@link Date} (or {@code null}) for "no ex-coupon date"
+     */
+    public MultipleResetsCoupon(
+            final Date paymentDate,
+            final double nominal,
+            final Schedule resetSchedule,
+            final int fixingDays,
+            final IborIndex index,
+            final double gearing,
+            final double couponSpread,
+            final double rateSpread,
+            final Date refPeriodStart,
+            final Date refPeriodEnd,
+            final DayCounter dayCounter,
+            final Date exCouponDate) {
         super(paymentDate,
               nominal,
               resetSchedule.dates().get(0),
@@ -127,6 +154,10 @@ public class MultipleResetsCoupon extends FloatingRateCoupon {
               refPeriodEnd,
               dayCounter,
               false /* not in arrears */);
+        // Thread exCouponDate onto the inherited Coupon.exCouponDate_ field
+        // (mirrors C++ FloatingRateCoupon → Coupon ctor forwarding which the
+        // Java FloatingRateCoupon ctor does not yet carry — Phase 5d.5-MR).
+        this.exCouponDate_ = (exCouponDate == null) ? new Date() : exCouponDate.clone();
         this.rateSpread_ = rateSpread;
         this.valueDates_ = new ArrayList<Date>(resetSchedule.dates());
 

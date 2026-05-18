@@ -141,22 +141,74 @@ public class ShortRateModelsTest {
     }
 
     /**
-     * <p><strong>Status: PARTIAL / IGNORED</strong> — requires
-     * {@code HullWhite::FixedReversion} {@code Projection} support in
-     * {@code CalibratedModel.calibrate}. The Java port has only one
-     * {@code calibrate(instruments, method, endCriteria,
-     * additionalConstraint, weights)} signature and does not yet accept a
-     * {@code Projection} (which is what {@code FixedReversion} provides in
-     * C++ to freeze the mean-reversion {@code a} parameter while optimizing
-     * only {@code sigma}). Cross-validated cached values from C++
-     * v1.42.1: at-par-coupons branch cachedA=0.05, cachedSigma=0.00585858;
-     * not-at-par cachedA=0.05, cachedSigma=0.00585835. Re-enable once a
-     * Projection-aware calibrate overload lands.
+     * Hull-White calibration against cached values with the mean-reversion
+     * {@code a} held fixed via {@link HullWhite#FixedReversion()}. Java's
+     * {@code IborCoupon.Settings.usingAtParCoupons()} defaults to
+     * {@code true}, so we compare against the at-par-coupons branch of
+     * {@code testCachedHullWhiteFixedReversion} (cachedA = 0.05,
+     * cachedSigma = 0.00585858). Tolerance per C++ source: 1.0e-5.
+     *
+     * <p>Exercises the projection-aware
+     * {@link org.jquantlib.model.CalibratedModel#calibrate(java.util.List,
+     * org.jquantlib.math.optimization.OptimizationMethod,
+     * org.jquantlib.math.optimization.EndCriteria,
+     * org.jquantlib.math.optimization.Constraint, double[], boolean[])}
+     * overload added in Phase 5e.5b-CFC-d-201.
      */
-    @Ignore("Phase 5e.5b-CFC-d-37 PARTIAL — needs Projection-aware "
-            + "CalibratedModel.calibrate overload (HullWhite.FixedReversion)")
     @Test
-    public void testCachedHullWhiteFixedReversion() { fail("not implemented"); }
+    public void testCachedHullWhiteFixedReversion() {
+        final Date today = new Date(15, Month.February, 2002);
+        final Date settlement = new Date(19, Month.February, 2002);
+        new Settings().setEvaluationDate(today);
+        final Handle<YieldTermStructure> termStructure = new Handle<YieldTermStructure>(
+                new FlatForward(settlement, 0.04875825, new Actual365Fixed()));
+
+        // C++: HullWhite(termStructure, 0.05, 0.01) — seed a=0.05 (will stay
+        // fixed via FixedReversion), seed sigma=0.01 (will be optimized).
+        final HullWhite model = new HullWhite(termStructure, 0.05, 0.01);
+        final IborIndex index = new Euribor6M(termStructure);
+
+        final PricingEngine engine = new JamshidianSwaptionEngine(model, termStructure);
+
+        final List<CalibrationHelper> swaptions = new ArrayList<CalibrationHelper>();
+        for (final CalibrationData d : CAL_DATA) {
+            final Handle<Quote> vol = new Handle<Quote>(new SimpleQuote(d.volatility));
+            final BlackCalibrationHelper helper = new SwaptionHelper(
+                    new Period(d.start, TimeUnit.Years),
+                    new Period(d.length, TimeUnit.Years),
+                    vol, index,
+                    new Period(1, TimeUnit.Years),
+                    new Thirty360(Thirty360.Convention.BondBasis),
+                    new Actual360(),
+                    termStructure);
+            helper.setPricingEngine(engine);
+            swaptions.add(helper);
+        }
+
+        // Match C++: LevenbergMarquardt with defaults, EndCriteria(1000, 500, 1e-8, 1e-8, 1e-8).
+        final LevenbergMarquardt optimizer = new LevenbergMarquardt(1.0e-8, 1.0e-8, 1.0e-8);
+        final EndCriteria endCriteria = new EndCriteria(1000, 500, 1e-8, 1e-8, 1e-8);
+
+        // Projection-aware calibrate with FixedReversion (fixes a, frees sigma).
+        model.calibrate(swaptions, optimizer, endCriteria, new NoConstraint(), null,
+                HullWhite.FixedReversion());
+
+        // at-par-coupons branch (Java default)
+        final double cachedA = 0.05;
+        final double cachedSigma = 0.00585858;
+        final double tolerance = 1.0e-5;
+
+        final Array xMin = model.params();
+        if (Math.abs(xMin.get(0) - cachedA) > tolerance
+                || Math.abs(xMin.get(1) - cachedSigma) > tolerance) {
+            fail("Failed to reproduce cached FixedReversion calibration results:\n"
+                    + "calculated: a = " + xMin.get(0) + ", sigma = " + xMin.get(1) + "\n"
+                    + "expected:   a = " + cachedA + ", sigma = " + cachedSigma + "\n"
+                    + "diff a = " + (xMin.get(0) - cachedA)
+                    + ", diff sigma = " + (xMin.get(1) - cachedSigma)
+                    + ", end criteria = " + model.endCriteria());
+        }
+    }
 
     /**
      * Hull-White calibration against cached values using swaptions without

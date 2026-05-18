@@ -203,6 +203,13 @@ public class MultipleResetsLeg {
         return this;
     }
 
+    /** Convenience overload — defaults {@code endOfMonth=false}. */
+    public MultipleResetsLeg withExCouponPeriod(final Period period,
+                                                final Calendar cal,
+                                                final BusinessDayConvention convention) {
+        return withExCouponPeriod(period, cal, convention, false);
+    }
+
     /**
      * Build the leg.  Mirrors C++ {@code MultipleResetsLeg::operator Leg() const}.
      */
@@ -222,6 +229,7 @@ public class MultipleResetsLeg {
         QL.require(fixingDays_.size() <= n,
                 "too many fixing days (" + fixingDays_.size() + "), only " + n + " required");
 
+        final Calendar legCalendar = schedule_.calendar();
         for (int i = 0; i < n; ++i) {
             final Date start = schedule_.date(i * resetsPerCoupon_);
             final Date end = schedule_.date((i + 1) * resetsPerCoupon_);
@@ -237,9 +245,21 @@ public class MultipleResetsLeg {
 
             final Date paymentDate = paymentCalendar_.advance(end, paymentLag_, TimeUnit.Days, paymentAdjustment_, false);
 
-            // Note: ex-coupon date computation is presently dropped because
-            // the Java FloatingRateCoupon ctor does not yet accept an
-            // exCouponDate parameter (Phase 5d.5-MR carry-forward).
+            // Phase 5e.5b-CFC-d-203 — compute ex-coupon date and thread it
+            // through to the MultipleResetsCoupon ctor (which sets the
+            // inherited Coupon.exCouponDate_ field). Mirrors C++
+            // multipleresetscoupon.cpp:271-280.
+            Date exCouponDate = new Date();
+            if (exCouponPeriod_ != null && exCouponPeriod_.length() != 0) {
+                final Calendar exCal = (exCouponCalendar_ == null || exCouponCalendar_.empty())
+                        ? legCalendar
+                        : exCouponCalendar_;
+                exCouponDate = exCal.advance(paymentDate,
+                                             exCouponPeriod_.negative(),
+                                             exCouponAdjustment_,
+                                             exCouponEndOfMonth_);
+            }
+
             final double notional = pick(notionals_, i, notionals_.get(notionals_.size() - 1));
             final int couponFixingDays = fixingDays_.isEmpty()
                     ? index_.fixingDays()
@@ -250,7 +270,8 @@ public class MultipleResetsLeg {
 
             cashflows.add(new MultipleResetsCoupon(
                     paymentDate, notional, subSchedule, couponFixingDays, index_,
-                    gearing, couponSpread, rateSpread, start, end, paymentDayCounter_));
+                    gearing, couponSpread, rateSpread, start, end, paymentDayCounter_,
+                    exCouponDate));
         }
 
         switch (averagingMethod_) {

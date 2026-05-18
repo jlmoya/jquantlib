@@ -36,6 +36,8 @@ import org.jquantlib.math.optimization.Constraint;
 import org.jquantlib.math.optimization.CostFunction;
 import org.jquantlib.math.optimization.EndCriteria;
 import org.jquantlib.math.optimization.OptimizationMethod;
+import org.jquantlib.math.optimization.ProjectedConstraint;
+import org.jquantlib.math.optimization.Projection;
 import org.jquantlib.math.optimization.Problem;
 import org.jquantlib.util.DefaultObservable;
 import org.jquantlib.util.Observable;
@@ -116,6 +118,83 @@ public abstract class CalibratedModel implements Observer, Observable {
         final Array result = new Array(prob.currentValue());
         setParams(result);
         final Array shortRateProblemValues_ = prob.values(result);
+
+        notifyObservers();
+    }
+
+    /**
+     * Calibrate to a set of market instruments with a subset of parameters held fixed.
+     *
+     * <p>Faithful port of QuantLib C++ v1.42.1
+     * {@code CalibratedModel::calibrate(..., const std::vector<bool>& fixParameters)}
+     * (see {@code ql/models/model.cpp}). The {@code fixParameters} mask is the same
+     * size as {@link #params()}; {@code true} marks a slot as fixed (excluded from
+     * optimization), {@code false} as free. Internally builds a
+     * {@link Projection} from the current parameter values + mask, then wraps the
+     * cost function and constraint in {@link org.jquantlib.math.optimization.ProjectedCostFunction}
+     * and {@link ProjectedConstraint}, exactly as C++ does.
+     *
+     * <p>Used by the Hull-White {@code FixedReversion} test case (and any other
+     * partial-calibration workflow).
+     *
+     * @param fixParameters mask of length {@code params().size()}; may be
+     *     {@code null} or empty to fall back to the unconstrained
+     *     {@link #calibrate(List, OptimizationMethod, EndCriteria, Constraint, double[])}
+     *     overload (matches the C++ default-vector behavior).
+     */
+    public void calibrate(
+            final List<CalibrationHelper> instruments,
+            final OptimizationMethod method,
+            final EndCriteria endCriteria,
+            final Constraint additionalConstraint,
+            final double[] weights,
+            final boolean[] fixParameters) {
+
+        QL.require(!instruments.isEmpty(), "no instruments provided");
+
+        Constraint c;
+        if (additionalConstraint.empty()) {
+            c = constraint_;
+        } else {
+            c = new CompositeConstraint(constraint_, additionalConstraint);
+        }
+
+        QL.require(weights == null || weights.length == instruments.size(),
+                "mismatch between number of instruments and weights"); // TODO: message
+
+        final double[] w = new double[instruments.size()];
+        if (weights == null) {
+            Arrays.fill(w, 1.0);
+        } else {
+            System.arraycopy(weights, 0, w, 0, w.length);
+        }
+
+        final Array prms = params();
+        QL.require(fixParameters == null || fixParameters.length == 0
+                        || fixParameters.length == prms.size(),
+                "mismatch between number of parameters and fixed-parameter specs"); // TODO: message
+
+        final boolean[] mask;
+        if (fixParameters == null || fixParameters.length == 0) {
+            mask = new boolean[prms.size()]; // all-false → all free
+        } else {
+            mask = fixParameters.clone();
+        }
+
+        final Projection proj = new Projection(prms, mask);
+        final CalibrationFunction baseFunction = new CalibrationFunction(this, instruments, w);
+        // ProjectedCostFunction wraps `baseFunction` so the optimizer sees only
+        // free parameters; the projection's mapFreeParameters/include round-trip
+        // expands free → full before delegating to baseFunction (which then
+        // calls model.setParams on the FULL vector).
+        final org.jquantlib.math.optimization.ProjectedCostFunction f =
+                new org.jquantlib.math.optimization.ProjectedCostFunction(baseFunction, proj);
+        final ProjectedConstraint pc = new ProjectedConstraint(c, proj);
+
+        final Problem prob = new Problem(f, pc, proj.project(prms));
+        shortRateEndCriteria_ = method.minimize(prob, endCriteria);
+        final Array result = new Array(prob.currentValue());
+        setParams(proj.include(result));
 
         notifyObservers();
     }

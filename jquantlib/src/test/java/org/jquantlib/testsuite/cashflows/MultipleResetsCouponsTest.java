@@ -8,6 +8,9 @@ package org.jquantlib.testsuite.cashflows;
 
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.AveragingMultipleResetsPricer;
@@ -69,11 +72,15 @@ import org.junit.Test;
 public class MultipleResetsCouponsTest {
 
     private static final String REASON_EX_COUPON =
-            "Phase 5d.5-MR carry: MultipleResetsCoupon currently does not "
-          + "thread an exCouponDate through to FloatingRateCoupon (Java "
-          + "FloatingRateCoupon ctor lacks the parameter); the C++ "
-          + "testExCouponCashFlow case relies on that plumbing to drive "
-          + "CashFlows::npv to zero on the ex-coupon date.";
+            "Phase 5e.5b-CFC-d-203 carry: MultipleResetsCoupon now threads "
+          + "exCouponDate onto the inherited Coupon.exCouponDate_ field "
+          + "(matching C++ semantics), but the Java CashFlows.npv(Leg, YTS, "
+          + "boolean, Date, Date) overload does not yet filter out cashflows "
+          + "for which tradingExCoupon(settlementDate) is true (C++ "
+          + "cashflows.cpp:441-443). The C++ testExCouponCashFlow case relies "
+          + "on that filter to drive npv to zero on the ex-coupon date. "
+          + "CashFlows.java is currently on the DO-NOT-TOUCH list pending "
+          + "a coordinated tradingExCoupon-honoring sweep.";
 
     private static final String REASON_CONSISTENCY =
             "Phase 5d.5-MR carry: Java MultipleResetsLeg builder does not yet "
@@ -82,11 +89,12 @@ public class MultipleResetsCouponsTest {
           + "C++ testMultipleResetsLegConsistencyChecks would not throw.";
 
     /**
-     * Mirrors C++ {@code multipleresetscoupons.cpp::CommonVars}, with the
-     * adjustment that JQuantLib's {@link MultipleResetsCoupon} ctor does
-     * not yet accept an {@code exCouponDate} parameter (Phase 5d.5-MR
-     * carry-forward); ex-coupon plumbing is therefore omitted from the
-     * reproduction below — none of the bodied cases below depend on it.
+     * Mirrors C++ {@code multipleresetscoupons.cpp::CommonVars}. As of
+     * Phase 5e.5b-CFC-d-203, {@link MultipleResetsCoupon} accepts an
+     * {@code exCouponDate} parameter and {@link MultipleResetsLeg} threads
+     * it through; the {@code testExCouponCashFlow} case nevertheless still
+     * carries (see {@link #REASON_EX_COUPON}) because
+     * {@code CashFlows.npv} does not yet honour {@code tradingExCoupon}.
      */
     private static final class CommonVars {
         final Date today;
@@ -158,6 +166,24 @@ public class MultipleResetsCouponsTest {
                     break;
             }
             return cpn;
+        }
+
+        /**
+         * Mirrors C++ {@code multipleresetscoupons.cpp::CommonVars::createMultipleResetsLeg}.
+         * Returns a fully-configured {@link MultipleResetsLeg} builder ready to
+         * be built (with {@code .Leg()}) or further customised.
+         */
+        MultipleResetsLeg createMultipleResetsLeg(final Date start, final Date end) {
+            final Schedule s = createSchedule(start, end);
+            return new MultipleResetsLeg(s, euribor, 6)
+                    .withNotionals(1.0)
+                    .withExCouponPeriod(new Period(2, TimeUnit.Days),
+                            calendar, businessConvention)
+                    .withPaymentLag(1)
+                    .withFixingDays(2)
+                    .withRateSpreads(0.0)
+                    .withCouponSpreads(0.0)
+                    .withAveragingMethod(RateAveraging.Type.Compound);
         }
     }
 
@@ -257,9 +283,136 @@ public class MultipleResetsCouponsTest {
     @Test
     public void testExCouponCashFlow() { fail("not implemented"); }
 
-    @Ignore(REASON_CONSISTENCY)
+    /**
+     * Port of C++ {@code multipleresetscoupons.cpp::testMultipleResetsLegConsistencyChecks}.
+     *
+     * <p>Mirrors all 7 {@code BOOST_CHECK_THROW} sub-cases of the C++ test:
+     * the base configuration is a 10-year monthly Euribor1M leg with 6 resets
+     * per coupon. Each sub-case mutates a single builder method on a fresh
+     * builder and asserts that {@code .Leg()} throws.
+     *
+     * <ul>
+     *   <li>L0 — empty notionals  → "no notional given"</li>
+     *   <li>L1 — too many notionals  → "too many nominals"</li>
+     *   <li>L2 — too many fixingDays → "too many fixing days"</li>
+     *   <li>L3 — zero gearing       → "Null gearing not allowed"
+     *       (raised inside {@link org.jquantlib.cashflow.FloatingRateCoupon}'s
+     *       ctor, surfaced when the first coupon is built)</li>
+     *   <li>L4 — too many gearings   → "too many gearings"</li>
+     *   <li>L5 — too many couponSpreads → "too many coupon spreads"</li>
+     *   <li>L6 — too many rateSpreads  → "too many rate spreads"</li>
+     * </ul>
+     *
+     * <p>Phase 5e.5b-CFC-d-203.
+     */
     @Test
-    public void testMultipleResetsLegConsistencyChecks() { fail("not implemented"); }
+    public void testMultipleResetsLegConsistencyChecks() {
+        QL.info("Testing multiple-resets leg consistency checks...");
+
+        final CommonVars vars = new CommonVars();
+
+        final Date start = new Date(18, Month.March, 2021);
+        final Date end   = new Date(18, Month.March, 2031);
+
+        final Leg validLeg = vars.createMultipleResetsLeg(start, end).Leg();
+        final int N = validLeg.size();
+
+        // L0 — empty notionals
+        expectThrow("empty notionals", new Runnable() {
+            @Override
+            public void run() {
+                vars.createMultipleResetsLeg(start, end)
+                    .withNotionals(new ArrayList<Double>())
+                    .Leg();
+            }
+        });
+
+        // L1 — too many notionals
+        expectThrow("too many notionals", new Runnable() {
+            @Override
+            public void run() {
+                vars.createMultipleResetsLeg(start, end)
+                    .withNotionals(repeat(N + 1, 1.0))
+                    .Leg();
+            }
+        });
+
+        // L2 — too many fixingDays
+        expectThrow("too many fixingDays", new Runnable() {
+            @Override
+            public void run() {
+                vars.createMultipleResetsLeg(start, end)
+                    .withFixingDays(repeatInt(N + 1, 2))
+                    .Leg();
+            }
+        });
+
+        // L3 — zero gearing
+        expectThrow("zero gearing", new Runnable() {
+            @Override
+            public void run() {
+                vars.createMultipleResetsLeg(start, end)
+                    .withGearings(0.0)
+                    .Leg();
+            }
+        });
+
+        // L4 — too many gearings
+        expectThrow("too many gearings", new Runnable() {
+            @Override
+            public void run() {
+                vars.createMultipleResetsLeg(start, end)
+                    .withGearings(repeat(N + 1, 1.0))
+                    .Leg();
+            }
+        });
+
+        // L5 — too many couponSpreads
+        expectThrow("too many couponSpreads", new Runnable() {
+            @Override
+            public void run() {
+                vars.createMultipleResetsLeg(start, end)
+                    .withCouponSpreads(repeat(N + 1, 0.0))
+                    .Leg();
+            }
+        });
+
+        // L6 — too many rateSpreads
+        expectThrow("too many rateSpreads", new Runnable() {
+            @Override
+            public void run() {
+                vars.createMultipleResetsLeg(start, end)
+                    .withRateSpreads(repeat(N + 1, 0.0))
+                    .Leg();
+            }
+        });
+    }
+
+    /** Asserts {@code body} throws; fails the test with {@code label} when it does not. */
+    private static void expectThrow(final String label, final Runnable body) {
+        try {
+            body.run();
+        } catch (final RuntimeException expected) {
+            return;
+        }
+        fail("expected exception not thrown for case: " + label);
+    }
+
+    private static List<Double> repeat(final int n, final double v) {
+        final List<Double> out = new ArrayList<Double>(n);
+        for (int i = 0; i < n; i++) {
+            out.add(v);
+        }
+        return out;
+    }
+
+    private static List<Integer> repeatInt(final int n, final int v) {
+        final List<Integer> out = new ArrayList<Integer>(n);
+        for (int i = 0; i < n; i++) {
+            out.add(v);
+        }
+        return out;
+    }
 
     /**
      * Phase Body-Fill (2026-05-09) — port of C++
