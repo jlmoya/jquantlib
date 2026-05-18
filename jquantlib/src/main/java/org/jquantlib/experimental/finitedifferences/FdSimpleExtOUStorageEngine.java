@@ -25,51 +25,70 @@
  */
 package org.jquantlib.experimental.finitedifferences;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 
 import org.jquantlib.QL;
 import org.jquantlib.experimental.finitedifferences.FdmExpExtOUInnerValueCalculator.ShapePoint;
 import org.jquantlib.experimental.processes.ExtendedOrnsteinUhlenbeckProcess;
+import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.OneAssetOption;
-import org.jquantlib.lang.exceptions.LibraryException;
+import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.Payoff;
+import org.jquantlib.instruments.PlainVanillaPayoff;
+import org.jquantlib.instruments.VanillaStorageOption;
+import org.jquantlib.math.Closeness;
+import org.jquantlib.math.matrixutilities.Array;
+import org.jquantlib.methods.finitedifferences.StepCondition;
+import org.jquantlib.methods.finitedifferences.meshers.Fdm1dMesher;
+import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
+import org.jquantlib.methods.finitedifferences.meshers.FdmMesherComposite;
+import org.jquantlib.methods.finitedifferences.meshers.FdmSimpleProcess1dMesher;
+import org.jquantlib.methods.finitedifferences.meshers.Predefined1dMesher;
+import org.jquantlib.methods.finitedifferences.meshers.Uniform1dMesher;
+import org.jquantlib.methods.finitedifferences.operators.FdmLinearOpIterator;
 import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
+import org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc;
+import org.jquantlib.methods.finitedifferences.stepconditions.FdmSimpleStorageCondition;
+import org.jquantlib.methods.finitedifferences.stepconditions.FdmStepConditionComposite;
+import org.jquantlib.methods.finitedifferences.utilities.FdmBoundaryConditionSet;
+import org.jquantlib.methods.finitedifferences.utilities.FdmInnerValueCalculator;
 import org.jquantlib.pricingengines.GenericEngine;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.time.Date;
 
 /**
  * Finite-differences engine for a simple gas-storage option driven by the
- * extended Ornstein–Uhlenbeck process.
- * <p>
- * Java port of v1.42.1
- * {@code ql/experimental/finitedifferences/fdsimpleextoustorageengine.{hpp,cpp}}.
+ * extended Ornstein-Uhlenbeck process.
  *
- * <p><strong>Phase 5e.5b-CFC-d-171 status:</strong> the engine constructor and
- * argument-handling are faithful Java ports. The {@link #calculate()} body,
- * however, requires three classes that are not yet ported to Java:</p>
- * <ul>
- *   <li>{@code VanillaStorageOption} (instrument & arguments class);</li>
- *   <li>{@code FdmSimpleStorageCondition} (Bermudan storage step condition);</li>
- *   <li>{@code FdmSimple2dExtOUSolver} (2D solver wrapper around
- *       {@link FdmExtendedOrnsteinUhlenbeckOp}).</li>
- * </ul>
+ * <p>Java port of v1.42.1
+ * {@code ql/experimental/finitedifferences/fdsimpleextoustorageengine.{hpp,cpp}}.</p>
  *
- * <p>The engine is typed against {@link OneAssetOption} arguments/results so
- * sibling classes can reference the type while we wait for
- * {@code VanillaStorageOption} to land. When all three dependencies are
- * ported, the {@code calculate()} body can be filled in following the C++
- * implementation step-by-step:</p>
+ * <p>Pricing path (mirrors the C++ {@code calculate()} body):</p>
  * <ol>
- *   <li>build the {@code (xMesher, storageMesher)} composite mesh;</li>
- *   <li>create {@code FdmStorageValue} + {@link FdmExpExtOUInnerValueCalculator};</li>
- *   <li>wrap a Bermudan {@code FdmSimpleStorageCondition} step condition;</li>
- *   <li>assemble a {@link org.jquantlib.methods.finitedifferences.solvers.FdmSolverDesc};</li>
- *   <li>delegate to {@code FdmSimple2dExtOUSolver(rTS_, solverDesc, schemeDesc_)}.</li>
+ *   <li>build a 2D mesh: {@code FdmSimpleProcess1dMesher} along the OU
+ *       log-spot axis x, and a storage-level y-mesh that is either uniform
+ *       on {@code [0, capacity]} (when {@code yGrid} is supplied) or a C++
+ *       "elevator" {@code Predefined1dMesher} built from
+ *       {@code {capacity, 0, capacity, dy, capacity-dy, 2dy, ...}} with
+ *       duplicates removed by a close-enough tolerance;</li>
+ *   <li>terminal inner-value calculator returns {@code exp(x) * y} (the C++
+ *       anonymous {@code FdmStorageValue}) at maturity;</li>
+ *   <li>Bermudan {@link FdmSimpleStorageCondition} on the exercise dates
+ *       evaluates inject/withdraw/wait + every intermediate storage-grid
+ *       point within the per-step {@code changeRate} window;</li>
+ *   <li>solve with {@link FdmSimple2dExtOUSolver} (Douglas scheme by default);</li>
+ *   <li>sample the rolled-back surface at {@code (x = process.x0(),
+ *       y = arguments.load)}.</li>
  * </ol>
  *
- * @author Phase 5e.5b-CFC-d-171 port (skeleton)
+ * @author Phase 5e.5b-CFC-d-215 port (calculate body)
  */
 public class FdSimpleExtOUStorageEngine
-        extends GenericEngine<OneAssetOption.Arguments, OneAssetOption.Results> {
+        extends GenericEngine<VanillaStorageOption.ArgumentsImpl,
+                              OneAssetOption.ResultsImpl> {
 
     private final ExtendedOrnsteinUhlenbeckProcess process_;
     private final YieldTermStructure rTS_;
@@ -103,7 +122,8 @@ public class FdSimpleExtOUStorageEngine
                                       final Integer yGrid,
                                       final List<ShapePoint> shape,
                                       final FdmSchemeDesc schemeDesc) {
-        super(new OneAssetOption.ArgumentsImpl(), new OneAssetOption.ResultsImpl());
+        super(new VanillaStorageOption.ArgumentsImpl(),
+              new OneAssetOption.ResultsImpl());
         QL.require(process != null, "null ExtendedOrnsteinUhlenbeckProcess");
         QL.require(rTS != null, "null risk-free term structure");
         QL.require(schemeDesc != null, "null FDM scheme descriptor");
@@ -155,18 +175,133 @@ public class FdSimpleExtOUStorageEngine
         return schemeDesc_;
     }
 
-    /**
-     * Storage engine calculation. Currently a stub — see class-level
-     * Javadoc for the missing dependencies and the C++ algorithm outline.
-     */
     @Override
     public void calculate() {
-        throw new LibraryException(
-                "FdSimpleExtOUStorageEngine.calculate(): the storage engine "
-              + "pricing path requires VanillaStorageOption, "
-              + "FdmSimpleStorageCondition, and FdmSimple2dExtOUSolver, none of "
-              + "which are yet ported to Java (Phase 5e.5b-CFC-d-171 "
-              + "carry-forward). The engine constructor and accessors are "
-              + "fully functional so sibling code can reference the type.");
+        // 1. Exercise — C++ QL_REQUIRE(arguments_.exercise->type() == Bermudan).
+        //    BermudanExercise with a single date silently downgrades to
+        //    European in jquantlib (see exercise/BermudanExercise.java:96),
+        //    so accept European here too to match that behaviour.
+        QL.require(arguments_.exercise.type() == Exercise.Type.Bermudan
+                || arguments_.exercise.type() == Exercise.Type.European,
+                "Bermudan exercise supported only");
+
+        // 2. Mesher
+        final Date refDate = rTS_.referenceDate();
+        final double maturity = rTS_.dayCounter()
+                .yearFraction(refDate, arguments_.exercise.lastDate());
+
+        final Fdm1dMesher xMesher =
+                new FdmSimpleProcess1dMesher(xGrid_, process_, maturity);
+
+        final Fdm1dMesher storageMesher;
+        if (yGrid_ == null) {
+            // Elevator mesher: build the C++ set
+            //   { capacity }
+            //   union { level, capacity - level | level = 0, dy, 2dy, ..., <= capacity }
+            // then sort + dedupe by "close-enough" tolerance.
+            final List<Double> storageValues = new ArrayList<Double>();
+            storageValues.add(arguments_.capacity);
+            for (double level = 0.0; level <= arguments_.capacity;
+                    level += arguments_.changeRate) {
+                storageValues.add(level);
+                storageValues.add(arguments_.capacity - level);
+            }
+            // Close-enough-aware ordered set (C++ LessButNotCloseEnough).
+            final TreeSet<Double> ordered = new TreeSet<Double>(
+                    new Comparator<Double>() {
+                        @Override public int compare(final Double a, final Double b) {
+                            if (Closeness.isCloseEnough(a.doubleValue(),
+                                                         b.doubleValue(), 100)) {
+                                return 0;
+                            }
+                            return Double.compare(a, b);
+                        }
+                    });
+            ordered.addAll(storageValues);
+            final double[] meshPts = new double[ordered.size()];
+            int k = 0;
+            for (final Double v : ordered) {
+                meshPts[k++] = v.doubleValue();
+            }
+            storageMesher = new Predefined1dMesher(meshPts);
+        } else {
+            // Uniform mesher on [0, capacity].
+            storageMesher = new Uniform1dMesher(0.0, arguments_.capacity,
+                    yGrid_.intValue());
+        }
+
+        final FdmMesher mesher = new FdmMesherComposite(xMesher, storageMesher);
+
+        // 3. Storage value calculator: innerValue = exp(x) * y.
+        final FdmInnerValueCalculator storageCalculator =
+                new FdmStorageValue(mesher);
+
+        // 4. Step conditions
+        final FdmStepConditionComposite.Conditions stepConditions =
+                new FdmStepConditionComposite.Conditions();
+        final List<List<Double>> stoppingTimes = new ArrayList<List<Double>>();
+
+        // 4.1 Bermudan exercise times
+        final List<Double> exerciseTimes = new ArrayList<Double>();
+        for (final Date d : arguments_.exercise.dates()) {
+            final double t = rTS_.dayCounter().yearFraction(refDate, d);
+            QL.require(t >= 0.0, "exercise dates must not contain past date");
+            exerciseTimes.add(t);
+        }
+        stoppingTimes.add(exerciseTimes);
+
+        // Underlying-price calculator (for buy/sell pricing inside the step
+        // condition): zero-strike call on exp(x) with optional shape.
+        final Payoff payoff = new PlainVanillaPayoff(Option.Type.Call, 0.0);
+        final FdmInnerValueCalculator underlyingCalculator =
+                new FdmExpExtOUInnerValueCalculator(payoff, mesher, shape_, 0);
+
+        final StepCondition<Array> storageCond = new FdmSimpleStorageCondition(
+                exerciseTimes, mesher, underlyingCalculator,
+                arguments_.changeRate);
+        stepConditions.add(storageCond);
+
+        final FdmStepConditionComposite conditions =
+                new FdmStepConditionComposite(stoppingTimes, stepConditions);
+
+        // 5. Boundary conditions (empty).
+        final FdmBoundaryConditionSet boundaries = new FdmBoundaryConditionSet();
+
+        // 6. Solver.
+        final FdmSolverDesc solverDesc = new FdmSolverDesc(
+                mesher, boundaries, conditions, storageCalculator,
+                maturity, tGrid_, 0);
+
+        final FdmSimple2dExtOUSolver solver = new FdmSimple2dExtOUSolver(
+                process_, rTS_, solverDesc, schemeDesc_);
+
+        final double x = process_.x0();
+        final double y = arguments_.load;
+
+        results_.value = solver.valueAt(x, y);
+    }
+
+    /**
+     * Mirror of C++ anonymous {@code FdmStorageValue}: returns
+     * {@code exp(mesher.location(iter, 0)) * mesher.location(iter, 1)}.
+     */
+    private static final class FdmStorageValue implements FdmInnerValueCalculator {
+        private final FdmMesher mesher_;
+
+        FdmStorageValue(final FdmMesher mesher) {
+            this.mesher_ = mesher;
+        }
+
+        @Override
+        public double innerValue(final FdmLinearOpIterator iter, final double t) {
+            final double s = Math.exp(mesher_.location(iter, 0));
+            final double v = mesher_.location(iter, 1);
+            return s * v;
+        }
+
+        @Override
+        public double avgInnerValue(final FdmLinearOpIterator iter, final double t) {
+            return innerValue(iter, t);
+        }
     }
 }
