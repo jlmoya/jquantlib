@@ -195,11 +195,21 @@ public class FloatingLeg< InterestRateIndexType extends InterestRateIndex,
             refEnd   =   end = schedule.date(i+1);
             final Date paymentDate =
                 isZero ? lastPaymentDate : payCal.advance(end, paymentLag, TimeUnit.Days, paymentAdj, false);
-            if (i==0   && !schedule.isRegular(i+1)) {
+            // Mirrors C++ ql/cashflows/cashflowvectors.hpp:119-123 — guard
+            // the irregular-period reference-date adjustment on the
+            // schedule actually exposing tenor + isRegular metadata.
+            // Without these guards a date-vector-only Schedule (no
+            // tenor/isRegular meta-info — e.g. the third variant in
+            // CashFlowsTest.testPartialScheduleLegConstruction) trips
+            // "full interface (isRegular) not available". When the
+            // metadata is absent the C++ code falls through to the
+            // bare schedule-period reference dates already assigned
+            // above, which is exactly what we want. Phase 5e.5b-CFC-d-191.
+            if (i == 0 && schedule.hasIsRegular() && schedule.hasTenor() && !schedule.isRegular(i+1)) {
                 final BusinessDayConvention bdc = schedule.businessDayConvention();
                 refStart = calendar.adjust(end.sub(schedule.tenor()), bdc);
             }
-            if (i==n-1 && !schedule.isRegular(i+1)) {
+            if (i == n-1 && schedule.hasIsRegular() && schedule.hasTenor() && !schedule.isRegular(i+1)) {
                 final BusinessDayConvention bdc = schedule.businessDayConvention();
                 refEnd = calendar.adjust(start.add(schedule.tenor()), bdc);
             }

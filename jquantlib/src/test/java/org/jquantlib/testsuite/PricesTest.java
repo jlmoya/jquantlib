@@ -23,16 +23,18 @@
 package org.jquantlib.testsuite;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.util.Iterator;
 import java.util.Map;
 
 import org.jquantlib.QL;
+import org.jquantlib.lang.exceptions.LibraryException;
 import org.jquantlib.math.IntervalPrice;
+import org.jquantlib.math.Prices;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Series;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -40,13 +42,8 @@ import org.junit.Test;
  *
  * <p>6 BOOST_AUTO_TEST_CASE methods exercising
  * {@link IntervalPrice} inspectors/modifiers/series helpers, plus
- * {@code midEquivalent} / {@code midSafe} free functions.
- *
- * <p>Phase 5a.5 carry-forward: the C++ free functions
- * {@code QuantLib::midEquivalent(bid,ask,last,close)} and
- * {@code QuantLib::midSafe(bid,ask)} (defined in {@code ql/prices.hpp})
- * have no Java equivalent. Those two test cases are
- * {@code @Ignore}-annotated.
+ * {@code midEquivalent} / {@code midSafe} free functions
+ * (now backed by {@link Prices}).
  */
 public class PricesTest {
 
@@ -54,17 +51,66 @@ public class PricesTest {
         QL.info("::::: " + this.getClass().getSimpleName() + " :::::");
     }
 
-    @Ignore("Phase 5a.5 carry-forward — Java has no midEquivalent(bid,ask,last,close) helper "
-            + "(C++ ql/prices.hpp). To unblock, port org.jquantlib.math.Prices with the "
-            + "midEquivalent/midSafe overloads.")
     @Test
     public void testMidEquivalent() {
+        QL.info("Testing midEquivalent()...");
+
+        // both bid and ask valid -> arithmetic average
+        assertEquals(1.5, Prices.midEquivalent(1, 2, 3, 4), 1e-14);
+        assertEquals(1.5, Prices.midEquivalent(1, 2, 0, 4), 1e-14);
+        assertEquals(1.5, Prices.midEquivalent(1, 2, 3, 0), 1e-14);
+        assertEquals(1.5, Prices.midEquivalent(1, 2, 0, 0), 1e-14);
+
+        // only bid valid -> bid
+        assertEquals(1.0, Prices.midEquivalent(1, 0, 3, 4), 1e-14);
+        assertEquals(1.0, Prices.midEquivalent(1, 0, 0, 4), 1e-14);
+        assertEquals(1.0, Prices.midEquivalent(1, 0, 3, 0), 1e-14);
+        assertEquals(1.0, Prices.midEquivalent(1, 0, 0, 0), 1e-14);
+
+        // only ask valid -> ask
+        assertEquals(2.0, Prices.midEquivalent(0, 2, 3, 4), 1e-14);
+        assertEquals(2.0, Prices.midEquivalent(0, 2, 0, 4), 1e-14);
+        assertEquals(2.0, Prices.midEquivalent(0, 2, 3, 0), 1e-14);
+        assertEquals(2.0, Prices.midEquivalent(0, 2, 0, 0), 1e-14);
+
+        // bid and ask missing -> fall through to last, then close
+        assertEquals(3.0, Prices.midEquivalent(0, 0, 3, 4), 1e-14);
+        assertEquals(4.0, Prices.midEquivalent(0, 0, 0, 4), 1e-14);
+        assertEquals(3.0, Prices.midEquivalent(0, 0, 3, 0), 1e-14);
+
+        // all invalid -> throw
+        try {
+            Prices.midEquivalent(0, 0, 0, 0);
+            fail("midEquivalent(0,0,0,0) should have thrown");
+        } catch (final LibraryException expected) {
+            // ok
+        }
     }
 
-    @Ignore("Phase 5a.5 carry-forward — Java has no midSafe(bid,ask) helper (C++ ql/prices.hpp). "
-            + "Port alongside midEquivalent.")
     @Test
     public void testMidSafe() {
+        QL.info("Testing midSafe()...");
+
+        assertEquals(1.5, Prices.midSafe(1, 2), 1e-14);
+
+        try {
+            Prices.midSafe(0, 0);
+            fail("midSafe(0,0) should have thrown");
+        } catch (final LibraryException expected) {
+            // ok
+        }
+        try {
+            Prices.midSafe(1, 0);
+            fail("midSafe(1,0) should have thrown");
+        } catch (final LibraryException expected) {
+            // ok
+        }
+        try {
+            Prices.midSafe(0, 2);
+            fail("midSafe(0,2) should have thrown");
+        } catch (final LibraryException expected) {
+            // ok
+        }
     }
 
     @Test
