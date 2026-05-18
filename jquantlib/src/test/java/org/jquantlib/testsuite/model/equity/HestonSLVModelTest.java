@@ -55,6 +55,8 @@ import org.jquantlib.methods.finitedifferences.schemes.ModifiedCraigSneydScheme;
 import org.jquantlib.methods.finitedifferences.utilities.FdmHestonGreensFct;
 import org.jquantlib.methods.finitedifferences.utilities.FdmMesherIntegral;
 import org.jquantlib.methods.finitedifferences.utilities.SquareRootProcessRNDCalculator;
+import org.jquantlib.experimental.models.HestonSLVFDMModel;
+import org.jquantlib.experimental.models.HestonSLVFokkerPlanckFdmParams;
 import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.pricingengines.AnalyticEuropeanEngine;
 import org.jquantlib.pricingengines.PricingEngine;
@@ -1498,18 +1500,151 @@ public class HestonSLVModelTest {
 
     /* ---- 3. SLV calibration / propagation ----------------------------- */
 
-    @Ignore("Phase 5e.5b-CFC-d-175 — NoExceptLocalVolSurface, HestonSLVFDMModel + "
-            + ".logEntries() accessor, and HestonSLVFokkerPlanckFdmParams all landed. "
-            + "Constructible in principle, but blocked by the same root cause as "
-            + "testBlackScholesFokkerPlanckFwdEquationLocalVol: the HestonSLVFDMModel "
-            + "calibration depends on LocalVolSurface.localVolImpl (via NoExceptLocalVolSurface), "
-            + "and Java's localVolImpl uses a denser strike-perturbation stencil "
-            + "(dy=y*1e-6 vs C++ dy=y*0.0001) and a non-forward-aware time derivative — "
-            + "the resulting probability-density divergence exceeds the test's "
-            + "0.01-abs/0.04-rel tolerance. Un-ignore once LocalVolSurface.localVolImpl "
-            + "is re-aligned to v1.42.1.")
+    /**
+     * Tests local-volatility versus SLV-model propagation density. Mirrors C++
+     * {@code testLocalVolsvSLVPropDensity} (test-suite/hestonslvmodel.cpp:1542).
+     *
+     * <p>Builds a smooth-implied-vol surface ({@code createSmoothImpliedVol}),
+     * wraps it in a {@link NoExceptLocalVolSurface} (fallback vol = 0.3) with
+     * extrapolation enabled, runs the {@link HestonSLVFDMModel} FDM calibration
+     * with the C++ {@link HestonSLVFokkerPlanckFdmParams} preset
+     * ({@code xGrid=51, vGrid=151, ..., ZeroCorrelation, Log,
+     * ModifiedCraigSneyd}, logging=on), then for each retained log entry with
+     * {@code t > 0.2} integrates the joint x-density along x via
+     * {@link DiscreteSimpsonIntegral} and compares against the closed-form
+     * square-root-process marginal PDF (Phase 5h.5-SLV-d Boost-equivalent
+     * non-central chi-squared PDF). The C++ tolerance is
+     * {@code |Δ|>0.01 AND |Δ/expected|>0.04 ⇒ fail}.
+     *
+     * <p><strong>Phase 5e.5b-CFC-d-249 status:</strong> body-filled and
+     * runs end-to-end after the
+     * {@link org.jquantlib.termstructures.volatilities.LocalVolSurface}
+     * realignment to v1.42.1 (forward-aware time derivative + C++-equivalent
+     * strike-perturbation stencil {@code dy=(|y|>0.001)?y*1e-4:1e-6}). The
+     * SLV calibration pipeline now constructs and runs; the first density
+     * sample at {@code t=0.215, v=2.5e-6} (the {@code vMin} floor) misses
+     * the closed-form RND by {@code expected=205.006, calculated=193.435}
+     * (|Δ|=11.57, |Δ/expected|=5.6%) — exceeds the C++
+     * {@code |Δ|<=0.01 OR |Δ/expected|<=0.04} disjunctive tolerance. The
+     * miss is in the extreme small-v tail where the variance-mesher floor
+     * meets the non-central chi-squared PDF cusp; the residual likely traces
+     * to a small mesher/RND-accumulator difference downstream of
+     * LocalVolSurface (e.g. {@link
+     * org.jquantlib.experimental.models.HestonSLVFDMModel}'s rescale-step
+     * variance-mesher rebuild or {@link
+     * org.jquantlib.methods.finitedifferences.utilities.SquareRootProcessRNDCalculator}'s
+     * Boost-equivalent PDF at deep-tail v). Investigation/un-ignore deferred;
+     * not a LocalVolSurface regression.
+     */
+    @Ignore("Phase 5e.5b-CFC-d-249 — LocalVolSurface realigned (forward-aware "
+            + "time derivative + C++ strike-perturbation stencil dy=(|y|>0.001)?y*1e-4:1e-6, "
+            + "Phase 5e.5b-CFC-d-225). HestonSLVFDMModel calibration now runs "
+            + "end-to-end (no NPE, no Library exception escapes NoExceptLocalVolSurface), "
+            + "but the first density sample at t=0.215, v=2.5e-6 (the vMin floor) "
+            + "misses the closed-form RND by expected=205.006, calculated=193.435 "
+            + "(|Δ|=11.57, |Δ/exp|=5.6%) — exceeds C++ disjunctive tol "
+            + "(|Δ|<=0.01 OR |Δ/exp|<=0.04). Residual likely in HestonSLVFDMModel "
+            + "rescale-step variance-mesher rebuild or SquareRootProcessRNDCalculator "
+            + "deep-tail PDF, NOT in LocalVolSurface (which is now C++-aligned).")
     @Test
-    public void testLocalVolsvSLVPropDensity() { fail("not implemented"); }
+    public void testLocalVolsvSLVPropDensity() {
+        final Date todaysDate = new Date(5, Month.October, 2015);
+        final Date finalDate  = todaysDate.add(new Period(1, TimeUnit.Years));
+        new Settings().setEvaluationDate(todaysDate);
+
+        final double s0 = 100.0;
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s0));
+        final double r = 0.01;
+        final double q = 0.02;
+
+        final DayCounter dayCounter = new Actual365Fixed();
+
+        final Handle<YieldTermStructure> rTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, r, dayCounter));
+        final Handle<YieldTermStructure> qTS = new Handle<YieldTermStructure>(
+                Utilities.flatRate(todaysDate, q, dayCounter));
+
+        final Handle<BlackVolTermStructure> vTS = new Handle<BlackVolTermStructure>(
+                createSmoothImpliedVol(dayCounter).surface);
+
+        // Heston parameters from implied calibration (C++:1566-1570).
+        final double kappa =  2.0;
+        final double theta =  0.074;
+        final double rho   = -0.51;
+        final double sigma =  0.8;
+        final double v0    =  0.1974;
+
+        final HestonProcess hestonProcess = new HestonProcess(
+                rTS, qTS, spot, v0, kappa, theta, sigma, rho);
+
+        final Handle<HestonModel> hestonModel = new Handle<HestonModel>(
+                new HestonModel(hestonProcess));
+
+        final NoExceptLocalVolSurface noExceptLV =
+                new NoExceptLocalVolSurface(vTS, rTS, qTS, spot, 0.3);
+        noExceptLV.enableExtrapolation();
+        final Handle<LocalVolTermStructure> localVol =
+                new Handle<LocalVolTermStructure>(noExceptLV);
+
+        final int vGrid = 151;
+        final int xGrid = 51;
+
+        final HestonSLVFokkerPlanckFdmParams fdmParams =
+                new HestonSLVFokkerPlanckFdmParams(
+                        xGrid, vGrid,
+                        500, 50, 100.0, 5, 2,
+                        0.1, 1e-4, 10000,
+                        1e-5, 1e-5, 0.0000025,
+                        1.0, 0.1, 0.9, 1e-5,
+                        HestonSLVFokkerPlanckFdmParams.GreensFctAlgorithm.ZeroCorrelation,
+                        TransformationType.Log,
+                        FdmSchemeDesc.ModifiedCraigSneyd());
+
+        final HestonSLVFDMModel slvModel = new HestonSLVFDMModel(
+                localVol, hestonModel, finalDate, fdmParams, true);
+
+        // Trigger the FDM calibration to populate the diagnostic log entries
+        // (C++ side-effects calibration on first access; Java requires explicit
+        // call via the leverage-function accessor since logEntries() does not
+        // call calculate()).
+        slvModel.leverageFunction();
+        final List<HestonSLVFDMModel.LogEntry> logEntries = slvModel.logEntries();
+
+        final SquareRootProcessRNDCalculator squareRootRnd =
+                new SquareRootProcessRNDCalculator(v0, kappa, theta, sigma);
+
+        for (final HestonSLVFDMModel.LogEntry e : logEntries) {
+            final double t = e.t;
+            if (t > 0.2) {
+                final double[] xLoc = e.mesher.getFdm1dMeshers().get(0).locations();
+                final Array x = new Array(xLoc);
+                final double[] z = e.mesher.getFdm1dMeshers().get(1).locations();
+                final Array prob = e.prob;
+
+                for (int i = 0; i < z.length; ++i) {
+                    // Slice prob[i*xGrid .. (i+1)*xGrid) into an Array.
+                    final double[] slice = new double[xGrid];
+                    for (int k = 0; k < xGrid; ++k) {
+                        slice[k] = prob.get(i * xGrid + k);
+                    }
+                    final double pCalc = new DiscreteSimpsonIntegral()
+                            .op(x, new Array(slice));
+
+                    final double expected   = squareRootRnd.pdf(Math.exp(z[i]), t);
+                    final double calculated = pCalc / Math.exp(z[i]);
+
+                    if (Math.abs(expected - calculated) > 0.01
+                            && Math.abs((expected - calculated) / expected) > 0.04) {
+                        fail("failed to reproduce probability at "
+                                + "\n  v :          " + Math.exp(z[i])
+                                + "\n  t :          " + t
+                                + "\n  expected :   " + expected
+                                + "\n  calculated : " + calculated);
+                    }
+                }
+            }
+        }
+    }
 
     @Ignore("Phase 5e.5b-CFC-d-235 — MakeMCEuropeanHestonEngine + MCEuropeanHestonEngine "
             + "now accept HestonStochasticLocalVolProcess (Java sibling of HestonSLVProcess) "
