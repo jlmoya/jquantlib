@@ -81,6 +81,52 @@ public class FloatingRateBond extends Bond {
 			final boolean inArrears,
 			final double redemption,
 			final Date issueDate) {
+		// Phase 5e.5b-CFC-d-179 — delegate to the extended (C++ v1.42.1
+		// signature) ctor with default fixingConvention=Preceding so
+		// every existing call-site is bit-identical.
+		this(settlementDays, faceAmount, schedule, index, paymentDayCounter,
+				paymentConvention, fixingDays, gearings, spreads, caps, floors,
+				inArrears, redemption, issueDate,
+				BusinessDayConvention.Preceding);
+	}
+
+	/** Phase 5e.5b-CFC-d-179 — mirror of C++
+	 *  {@code FloatingRateBond(Natural settlementDays, Real faceAmount,
+	 *  Schedule, ext::shared_ptr<IborIndex>, DayCounter,
+	 *  BusinessDayConvention paymentConvention=Following,
+	 *  Natural fixingDays=Null<Natural>(),
+	 *  std::vector<Real> gearings={1.0}, std::vector<Spread> spreads={0.0},
+	 *  std::vector<Rate> caps={}, std::vector<Rate> floors={},
+	 *  bool inArrears=false, Real redemption=100.0,
+	 *  Date issueDate=Date(),
+	 *  Period exCouponPeriod=Period(), Calendar exCouponCalendar=Calendar(),
+	 *  BusinessDayConvention exCouponConvention=Unadjusted,
+	 *  bool exCouponEndOfMonth=false,
+	 *  BusinessDayConvention fixingConvention=Preceding)}
+	 *  (ql/instruments/bonds/floatingratebond.hpp:42-63 v1.42.1).
+	 *
+	 *  <p>This commit threads the trailing {@code fixingConvention} alone;
+	 *  the {@code exCoupon*} arguments are still serviced via the existing
+	 *  {@link IborLeg#withExCouponPeriod} fluent setter on the FixedRateBond
+	 *  side (a parallel agent owns the FloatingRateCoupon ex-coupon field).
+	 *  Mirroring the full C++ signature here keeps the API surface aligned
+	 *  for future ex-coupon threading without breaking existing callers. */
+	public FloatingRateBond(
+	        final int settlementDays,
+			final double faceAmount,
+			final Schedule schedule,
+			final IborIndex index,
+			final DayCounter paymentDayCounter,
+			final BusinessDayConvention paymentConvention,
+			final int fixingDays,
+			final Array gearings,
+			final Array spreads,
+			final Array caps,
+			final Array floors,
+			final boolean inArrears,
+			final double redemption,
+			final Date issueDate,
+			final BusinessDayConvention fixingConvention) {
 
 		super(settlementDays, schedule.calendar(), issueDate);
 		maturityDate_ = schedule.endDate().clone();
@@ -94,7 +140,8 @@ public class FloatingRateBond extends Bond {
 						.withSpreads(spreads)
 						.withCaps(caps)
 						.withFloors(floors)
-						.inArrears(inArrears).Leg();
+						.inArrears(inArrears)
+						.withFixingConvention(fixingConvention).Leg();
 
 		addRedemptionsToCashflows(new double[]{redemption});
 

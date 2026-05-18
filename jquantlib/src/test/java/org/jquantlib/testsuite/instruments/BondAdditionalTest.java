@@ -7,20 +7,26 @@
 package org.jquantlib.testsuite.instruments;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.jquantlib.Settings;
+import org.jquantlib.cashflow.CashFlow;
 import org.jquantlib.cashflow.CashFlows;
+import org.jquantlib.cashflow.FloatingRateCoupon;
 import org.jquantlib.cashflow.Leg;
 import org.jquantlib.daycounters.Actual360;
 import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.ActualActual;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.daycounters.Thirty360;
+import org.jquantlib.indexes.ibor.AUDLibor;
 import org.jquantlib.instruments.bonds.FixedRateBond;
+import org.jquantlib.instruments.bonds.FloatingRateBond;
+import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.pricingengines.PricingEngine;
 import org.jquantlib.pricingengines.bond.BondFunctions;
 import org.jquantlib.pricingengines.bond.DiscountingBondEngine;
@@ -37,6 +43,7 @@ import org.jquantlib.time.Frequency;
 import org.jquantlib.time.Month;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
+import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Australia;
 import org.jquantlib.time.calendars.NullCalendar;
 import org.jquantlib.time.calendars.UnitedKingdom;
@@ -862,7 +869,112 @@ public class BondAdditionalTest {
         }
     }
 
-    @Ignore("Phase 5d.5 — requires FloatingRateBond ctor with fixingConvention "
-          + "parameter and IborLeg.withFixingConvention support")
-    @Test public void testFixingConvention() { fail("not implemented"); }
+    /**
+     * Faithful port of {@code testFixingConvention} from
+     * {@code test-suite/bonds.cpp:1827-1892} (v1.42.1).
+     *
+     * <p>June 22, 2024 is a Saturday. With an unadjusted quarterly
+     * Australia-calendar schedule and {@code fixingDays=0}, the fixing
+     * date depends on the {@link BusinessDayConvention} threaded through
+     * {@code FloatingRateBond -> IborLeg.withFixingConvention(...) ->
+     * FloatingRateCoupon.fixingDate()}:
+     * <ul>
+     *   <li>{@code Preceding} -> Friday June 21, 2024;
+     *   <li>{@code Following} -> Monday June 24, 2024.
+     * </ul>
+     *
+     * <p>Phase 5e.5b-CFC-d-179: un-ignored after the FloatingRateBond
+     * fixingConvention ctor and IborLeg.withFixingConvention setter
+     * landed.
+     */
+    @Test
+    public void testFixingConvention() {
+        final Date today = new Date(1, Month.January, 2024);
+        new Settings().setEvaluationDate(today);
+
+        final Calendar calendar = new Australia();
+        final int settlementDays = 0;
+        final double faceAmount = 100.0;
+
+        final Schedule schedule = new Schedule(
+                new Date(22, Month.March, 2024),
+                new Date(22, Month.December, 2024),
+                new Period(Frequency.Quarterly),
+                calendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Forward,
+                false);
+
+        final Handle<YieldTermStructure> curve = new Handle<YieldTermStructure>(
+                Utilities.flatRate(today, 0.05, new Actual365Fixed()));
+        final AUDLibor index = new AUDLibor(
+                new Period(3, TimeUnit.Months), curve);
+
+        // Default (Preceding) convention — call the 15-arg ctor that
+        // delegates to fixingConvention=Preceding.
+        final FloatingRateBond bondPreceding = new FloatingRateBond(
+                settlementDays, faceAmount, schedule, index,
+                new Actual365Fixed(),
+                BusinessDayConvention.Following,
+                /* fixingDays */ 0,
+                new Array(new double[] { 1.0 }),
+                new Array(new double[] { 0.0 }),
+                new Array(0),
+                new Array(0),
+                /* inArrears */ false,
+                /* redemption */ 100.0,
+                new Date());
+
+        // Following convention — explicit fixingConvention=Following.
+        final FloatingRateBond bondFollowing = new FloatingRateBond(
+                settlementDays, faceAmount, schedule, index,
+                new Actual365Fixed(),
+                BusinessDayConvention.Following,
+                /* fixingDays */ 0,
+                new Array(new double[] { 1.0 }),
+                new Array(new double[] { 0.0 }),
+                new Array(0),
+                new Array(0),
+                /* inArrears */ false,
+                /* redemption */ 100.0,
+                new Date(),
+                BusinessDayConvention.Following);
+
+        final Date june22 = new Date(22, Month.June, 2024); // Saturday
+        final FloatingRateCoupon couponP =
+                findCouponStarting(bondPreceding, june22);
+        final FloatingRateCoupon couponF =
+                findCouponStarting(bondFollowing, june22);
+
+        assertNotNull("Preceding-bond coupon starting on " + june22
+                + " not found", couponP);
+        assertNotNull("Following-bond coupon starting on " + june22
+                + " not found", couponF);
+
+        final Date expectedPreceding = new Date(21, Month.June, 2024); // Friday
+        final Date expectedFollowing = new Date(24, Month.June, 2024); // Monday
+
+        assertEquals("Preceding fixing date",
+                expectedPreceding, couponP.fixingDate());
+        assertEquals("Following fixing date",
+                expectedFollowing, couponF.fixingDate());
+    }
+
+    /** Returns the {@link FloatingRateCoupon} on {@code bond} whose
+     *  accrual-start date equals {@code d}, or {@code null} if none.
+     *  Mirrors the C++ lambda {@code findCouponStarting} in
+     *  {@code test-suite/bonds.cpp:1871-1878}. */
+    private static FloatingRateCoupon findCouponStarting(
+            final FloatingRateBond bond, final Date d) {
+        for (final CashFlow cf : bond.cashflows()) {
+            if (cf instanceof FloatingRateCoupon) {
+                final FloatingRateCoupon coupon = (FloatingRateCoupon) cf;
+                if (coupon.accrualStartDate().eq(d)) {
+                    return coupon;
+                }
+            }
+        }
+        return null;
+    }
 }
