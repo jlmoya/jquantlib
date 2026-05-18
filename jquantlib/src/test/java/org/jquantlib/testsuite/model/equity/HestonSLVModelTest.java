@@ -104,27 +104,45 @@ import org.junit.Test;
  *       {@code testDiffusionAndDriftSlvProcess}.</li>
  * </ol>
  *
- * <p><strong>Phase 5h.5-SLV-b status:</strong> Java now has most of the
- * SLV-specific infrastructure. Body-fills can land in Phase 5h.5-SLV-c:
+ * <p><strong>Phase 5e.5b-CFC-d-175 status:</strong> Java now has most of the
+ * SLV-specific infrastructure. Active tests: 6 / 15.
  * <ul>
  *   <li>{@code FdmSquareRootFwdOp} — landed (Phase 5h.5-SLV WI-1);</li>
  *   <li>{@code FdmHestonFwdOp} — landed (Phase 5h.5-SLV WI-2);</li>
  *   <li>{@code HestonStochasticLocalVolProcess} — landed (Phase 5h.5-SLV WI-3);</li>
  *   <li>{@code FdmLocalVolFwdOp}, {@code LocalVolRNDCalculator},
  *       {@code FixedLocalVolSurface} — landed (Phase 5h.5-RND-b);</li>
- *   <li>{@code FdmHestonGreensFct}, {@code FdmMesherIntegral} —
- *       landed (Phase 5h.5-SLV-b);</li>
+ *   <li>{@code FdmHestonGreensFct} (all 3 algorithms: ZeroCorrelation,
+ *       Gaussian, SemiAnalytical), {@code FdmMesherIntegral} —
+ *       landed (Phase 5h.5-SLV-b / Phase 5e.5b-CFC-d);</li>
  *   <li>{@code HestonSLVFDMModel}, {@code HestonSLVMCModel} —
- *       body-filled (Phase 5h.5-SLV-b).</li>
+ *       body-filled (Phase 5h.5-SLV-b); {@code .logEntries()} and
+ *       {@code .leverageFunction()} accessors exposed;</li>
+ *   <li>{@code NoExceptLocalVolSurface}, {@code HestonBlackVolSurface},
+ *       {@code SobolBrownianBridgeRsg}, {@code SobolBrownianGeneratorFactory},
+ *       {@code HundsdorferScheme}, {@code AnalyticDoubleBarrierBinaryEngine}
+ *       — all landed.</li>
  * </ul>
- * Still missing:
+ * Still missing (blocks remaining 9 ignored tests):
  * <ul>
- *   <li>{@code NoExceptLocalVolSurface}, {@code GridModelLocalVolSurface};</li>
- *   <li>{@code SquareRootProcessFwdSolver}, generic
- *       {@code FokkerPlanckFwdEquation} backward-PDE adapters;</li>
- *   <li>Multi-cPoint {@code Concentrating1dMesher} variant;</li>
- *   <li>{@code HestonProcess.pdf()} (Fourier inversion) for
- *       FdmHestonGreensFct.SemiAnalytical algorithm.</li>
+ *   <li>Multi-cPoint {@code Concentrating1dMesher} variant
+ *       ({@code vector<tuple<Real,Real,bool>>} ctor);</li>
+ *   <li>2D {@code fokkerPlanckPrice2D} test helper +
+ *       {@code createLocalVolMatrixFromProcess} test helper +
+ *       {@code getFixedLocalVolFromHeston} test helper;</li>
+ *   <li>{@code FdHestonVanillaEngine} ctor variant accepting a
+ *       {@code LocalVolTermStructure} leverage-fct argument
+ *       (Java engine is pure Heston);</li>
+ *   <li>{@code FdHestonDoubleBarrierEngine} (2D Heston FDM engine with
+ *       leverage-fct support) — not in Java;</li>
+ *   <li>{@code MakeMCEuropeanHestonEngine} variant templated on
+ *       {@code HestonSLVProcess} (Java's accepts only {@code HestonProcess};
+ *       {@code HestonStochasticLocalVolProcess} is a sibling, not subclass);</li>
+ *   <li>{@code LocalVolSurface.localVolImpl} re-alignment to v1.42.1
+ *       (denser strike-perturbation stencil + non-forward-aware time derivative
+ *       in current Java) — blocks
+ *       {@code testBlackScholesFokkerPlanckFwdEquationLocalVol} and
+ *       {@code testLocalVolsvSLVPropDensity}.</li>
  * </ul>
  *
  * <p>Slow-test discipline (Phase 5 META D8): once enabled,
@@ -468,15 +486,22 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5h.5-SLV-c slow — needs FdmHestonGreensFct.{Gaussian,ZeroCorrelation} "
-            + "algorithms (Phase 5h.5-SLV-b ported only the SemiAnalytical path), "
-            + "Concentrating1dMesher multi-cPoint variant, HundsdorferScheme, and 2D fokkerPlanckPrice2D.")
+    @Ignore("Phase 5e.5b-CFC-d-175 — FdmHestonGreensFct.{Gaussian,ZeroCorrelation} "
+            + "now landed (FdmHestonGreensFct.Algorithm enum has all 3 paths) and "
+            + "HundsdorferScheme is in main source. Remaining blockers: "
+            + "Concentrating1dMesher multi-cPoint variant (vector<tuple<Real,Real,bool>> "
+            + "ctor — current Java only has single-cPoint ctor) + 2D fokkerPlanckPrice2D "
+            + "test helper (the C++ helper at line 200 of hestonslvmodel.cpp evolves a "
+            + "Dirac density on the 2D log-spot/variance mesh and integrates against a "
+            + "BicubicSpline-interpolated payoff surface).")
     @Test
     public void testHestonFokkerPlanckFwdEquation() { fail("not implemented"); }
 
-    @Ignore("Phase 5h.5-SLV-c — needs Concentrating1dMesher multi-cPoint variant, "
-            + "createSmoothImpliedVol+createLocalVolMatrixFromProcess test helpers, "
-            + "HundsdorferScheme, and 2D fokkerPlanckPrice2D.")
+    @Ignore("Phase 5e.5b-CFC-d-175 — HundsdorferScheme now landed. Remaining blockers: "
+            + "Concentrating1dMesher multi-cPoint variant + 2D fokkerPlanckPrice2D test "
+            + "helper + createLocalVolMatrixFromProcess test helper (C++ line ~533: takes "
+            + "a HestonProcess, builds a 2D vol matrix on a strikes x times grid via "
+            + "FdHestonVanillaEngine pricing).")
     @Test
     public void testHestonFokkerPlanckFwdEquationLogLVLeverage() { fail("not implemented"); }
 
@@ -1040,9 +1065,16 @@ public class HestonSLVModelTest {
 
     /* ---- 3. SLV calibration / propagation ----------------------------- */
 
-    @Ignore("Phase 5h.5-SLV-c — needs NoExceptLocalVolSurface + createSmoothImpliedVol "
-            + "test helper + HestonSLVFDMModel.logEntries() (logging accessor not yet "
-            + "exposed in Java HestonSLVFDMModel from Phase 5h.5-SLV-b).")
+    @Ignore("Phase 5e.5b-CFC-d-175 — NoExceptLocalVolSurface, HestonSLVFDMModel + "
+            + ".logEntries() accessor, and HestonSLVFokkerPlanckFdmParams all landed. "
+            + "Constructible in principle, but blocked by the same root cause as "
+            + "testBlackScholesFokkerPlanckFwdEquationLocalVol: the HestonSLVFDMModel "
+            + "calibration depends on LocalVolSurface.localVolImpl (via NoExceptLocalVolSurface), "
+            + "and Java's localVolImpl uses a denser strike-perturbation stencil "
+            + "(dy=y*1e-6 vs C++ dy=y*0.0001) and a non-forward-aware time derivative — "
+            + "the resulting probability-density divergence exceeds the test's "
+            + "0.01-abs/0.04-rel tolerance. Un-ignore once LocalVolSurface.localVolImpl "
+            + "is re-aligned to v1.42.1.")
     @Test
     public void testLocalVolsvSLVPropDensity() { fail("not implemented"); }
 
@@ -1054,8 +1086,13 @@ public class HestonSLVModelTest {
 
     /* ---- 4. Pricing checks -------------------------------------------- */
 
-    @Ignore("Phase 5h.5-SLV-c — needs HestonBlackVolSurface (BlackVolTermStructure that "
-            + "implies BS vols from a Heston model via root-finding); not in Java.")
+    @Ignore("Phase 5e.5b-CFC-d-175 — HestonBlackVolSurface now landed (two ports: "
+            + "experimental/volatility and termstructures/volatilities/equityfx). "
+            + "Remaining blockers: FdHestonDoubleBarrierEngine (engine that accepts a "
+            + "leverage-function term structure and uses 2D Heston FDM for "
+            + "double-barrier knock-out pricing) — not in Java. Production "
+            + "DoubleBarrierBinary infrastructure is also outside the allowlist for "
+            + "Phase 5e.5b-CFC-d.")
     @Test
     public void testBarrierPricingViaHestonLocalVol() { fail("not implemented"); }
 
@@ -1065,20 +1102,27 @@ public class HestonSLVModelTest {
     @Test
     public void testMonteCarloVsFdmPricing() { fail("not implemented"); }
 
-    @Ignore("Phase 5h.5-SLV-c — SobolBrownianGeneratorFactory now landed "
-            + "(Phase 3i Commit 5); still needs FdHestonDoubleBarrierEngine + "
-            + "AnalyticDoubleBarrierBinaryEngine + HestonSLVMCModel.leverageFunction() "
-            + "accessor.")
+    @Ignore("Phase 5e.5b-CFC-d-175 — SobolBrownianGeneratorFactory (Phase 3i Commit 5), "
+            + "AnalyticDoubleBarrierBinaryEngine, and HestonSLVMCModel.leverageFunction() "
+            + "accessor all landed. Remaining blocker: FdHestonDoubleBarrierEngine "
+            + "(2D Heston FDM engine with leverage-fct support) — not in Java; "
+            + "DoubleBarrierBinary infrastructure outside Phase 5e.5b-CFC-d allowlist. "
+            + "Also needs getFixedLocalVolFromHeston test helper "
+            + "(test-suite/hestonslvmodel.cpp:654).")
     @Test
     public void testMoustacheGraph() { fail("not implemented"); }
 
     /* ---- 5. Process discretization ------------------------------------ */
 
-    @Ignore("Phase 5h.5-SLV-c — SobolBrownianBridgeRsg now landed "
-            + "(Phase 5e.5b-CFC-d-163, cross-validated against C++ v1.42.1); still "
-            + "needs HestonSLVProcess + FdHestonVanillaEngine ctor that accepts a "
-            + "localVol term-structure argument + getFixedLocalVolFromHeston test "
-            + "helper.")
+    @Ignore("Phase 5e.5b-CFC-d-175 — SobolBrownianBridgeRsg (Phase 5e.5b-CFC-d-163, "
+            + "cross-validated against C++ v1.42.1), HestonBlackVolSurface, "
+            + "NoExceptLocalVolSurface, LocalVolRNDCalculator, and FixedLocalVolSurface "
+            + "all landed; HestonStochasticLocalVolProcess (Java name for C++ "
+            + "HestonSLVProcess) exposes apply(), drift(), and diffusion(). Remaining "
+            + "blocker: FdHestonVanillaEngine ctor variant that accepts a "
+            + "LocalVolTermStructure leverage-function argument — Java's engine is pure "
+            + "Heston (see Limitations javadoc in FdHestonVanillaEngine.java line 66). "
+            + "Also needs getFixedLocalVolFromHeston test helper.")
     @Test
     public void testDiffusionAndDriftSlvProcess() { fail("not implemented"); }
 }
