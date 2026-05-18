@@ -29,6 +29,7 @@ import java.util.List;
 import org.jquantlib.QL;
 import org.jquantlib.Settings;
 import org.jquantlib.cashflow.AnalyticHaganPricer;
+import org.jquantlib.cashflow.CappedFlooredCmsCoupon;
 import org.jquantlib.cashflow.CashFlows;
 import org.jquantlib.cashflow.CmsCoupon;
 import org.jquantlib.cashflow.CmsCouponPricer;
@@ -56,7 +57,6 @@ import org.jquantlib.time.Date;
 import org.jquantlib.time.Period;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.fail;
@@ -299,13 +299,118 @@ public class CmsTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-76 — put-call parity test for capped-floored CMS coupons. "
-            + "Requires CappedFlooredCmsCoupon ctor to stop throwing 'work in progress' "
-            + "(jquantlib/src/main/java/org/jquantlib/cashflow/CappedFlooredCmsCoupon.java:145) "
-            + "AND SabrSwaptionVolatilityCube / InterpolatedSwaptionVolatilityCube ports "
-            + "(C++ cms.cpp iterates over {atmVol, SabrVolCube1, SabrVolCube2}; Java only "
-            + "has SwaptionVolatilityMatrix). Future: WI-5e.5-CMS-3b.")
+    /**
+     * Put-call parity for capped-floored CMS coupons. Mirrors C++
+     * {@code cms.cpp::testParity} — for each strike in {2%, 7%}, builds
+     * an uncapped/unfloored swaplet, a caplet ({@code cap = strike}), and
+     * a floorlet ({@code floor = strike}) sharing the same CMS swap
+     * index, then verifies the put-call identity
+     * <pre>
+     *   caplet + floorlet == swaplet + N * accrual * strike * discount
+     * </pre>
+     * to a {@code 2e-5} tolerance ({@code 1e-7} for the LinearTsr pricer).
+     *
+     * <p>C++ iterates the assertion over three vol surfaces
+     * {@code {atmVol, SabrVolCube1, SabrVolCube2}}. Java only ports the
+     * ATM matrix today (SabrSwaptionVolatilityCube /
+     * InterpolatedSwaptionVolatilityCube belong to a future work-item),
+     * so we exercise the parity over {@code atmVol} alone — the SABR-cube
+     * iteration is purely additional vol surfaces feeding the same
+     * arithmetic identity, not an independent assertion.
+     */
     @Test
     public void testParity() {
+        final CommonVars vars = new CommonVars();
+
+        // C++ cms.cpp iterates {atmVol, SabrVolCube1, SabrVolCube2}. Java
+        // only ports the ATM matrix; SABR cubes are deferred.
+        final List<Handle<SwaptionVolatilityStructure>> swaptionVols =
+                Arrays.asList(vars.atmVol);
+
+        final SwapIndex swapIndex = new SwapIndex("EuriborSwapIsdaFixA",
+                new Period(10, TimeUnit.Years),
+                vars.iborIndex.fixingDays(),
+                vars.iborIndex.currency(),
+                vars.iborIndex.fixingCalendar(),
+                new Period(1, TimeUnit.Years),
+                BusinessDayConvention.Unadjusted,
+                vars.iborIndex.dayCounter(),
+                vars.iborIndex);
+
+        final Date startDate = vars.termStructure.currentLink().referenceDate().add(new Period(20, TimeUnit.Years));
+        final Date paymentDate = startDate.add(new Period(1, TimeUnit.Years));
+        final Date endDate = paymentDate;
+        final double nominal = 1.0;
+        final double infiniteCap = Double.NaN;
+        final double infiniteFloor = Double.NaN;
+        final double gearing = 1.0;
+        final double spread = 0.0;
+        final double discount = vars.termStructure.currentLink().discount(paymentDate);
+
+        final CappedFlooredCmsCoupon swaplet = new CappedFlooredCmsCoupon(
+                paymentDate, nominal,
+                startDate, endDate,
+                swapIndex.fixingDays(), swapIndex,
+                gearing, spread,
+                infiniteCap, infiniteFloor,
+                startDate, endDate,
+                vars.iborIndex.dayCounter());
+
+        for (double strike = 0.02; strike < 0.12; strike += 0.05) {
+            final CappedFlooredCmsCoupon caplet = new CappedFlooredCmsCoupon(
+                    paymentDate, nominal,
+                    startDate, endDate,
+                    swapIndex.fixingDays(), swapIndex,
+                    gearing, spread,
+                    strike, infiniteFloor,
+                    startDate, endDate,
+                    vars.iborIndex.dayCounter());
+            final CappedFlooredCmsCoupon floorlet = new CappedFlooredCmsCoupon(
+                    paymentDate, nominal,
+                    startDate, endDate,
+                    swapIndex.fixingDays(), swapIndex,
+                    gearing, spread,
+                    infiniteCap, strike,
+                    startDate, endDate,
+                    vars.iborIndex.dayCounter());
+
+            for (final Handle<SwaptionVolatilityStructure> swaptionVol : swaptionVols) {
+                for (int j = 0; j < vars.yieldCurveModels.size(); ++j) {
+                    vars.numericalPricers.get(j).setSwaptionVolatility(swaptionVol);
+                    vars.analyticPricers.get(j).setSwaptionVolatility(swaptionVol);
+                    final List<CmsCouponPricer> pricers = Arrays.asList(
+                            vars.numericalPricers.get(j), vars.analyticPricers.get(j));
+                    for (int k = 0; k < pricers.size(); ++k) {
+                        swaplet.setPricer(pricers.get(k));
+                        caplet.setPricer(pricers.get(k));
+                        floorlet.setPricer(pricers.get(k));
+                        final double swapletPrice = swaplet.price(vars.termStructure)
+                                + nominal * swaplet.accrualPeriod() * strike * discount;
+                        final double capletPrice = caplet.price(vars.termStructure);
+                        final double floorletPrice = floorlet.price(vars.termStructure);
+                        final double difference = Math.abs(capletPrice + floorletPrice - swapletPrice);
+                        final boolean linearTsr = k == 0 && j == vars.yieldCurveModels.size() - 1;
+                        final double tol = linearTsr ? 1.0e-7 : 2.0e-5;
+                        if (difference > tol) {
+                            fail("\nCoupon payment date: " + paymentDate
+                                    + "\nCoupon start date:   " + startDate
+                                    + "\nCoupon gearing:      " + gearing
+                                    + "\nCoupon swap index:   " + swapIndex.name()
+                                    + "\nCoupon spread:       " + spread
+                                    + "\nstrike:              " + strike
+                                    + "\nCoupon DayCounter:   " + vars.iborIndex.dayCounter()
+                                    + "\nYieldCurve Model:    " + vars.yieldCurveModels.get(j)
+                                    + (k == 0 ? "\nNumerical Pricer" : "\nAnalytic Pricer")
+                                    + (linearTsr ? " (Linear TSR Model)" : "")
+                                    + "\nSwaplet price:       " + swapletPrice
+                                    + "\nCaplet price:        " + capletPrice
+                                    + "\nFloorlet price:      " + floorletPrice
+                                    + "\ndifference:          " + difference
+                                    + "\ntolerance:           " + tol);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -139,9 +139,12 @@ public class CappedFlooredCmsCoupon extends CappedFlooredCoupon {
             final Date refPeriodEnd,
             final DayCounter dayCounter,
             final boolean isInArrears) {
+        // Mirrors C++ CappedFlooredCmsCoupon (capflooredcoupon.hpp:137-160):
+        // wraps a freshly-built CmsCoupon and delegates to the
+        // CappedFlooredCoupon(FloatingRateCoupon, cap, floor) ctor which
+        // handles cap/floor sentinel logic and gearing-sign flip.
         super (new CmsCoupon(paymentDate, nominal, startDate, endDate, fixingDays,
             index, gearing, spread, refPeriodStart, refPeriodEnd,
                 dayCounter, isInArrears), cap, floor);
-        throw new UnsupportedOperationException ("work in progress...");
     }
 }
