@@ -827,14 +827,46 @@ public class CallableBondTest {
 
     /**
      * testOasContinuityThroughExCouponWindow — OAS should be smooth
-     * across an ex-coupon window. Requires ex-coupon support on
-     * {@code FixedRateLeg} / {@code CashFlow} AND
-     * {@code ShortRateTree.setSpread} (neither ported).
+     * across an ex-coupon window.
+     * <p>
+     * Mirrors C++ v1.42.1 {@code testOasContinuityThroughExCouponWindow}: builds
+     * a quarterly callable fixed-rate bond with a 14-day ex-coupon period,
+     * sweeps the call date across the ex-coupon / payment-date boundary,
+     * and asserts that the OAS range (max - min, in bps) stays under
+     * the C++ tolerance of 50 bps. Before the C++ fix referenced by
+     * <a href="https://github.com/lballabio/QuantLib/issues/2236">QL#2236</a>,
+     * the range was ~667 bps.
+     * <p>
+     * <b>Deferred</b> — the underlying primitives have all landed
+     * ({@link org.jquantlib.cashflow.FixedRateLeg#withExCouponPeriod}
+     * accepts the period/calendar/convention/eom args and threads them
+     * through to {@link org.jquantlib.cashflow.FixedRateCoupon}, and
+     * {@code OneFactorModel.ShortRateTree.setSpread} is wired so
+     * {@link CallableBond#OAS(double, Handle, DayCounter,
+     * org.jquantlib.termstructures.Compounding, Frequency)} works), but the
+     * {@link CallableFixedRateBond} ctor does <i>not</i> yet expose the
+     * five-extra-arg overload ({@code exCouponPeriod, exCouponCalendar,
+     * exCouponConvention, exCouponEndOfMonth}) that the C++ test depends on.
+     * Its internal {@link org.jquantlib.cashflow.FixedRateLeg} is built
+     * without ex-coupon, so the {@link CallableFixedRateBond#accruedAmount}
+     * never returns the negative ex-coupon values that drive the
+     * discontinuity-window check.
+     * <p>
+     * Un-ignore once {@link CallableFixedRateBond} grows the ex-coupon
+     * ctor overload that forwards to {@code FixedRateLeg.withExCouponPeriod}.
      */
     @Test
-    @Ignore("Phase 5e.5b: requires ex-coupon period support AND ShortRateTree.setSpread.")
+    @Ignore("Phase 5e.5b: CallableFixedRateBond ctor lacks the ex-coupon "
+            + "overload (exCouponPeriod/Calendar/Convention/EOM). FixedRateLeg "
+            + "and OAS are wired, but the leg-build inside CallableFixedRateBond "
+            + "does not propagate ex-coupon to its FixedRateCoupons, so the "
+            + "ex-coupon window the C++ test sweeps is not modelled. Un-ignore "
+            + "once CallableFixedRateBond exposes the five-extra-arg ctor.")
     public void testOasContinuityThroughExCouponWindow() {
-        fail("deferred until ex-coupon support and setSpread are ported");
+        fail("deferred until CallableFixedRateBond exposes ex-coupon ctor "
+                + "overload (FixedRateLeg.withExCouponPeriod is ready; "
+                + "CallableFixedRateBond does not thread ex-coupon into its "
+                + "internal leg build).");
     }
 
     // ------------------------------------------------------------------
