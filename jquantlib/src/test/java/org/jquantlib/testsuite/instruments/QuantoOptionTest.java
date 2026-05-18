@@ -9,11 +9,16 @@ package org.jquantlib.testsuite.instruments;
 import static org.junit.Assert.fail;
 
 import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.cashflow.FixedDividend;
 import org.jquantlib.daycounters.Actual360;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
+import org.jquantlib.exercise.AmericanExercise;
 import org.jquantlib.exercise.EuropeanExercise;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.BarrierType;
+import org.jquantlib.instruments.DividendSchedule;
 import org.jquantlib.instruments.Option;
 import org.jquantlib.instruments.PlainVanillaPayoff;
 import org.jquantlib.instruments.QuantoBarrierOption;
@@ -36,6 +41,9 @@ import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
+import org.jquantlib.time.Month;
+import org.jquantlib.time.Period;
+import org.jquantlib.time.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -1002,9 +1010,87 @@ public class QuantoOptionTest {
         }
     }
 
-    @Ignore(REASON_AMERICAN)
+    /**
+     * Phase 5e.5b-CFC-d-227 body-fill of C++
+     * {@code test-suite/quantooption.cpp::testAmericanQuantoOption}
+     * (v1.42.1 lines 1125-1255).
+     *
+     * <p>Prices an American call (S=100, K=105, T=9M, r_dom=2.5%, q=3%,
+     * vol=30%, fxVol=15%, corr=-0.75, single discrete dividend of 8.0 at
+     * 6M) with {@link FdBlackScholesVanillaEngine} plus an
+     * {@link FdmQuantoHelper}, and asserts agreement with the C++
+     * reference NPV {@code 8.90611734} at tolerance {@code 1e-4}.
+     *
+     * <p>Java now has every required piece after Phase 5e.5b-CFC-d-225
+     * landed the FD-engine local-vol overload (this test exercises only
+     * the constant-vol quanto branch — the Heston-quanto and local-vol
+     * cross-check from the C++ test remain skipped because the Java
+     * FD engine still throws on the {@code localVol + quantoHelper}
+     * combination — see the explicit {@code QL.require} in
+     * {@link FdBlackScholesVanillaEngine}'s full constructor).
+     *
+     * <p>Tolerance: LOOSE (1e-4) — matches C++ {@code tol = 1e-4}.
+     */
     @Test
-    public void testAmericanQuantoOption() { fail("not implemented"); }
+    public void testAmericanQuantoOption() {
+        QL.info("Testing American quanto-option values with PDEs...");
+
+        final DayCounter dc = new Actual365Fixed();
+        final Date today = new Date(21, Month.April, 2019);
+        new Settings().setEvaluationDate(today);
+        final Date maturity = today.add(new Period(9, TimeUnit.Months));
+
+        final double s = 100.0;
+        final double domesticR = 0.025;
+        final double foreignR  = 0.075;
+        final double q = 0.03;
+        final double vol   = 0.30;
+        final double fxVol = 0.15;
+
+        final double exchRateATMlevel    =  1.0;
+        final double equityFxCorrelation = -0.75;
+
+        final Handle<YieldTermStructure> domesticTS =
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, domesticR, dc));
+        final Handle<YieldTermStructure> divTS =
+                new Handle<YieldTermStructure>(Utilities.flatRate(today, q, dc));
+        final Handle<BlackVolTermStructure> volTS =
+                new Handle<BlackVolTermStructure>(Utilities.flatVol(today, vol, dc));
+        final Handle<Quote> spot = new Handle<Quote>(new SimpleQuote(s));
+
+        final BlackScholesMertonProcess bsmProcess =
+                new BlackScholesMertonProcess(spot, divTS, domesticTS, volTS);
+
+        final YieldTermStructure foreignTS = Utilities.flatRate(today, foreignR, dc);
+        final BlackVolTermStructure fxVolTS = Utilities.flatVol(today, fxVol, dc);
+
+        final FdmQuantoHelper quantoHelper = new FdmQuantoHelper(
+                domesticTS.currentLink(), foreignTS, fxVolTS,
+                equityFxCorrelation, exchRateATMlevel);
+
+        final double strike = 105.0;
+
+        final DividendSchedule dividends = new DividendSchedule();
+        dividends.add(new FixedDividend(8.0, today.add(new Period(6, TimeUnit.Months))));
+
+        final VanillaOption option = new VanillaOption(
+                new PlainVanillaPayoff(Option.Type.Call, strike),
+                new AmericanExercise(today, maturity));
+
+        option.setPricingEngine(new FdBlackScholesVanillaEngine(
+                bsmProcess, dividends, quantoHelper, 100, 400, 1));
+
+        final double tol = 1.0e-4;
+        final double expected = 8.90611734;
+        final double bsCalculated = option.NPV();
+
+        if (Math.abs(expected - bsCalculated) > tol) {
+            fail("failed to reproduce American quanto option prices "
+                    + "with the Black-Scholes-Merton model"
+                    + "\n    calculated: " + bsCalculated
+                    + "\n    expected:   " + expected);
+        }
+    }
 
     @Ignore(REASON_DOUBLE_BARRIER)
     @Test
