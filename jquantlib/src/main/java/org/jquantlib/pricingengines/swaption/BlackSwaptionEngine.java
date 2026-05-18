@@ -39,6 +39,7 @@ import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.daycounters.DayCounter;
 import org.jquantlib.exercise.Exercise;
 import org.jquantlib.instruments.Option;
+import org.jquantlib.instruments.OvernightIndexedSwap;
 import org.jquantlib.instruments.Settlement;
 import org.jquantlib.instruments.Swaption;
 import org.jquantlib.instruments.VanillaSwap;
@@ -56,6 +57,7 @@ import org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolati
 import org.jquantlib.time.BusinessDayConvention;
 import org.jquantlib.time.Date;
 import org.jquantlib.time.Frequency;
+import org.jquantlib.time.Schedule;
 import org.jquantlib.time.calendars.NullCalendar;
 
 /**
@@ -104,6 +106,14 @@ import org.jquantlib.time.calendars.NullCalendar;
  *     {@link CashAnnuityModel#DiscountCurve} (C++ default) and the curve
  *     reference date when {@link CashAnnuityModel#SwapRate}. Mirrors C++
  *     exactly (blackswaptionengine.hpp:275-293).
+ * <li>Phase 5e.5b-CFC-d-232: the engine now also accepts
+ *     {@link OvernightIndexedSwap} underlyings, dispatched through a small
+ *     internal {@code FixedFloatView} adapter (mirrors the C++ branch where
+ *     {@code BlackStyleSwaptionEngine} reads from {@code FixedVsFloatingSwap}'s
+ *     {@code fairRate / floatingLegBPS / fixedLegBPS / fixedLeg /
+ *     floatingSchedule / fixedSchedule / type / spread} accessors).
+ *     For OIS, {@code floatingSchedule} maps to {@code overnightSchedule()}
+ *     and {@code floatingLegBPS} to {@code overnightLegBPS()}.
  * </ul>
  *
  * @see Swaption
@@ -218,7 +228,12 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
         QL.require(exercise.type() == Exercise.Type.European, "not a European option");
 
         final Date exerciseDate = exercise.date(0);
-        final VanillaSwap swap = args.swap;
+
+        // Swap dispatch: VanillaSwap (args.swap) vs OvernightIndexedSwap
+        // (args.ois). Mirrors C++ where BlackStyleSwaptionEngine reads from
+        // FixedVsFloatingSwap (common base of both). Java has no such base;
+        // we route through a thin FixedFloatView adapter.
+        final FixedFloatView swap = buildView(args);
 
         // Mirror C++: temporarily plug a DiscountingSwapEngine into the
         // underlying swap so swap.fairRate()/fixedLegBPS() are computed on
@@ -277,8 +292,7 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
             // Match C++: default freq=Annual, override only when the fixed
             // schedule was built with a tenor.
             Frequency freq = Frequency.Annual;
-            final org.jquantlib.time.Schedule fixedSchedule =
-                    swap.fixedSchedule();
+            final Schedule fixedSchedule = swap.fixedSchedule();
             if (fixedSchedule.hasTenor()) {
                 freq = fixedSchedule.tenor().frequency();
             }
@@ -394,5 +408,68 @@ public class BlackSwaptionEngine extends Swaption.EngineImpl {
         // ClosestRounding(0): round half-away-from-zero to nearest integer.
         final double monthsRounded = Math.floor(months + 0.5);
         return monthsRounded / 12.0;
+    }
+
+    /**
+     * Thin adapter that gives a uniform fixed-vs-floating swap view over
+     * either a {@link VanillaSwap} or an {@link OvernightIndexedSwap}.
+     * Mirrors the C++ {@code FixedVsFloatingSwap} base class, which Java does
+     * not yet expose as a Java parent (introducing it would require touching
+     * the read-only {@code VanillaSwap} / {@code OvernightIndexedSwap}
+     * classes — out of scope here).
+     */
+    private interface FixedFloatView {
+        double fixedRate();
+        double fairRate();
+        double spread();
+        double fixedLegBPS();
+        double floatingLegBPS();
+        Leg fixedLeg();
+        Schedule fixedSchedule();
+        Schedule floatingSchedule();
+        VanillaSwap.Type type();
+        void setPricingEngine(DiscountingSwapEngine engine);
+    }
+
+    private static FixedFloatView buildView(final Swaption.ArgumentsImpl args) {
+        if (args.swap != null) {
+            return new VanillaView(args.swap);
+        }
+        QL.require(args.ois != null, "swap not set");
+        return new OisView(args.ois);
+    }
+
+    private static final class VanillaView implements FixedFloatView {
+        private final VanillaSwap s;
+        VanillaView(final VanillaSwap s) { this.s = s; }
+        @Override public double fixedRate() { return s.fixedRate(); }
+        @Override public double fairRate() { return s.fairRate(); }
+        @Override public double spread() { return s.spread(); }
+        @Override public double fixedLegBPS() { return s.fixedLegBPS(); }
+        @Override public double floatingLegBPS() { return s.floatingLegBPS(); }
+        @Override public Leg fixedLeg() { return s.fixedLeg(); }
+        @Override public Schedule fixedSchedule() { return s.fixedSchedule(); }
+        @Override public Schedule floatingSchedule() { return s.floatingSchedule(); }
+        @Override public VanillaSwap.Type type() { return s.type(); }
+        @Override public void setPricingEngine(final DiscountingSwapEngine engine) {
+            s.setPricingEngine(engine);
+        }
+    }
+
+    private static final class OisView implements FixedFloatView {
+        private final OvernightIndexedSwap s;
+        OisView(final OvernightIndexedSwap s) { this.s = s; }
+        @Override public double fixedRate() { return s.fixedRate(); }
+        @Override public double fairRate() { return s.fairRate(); }
+        @Override public double spread() { return s.spread(); }
+        @Override public double fixedLegBPS() { return s.fixedLegBPS(); }
+        @Override public double floatingLegBPS() { return s.overnightLegBPS(); }
+        @Override public Leg fixedLeg() { return s.fixedLeg(); }
+        @Override public Schedule fixedSchedule() { return s.fixedSchedule(); }
+        @Override public Schedule floatingSchedule() { return s.overnightSchedule(); }
+        @Override public VanillaSwap.Type type() { return s.type(); }
+        @Override public void setPricingEngine(final DiscountingSwapEngine engine) {
+            s.setPricingEngine(engine);
+        }
     }
 }

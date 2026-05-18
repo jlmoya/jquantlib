@@ -51,15 +51,28 @@ import org.jquantlib.time.Date;
  *     is currently a non-static inner class (cannot be extended without an
  *     enclosing instance). This scaffold therefore extends only
  *     {@link Swap.ArgumentsImpl} (the static base) and exposes the swaption
- *     fields ({@code swap}, {@code settlementType}, {@code settlementMethod},
- *     {@code exercise}) as direct members. Swap-leg fields ({@code legs},
- *     {@code payer}) come via {@code Swap.setupArguments}; vanilla-specific
- *     fields are not yet propagated. Engines that need fixed/floating leg
- *     details should read them from the underlying {@code swap} reference
- *     held on the arguments.
- * <li>The C++ {@code FixedVsFloatingSwap} hierarchy is not yet ported; the
- *     constructor accepts a {@link VanillaSwap} (its only Java subclass at
- *     this stage), matching the existing stub signature.
+ *     fields ({@code swap}, {@code ois}, {@code settlementType},
+ *     {@code settlementMethod}, {@code exercise}) as direct members.
+ *     Swap-leg fields ({@code legs}, {@code payer}) come via
+ *     {@code Swap.setupArguments}; vanilla-specific fields are not yet
+ *     propagated. Engines that need fixed/floating leg details should read
+ *     them from the underlying swap reference held on the arguments —
+ *     {@code args.swap} when the underlying is a {@link VanillaSwap}, or
+ *     {@code args.ois} when it is an {@link OvernightIndexedSwap}.
+ * <li>The C++ {@code FixedVsFloatingSwap} hierarchy is not yet ported; rather
+ *     than introducing a new parent class (which would require touching
+ *     {@code VanillaSwap}, {@code OvernightIndexedSwap}, and their make-builders
+ *     — all out of scope here), Java {@link Swaption} stores the underlying as
+ *     {@link Swap} and polymorphically dispatches via two typed accessors
+ *     ({@link #underlying()} for the {@code VanillaSwap} case,
+ *     {@link #underlyingOis()} for the {@code OvernightIndexedSwap} case).
+ *     This mirrors the C++ {@code Swaption} class which retained a
+ *     {@code vanilla_} field for backwards-compatible {@code underlyingSwap()}.
+ *     Per the C++ class warning (swaption.hpp:60-68): only
+ *     {@link BlackSwaptionEngine} / {@code FdHullWhiteSwaptionEngine} /
+ *     {@code FdG2SwaptionEngine} fully support OIS underlyings; other engines
+ *     will treat the OIS leg as a vanilla floating leg, which is at best a
+ *     decent proxy.
  * </ul>
  *
  * @author Praneet Tiwari
@@ -70,12 +83,19 @@ public class Swaption extends Option {
     // private fields
     //
 
-    private final VanillaSwap swap_;
+    private final Swap swap_;
+    /** Cached {@link VanillaSwap} view of {@link #swap_} ({@code null} when
+     *  the underlying is an {@link OvernightIndexedSwap}). Mirrors C++
+     *  {@code vanilla_} (swaption.hpp:137). */
+    private final VanillaSwap vanilla_;
+    /** Cached {@link OvernightIndexedSwap} view of {@link #swap_}
+     *  ({@code null} when the underlying is a {@link VanillaSwap}). */
+    private final OvernightIndexedSwap ois_;
     private final Settlement.Type settlementType_;
     private final Settlement.Method settlementMethod_;
 
     //
-    // public constructors
+    // public constructors — VanillaSwap underlying
     //
 
     /**
@@ -106,6 +126,52 @@ public class Swaption extends Option {
         super(null /* payoff */, exercise);
         Settlement.checkTypeAndMethodConsistency(delivery, settlementMethod);
         this.swap_ = swap;
+        this.vanilla_ = swap;
+        this.ois_ = null;
+        this.settlementType_ = delivery;
+        this.settlementMethod_ = settlementMethod;
+        this.swap_.addObserver(this);
+    }
+
+    //
+    // public constructors — OvernightIndexedSwap underlying
+    //
+
+    /**
+     * Constructs a physically-settled swaption on an
+     * {@link OvernightIndexedSwap} (PhysicalOTC method by default).
+     * <p>
+     * Mirrors the C++ templated ctor
+     * {@code Swaption(ext::shared_ptr<FixedVsFloatingSwap>, ...)}
+     * (swaption.hpp:94-97) with the {@code OvernightIndexedSwap} subclass.
+     */
+    public Swaption(final OvernightIndexedSwap swap, final Exercise exercise) {
+        this(swap, exercise, Settlement.Type.Physical, Settlement.Method.PhysicalOTC);
+    }
+
+    /**
+     * Constructs an OIS swaption with the given settlement type, defaulting
+     * the method to a value consistent with the type.
+     */
+    public Swaption(final OvernightIndexedSwap swap, final Exercise exercise,
+            final Settlement.Type delivery) {
+        this(swap, exercise, delivery,
+                delivery == Settlement.Type.Physical
+                        ? Settlement.Method.PhysicalOTC
+                        : Settlement.Method.ParYieldCurve);
+    }
+
+    /**
+     * Constructs an OIS swaption with explicit settlement type and method.
+     */
+    public Swaption(final OvernightIndexedSwap swap, final Exercise exercise,
+            final Settlement.Type delivery,
+            final Settlement.Method settlementMethod) {
+        super(null /* payoff */, exercise);
+        Settlement.checkTypeAndMethodConsistency(delivery, settlementMethod);
+        this.swap_ = swap;
+        this.vanilla_ = null;
+        this.ois_ = swap;
         this.settlementType_ = delivery;
         this.settlementMethod_ = settlementMethod;
         this.swap_.addObserver(this);
@@ -124,10 +190,13 @@ public class Swaption extends Option {
     }
 
     /**
-     * @return the underlying swap. Mirrors C++ {@code underlying()}.
+     * @return the underlying swap as a {@link VanillaSwap}, or {@code null}
+     *         when the underlying is an {@link OvernightIndexedSwap}. Mirrors
+     *         C++ {@code underlyingSwap()} (the {@code vanilla_} branch,
+     *         swaption.hpp:137 + swaption.cpp:150).
      */
     public VanillaSwap underlying() {
-        return swap_;
+        return vanilla_;
     }
 
     /**
@@ -135,7 +204,15 @@ public class Swaption extends Option {
      * C++ legacy accessor {@code underlyingSwap()}).
      */
     public VanillaSwap underlyingSwap() {
-        return swap_;
+        return vanilla_;
+    }
+
+    /**
+     * @return the underlying swap as an {@link OvernightIndexedSwap}, or
+     *         {@code null} when the underlying is a {@link VanillaSwap}.
+     */
+    public OvernightIndexedSwap underlyingOis() {
+        return ois_;
     }
 
     //
@@ -152,12 +229,16 @@ public class Swaption extends Option {
     @Override
     protected void setupArguments(final PricingEngine.Arguments args) /* @ReadOnly */ {
         // Chain to the underlying swap so that Swap-level fields are populated.
+        // Both VanillaSwap and OvernightIndexedSwap inherit Swap.setupArguments
+        // (which populates legs + payer); VanillaSwap further overrides it to
+        // populate vanilla-leg fields.
         swap_.setupArguments(args);
 
         QL.require(args instanceof Swaption.ArgumentsImpl, "wrong argument type");
         final Swaption.ArgumentsImpl a = (Swaption.ArgumentsImpl) args;
 
-        a.swap = swap_;
+        a.swap = vanilla_;
+        a.ois = ois_;
         a.settlementType = settlementType_;
         a.settlementMethod = settlementMethod_;
         a.exercise = exercise;
@@ -428,7 +509,13 @@ public class Swaption extends Option {
     public static class ArgumentsImpl extends Swap.ArgumentsImpl
             implements Swaption.Arguments {
 
+        /** {@link VanillaSwap}-typed underlying view (null when the underlying
+         *  is an {@link OvernightIndexedSwap}). */
         public VanillaSwap swap;
+        /** {@link OvernightIndexedSwap}-typed underlying view (null when the
+         *  underlying is a {@link VanillaSwap}). Mirrors the C++ template
+         *  hierarchy via runtime dispatch — see class-level note. */
+        public OvernightIndexedSwap ois;
         public Settlement.Type settlementType = Settlement.Type.Physical;
         public Settlement.Method settlementMethod = Settlement.Method.PhysicalOTC;
         public Exercise exercise;
@@ -439,7 +526,7 @@ public class Swaption extends Option {
         @Override
         public void validate() /* @ReadOnly */ {
             super.validate();
-            QL.require(swap != null, "swap not set");
+            QL.require(swap != null || ois != null, "swap not set");
             QL.require(exercise != null, "exercise not set");
             Settlement.checkTypeAndMethodConsistency(settlementType, settlementMethod);
         }

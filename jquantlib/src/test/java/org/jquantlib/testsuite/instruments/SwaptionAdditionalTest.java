@@ -48,7 +48,6 @@ import org.jquantlib.time.Schedule;
 import org.jquantlib.time.TimeUnit;
 import org.jquantlib.time.calendars.Target;
 import org.jquantlib.time.calendars.UnitedStates;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -504,17 +503,251 @@ public class SwaptionAdditionalTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-128 — Swaption.impliedVolatility is now ported"
-            + " (see testImpliedVolatility), but this OIS variant still needs"
-            + " (a) a Swaption(OvernightIndexedSwap,...) constructor — current"
-            + " Java Swaption hardcodes VanillaSwap — and (b) BlackSwaptionEngine"
-            + " support for OvernightIndexedSwap underlyings (engine reads"
-            + " swap.floatingLegBPS() / swap.floatingSchedule() which OIS does"
-            + " not yet expose). Both touch out-of-scope classes for this"
-            + " sub-task (MakeOIS, OvernightIndexedCoupon, OvernightIndexedSwap);"
-            + " un-ignore in the OIS-swaption-engine pass.")
+    /**
+     * Mirrors {@code testImpliedVolatilityOis} from C++ v1.42.1 {@code swaption.cpp}
+     * (lines 924-1018). Same structure as {@link #testImpliedVolatility} but
+     * the underlying is an {@link org.jquantlib.instruments.OvernightIndexedSwap}
+     * built via {@link org.jquantlib.instruments.MakeOIS}. The OIS index is
+     * an {@link org.jquantlib.indexes.ibor.Eonia} on a zero-spreaded
+     * (-1%) version of the main flat-5% term structure (mirrors C++
+     * swaption.cpp:132-136).
+     *
+     * <p><strong>Java port deviations from C++ v1.42.1:</strong>
+     * <ul>
+     *   <li>The C++ test iterates over both {@code Settlement.Physical/PhysicalOTC}
+     *       and {@code Settlement.Cash/ParYieldCurve}; the
+     *       {@link BlackSwaptionEngine} now supports both paths (CFC-d-142 for
+     *       ParYieldCurve, CFC-d-232 for OIS dispatch). We exercise the same
+     *       pair as C++.</li>
+     *   <li>The grid is reduced (2 exercises x 2 lengths x 3 strikes x 2
+     *       swap-types x 2 settlements x 2 priceTypes x 3 vols = 288 cases)
+     *       vs. C++ (6 x 8 x 6 x 2 x 2 x 2 x 7 = 32256). Per CLAUDE.md
+     *       "loose tier" guidance, a representative subset across the
+     *       {@code (low/mid/high) x (OTM/ATM/ITM)} grid is sufficient
+     *       cross-validation; the full grid would run several minutes.</li>
+     * </ul>
+     *
+     * <p><strong>Tolerance tier</strong> — tight: matches the C++ literal
+     * tolerance ({@code 1.0e-8}) on the price round-trip with the same
+     * "skip-if-zero-vol-price-matches" bracketing fallback as C++.
+     */
     @Test
-    public void testImpliedVolatilityOis() { fail("not implemented"); }
+    public void testImpliedVolatilityOis() {
+        final org.jquantlib.time.calendars.Target calendar =
+                new org.jquantlib.time.calendars.Target();
+        final DayCounter act365 = new Actual365Fixed();
+        final DayCounter thirty360 = new Thirty360(Thirty360.Convention.BondBasis);
+        final int settlementDays = 2;
+
+        final Date today = calendar.adjust(new Date(13, Month.March, 2002));
+        new Settings().setEvaluationDate(today);
+        final Date settlement = calendar.advance(today, settlementDays, TimeUnit.Days);
+
+        // Base flat 5% term structure (discount + projection for Eonia base).
+        final Handle<YieldTermStructure> ts = new Handle<YieldTermStructure>(
+                new FlatForward(settlement, 0.05, act365));
+
+        // OIS index = Eonia on a -1% zero-spreaded version of the main curve.
+        // Mirrors C++ swaption.cpp:132-136 verbatim.
+        final Handle<YieldTermStructure> oisCurve =
+                new Handle<YieldTermStructure>(
+                        new org.jquantlib.termstructures.yieldcurves.ZeroSpreadedTermStructure(
+                                ts,
+                                new Handle<Quote>(new SimpleQuote(-0.01))));
+        final org.jquantlib.indexes.ibor.Eonia oisIndex =
+                new org.jquantlib.indexes.ibor.Eonia(oisCurve);
+
+        final int maxEvaluations = 100;
+        final double tolerance = 1.0e-8;
+
+        // Subset of C++ grid — see method javadoc.
+        final Period[] exercises = {
+                new Period(1, TimeUnit.Years),
+                new Period(5, TimeUnit.Years) };
+        final Period[] lengths = {
+                new Period(2, TimeUnit.Years),
+                new Period(5, TimeUnit.Years) };
+        final double[] strikes = { 0.03, 0.05, 0.07 };
+        final VanillaSwap.Type[] swapTypes =
+                { VanillaSwap.Type.Receiver, VanillaSwap.Type.Payer };
+        final Settlement.Type[] settlementTypes =
+                { Settlement.Type.Physical, Settlement.Type.Cash };
+        final Settlement.Method[] settlementMethods =
+                { Settlement.Method.PhysicalOTC,
+                  Settlement.Method.ParYieldCurve };
+        final Swaption.PriceType[] priceTypes =
+                { Swaption.PriceType.Spot, Swaption.PriceType.Forward };
+        // 3-point subset of C++ {0.01, 0.05, 0.10, 0.20, 0.30, 0.70, 0.90}.
+        final double[] vols = { 0.05, 0.20, 0.70 };
+
+        for (final Period exercise : exercises) {
+            for (final Period length : lengths) {
+                final Date exerciseDate = calendar.advance(today, exercise);
+                final Date startDate = calendar.advance(exerciseDate,
+                        settlementDays, TimeUnit.Days);
+
+                for (final double strike : strikes) {
+                    for (final VanillaSwap.Type k : swapTypes) {
+                        final org.jquantlib.instruments.OvernightIndexedSwap swap =
+                                new org.jquantlib.instruments.MakeOIS(
+                                        length, oisIndex, strike)
+                                        .withEffectiveDate(startDate)
+                                        .withPaymentFrequency(Frequency.Annual)
+                                        .withFixedLegDayCount(thirty360)
+                                        .withType(k)
+                                        .value();
+
+                        for (int h = 0; h < settlementTypes.length; h++) {
+                            for (final Swaption.PriceType priceType : priceTypes) {
+                                for (final double vol : vols) {
+                                    runImpliedVolOisCase(swap, exerciseDate, ts,
+                                            vol, strike, exercise, length,
+                                            k, settlementTypes[h],
+                                            settlementMethods[h], priceType,
+                                            tolerance, maxEvaluations);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper for {@link #testImpliedVolatilityOis}. Mirrors the inner-loop
+     * body of C++ swaption.cpp:957-1013.
+     */
+    private static void runImpliedVolOisCase(
+            final org.jquantlib.instruments.OvernightIndexedSwap swap,
+            final Date exerciseDate,
+            final Handle<YieldTermStructure> ts,
+            final double vol,
+            final double strike,
+            final Period exercise,
+            final Period length,
+            final VanillaSwap.Type swapType,
+            final Settlement.Type sType,
+            final Settlement.Method sMethod,
+            final Swaption.PriceType priceType,
+            final double tolerance,
+            final int maxEvaluations) {
+        // C++ vars.makeOISwaption defaults to CashAnnuityModel.SwapRate
+        // (swaption.cpp:105 default arg, then explicit DiscountCurve in
+        // the call at line 959). Mirror C++ exactly — use DiscountCurve.
+        final BlackSwaptionEngine engine = new BlackSwaptionEngine(ts,
+                new Handle<org.jquantlib.termstructures.SwaptionVolatilityStructure>(
+                        new org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility(
+                                0,
+                                new org.jquantlib.time.calendars.NullCalendar(),
+                                BusinessDayConvention.Following,
+                                new Handle<Quote>(new SimpleQuote(vol)),
+                                new Actual365Fixed())),
+                BlackSwaptionEngine.CashAnnuityModel.DiscountCurve, 0.0);
+        final Swaption swaption = new Swaption(swap,
+                new org.jquantlib.exercise.EuropeanExercise(exerciseDate),
+                sType, sMethod);
+        swaption.setPricingEngine(engine);
+
+        // Price target (spot or forward).
+        final double value;
+        if (priceType == Swaption.PriceType.Spot) {
+            value = swaption.NPV();
+        } else {
+            swaption.NPV();
+            final Object fwd = ((Swaption.ResultsImpl) engine.getResults())
+                    .additionalResults().get("forwardPrice");
+            if (fwd == null) {
+                fail("BlackSwaptionEngine did not publish 'forwardPrice'"
+                        + " additional result");
+            }
+            value = ((Number) fwd).doubleValue();
+        }
+
+        double implVol = 0.0;
+        boolean failedToBracket = false;
+        try {
+            implVol = swaption.impliedVolatility(value, ts, 0.10, tolerance,
+                    maxEvaluations, 1.0e-7, 4.0,
+                    org.jquantlib.model.VolatilityType.ShiftedLognormal,
+                    0.0, priceType);
+        } catch (final RuntimeException e) {
+            // Couldn't bracket? Mirror C++ swaption.cpp:975-993 fallback:
+            // re-price at vol=0 and skip if the input value is within
+            // tolerance of the zero-vol value (intrinsic case), otherwise
+            // report the failure.
+            final BlackSwaptionEngine zeroEngine = new BlackSwaptionEngine(ts,
+                    new Handle<org.jquantlib.termstructures.SwaptionVolatilityStructure>(
+                            new org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility(
+                                    0,
+                                    new org.jquantlib.time.calendars.NullCalendar(),
+                                    BusinessDayConvention.Following,
+                                    new Handle<Quote>(new SimpleQuote(0.0)),
+                                    new Actual365Fixed())),
+                    BlackSwaptionEngine.CashAnnuityModel.DiscountCurve, 0.0);
+            swaption.setPricingEngine(zeroEngine);
+            final double value2;
+            if (priceType == Swaption.PriceType.Spot) {
+                value2 = swaption.NPV();
+            } else {
+                swaption.NPV();
+                final Object fwd2 = ((Swaption.ResultsImpl) zeroEngine.getResults())
+                        .additionalResults().get("forwardPrice");
+                value2 = ((Number) fwd2).doubleValue();
+            }
+            if (Math.abs(value - value2) < tolerance) {
+                failedToBracket = true;
+            } else {
+                fail("implied vol failure: " + exercise + "x" + length
+                        + " " + swapType
+                        + "\n  settlement: " + sType + "/" + sMethod
+                        + "\n  strike      " + strike
+                        + "\n  atm level:  " + swap.fairRate()
+                        + "\n  vol:        " + vol
+                        + "\n  price:      " + value
+                        + "\n  priceType:  " + priceType
+                        + "\n" + e.getMessage());
+            }
+        }
+        if (failedToBracket) {
+            return;
+        }
+        if (Math.abs(implVol - vol) > tolerance) {
+            // Difference might not matter — re-price at implied vol and
+            // check the round-trip. Mirrors C++ swaption.cpp:994-1009.
+            final BlackSwaptionEngine implEngine = new BlackSwaptionEngine(ts,
+                    new Handle<org.jquantlib.termstructures.SwaptionVolatilityStructure>(
+                            new org.jquantlib.termstructures.volatilities.swaption.ConstantSwaptionVolatility(
+                                    0,
+                                    new org.jquantlib.time.calendars.NullCalendar(),
+                                    BusinessDayConvention.Following,
+                                    new Handle<Quote>(new SimpleQuote(implVol)),
+                                    new Actual365Fixed())),
+                    BlackSwaptionEngine.CashAnnuityModel.DiscountCurve, 0.0);
+            swaption.setPricingEngine(implEngine);
+            final double value2;
+            if (priceType == Swaption.PriceType.Spot) {
+                value2 = swaption.NPV();
+            } else {
+                swaption.NPV();
+                final Object fwd2 = ((Swaption.ResultsImpl) implEngine.getResults())
+                        .additionalResults().get("forwardPrice");
+                value2 = ((Number) fwd2).doubleValue();
+            }
+            if (Math.abs(value - value2) > tolerance) {
+                fail("implied vol failure: " + exercise + "x" + length
+                        + " " + swapType
+                        + "\n  settlement:    " + sType + "/" + sMethod
+                        + "\n  strike         " + strike
+                        + "\n  atm level:     " + swap.fairRate()
+                        + "\n  vol:           " + vol
+                        + "\n  price:         " + value
+                        + "\n  priceType:     " + priceType
+                        + "\n  implied vol:   " + implVol
+                        + "\n  implied price: " + value2);
+            }
+        }
+    }
 
     /**
      * Mirrors {@code testSwaptionDeltaInBlackModel} from C++ v1.42.1
