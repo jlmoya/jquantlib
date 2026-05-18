@@ -69,19 +69,25 @@ public class ZabrAndNoArbSabrSmokeTest {
     }
 
     @Test
-    public void testNoArbSabrSmileSectionHaganFallback() {
+    public void testNoArbSabrSmileSectionAtmAgreesWithHagan() {
         // alpha, beta, nu, rho selected so unsafeSabrVolatility succeeds.
+        // After Phase 5e.5b-CFC-d-200 the full NoArbSabrModel (D0Interpolator +
+        // absorption tables) is in place, so NoArbSabrSmileSection no longer
+        // falls back to Hagan — it returns the no-arbitrage-corrected ATM
+        // vol, which differs from the direct SABR Hagan formula by O(1e-4)
+        // for these parameters (the correction is the whole point of the
+        // model). Loosen the agreement tolerance to a smoke-level 1e-3 to
+        // pin down that the no-arb section is *close* to Hagan at ATM.
         final double[] params = {0.05, 0.5, 0.30, -0.30};
         final NoArbSabrSmileSection s = new NoArbSabrSmileSection(1.0, 0.05, params);
 
-        // Hagan fallback should reproduce direct Sabr formula at strike == forward.
         final double vol = s.volatility(0.05);
 
-        final double expected = new Sabr().unsafeSabrVolatility(
+        final double hagan = new Sabr().unsafeSabrVolatility(
                 0.05, 0.05, 1.0, params[0], params[1], params[2], params[3]);
 
-        assertEquals("Hagan fallback should match direct SABR formula at ATM",
-                expected, vol, TOL);
+        assertEquals("NoArbSabr ATM vol should be close to Hagan SABR formula",
+                hagan, vol, 1.0e-3);
         assertTrue("Volatility should be positive", vol > 0.0);
     }
 }
