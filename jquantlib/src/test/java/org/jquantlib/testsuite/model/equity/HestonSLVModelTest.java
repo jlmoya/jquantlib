@@ -1650,18 +1650,18 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-235 — MakeMCEuropeanHestonEngine + MCEuropeanHestonEngine "
-            + "now accept HestonStochasticLocalVolProcess (Java sibling of HestonSLVProcess) "
-            + "via overloaded constructors. Phase 5e.5b-CFC-d-254 — FdHestonVanillaEngine "
-            + "now exposes a LocalVolTermStructure leverage-fct ctor variant "
-            + "(plumb-through validated by testFdHestonVanillaEngineLeverageFctCtorSmoke); "
-            + "the engine can serve as the FDM reference for the calibration-quality "
-            + "check (test-suite/hestonslvmodel.cpp:2035). Remaining blocker: "
-            + "HestonStochasticLocalVolProcess.evolve() port discrepancy — manual "
-            + "integration with constant Brownian and leverage=1 yields terminal S=0.0 "
-            + "(see testMonteCarloHestonSLVEnginePathGen probe); the QE+martingale-log-S body "
-            + "needs realignment vs. C++ ql/processes/hestonslvprocess.cpp::evolve. "
-            + "Blocker out of scope for the Phase 5e.5b-CFC-d allowlist.")
+    @Ignore("Phase 5e.5b-CFC-d-266 refinement: prior infrastructure blockers "
+            + "(MakeMCEuropeanHestonEngine[HestonSLVProcess], "
+            + "HestonStochasticLocalVolProcess.evolve, FdHestonVanillaEngine "
+            + "leverage-fct ctor) are ALL landed (CFC-d-235, 238, 254). "
+            + "HestonSLVMCModel is also ported. Remaining blocker: the C++ "
+            + "test (test-suite/hestonslvmodel.cpp:1964 line 2008) uses "
+            + "SobolRsg::JoeKuoD7 direction integers which Java's SobolRsg "
+            + "does not yet implement (only Unit, Jaeckel, SobolLevitan, "
+            + "SobolLevitanLemieux are available). Falling back to Jaeckel "
+            + "would change RNG-dependent calibration-quality numbers and "
+            + "violate the cross-validation discipline. Un-ignore once "
+            + "JoeKuoD7 direction-integers are ported (separate WI on SobolRsg).")
     @Test
     public void testMonteCarloCalibration() { fail("not implemented"); }
 
@@ -2048,15 +2048,18 @@ public class HestonSLVModelTest {
         }
     }
 
-    @Ignore("Phase 5e.5b-CFC-d-257 — FdHestonDoubleBarrierEngine now landed "
-            + "with LocalVolTermStructure leverage-fct ctor variant. Remaining "
-            + "blockers: (a) HestonSLVMCModel class — not yet ported; the C++ "
-            + "test builds its leverage surface via "
-            + "HestonSLVMCModel(...).leverageFunction(); (b) "
-            + "getFixedLocalVolFromHeston test helper "
-            + "(test-suite/hestonslvmodel.cpp:654) — not ported; (c) "
-            + "SobolBrownianGeneratorFactory (Phase 3i Commit 5) used by the "
-            + "MC leg. AnalyticDoubleBarrierBinaryEngine itself is available.")
+    @Ignore("Phase 5e.5b-CFC-d-266 refinement: most blockers now landed: "
+            + "(a) HestonSLVMCModel — ported (org.jquantlib.experimental.models); "
+            + "(b) SobolBrownianGeneratorFactory — ported "
+            + "(org.jquantlib.model.marketmodels.browniangenerators); "
+            + "(c) FdHestonDoubleBarrierEngine + leverage-fct ctor — landed (CFC-d-257); "
+            + "(d) AnalyticDoubleBarrierBinaryEngine — available. Remaining blockers: "
+            + "(i) the test relies on SobolRsg::JoeKuoD7 direction integers via "
+            + "the SobolBrownianGeneratorFactory; Java SobolRsg only implements "
+            + "Unit/Jaeckel/SobolLevitan/SobolLevitanLemieux (same blocker as "
+            + "testMonteCarloCalibration); (ii) getFixedLocalVolFromHeston test "
+            + "helper (test-suite/hestonslvmodel.cpp:654) — not yet ported to Java. "
+            + "Un-ignore once JoeKuoD7 + the test-helper land.")
     @Test
     public void testMoustacheGraph() { fail("not implemented"); }
 
