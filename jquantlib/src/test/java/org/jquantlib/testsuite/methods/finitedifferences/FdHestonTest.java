@@ -134,28 +134,38 @@ public class FdHestonTest {
      * (sigma=0.005, rho=0) vs Black-Scholes analytic barrier prices.
      * Mirrors C++ test-suite/fdheston.cpp lines 199-345 (Haug Option
      * Pricing Formulas reference values, 72 cases).
-     * <p>
-     * Java port differences vs C++ test:
+     *
+     * <p><strong>Phase 5e.5b-CFC-d-199 investigation (still @Ignore'd):</strong>
+     * neither of the two carry-forward workarounds resolves this test.
      * <ul>
-     *   <li>C++ uses 100t x 200x x 11v grid for Heston FD; the Java port
-     *       follows the same.</li>
-     *   <li>The C++ reference {@code expected[]} table is taken from the
-     *       Haug textbook reproduced inline here in arrays. Tolerance is
-     *       0.01 (cents-level) — well below the 1% of typical NPVs.</li>
-     *   <li>Subset of cases: only the first 9 cases are tested here as a
-     *       smoke check; the full 72-case suite is more appropriate for a
-     *       Phase 4n.5c stress run (test takes ~1 min per 9 cases).</li>
-     *   <li><strong>Phase 4n.5c carry:</strong> the Java BicubicSpline
-     *       interpolant cannot extrapolate beyond its v-grid; the
-     *       degenerate Heston (sigma=0.005) produces a v-grid that
-     *       collapses to ~[0, 0.04] which excludes v0 ~ 0.0625. The C++
-     *       monotonic-cubic spline allows extrapolation. Workaround:
-     *       widen vGrid to ~30 with a wider chi-square spread, or switch
-     *       Java's interpolant to a non-extrapolation-restricted variant.
-     *       See similar workaround in {@link #testFdmHestonBlackScholes}.</li>
+     *   <li><strong>vGrid widening</strong> (option 1) — tested vGrid in
+     *       {11, 21, 51}. The {@link FdmHestonVarianceMesher} produces a
+     *       v-mesh whose upper bound is set by the {@code 1-epsilon} quantile
+     *       of the non-central chi-square distribution. With {@code sigma=0.005},
+     *       the chi-square is extremely tight: empirically the mesh upper
+     *       bound is ~0.042 even at vGrid=51 for the v0=0.0625 first case.
+     *       The mesher's v0-pin logic only fires when {@code vGrid[i-1] <= v0
+     *       <= vGrid[i]}; when v0 is above the entire mesh (the situation
+     *       here), v0 is never inserted and {@link
+     *       org.jquantlib.methods.finitedifferences.solvers.Fdm2DimSolver}'s
+     *       {@code BicubicSpline} throws {@code IllegalArgumentException:
+     *       extrapolation at (log s, v0) not allowed}.</li>
+     *   <li><strong>Alt interpolant</strong> (option 2) — would require
+     *       replacing {@code BicubicSpline} with an extrapolation-capable
+     *       interpolant inside {@code Fdm2DimSolver} or
+     *       {@code FdmHestonSolver}. Out of scope for a test body-fill.</li>
      * </ul>
+     *
+     * <p>Real fix sits in the production-port path: either (a) teach
+     * {@link FdmHestonVarianceMesher} to always include v0 in {@code vGrid}
+     * (extend qMax to {@code max(qMax, v0)} AND insert v0 as an extra mesh
+     * point when v0 exceeds the chi-square upper bound), or (b) wrap the
+     * {@code Fdm2DimSolver} interpolant with a flat-/linear-extrapolation
+     * shim. Both are larger than a test-only change can support.
+     *
+     * <p>Phase 4n.5c carry deferred to a future production-port pass.
      */
-    @Ignore("Phase 4n.5c — Java BicubicSpline cannot extrapolate; needs vGrid widening or alt interpolant")
+    @Ignore("Phase 4n.5c — FdmHestonVarianceMesher does not insert v0 when v0 > mesh.upperBound (e.g. sigma=0.005, v0=0.0625); BicubicSpline then refuses to extrapolate. Real fix is in mesher/solver (out of test-only scope). Phase 5e.5b-CFC-d-199 widened vGrid up to 51 and still hit the extrapolation guard.")
     @Test
     public void testFdmHestonBarrierVsBlackScholes() {
         new Settings().setEvaluationDate(new Date(28, Month.March, 2004));
@@ -199,9 +209,10 @@ public class FdHestonTest {
         final AnalyticBarrierEngine analyticEngine =
                 new AnalyticBarrierEngine(bsProcess);
 
-        // C++ tol = 0.01 (cents-level); Java's BicubicSpline derivatives
+        // C++ tol = 0.0025 (rel); Java's BicubicSpline derivatives
         // limit precision somewhat for v0=sigma^2 small. Use 0.05 (5 cents)
-        // — empirically tightest stable bound across the 9 cases.
+        // — would be the tightest stable bound across the 9 cases if the
+        // extrapolation guard could be bypassed.
         final double tol = 0.05;
 
         for (int i = 0; i < strikes.length; ++i) {
