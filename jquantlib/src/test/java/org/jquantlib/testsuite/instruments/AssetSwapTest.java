@@ -39,6 +39,7 @@ import org.jquantlib.indexes.Euribor6M;
 import org.jquantlib.instruments.AssetSwap;
 import org.jquantlib.instruments.Bond;
 import org.jquantlib.instruments.bonds.FixedRateBond;
+import org.jquantlib.instruments.bonds.ZeroCouponBond;
 import org.jquantlib.pricingengines.bond.BondFunctions;
 import org.jquantlib.pricingengines.bond.DiscountingBondEngine;
 import org.jquantlib.pricingengines.swap.DiscountingSwapEngine;
@@ -774,9 +775,287 @@ public class AssetSwapTest {
         }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-ASW-8: AssetSwap now ported; empty test body — also needs specialized bond cross-check infra (CmsRateBond etc.) for testSpecializedBondVsGenericBond")
+    /**
+     * Phase 5e.5b-CFC-d-251 body-fill. Ports the fixed-rate and zero-coupon
+     * sub-cases of C++ {@code testSpecializedBondVsGenericBond}
+     * (assetswap.cpp:3021-3577).
+     *
+     * <p>Verifies that a generic {@link Bond} built on an explicit
+     * {@code FixedRateLeg} (or single-redemption {@link Leg}) prices to the
+     * same clean and dirty price as the equivalent specialized
+     * {@link FixedRateBond} / {@link ZeroCouponBond}, when both are wired
+     * to the same {@link DiscountingBondEngine}. The C++ test uses
+     * tolerance {@code 1e-13}; this port keeps the same TIGHT tier
+     * ({@code 1e-12}) since pricing is purely a discount-curve sum over
+     * deterministic fixed and single cash flows — no ibor / cms pricer
+     * approximation is involved.
+     *
+     * <p>The floating-rate (FRN) and CMS sub-cases of the C++ test are
+     * deferred: they rely on {@code setCouponPricer(leg,
+     * BlackIborCouponPricer)} / {@code AnalyticHaganPricer} wiring plus
+     * the {@code SwapIndex} + {@code SwaptionVolatilityStructure}
+     * fixture from {@code CommonVars}, which is Phase 5e.5b
+     * carry-forward.
+     */
     @Test
     public void testSpecializedBondVsGenericBond() {
+        // Replicate C++ CommonVars (assetswap.cpp:65-111).
+        new Settings().setEvaluationDate(
+                new Date(24, Month.April, 2007));
+        final DayCounter act365 = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                new Date(24, Month.April, 2007), 0.05, act365);
+        final Handle<YieldTermStructure> ts =
+                new Handle<YieldTermStructure>(flat);
+        final double faceAmount = 100.0;
+
+        final Calendar bondCalendar = new Target();
+        final int settlementDays = 3;
+
+        final DiscountingBondEngine bondEngine =
+                new DiscountingBondEngine(ts);
+
+        // TIGHT tier — pure discount-curve sum over deterministic flows;
+        // no pricer approximation. Mirrors C++ tolerance 1.0e-13 modulo
+        // the project-wide TIGHT cap (1.0e-12).
+        final double tolerance = 1.0e-12;
+
+        // ── Fixed Underlying bond #1 (Isin: DE0001135275 DBR 4 01/04/37)
+        //    — maturity 4-Jan-2037 doesn't fall on a business day.
+        final Date fixedBondStartDate1 = new Date(4, Month.January, 2005);
+        final Date fixedBondMaturityDate1 = new Date(4, Month.January, 2037);
+        final Schedule fixedBondSchedule1 = new Schedule(
+                fixedBondStartDate1, fixedBondMaturityDate1,
+                new Period(Frequency.Annual), bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false /* endOfMonth */);
+        final Leg fixedBondLeg1 = new FixedRateLeg(
+                fixedBondSchedule1,
+                new ActualActual(ActualActual.Convention.ISDA))
+                .withNotionals(faceAmount)
+                .withCouponRates(0.04)
+                .withPaymentAdjustment(BusinessDayConvention.Following)
+                .Leg();
+        final Date fixedbondRedemption1 = bondCalendar.adjust(
+                fixedBondMaturityDate1, BusinessDayConvention.Following);
+        fixedBondLeg1.add(new SimpleCashFlow(100.0, fixedbondRedemption1));
+
+        final Bond fixedBond1 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                fixedBondMaturityDate1, fixedBondStartDate1,
+                fixedBondLeg1);
+        fixedBond1.setPricingEngine(bondEngine);
+
+        final FixedRateBond fixedSpecializedBond1 = new FixedRateBond(
+                settlementDays, faceAmount, fixedBondSchedule1,
+                new double[] { 0.04 },
+                new ActualActual(ActualActual.Convention.ISDA),
+                BusinessDayConvention.Following,
+                100.0, new Date(4, Month.January, 2005));
+        fixedSpecializedBond1.setPricingEngine(bondEngine);
+
+        final double fixedBondTheoValue1 = fixedBond1.cleanPrice();
+        final double fixedSpecializedBondTheoValue1 =
+                fixedSpecializedBond1.cleanPrice();
+        final double error1 = Math.abs(
+                fixedBondTheoValue1 - fixedSpecializedBondTheoValue1);
+        if (error1 > tolerance) {
+            fail("wrong clean price for fixed bond #1:\n"
+                    + "  generic bond's theo clean price:     "
+                    + fixedBondTheoValue1 + "\n"
+                    + "  specialized bond's theo clean price: "
+                    + fixedSpecializedBondTheoValue1 + "\n"
+                    + "  error:                               " + error1 + "\n"
+                    + "  tolerance:                           " + tolerance);
+        }
+        final double fixedBondTheoDirty1 =
+                fixedBondTheoValue1 + fixedBond1.accruedAmount();
+        final double fixedSpecializedTheoDirty1 =
+                fixedSpecializedBondTheoValue1
+                + fixedSpecializedBond1.accruedAmount();
+        final double error2 = Math.abs(
+                fixedBondTheoDirty1 - fixedSpecializedTheoDirty1);
+        if (error2 > tolerance) {
+            fail("wrong dirty price for fixed bond #1:\n"
+                    + "  generic bond's theo dirty price:     "
+                    + fixedBondTheoDirty1 + "\n"
+                    + "  specialized bond's theo dirty price: "
+                    + fixedSpecializedTheoDirty1 + "\n"
+                    + "  error:                               " + error2 + "\n"
+                    + "  tolerance:                           " + tolerance);
+        }
+
+        // ── Fixed Underlying bond #2 (Isin: IT0006527060 IBRD 5 02/05/19)
+        //    — maturity 5-Feb-2019 falls on a business day.
+        final Date fixedBondStartDate2 = new Date(5, Month.February, 2005);
+        final Date fixedBondMaturityDate2 = new Date(5, Month.February, 2019);
+        final Schedule fixedBondSchedule2 = new Schedule(
+                fixedBondStartDate2, fixedBondMaturityDate2,
+                new Period(Frequency.Annual), bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false /* endOfMonth */);
+        final Leg fixedBondLeg2 = new FixedRateLeg(
+                fixedBondSchedule2,
+                new Thirty360(Thirty360.Convention.BondBasis))
+                .withNotionals(faceAmount)
+                .withCouponRates(0.05)
+                .withPaymentAdjustment(BusinessDayConvention.Following)
+                .Leg();
+        final Date fixedbondRedemption2 = bondCalendar.adjust(
+                fixedBondMaturityDate2, BusinessDayConvention.Following);
+        fixedBondLeg2.add(new SimpleCashFlow(100.0, fixedbondRedemption2));
+
+        final Bond fixedBond2 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                fixedBondMaturityDate2, fixedBondStartDate2, fixedBondLeg2);
+        fixedBond2.setPricingEngine(bondEngine);
+
+        final FixedRateBond fixedSpecializedBond2 = new FixedRateBond(
+                settlementDays, faceAmount, fixedBondSchedule2,
+                new double[] { 0.05 },
+                new Thirty360(Thirty360.Convention.BondBasis),
+                BusinessDayConvention.Following,
+                100.0, new Date(5, Month.February, 2005));
+        fixedSpecializedBond2.setPricingEngine(bondEngine);
+
+        final double fixedBondTheoValue2 = fixedBond2.cleanPrice();
+        final double fixedSpecializedBondTheoValue2 =
+                fixedSpecializedBond2.cleanPrice();
+        final double error3 = Math.abs(
+                fixedBondTheoValue2 - fixedSpecializedBondTheoValue2);
+        if (error3 > tolerance) {
+            fail("wrong clean price for fixed bond #2:\n"
+                    + "  generic bond's theo clean price:     "
+                    + fixedBondTheoValue2 + "\n"
+                    + "  specialized bond's theo clean price: "
+                    + fixedSpecializedBondTheoValue2 + "\n"
+                    + "  error:                               " + error3 + "\n"
+                    + "  tolerance:                           " + tolerance);
+        }
+        final double fixedBondTheoDirty2 =
+                fixedBondTheoValue2 + fixedBond2.accruedAmount();
+        final double fixedSpecializedBondTheoDirty2 =
+                fixedSpecializedBondTheoValue2
+                + fixedSpecializedBond2.accruedAmount();
+        final double error4 = Math.abs(
+                fixedBondTheoDirty2 - fixedSpecializedBondTheoDirty2);
+        if (error4 > tolerance) {
+            fail("wrong dirty price for fixed bond #2:\n"
+                    + "  generic bond's theo dirty price:     "
+                    + fixedBondTheoDirty2 + "\n"
+                    + "  specialized bond's theo dirty price: "
+                    + fixedSpecializedBondTheoDirty2 + "\n"
+                    + "  error:                               " + error4 + "\n"
+                    + "  tolerance:                           " + tolerance);
+        }
+
+        // ── Zero Coupon bond #1 (Isin: DE0004771662 IBRD 0 12/20/15)
+        //    — maturity 20-Dec-2015 doesn't fall on a business day.
+        final Date zeroCpnBondStartDate1 = new Date(19, Month.December, 1985);
+        final Date zeroCpnBondMaturityDate1 = new Date(20, Month.December, 2015);
+        final Date zeroCpnBondRedemption1 = bondCalendar.adjust(
+                zeroCpnBondMaturityDate1, BusinessDayConvention.Following);
+        final Leg zeroCpnBondLeg1 = new Leg();
+        zeroCpnBondLeg1.add(new SimpleCashFlow(100.0, zeroCpnBondRedemption1));
+
+        final Bond zeroCpnBond1 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                zeroCpnBondMaturityDate1, zeroCpnBondStartDate1,
+                zeroCpnBondLeg1);
+        zeroCpnBond1.setPricingEngine(bondEngine);
+
+        final ZeroCouponBond zeroCpnSpecializedBond1 = new ZeroCouponBond(
+                settlementDays, bondCalendar, faceAmount,
+                new Date(20, Month.December, 2015),
+                BusinessDayConvention.Following,
+                100.0, new Date(19, Month.December, 1985));
+        zeroCpnSpecializedBond1.setPricingEngine(bondEngine);
+
+        final double zeroCpnBondTheoValue1 = zeroCpnBond1.cleanPrice();
+        final double zeroCpnSpecializedBondTheoValue1 =
+                zeroCpnSpecializedBond1.cleanPrice();
+        final double error13 = Math.abs(
+                zeroCpnBondTheoValue1 - zeroCpnSpecializedBondTheoValue1);
+        if (error13 > tolerance) {
+            fail("wrong clean price for zero coupon bond #1:\n"
+                    + "  generic bond's clean price:     "
+                    + zeroCpnBondTheoValue1 + "\n"
+                    + "  specialized bond's clean price: "
+                    + zeroCpnSpecializedBondTheoValue1 + "\n"
+                    + "  error:                          " + error13 + "\n"
+                    + "  tolerance:                      " + tolerance);
+        }
+        final double zeroCpnBondTheoDirty1 =
+                zeroCpnBondTheoValue1 + zeroCpnBond1.accruedAmount();
+        final double zeroCpnSpecializedBondTheoDirty1 =
+                zeroCpnSpecializedBondTheoValue1
+                + zeroCpnSpecializedBond1.accruedAmount();
+        final double error14 = Math.abs(
+                zeroCpnBondTheoDirty1 - zeroCpnSpecializedBondTheoDirty1);
+        if (error14 > tolerance) {
+            fail("wrong dirty price for zero coupon bond #1:\n"
+                    + "  generic bond's dirty price:     "
+                    + zeroCpnBondTheoDirty1 + "\n"
+                    + "  specialized bond's dirty price: "
+                    + zeroCpnSpecializedBondTheoDirty1 + "\n"
+                    + "  error:                          " + error14 + "\n"
+                    + "  tolerance:                      " + tolerance);
+        }
+
+        // ── Zero Coupon bond #2 (Isin: IT0001200390 ISPIM 0 02/17/28)
+        //    — maturity 17-Feb-2028 falls on a business day.
+        final Date zeroCpnBondStartDate2 = new Date(17, Month.February, 1998);
+        final Date zeroCpnBondMaturityDate2 = new Date(17, Month.February, 2028);
+        final Date zerocpbondRedemption2 = bondCalendar.adjust(
+                zeroCpnBondMaturityDate2, BusinessDayConvention.Following);
+        final Leg zeroCpnBondLeg2 = new Leg();
+        zeroCpnBondLeg2.add(new SimpleCashFlow(100.0, zerocpbondRedemption2));
+
+        final Bond zeroCpnBond2 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                zeroCpnBondMaturityDate2, zeroCpnBondStartDate2,
+                zeroCpnBondLeg2);
+        zeroCpnBond2.setPricingEngine(bondEngine);
+
+        final ZeroCouponBond zeroCpnSpecializedBond2 = new ZeroCouponBond(
+                settlementDays, bondCalendar, faceAmount,
+                new Date(17, Month.February, 2028),
+                BusinessDayConvention.Following,
+                100.0, new Date(17, Month.February, 1998));
+        zeroCpnSpecializedBond2.setPricingEngine(bondEngine);
+
+        final double zeroCpnBondTheoValue2 = zeroCpnBond2.cleanPrice();
+        final double zeroCpnSpecializedBondTheoValue2 =
+                zeroCpnSpecializedBond2.cleanPrice();
+        final double error15 = Math.abs(
+                zeroCpnBondTheoValue2 - zeroCpnSpecializedBondTheoValue2);
+        if (error15 > tolerance) {
+            fail("wrong clean price for zero coupon bond #2:\n"
+                    + "  generic bond's clean price:     "
+                    + zeroCpnBondTheoValue2 + "\n"
+                    + "  specialized bond's clean price: "
+                    + zeroCpnSpecializedBondTheoValue2 + "\n"
+                    + "  error:                          " + error15 + "\n"
+                    + "  tolerance:                      " + tolerance);
+        }
+        final double zeroCpnBondTheoDirty2 =
+                zeroCpnBondTheoValue2 + zeroCpnBond2.accruedAmount();
+        final double zeroCpnSpecializedBondTheoDirty2 =
+                zeroCpnSpecializedBondTheoValue2
+                + zeroCpnSpecializedBond2.accruedAmount();
+        final double error16 = Math.abs(
+                zeroCpnBondTheoDirty2 - zeroCpnSpecializedBondTheoDirty2);
+        if (error16 > tolerance) {
+            fail("wrong dirty price for zero coupon bond #2:\n"
+                    + "  generic bond's dirty price:     "
+                    + zeroCpnBondTheoDirty2 + "\n"
+                    + "  specialized bond's dirty price: "
+                    + zeroCpnSpecializedBondTheoDirty2 + "\n"
+                    + "  error:                          " + error16 + "\n"
+                    + "  tolerance:                      " + tolerance);
+        }
     }
 
     @Ignore("Phase 5e.5 WI-5e.5-ASW-9: AssetSwap now ported; empty test body — also needs AssetSwap convenience constructors for testSpecializedBondVsGenericBondUsingAsw")
