@@ -68,6 +68,16 @@ public class HestonStochasticLocalVolProcess extends StochasticProcess {
         this.leverageFct = leverageFct;
         this.mixingFactor = mixingFactor;
         hestonProcess.addObserver(this);
+        // Force the underlying HestonProcess to warm its s0v_/v0v_ caches
+        // before our setParameters() reads them. In C++ HestonProcess::initialValues()
+        // reads the Quote values directly each call (no cache); the Java port caches
+        // them in s0v_/v0v_ and only refreshes via update(). Our addObserver(this)
+        // above registers for future notifications but does not fire one synchronously,
+        // so the cache would otherwise stay at its default 0.0 until the first
+        // notification — which can leave initialValues() returning (0, 0) and produce
+        // degenerate S=0 trajectories through evolve(). Mirrors what would happen on
+        // any subsequent notification while staying within our process file.
+        hestonProcess.update();
         setParameters();
     }
 

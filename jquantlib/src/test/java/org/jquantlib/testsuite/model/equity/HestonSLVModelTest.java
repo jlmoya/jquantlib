@@ -1583,14 +1583,6 @@ public class HestonSLVModelTest {
      * (lines 1894-1903 — the MC-engine construction with
      * {@code HestonSLVProcess}).
      */
-    @Ignore("Phase 5e.5b-CFC-d-235 — MCEuropeanHestonEngine + "
-            + "MakeMCEuropeanHestonEngine now accept HestonStochasticLocalVolProcess "
-            + "(compile + ctor verified); but a manual integration of "
-            + "HestonStochasticLocalVolProcess.evolve() with constant Brownian and "
-            + "leverage=1 produces terminal S=0.0, indicating a port bug in the "
-            + "QE+martingale-log-S body vs. C++ ql/processes/hestonslvprocess.cpp::evolve. "
-            + "Un-ignore once HestonStochasticLocalVolProcess.evolve() is re-aligned "
-            + "to v1.42.1 — process is read-only for the current allowlist.")
     @Test
     public void testMonteCarloHestonSLVEnginePathGen() {
         QL.info("Testing MCEuropeanHestonEngine accepts "
