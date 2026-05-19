@@ -25,13 +25,11 @@ import org.jquantlib.util.LazyObject;
  * spot pair {@code (u, v)} and converts to {@code (ln u, ln v)} before
  * interpolation, matching C++ {@code std::log(u)} / {@code std::log(v)}.
  *
- * <h3>Deviations from C++</h3>
- * <ul>
- *   <li>Local-vol mode is not yet wired through
- *       {@link Fdm2dBlackScholesOp}; only {@code localVol = false} is
- *       implemented (a {@code true} flag triggers an
- *       {@link UnsupportedOperationException} in the operator).</li>
- * </ul>
+ * <h3>Local-vol branch</h3>
+ * The {@code localVol} / {@code illegalLocalVolOverwrite} pair is forwarded
+ * verbatim to {@link Fdm2dBlackScholesOp}. When {@code localVol == true} the
+ * operator samples {@code p1.localVolatility()} and {@code p2.localVolatility()}
+ * per-cell on every time step.
  *
  * @author Phase 5e.5b-CFC-d port
  */

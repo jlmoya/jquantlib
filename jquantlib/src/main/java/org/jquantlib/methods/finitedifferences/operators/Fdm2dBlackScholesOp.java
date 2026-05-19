@@ -15,6 +15,7 @@ import org.jquantlib.math.matrixutilities.Matrix;
 import org.jquantlib.methods.finitedifferences.meshers.FdmMesher;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
 import org.jquantlib.termstructures.Compounding;
+import org.jquantlib.termstructures.LocalVolTermStructure;
 import org.jquantlib.time.Frequency;
 
 /**
@@ -34,13 +35,17 @@ import org.jquantlib.time.Frequency;
  * The cross / correlation term plus the forward-rate "carry" piece form the
  * mixed-direction operator returned by {@link #applyMixed}.
  *
+ * <h3>Local-vol branch</h3>
+ * When {@code localVol == true} the op samples
+ * {@code LocalVolTermStructure::localVol} from each underlying's process at
+ * every grid node, exactly as C++ does. The per-asset volatilities are
+ * multiplied element-wise and used to scale the correlation cross-derivative
+ * template on every {@link #setTime} call. The per-asset 1-D
+ * {@link FdmBlackScholesOp}s are constructed with their own local-vol flag,
+ * so the diagonal Black-Scholes operators also sample the surface per cell.
+ *
  * <h3>Deviations from C++ (deferred to a future phase)</h3>
  * <ul>
- *   <li>Local-vol mode is not supported (the constructor accepts the flag
- *       for API symmetry, but only {@code localVol = false} is implemented).
- *       C++ uses {@code LocalVolTermStructure::localVol} per-cell to drive
- *       the correlation map; the Java port computes a single forward
- *       volatility per step instead.</li>
  *   <li>Quanto helper not supported.</li>
  * </ul>
  *
@@ -54,6 +59,15 @@ public class Fdm2dBlackScholesOp implements FdmLinearOpComposite {
     private final NinePointLinearOp corrMapTemplate;
     private final FdmBlackScholesOp opX;
     private final FdmBlackScholesOp opY;
+    /** Non-null iff localVol is enabled. */
+    private final LocalVolTermStructure localVol1;
+    private final LocalVolTermStructure localVol2;
+    /** Spot-space locations along direction 0/1; non-null iff localVol enabled. */
+    private final Array x;
+    private final Array y;
+    /** Sentinel meaning "no override"; non-NaN and {@code >= 0} enables the
+     *  catch-fallback path (matches C++'s {@code -Null<Real>} sentinel). */
+    private final double illegalLocalVolOverwrite;
 
     private NinePointLinearOp corrMapT;
     private double currentForwardRate;
@@ -81,10 +95,16 @@ public class Fdm2dBlackScholesOp implements FdmLinearOpComposite {
      * @param p1                        GBS process for asset 1
      * @param p2                        GBS process for asset 2
      * @param correlation               asset correlation
-     * @param maturity                  option maturity (years)
-     * @param localVol                  must be {@code false}; local-vol mode
-     *                                  is not yet ported
-     * @param illegalLocalVolOverwrite  unused (placeholder for local-vol mode)
+     * @param maturity                  option maturity (years) — accepted for
+     *                                  C++ API symmetry; unused
+     * @param localVol                  when {@code true}, sample
+     *                                  {@code p1.localVolatility()} /
+     *                                  {@code p2.localVolatility()} per node
+     * @param illegalLocalVolOverwrite  fallback sigma substituted when
+     *                                  {@code localVol(...)} throws;
+     *                                  {@link Double#NaN} or any negative
+     *                                  value disables the fallback (matches
+     *                                  C++ {@code -Null<Real>})
      */
     public Fdm2dBlackScholesOp(final FdmMesher mesher,
                                final GeneralizedBlackScholesProcess p1,
@@ -93,18 +113,30 @@ public class Fdm2dBlackScholesOp implements FdmLinearOpComposite {
                                final double maturity,
                                final boolean localVol,
                                final double illegalLocalVolOverwrite) {
-        if (localVol) {
-            throw new UnsupportedOperationException(
-                    "Fdm2dBlackScholesOp: localVol path not yet ported");
-        }
         this.mesher = mesher;
         this.p1 = p1;
         this.p2 = p2;
+        this.illegalLocalVolOverwrite = illegalLocalVolOverwrite;
+
+        if (localVol) {
+            this.localVol1 = p1.localVolatility().currentLink();
+            this.localVol2 = p2.localVolatility().currentLink();
+            this.x = mesher.locations(0).exp();
+            this.y = mesher.locations(1).exp();
+        } else {
+            this.localVol1 = null;
+            this.localVol2 = null;
+            this.x         = null;
+            this.y         = null;
+        }
 
         // Per-asset 1D Black-Scholes operators. Strike defaults to the spot
-        // (C++: opX_(mesher, p1, p1->x0(), ...) and opY_(mesher, p2, p2->x0(), 1)).
-        this.opX = new FdmBlackScholesOp(mesher, p1, p1.x0(), 0);
-        this.opY = new FdmBlackScholesOp(mesher, p2, p2.x0(), 1);
+        // (C++: opX_(mesher, p1, p1->x0(), localVol, illegalLocalVolOverwrite, 0)
+        //  and opY_(mesher, p2, p2->x0(), localVol, illegalLocalVolOverwrite, 1)).
+        this.opX = new FdmBlackScholesOp(mesher, p1, p1.x0(),
+                localVol, illegalLocalVolOverwrite, 0);
+        this.opY = new FdmBlackScholesOp(mesher, p2, p2.x0(),
+                localVol, illegalLocalVolOverwrite, 1);
 
         // corrMapTemplate_ = SecondOrderMixedDerivativeOp(0,1,mesher)
         //                    .mult(Array(layout.size(), correlation))
@@ -132,15 +164,52 @@ public class Fdm2dBlackScholesOp implements FdmLinearOpComposite {
         opX.setTime(t1, t2);
         opY.setTime(t1, t2);
 
-        // Non-localVol branch: scale the correlation template by the product
-        // of forward Black volatilities sampled at the per-asset spot strike.
-        final double vol1 = p1.blackVolatility().currentLink()
-                .blackForwardVol(t1, t2, p1.x0(), true);
-        final double vol2 = p2.blackVolatility().currentLink()
-                .blackForwardVol(t1, t2, p2.x0(), true);
-
         final int n = mesher.layout().size();
-        corrMapT = corrMapTemplate.mult(new Array(n).fill(vol1 * vol2));
+
+        if (localVol1 != null) {
+            // Local-vol branch: sample sigma1(0.5(t1+t2), S1_i) and
+            // sigma2(0.5(t1+t2), S2_i) per cell, scale the correlation
+            // template by the element-wise product vol1*vol2.
+            // Mirrors C++ Fdm2dBlackScholesOp::setTime localVol branch.
+            final boolean haveOverride =
+                    !Double.isNaN(illegalLocalVolOverwrite)
+                            && illegalLocalVolOverwrite >= 0.0;
+            final double tMid = 0.5 * (t1 + t2);
+            final Array vol1 = new Array(n);
+            final Array vol2 = new Array(n);
+            for (int i = 0; i < n; ++i) {
+                double s1;
+                double s2;
+                if (haveOverride) {
+                    try {
+                        s1 = localVol1.localVol(tMid, x.get(i), true);
+                    } catch (final RuntimeException e) {
+                        s1 = illegalLocalVolOverwrite;
+                    }
+                    try {
+                        s2 = localVol2.localVol(tMid, y.get(i), true);
+                    } catch (final RuntimeException e) {
+                        s2 = illegalLocalVolOverwrite;
+                    }
+                } else {
+                    s1 = localVol1.localVol(tMid, x.get(i), true);
+                    s2 = localVol2.localVol(tMid, y.get(i), true);
+                }
+                vol1.set(i, s1);
+                vol2.set(i, s2);
+            }
+            corrMapT = corrMapTemplate.mult(vol1.mul(vol2));
+        } else {
+            // Non-localVol branch: scale the correlation template by the
+            // product of forward Black volatilities sampled at the per-asset
+            // spot strike.
+            final double vol1 = p1.blackVolatility().currentLink()
+                    .blackForwardVol(t1, t2, p1.x0(), true);
+            final double vol2 = p2.blackVolatility().currentLink()
+                    .blackForwardVol(t1, t2, p2.x0(), true);
+
+            corrMapT = corrMapTemplate.mult(new Array(n).fill(vol1 * vol2));
+        }
 
         currentForwardRate = p1.riskFreeRate().currentLink()
                 .forwardRate(t1, t2,

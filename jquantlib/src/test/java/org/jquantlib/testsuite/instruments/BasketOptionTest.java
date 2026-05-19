@@ -31,7 +31,9 @@ import org.jquantlib.instruments.SpreadBasketPayoff;
 import org.jquantlib.instruments.VanillaOption;
 import org.jquantlib.math.interpolations.factories.Linear;
 import org.jquantlib.math.matrixutilities.Matrix;
+import org.jquantlib.methods.finitedifferences.schemes.FdmSchemeDesc;
 import org.jquantlib.methods.montecarlo.LsmBasisSystem;
+import org.jquantlib.model.equity.HestonModel;
 import org.jquantlib.model.shortrate.StochasticProcessArray;
 import org.jquantlib.pricingengines.McSimulation;
 import org.jquantlib.pricingengines.PricingEngine;
@@ -52,12 +54,14 @@ import org.jquantlib.pricingengines.basket.StulzEngine;
 import org.jquantlib.pricingengines.vanilla.FdBlackScholesVanillaEngine;
 import org.jquantlib.processes.BlackScholesMertonProcess;
 import org.jquantlib.processes.GeneralizedBlackScholesProcess;
+import org.jquantlib.processes.HestonProcess;
 import org.jquantlib.processes.StochasticProcess1D;
 import org.jquantlib.quotes.Handle;
 import org.jquantlib.quotes.Quote;
 import org.jquantlib.quotes.SimpleQuote;
 import org.jquantlib.termstructures.BlackVolTermStructure;
 import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.equityfx.HestonBlackVolSurface;
 import org.jquantlib.termstructures.yieldcurves.InterpolatedZeroCurve;
 import org.jquantlib.testsuite.util.Utilities;
 import org.jquantlib.time.Date;
@@ -914,7 +918,7 @@ public class BasketOptionTest {
     // ---- Skeleton placeholders (Phase 5k.5b carry-forward) -----------
 
     // testBarraquandThreeValues body-filled in Phase 5e.5b-CFC-d-259 — see method below.
-    @Ignore(REASON_LOCAL_VOL_SPREAD)   @Test public void testLocalVolatilitySpreadOption()            { fail("not implemented"); }
+    // testLocalVolatilitySpreadOption body-filled in Phase 5e.5b-CFC-d-292 — see method below.
     // test2DPDEGreeks + testPDEvsApproximations body-filled in
     // Phase 5e.5b-CFC-d-166 — see methods below.
     // testOperatorSplittingSpreadEngine + testStrangSplittingSpreadEngineVsMathematica
@@ -953,6 +957,8 @@ public class BasketOptionTest {
     private static final String UNUSED_BARRAQUAND_REASON = REASON_BARRAQUAND;
     @SuppressWarnings("unused")
     private static final String UNUSED_NDIM_PDE_REASON = REASON_NDIM_PDE;
+    @SuppressWarnings("unused")
+    private static final String UNUSED_LOCAL_VOL_SPREAD_REASON = REASON_LOCAL_VOL_SPREAD;
     @SuppressWarnings("unused")
     private static final String UNUSED_FDM_AMERICAN_REASON = REASON_FDM_AMERICAN;
 
@@ -1896,6 +1902,90 @@ public class BasketOptionTest {
                     + "\n    expected:   " + expectedGamma
                     + "\n    diff:       " + Math.abs(expectedGamma - calculatedGamma)
                     + "\n    tolerance:  " + tol);
+        }
+    }
+
+    /**
+     * Two-asset local-volatility spread-option pricing.
+     * <p>Mirrors C++ {@code testLocalVolatilitySpreadOption}: builds two
+     * Heston models (asset 1: {@code v0=0.09, kappa=1.0, theta=0.06,
+     * sigma=0.6, rho=-0.75}; asset 2: {@code v0=0.10, kappa=2.0,
+     * theta=0.07, sigma=0.8, rho=0.85}), wraps each into a
+     * {@link HestonBlackVolSurface}, then drives two
+     * {@link GeneralizedBlackScholesProcess}es through
+     * {@link Fd2dBlackScholesVanillaEngine} in local-volatility mode
+     * (Dupire-from-Heston via {@code process.localVolatility()}). The spread
+     * basket is a 3-month ATM call on {@code S2 - S1} with rho = -0.6.
+     *
+     * <p>Grid: {@code 11 x 11 x 6}, no damping, Hundsdorfer scheme,
+     * {@code illegalLocalVolOverwrite = 0.25}. Reference price
+     * {@code 2.561}, tolerance {@code 0.01} (matches C++).</p>
+     */
+    @Test
+    public void testLocalVolatilitySpreadOption() {
+        QL.info("Testing 2D local-volatility spread-option pricing...");
+
+        final DayCounter dc = new Actual360();
+        final Date today = new Date(21, Month.September, 2017);
+        new Settings().setEvaluationDate(today);
+        final Date maturity = today.add(new Period(3, TimeUnit.Months));
+
+        final Handle<YieldTermStructure> riskFreeRate =
+                new Handle<YieldTermStructure>(
+                        Utilities.flatRate(today, 0.07, dc));
+        final Handle<YieldTermStructure> dividendYield =
+                new Handle<YieldTermStructure>(
+                        Utilities.flatRate(today, 0.03, dc));
+
+        final SimpleQuote s1Quote = new SimpleQuote(100.0);
+        final SimpleQuote s2Quote = new SimpleQuote(110.0);
+        final Handle<Quote> s1 = new Handle<Quote>(s1Quote);
+        final Handle<Quote> s2 = new Handle<Quote>(s2Quote);
+
+        final HestonModel hm1 = new HestonModel(new HestonProcess(
+                riskFreeRate, dividendYield, s1,
+                0.09, 1.0, 0.06, 0.6, -0.75));
+        final HestonModel hm2 = new HestonModel(new HestonProcess(
+                riskFreeRate, dividendYield, s2,
+                0.10, 2.0, 0.07, 0.8, 0.85));
+
+        final Handle<BlackVolTermStructure> vol1 =
+                new Handle<BlackVolTermStructure>(
+                        new HestonBlackVolSurface(hm1));
+        final Handle<BlackVolTermStructure> vol2 =
+                new Handle<BlackVolTermStructure>(
+                        new HestonBlackVolSurface(hm2));
+
+        final BasketOption basketOption = new BasketOption(
+                new SpreadBasketPayoff(
+                        new PlainVanillaPayoff(Option.Type.Call,
+                                s2Quote.value() - s1Quote.value())),
+                new EuropeanExercise(maturity));
+
+        final double rho = -0.6;
+
+        final GeneralizedBlackScholesProcess bs1 =
+                new GeneralizedBlackScholesProcess(
+                        s1, dividendYield, riskFreeRate, vol1);
+        final GeneralizedBlackScholesProcess bs2 =
+                new GeneralizedBlackScholesProcess(
+                        s2, dividendYield, riskFreeRate, vol2);
+
+        basketOption.setPricingEngine(new Fd2dBlackScholesVanillaEngine(
+                bs1, bs2, rho, 11, 11, 6, 0,
+                FdmSchemeDesc.Hundsdorfer(), true, 0.25));
+
+        // LOOSE 1e-2 tolerance: 2-D FD vs Monte-Carlo reference baked into
+        // the C++ test (expected = 2.561). Matches C++ tolerance exactly.
+        final double tolerance = 0.01;
+        final double expected = 2.561;
+        final double calculated = basketOption.NPV();
+
+        if (Math.abs(expected - calculated) > tolerance) {
+            fail("Failed to reproduce expected local volatility price"
+                    + "\n    calculated: " + calculated
+                    + "\n    expected:   " + expected
+                    + "\n    tolerance:  " + tolerance);
         }
     }
 

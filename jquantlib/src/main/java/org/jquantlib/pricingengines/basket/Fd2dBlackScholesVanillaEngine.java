@@ -109,11 +109,15 @@ public class Fd2dBlackScholesVanillaEngine extends BasketOption.Engine {
      * @param dampingSteps             number of implicit-Euler damping steps
      * @param schemeDesc               FDM scheme descriptor (Hundsdorfer in
      *                                 C++ default)
-     * @param localVol                 local-volatility mode (not yet ported;
-     *                                 must be {@code false})
-     * @param illegalLocalVolOverwrite fallback vol when local-vol lookup
-     *                                 fails (unused while
-     *                                 {@code localVol = false})
+     * @param localVol                 local-volatility mode: when
+     *                                 {@code true}, samples per-asset
+     *                                 {@code LocalVolTermStructure} at every
+     *                                 grid cell (Dupire-from-Black-vol via
+     *                                 the GBS process)
+     * @param illegalLocalVolOverwrite fallback vol substituted when
+     *                                 {@code localVol(...)} throws; pass
+     *                                 {@link Double#NaN} or a negative
+     *                                 sentinel to disable the catch
      */
     public Fd2dBlackScholesVanillaEngine(final GeneralizedBlackScholesProcess p1,
                                          final GeneralizedBlackScholesProcess p2,
