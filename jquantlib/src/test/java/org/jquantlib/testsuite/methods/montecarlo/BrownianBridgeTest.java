@@ -25,7 +25,12 @@ package org.jquantlib.testsuite.methods.montecarlo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jquantlib.QL;
+import org.jquantlib.Settings;
+import org.jquantlib.daycounters.Actual365Fixed;
 import org.jquantlib.math.distributions.InverseCumulativeNormal;
 import org.jquantlib.math.matrixutilities.Array;
 import org.jquantlib.math.matrixutilities.Matrix;
@@ -33,9 +38,21 @@ import org.jquantlib.math.randomnumbers.InverseCumulativeRsg;
 import org.jquantlib.math.randomnumbers.SobolRsg;
 import org.jquantlib.math.statistics.SequenceStatistics;
 import org.jquantlib.methods.montecarlo.BrownianBridge;
+import org.jquantlib.methods.montecarlo.Path;
+import org.jquantlib.methods.montecarlo.PathGenerator;
 import org.jquantlib.methods.montecarlo.Sample;
+import org.jquantlib.processes.BlackScholesMertonProcess;
+import org.jquantlib.quotes.Handle;
+import org.jquantlib.quotes.Quote;
+import org.jquantlib.quotes.SimpleQuote;
+import org.jquantlib.termstructures.BlackVolTermStructure;
+import org.jquantlib.termstructures.YieldTermStructure;
+import org.jquantlib.termstructures.volatilities.BlackConstantVol;
+import org.jquantlib.termstructures.yieldcurves.FlatForward;
 import org.jquantlib.testsuite.util.ReferenceReader;
+import org.jquantlib.time.Date;
 import org.jquantlib.time.TimeGrid;
+import org.jquantlib.time.calendars.NullCalendar;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Ignore;
@@ -166,11 +183,156 @@ public class BrownianBridgeTest {
         return diff;
     }
 
-    @Ignore("Phase 5a.5 carry-forward — depends on SequenceStatistics + path-generation "
-            + "infrastructure parity (BrownianBridge transform via PathGenerator). Slow test "
-            + "(~131k Sobol samples) — also a candidate for @Tag('slow').")
+    /**
+     * Phase 5e.5b-CFC-d-275b body-fill of C++
+     * {@code test-suite/brownianbridge.cpp::testPathGeneration} (lines
+     * 166-244).
+     *
+     * <p>Cross-validates that {@link PathGenerator} with
+     * {@code brownianBridge=true} produces the same first/second moments
+     * (mean, covariance) as {@code brownianBridge=false} when both are
+     * driven by an identically-seeded Sobol/InverseCumulativeNormal
+     * generator. The check confirms that the BrownianBridge transform is
+     * variance-preserving — re-ordering the Sobol dimensions does not
+     * change the distribution of the path values.
+     *
+     * <p>All required infrastructure is in Java: {@link PathGenerator}
+     * (Phase 5h.5-MC-INFRA WI-3), {@link SequenceStatistics},
+     * {@link BlackScholesMertonProcess}, {@link FlatForward},
+     * {@link BlackConstantVol}, {@link InverseCumulativeRsg},
+     * {@link SobolRsg}, {@link InverseCumulativeNormal}.
+     *
+     * <p>Tolerances mirror C++ ({@code meanTolerance=3.0e-5},
+     * {@code covTolerance=3.0e-3}). Sample count matches C++ (131071).
+     */
     @Test
     public void testPathGeneration() {
+        QL.info("Testing Brownian-bridge path generation...");
+
+        final double[] timesArr = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8,
+                                   0.9, 1.0, 2.0, 5.0, 7.0, 9.0, 10.0};
+        final List<Double> timesList = new ArrayList<Double>();
+        for (final double t : timesArr) {
+            timesList.add(Double.valueOf(t));
+        }
+        final TimeGrid grid = new TimeGrid(timesList);
+        final int N = timesArr.length;
+
+        final int samples = 131071;
+        final long seed = 42L;
+
+        // Two independently-seeded SobolRsg + InverseCumulativeRsg pairs so
+        // each PathGenerator owns its own GSG state (matches C++ value-copy
+        // semantics where the gsg argument is taken by value).
+        final InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal> gsg1 =
+                new InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>(
+                        new SobolRsg(N, seed), new InverseCumulativeNormal());
+        final InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal> gsg2 =
+                new InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>(
+                        new SobolRsg(N, seed), new InverseCumulativeNormal());
+
+        final Date today = new Settings().evaluationDate();
+        final Handle<Quote> x0 = new Handle<Quote>(new SimpleQuote(100.0));
+        final Handle<YieldTermStructure> r = new Handle<YieldTermStructure>(
+                new FlatForward(today, 0.06, new Actual365Fixed()));
+        final Handle<YieldTermStructure> q = new Handle<YieldTermStructure>(
+                new FlatForward(today, 0.03, new Actual365Fixed()));
+        final Handle<BlackVolTermStructure> sigma =
+                new Handle<BlackVolTermStructure>(
+                        new BlackConstantVol(today, new NullCalendar(),
+                                0.20, new Actual365Fixed()));
+
+        final BlackScholesMertonProcess process =
+                new BlackScholesMertonProcess(x0, q, r, sigma);
+
+        // generator1: no brownianBridge; generator2: with brownianBridge
+        final PathGenerator<InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>>
+                generator1 = new PathGenerator<InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>>(
+                        process, grid, gsg1, false);
+        final PathGenerator<InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>>
+                generator2 = new PathGenerator<InverseCumulativeRsg<SobolRsg, InverseCumulativeNormal>>(
+                        process, grid, gsg2, true);
+
+        final SequenceStatistics stats1 = new SequenceStatistics(N);
+        final SequenceStatistics stats2 = new SequenceStatistics(N);
+
+        final double[] temp = new double[N];
+
+        for (int i = 0; i < samples; ++i) {
+            // C++ takes path[1..end], dropping the initial spot at index 0.
+            // Java Path.length() == timeGrid.size() == N+1, so we copy
+            // values [1, N+1) → temp[0..N).
+            final Path path1 = generator1.next().value();
+            for (int j = 0; j < N; ++j) {
+                temp[j] = path1.value(j + 1);
+            }
+            stats1.add(temp);
+
+            final Path path2 = generator2.next().value();
+            for (int j = 0; j < N; ++j) {
+                temp[j] = path2.value(j + 1);
+            }
+            stats2.add(temp);
+        }
+
+        final Array expectedMean = stats1.mean();
+        final Matrix expectedCov = stats1.covariance();
+
+        final Array mean = stats2.mean();
+        final Matrix covariance = stats2.covariance();
+
+        final double meanTolerance = 3.0e-5;
+        final double covTolerance  = 3.0e-3;
+
+        final double maxMeanError = maxRelDiff(mean, expectedMean);
+        final double maxCovError = maxRelDiff(covariance, expectedCov);
+
+        if (maxMeanError > meanTolerance) {
+            org.junit.Assert.fail("failed to reproduce expected mean values"
+                    + "\n    calculated: " + arrayToString(mean)
+                    + "\n    expected:   " + arrayToString(expectedMean)
+                    + "\n    max error:  " + maxMeanError);
+        }
+
+        if (maxCovError > covTolerance) {
+            org.junit.Assert.fail("failed to reproduce expected covariance"
+                    + "\n    max error:  " + maxCovError);
+        }
+    }
+
+    private static double maxRelDiff(final Array a, final Array b) {
+        double maxDiff = 0.0;
+        for (int i = 0; i < a.size(); ++i) {
+            final double denom = Math.max(Math.abs(b.get(i)), Math.abs(a.get(i)));
+            final double diff = (denom == 0.0) ? 0.0
+                    : Math.abs(a.get(i) - b.get(i)) / denom;
+            maxDiff = Math.max(maxDiff, diff);
+        }
+        return maxDiff;
+    }
+
+    private static double maxRelDiff(final Matrix a, final Matrix b) {
+        double maxDiff = 0.0;
+        for (int i = 0; i < a.rows(); ++i) {
+            for (int j = 0; j < a.columns(); ++j) {
+                final double denom = Math.max(Math.abs(b.get(i, j)),
+                                              Math.abs(a.get(i, j)));
+                final double diff = (denom == 0.0) ? 0.0
+                        : Math.abs(a.get(i, j) - b.get(i, j)) / denom;
+                maxDiff = Math.max(maxDiff, diff);
+            }
+        }
+        return maxDiff;
+    }
+
+    private static String arrayToString(final Array a) {
+        final StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < a.size(); ++i) {
+            if (i > 0) sb.append(", ");
+            sb.append(a.get(i));
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     //
