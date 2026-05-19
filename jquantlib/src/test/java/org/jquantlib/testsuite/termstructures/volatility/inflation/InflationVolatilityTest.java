@@ -503,21 +503,26 @@ public class InflationVolatilityTest {
      * {@code atmYoYRate(d)} NPEs. Defer to Phase 2y after
      * {@code PiecewiseYoYInflationCurve} bootstrap is fixed.
      */
-    @Ignore("Phase 2y: PiecewiseYoYInflationCurve bootstrap still fails after"
-            + " CashFlows.bps npvDate=null fix (Phase 2y A.1). New diagnosis:"
-            + " the bootstrap's YearOnYearInflationSwap pricing calls"
-            + " CPI.laggedYoYRate (Linear branch) which reaches"
-            + " YoYInflationIndex.fixing() in the past-fixing branch for"
-            + " some date before todayMinusLag (2007-11-01). This triggers"
-            + " ZeroInflationIndex.fixing() line 136: TimeSeries.get() returns"
-            + " null (no EUHICP fixings seeded) → NPE. The C++ test works"
-            + " without seeding fixings; root cause is that Java's past-branch"
-            + " threshold for ratio-based YoY index does not fully mirror C++"
-            + " YoYInflationIndex::needsForecast (which delegates to"
-            + " underlyingIndex::needsForecast for the ratio_ branch). A full"
-            + " fix requires aligning YoYInflationIndex.needsForecast for the"
-            + " ratio=true case to match C++ exactly — architectural change"
-            + " deferred to Phase 2z or later.")
+    @Ignore("Phase 2z+: YoYInflationIndex.needsForecast ratio_ branch is now"
+            + " aligned with C++ (Phase 5e.5b-CFC-d-273 — fixing() now"
+            + " dispatches via needsForecast() exactly like C++"
+            + " inflationindex.cpp:290-297, so ratio-based indices delegate"
+            + " to underlyingIndex.needsForecast for the past/forecast"
+            + " threshold). The earlier ZeroInflationIndex NPE is gone."
+            + " New blocker: YearOnYearInflationSwapHelper currently sets"
+            + " earliestDate=latestDate=fixingPeriod.first regardless of CPI"
+            + " interpolation type, but C++ inflationhelpers.cpp:253-290"
+            + " sets latestDate=fixingPeriod.second+1 when"
+            + " detail::CPI::isInterpolated(interpolation_, yii_) is true"
+            + " (CPI::Linear or CPI::AsIndex on an interpolated index)."
+            + " Without that 1-day pillar extension the bootstrap"
+            + " PiecewiseYoYInflationCurve's maxDate falls short and"
+            + " CPI.laggedYoYRate's Linear branch — which queries"
+            + " index.fixing(fixingPeriod.second+1) — fails with"
+            + " 'date past max curve date' on the 30Y helper. Fix is"
+            + " out-of-scope here (touches YearOnYearInflationSwapHelper,"
+            + " not allowed by current task constraints); defer to a"
+            + " dedicated align(YearOnYearInflationSwapHelper) commit.")
     @Test
     public void testYoYPriceSurfaceToATM() {
         setup();
