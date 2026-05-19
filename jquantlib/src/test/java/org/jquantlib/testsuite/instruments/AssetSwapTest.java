@@ -57,7 +57,6 @@ import org.jquantlib.time.Period;
 import org.jquantlib.time.Schedule;
 import org.jquantlib.time.calendars.Target;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -1058,9 +1057,434 @@ public class AssetSwapTest {
         }
     }
 
-    @Ignore("Phase 5e.5 WI-5e.5-ASW-9: AssetSwap now ported; empty test body — also needs AssetSwap convenience constructors for testSpecializedBondVsGenericBondUsingAsw")
+    /**
+     * Phase 5e.5b-CFC-d-303 body-fill. Ports the fixed-rate and zero-coupon
+     * sub-cases of C++ {@code testSpecializedBondVsGenericBondUsingAsw}
+     * (assetswap.cpp:3580-4405).
+     *
+     * <p>Verifies that a generic {@link Bond} (built on an explicit
+     * {@code FixedRateLeg} or single-redemption {@link Leg}) wrapped in an
+     * {@link AssetSwap} produces the same {@code fairCleanPrice} and
+     * {@code fairSpread} as the equivalent specialized
+     * {@link FixedRateBond} / {@link ZeroCouponBond}, when both bonds are
+     * wired to the same {@link DiscountingBondEngine} and both asset swaps
+     * use the same {@link DiscountingSwapEngine}.
+     *
+     * <p>The C++ test uses tolerance {@code 1e-13}; this port keeps the
+     * TIGHT tier ({@code 1e-12}). For fixed and zero-coupon bonds, the
+     * asset-swap NPV is a pure discount-curve sum over deterministic
+     * bond-leg cashflows minus the deterministic floating-leg discount
+     * factors (the ibor coupons forecast off the same curve as discounting,
+     * so generic and specialized variants yield identical leg NPVs to
+     * machine precision).
+     *
+     * <p>The floating-rate (FRN) and CMS sub-cases of the C++ test are
+     * deferred — they rely on {@code setCouponPricer(leg,
+     * BlackIborCouponPricer)} / {@code AnalyticHaganPricer} wiring plus
+     * the {@code SwapIndex} + {@code SwaptionVolatilityStructure} fixture
+     * from {@code CommonVars}, which is a larger Phase 5e.5b carry-forward
+     * (the underlying classes are ported, but the full CommonVars test
+     * fixture is not).
+     */
     @Test
     public void testSpecializedBondVsGenericBondUsingAsw() {
+        // Replicate C++ CommonVars (assetswap.cpp:65-111).
+        new Settings().setEvaluationDate(
+                new Date(24, Month.April, 2007));
+        final DayCounter act365 = new Actual365Fixed();
+        final YieldTermStructure flat = new FlatForward(
+                new Date(24, Month.April, 2007), 0.05, act365);
+        final Handle<YieldTermStructure> ts =
+                new Handle<YieldTermStructure>(flat);
+        final Euribor6M iborIndex = new Euribor6M(ts);
+        final double spread = 0.0;
+        final double nonnullspread = 0.003;
+        final double faceAmount = 100.0;
+
+        final Calendar bondCalendar = new Target();
+        final int settlementDays = 3;
+        final boolean payFixedRate = true;
+        final boolean parAssetSwap = true;
+
+        final DiscountingBondEngine bondEngine =
+                new DiscountingBondEngine(ts);
+        final DiscountingSwapEngine swapEngine =
+                new DiscountingSwapEngine(ts);
+
+        // TIGHT tier — generic and specialized asset-swap NPVs differ
+        // only via bond-leg cashflow construction (which is identical
+        // by construction for fixed-rate and zero-coupon bonds).
+        // Mirrors C++ tolerance 1.0e-13 modulo the project-wide TIGHT
+        // cap (1.0e-12).
+        final double tolerance = 1.0e-12;
+
+        // ── Fixed bond #1 (Isin: DE0001135275 DBR 4 01/04/37)
+        //    — maturity 4-Jan-2037 doesn't fall on a business day.
+        final Date fixedBondStartDate1 = new Date(4, Month.January, 2005);
+        final Date fixedBondMaturityDate1 = new Date(4, Month.January, 2037);
+        final Schedule fixedBondSchedule1 = new Schedule(
+                fixedBondStartDate1, fixedBondMaturityDate1,
+                new Period(Frequency.Annual), bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false /* endOfMonth */);
+        final Leg fixedBondLeg1 = new FixedRateLeg(
+                fixedBondSchedule1,
+                new ActualActual(ActualActual.Convention.ISDA))
+                .withNotionals(faceAmount)
+                .withCouponRates(0.04)
+                .withPaymentAdjustment(BusinessDayConvention.Following)
+                .Leg();
+        final Date fixedbondRedemption1 = bondCalendar.adjust(
+                fixedBondMaturityDate1, BusinessDayConvention.Following);
+        fixedBondLeg1.add(new SimpleCashFlow(100.0, fixedbondRedemption1));
+
+        final Bond fixedBond1 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                fixedBondMaturityDate1, fixedBondStartDate1,
+                fixedBondLeg1);
+        fixedBond1.setPricingEngine(bondEngine);
+
+        final FixedRateBond fixedSpecializedBond1 = new FixedRateBond(
+                settlementDays, faceAmount, fixedBondSchedule1,
+                new double[] { 0.04 },
+                new ActualActual(ActualActual.Convention.ISDA),
+                BusinessDayConvention.Following,
+                100.0, new Date(4, Month.January, 2005));
+        fixedSpecializedBond1.setPricingEngine(bondEngine);
+
+        final double fixedBondPrice1 = fixedBond1.cleanPrice();
+        final double fixedSpecializedBondPrice1 =
+                fixedSpecializedBond1.cleanPrice();
+
+        // Theoretical clean price drives fairCleanPrice cross-check.
+        final AssetSwap fixedBondAssetSwap1 = new AssetSwap(
+                payFixedRate, fixedBond1, fixedBondPrice1,
+                iborIndex, nonnullspread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedBondAssetSwap1.setPricingEngine(swapEngine);
+        final AssetSwap fixedSpecializedBondAssetSwap1 = new AssetSwap(
+                payFixedRate, fixedSpecializedBond1,
+                fixedSpecializedBondPrice1,
+                iborIndex, nonnullspread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedSpecializedBondAssetSwap1.setPricingEngine(swapEngine);
+        final double fixedBondAssetSwapPrice1 =
+                fixedBondAssetSwap1.fairCleanPrice();
+        final double fixedSpecializedBondAssetSwapPrice1 =
+                fixedSpecializedBondAssetSwap1.fairCleanPrice();
+        final double error1 = Math.abs(
+                fixedBondAssetSwapPrice1 - fixedSpecializedBondAssetSwapPrice1);
+        if (error1 > tolerance) {
+            fail("wrong clean price for fixed bond:\n"
+                    + "  generic  fixed rate bond's  clean price:   "
+                    + fixedBondAssetSwapPrice1 + "\n"
+                    + "  equivalent specialized bond's clean price: "
+                    + fixedSpecializedBondAssetSwapPrice1 + "\n"
+                    + "  error:                                     " + error1 + "\n"
+                    + "  tolerance:                                 " + tolerance);
+        }
+        // Market executable price as of 4th Sept 2007 — fairSpread cross-check.
+        final double fixedBondMktPrice1 = 91.832;
+        final AssetSwap fixedBondASW1 = new AssetSwap(
+                payFixedRate, fixedBond1, fixedBondMktPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedBondASW1.setPricingEngine(swapEngine);
+        final AssetSwap fixedSpecializedBondASW1 = new AssetSwap(
+                payFixedRate, fixedSpecializedBond1, fixedBondMktPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedSpecializedBondASW1.setPricingEngine(swapEngine);
+        final double fixedBondASWSpread1 = fixedBondASW1.fairSpread();
+        final double fixedSpecializedBondASWSpread1 =
+                fixedSpecializedBondASW1.fairSpread();
+        final double error2 = Math.abs(
+                fixedBondASWSpread1 - fixedSpecializedBondASWSpread1);
+        if (error2 > tolerance) {
+            fail("wrong asw spread for fixed bond:\n"
+                    + "  generic  fixed rate bond's  asw spread:   "
+                    + fixedBondASWSpread1 + "\n"
+                    + "  equivalent specialized bond's asw spread: "
+                    + fixedSpecializedBondASWSpread1 + "\n"
+                    + "  error:                                    " + error2 + "\n"
+                    + "  tolerance:                                " + tolerance);
+        }
+
+        // ── Fixed bond #2 (Isin: IT0006527060 IBRD 5 02/05/19)
+        //    — maturity 5-Feb-2019 falls on a business day.
+        final Date fixedBondStartDate2 = new Date(5, Month.February, 2005);
+        final Date fixedBondMaturityDate2 = new Date(5, Month.February, 2019);
+        final Schedule fixedBondSchedule2 = new Schedule(
+                fixedBondStartDate2, fixedBondMaturityDate2,
+                new Period(Frequency.Annual), bondCalendar,
+                BusinessDayConvention.Unadjusted,
+                BusinessDayConvention.Unadjusted,
+                DateGeneration.Rule.Backward, false /* endOfMonth */);
+        final Leg fixedBondLeg2 = new FixedRateLeg(
+                fixedBondSchedule2,
+                new Thirty360(Thirty360.Convention.BondBasis))
+                .withNotionals(faceAmount)
+                .withCouponRates(0.05)
+                .withPaymentAdjustment(BusinessDayConvention.Following)
+                .Leg();
+        final Date fixedbondRedemption2 = bondCalendar.adjust(
+                fixedBondMaturityDate2, BusinessDayConvention.Following);
+        fixedBondLeg2.add(new SimpleCashFlow(100.0, fixedbondRedemption2));
+
+        final Bond fixedBond2 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                fixedBondMaturityDate2, fixedBondStartDate2, fixedBondLeg2);
+        fixedBond2.setPricingEngine(bondEngine);
+
+        final FixedRateBond fixedSpecializedBond2 = new FixedRateBond(
+                settlementDays, faceAmount, fixedBondSchedule2,
+                new double[] { 0.05 },
+                new Thirty360(Thirty360.Convention.BondBasis),
+                BusinessDayConvention.Following,
+                100.0, new Date(5, Month.February, 2005));
+        fixedSpecializedBond2.setPricingEngine(bondEngine);
+
+        final double fixedBondPrice2 = fixedBond2.cleanPrice();
+        final double fixedSpecializedBondPrice2 =
+                fixedSpecializedBond2.cleanPrice();
+        final AssetSwap fixedBondAssetSwap2 = new AssetSwap(
+                payFixedRate, fixedBond2, fixedBondPrice2,
+                iborIndex, nonnullspread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedBondAssetSwap2.setPricingEngine(swapEngine);
+        final AssetSwap fixedSpecializedBondAssetSwap2 = new AssetSwap(
+                payFixedRate, fixedSpecializedBond2,
+                fixedSpecializedBondPrice2,
+                iborIndex, nonnullspread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedSpecializedBondAssetSwap2.setPricingEngine(swapEngine);
+        final double fixedBondAssetSwapPrice2 =
+                fixedBondAssetSwap2.fairCleanPrice();
+        final double fixedSpecializedBondAssetSwapPrice2 =
+                fixedSpecializedBondAssetSwap2.fairCleanPrice();
+        final double error3 = Math.abs(
+                fixedBondAssetSwapPrice2 - fixedSpecializedBondAssetSwapPrice2);
+        if (error3 > tolerance) {
+            fail("wrong clean price for fixed bond #2:\n"
+                    + "  generic  fixed rate bond's clean price:    "
+                    + fixedBondAssetSwapPrice2 + "\n"
+                    + "  equivalent specialized bond's clean price: "
+                    + fixedSpecializedBondAssetSwapPrice2 + "\n"
+                    + "  error:                                     " + error3 + "\n"
+                    + "  tolerance:                                 " + tolerance);
+        }
+        final double fixedBondMktPrice2 = 102.178;
+        final AssetSwap fixedBondASW2 = new AssetSwap(
+                payFixedRate, fixedBond2, fixedBondMktPrice2,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedBondASW2.setPricingEngine(swapEngine);
+        final AssetSwap fixedSpecializedBondASW2 = new AssetSwap(
+                payFixedRate, fixedSpecializedBond2, fixedBondMktPrice2,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        fixedSpecializedBondASW2.setPricingEngine(swapEngine);
+        final double fixedBondASWSpread2 = fixedBondASW2.fairSpread();
+        final double fixedSpecializedBondASWSpread2 =
+                fixedSpecializedBondASW2.fairSpread();
+        final double error4 = Math.abs(
+                fixedBondASWSpread2 - fixedSpecializedBondASWSpread2);
+        if (error4 > tolerance) {
+            fail("wrong asw spread for fixed bond #2:\n"
+                    + "  generic  fixed rate bond's  asw spread:   "
+                    + fixedBondASWSpread2 + "\n"
+                    + "  equivalent specialized bond's asw spread: "
+                    + fixedSpecializedBondASWSpread2 + "\n"
+                    + "  error:                                    " + error4 + "\n"
+                    + "  tolerance:                                " + tolerance);
+        }
+
+        // ── Zero-coupon bond #1 (Isin: DE0004771662 IBRD 0 12/20/15)
+        //    — maturity 20-Dec-2015 doesn't fall on a business day.
+        final Date zeroCpnBondStartDate1 = new Date(19, Month.December, 1985);
+        final Date zeroCpnBondMaturityDate1 = new Date(20, Month.December, 2015);
+        final Date zeroCpnBondRedemption1 = bondCalendar.adjust(
+                zeroCpnBondMaturityDate1, BusinessDayConvention.Following);
+        final Leg zeroCpnBondLeg1 = new Leg();
+        zeroCpnBondLeg1.add(new SimpleCashFlow(100.0, zeroCpnBondRedemption1));
+
+        final Bond zeroCpnBond1 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                zeroCpnBondMaturityDate1, zeroCpnBondStartDate1,
+                zeroCpnBondLeg1);
+        zeroCpnBond1.setPricingEngine(bondEngine);
+
+        final ZeroCouponBond zeroCpnSpecializedBond1 = new ZeroCouponBond(
+                settlementDays, bondCalendar, faceAmount,
+                new Date(20, Month.December, 2015),
+                BusinessDayConvention.Following,
+                100.0, new Date(19, Month.December, 1985));
+        zeroCpnSpecializedBond1.setPricingEngine(bondEngine);
+
+        final double zeroCpnBondPrice1 = zeroCpnBond1.cleanPrice();
+        final double zeroCpnSpecializedBondPrice1 =
+                zeroCpnSpecializedBond1.cleanPrice();
+        final AssetSwap zeroCpnBondAssetSwap1 = new AssetSwap(
+                payFixedRate, zeroCpnBond1, zeroCpnBondPrice1,
+                iborIndex, nonnullspread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        zeroCpnBondAssetSwap1.setPricingEngine(swapEngine);
+        final AssetSwap zeroCpnSpecializedBondAssetSwap1 = new AssetSwap(
+                payFixedRate, zeroCpnSpecializedBond1,
+                zeroCpnSpecializedBondPrice1,
+                iborIndex, nonnullspread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        zeroCpnSpecializedBondAssetSwap1.setPricingEngine(swapEngine);
+        final double zeroCpnBondAssetSwapPrice1 =
+                zeroCpnBondAssetSwap1.fairCleanPrice();
+        final double zeroCpnSpecializedBondAssetSwapPrice1 =
+                zeroCpnSpecializedBondAssetSwap1.fairCleanPrice();
+        final double error13 = Math.abs(
+                zeroCpnBondAssetSwapPrice1 - zeroCpnSpecializedBondAssetSwapPrice1);
+        if (error13 > tolerance) {
+            fail("wrong clean price for zerocpn bond #1:\n"
+                    + "  generic zero cpn bond's clean price: "
+                    + zeroCpnBondAssetSwapPrice1 + "\n"
+                    + "  specialized equivalent bond's price: "
+                    + zeroCpnSpecializedBondAssetSwapPrice1 + "\n"
+                    + "  error:                               " + error13 + "\n"
+                    + "  tolerance:                           " + tolerance);
+        }
+        final double zeroCpnBondMktPrice1 = 72.277;
+        final AssetSwap zeroCpnBondASW1 = new AssetSwap(
+                payFixedRate, zeroCpnBond1, zeroCpnBondMktPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        zeroCpnBondASW1.setPricingEngine(swapEngine);
+        final AssetSwap zeroCpnSpecializedBondASW1 = new AssetSwap(
+                payFixedRate, zeroCpnSpecializedBond1, zeroCpnBondMktPrice1,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        zeroCpnSpecializedBondASW1.setPricingEngine(swapEngine);
+        final double zeroCpnBondASWSpread1 = zeroCpnBondASW1.fairSpread();
+        final double zeroCpnSpecializedBondASWSpread1 =
+                zeroCpnSpecializedBondASW1.fairSpread();
+        final double error14 = Math.abs(
+                zeroCpnBondASWSpread1 - zeroCpnSpecializedBondASWSpread1);
+        if (error14 > tolerance) {
+            fail("wrong asw spread for zerocpn bond #1:\n"
+                    + "  generic zeroCpn bond's  asw spread:       "
+                    + zeroCpnBondASWSpread1 + "\n"
+                    + "  equivalent specialized bond's asw spread: "
+                    + zeroCpnSpecializedBondASWSpread1 + "\n"
+                    + "  error:                                    " + error14 + "\n"
+                    + "  tolerance:                                " + tolerance);
+        }
+
+        // ── Zero-coupon bond #2 (Isin: IT0001200390 ISPIM 0 02/17/28)
+        //    — maturity 17-Feb-2028 falls on a business day.
+        final Date zeroCpnBondStartDate2 = new Date(17, Month.February, 1998);
+        final Date zeroCpnBondMaturityDate2 = new Date(17, Month.February, 2028);
+        final Date zerocpbondRedemption2 = bondCalendar.adjust(
+                zeroCpnBondMaturityDate2, BusinessDayConvention.Following);
+        final Leg zeroCpnBondLeg2 = new Leg();
+        zeroCpnBondLeg2.add(new SimpleCashFlow(100.0, zerocpbondRedemption2));
+
+        final Bond zeroCpnBond2 = new Bond(
+                settlementDays, bondCalendar, faceAmount,
+                zeroCpnBondMaturityDate2, zeroCpnBondStartDate2,
+                zeroCpnBondLeg2);
+        zeroCpnBond2.setPricingEngine(bondEngine);
+
+        final ZeroCouponBond zeroCpnSpecializedBond2 = new ZeroCouponBond(
+                settlementDays, bondCalendar, faceAmount,
+                new Date(17, Month.February, 2028),
+                BusinessDayConvention.Following,
+                100.0, new Date(17, Month.February, 1998));
+        zeroCpnSpecializedBond2.setPricingEngine(bondEngine);
+
+        final double zeroCpnBondPrice2 = zeroCpnBond2.cleanPrice();
+        final double zeroCpnSpecializedBondPrice2 =
+                zeroCpnSpecializedBond2.cleanPrice();
+        final AssetSwap zeroCpnBondAssetSwap2 = new AssetSwap(
+                payFixedRate, zeroCpnBond2, zeroCpnBondPrice2,
+                iborIndex, nonnullspread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        zeroCpnBondAssetSwap2.setPricingEngine(swapEngine);
+        final AssetSwap zeroCpnSpecializedBondAssetSwap2 = new AssetSwap(
+                payFixedRate, zeroCpnSpecializedBond2,
+                zeroCpnSpecializedBondPrice2,
+                iborIndex, nonnullspread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        zeroCpnSpecializedBondAssetSwap2.setPricingEngine(swapEngine);
+        final double zeroCpnBondAssetSwapPrice2 =
+                zeroCpnBondAssetSwap2.fairCleanPrice();
+        final double zeroCpnSpecializedBondAssetSwapPrice2 =
+                zeroCpnSpecializedBondAssetSwap2.fairCleanPrice();
+        final double error15 = Math.abs(
+                zeroCpnBondAssetSwapPrice2 - zeroCpnSpecializedBondAssetSwapPrice2);
+        if (error15 > tolerance) {
+            fail("wrong clean price for zerocpn bond #2:\n"
+                    + "  generic zero cpn bond's clean price: "
+                    + zeroCpnBondAssetSwapPrice2 + "\n"
+                    + "  equivalent specialized bond's price: "
+                    + zeroCpnSpecializedBondAssetSwapPrice2 + "\n"
+                    + "  error:                               " + error15 + "\n"
+                    + "  tolerance:                           " + tolerance);
+        }
+        final double zeroCpnBondMktPrice2 = 72.277;
+        final AssetSwap zeroCpnBondASW2 = new AssetSwap(
+                payFixedRate, zeroCpnBond2, zeroCpnBondMktPrice2,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        zeroCpnBondASW2.setPricingEngine(swapEngine);
+        final AssetSwap zeroCpnSpecializedBondASW2 = new AssetSwap(
+                payFixedRate, zeroCpnSpecializedBond2, zeroCpnBondMktPrice2,
+                iborIndex, spread,
+                null /* default schedule */,
+                iborIndex.dayCounter(),
+                parAssetSwap);
+        zeroCpnSpecializedBondASW2.setPricingEngine(swapEngine);
+        final double zeroCpnBondASWSpread2 = zeroCpnBondASW2.fairSpread();
+        final double zeroCpnSpecializedBondASWSpread2 =
+                zeroCpnSpecializedBondASW2.fairSpread();
+        final double error16 = Math.abs(
+                zeroCpnBondASWSpread2 - zeroCpnSpecializedBondASWSpread2);
+        if (error16 > tolerance) {
+            fail("wrong asw spread for zerocpn bond #2:\n"
+                    + "  generic zeroCpn bond's  asw spread:       "
+                    + zeroCpnBondASWSpread2 + "\n"
+                    + "  equivalent specialized bond's asw spread: "
+                    + zeroCpnSpecializedBondASWSpread2 + "\n"
+                    + "  error:                                    " + error16 + "\n"
+                    + "  tolerance:                                " + tolerance);
+        }
     }
 
 
